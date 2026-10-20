@@ -1079,3 +1079,68 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-profile-card, .profile-progress span { transition: none !important; }
 }
+
+
+/* Follow-up polish after reviewing the real mobile and desktop captures. */
+h1, h2 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.main-content > h1 {
+  margin: 0 0 10px;
+  font-size: clamp(29px, 3.4vw, 39px);
+  font-weight: 650;
+  line-height: 1.12;
+  letter-spacing: -.055em;
+}
+.main-content > .lead {
+  max-width: 58ch;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #a8b7ca;
+}
+.hero-v2 .hero-title { font-size: clamp(36px, 4.2vw, 57px); }
+.hero-v2 .hero-title .gradient-text { white-space: nowrap; }
+.tmdb-browser .empty-state {
+  padding: 23px 18px;
+  border-style: solid;
+  border-color: rgba(211,225,243,.08);
+  background: rgba(7,13,21,.22);
+}
+.tmdb-browser .empty-state .empty-icon { width: 40px; height: 40px; margin-bottom: 11px; font-size: 18px; }
+.tmdb-browser .empty-state h3 { font-size: 13px; }
+.tmdb-browser .empty-state p { font-size: 11px; }
+@media (max-width: 760px) {
+  .hero-v2 .hero-title { font-size: clamp(35px, 8.7vw, 44px); line-height: 1.03; }
+  .hero-profile-card {
+    display: grid;
+    grid-template-columns: minmax(0,.75fr) minmax(0,1.25fr);
+    align-items: center;
+    gap: 8px 13px;
+    padding: 14px;
+  }
+  .profile-topline { grid-column: 1 / -1; }
+  .profile-main-number { grid-column: 1; grid-row: 2; align-self: center; gap: 8px; margin: 0; }
+  .profile-main-number strong { font-size: 36px; }
+  .profile-main-number span { font-size: 10px; line-height: 1.35; }
+  .profile-divider { display: none; }
+  .profile-meta-row {
+    grid-column: 2;
+    grid-row: 2;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+    font-size: 9px;
+  }
+  .profile-meta-row strong { font-size: 11px; }
+  .profile-progress { grid-column: 2; grid-row: 3; margin-top: -4px; }
+  .profile-note { grid-column: 1 / -1; margin: 3px 0 0; font-size: 9px; line-height: 1.45; }
+  .profile-import-link { grid-column: 1 / -1; justify-self: start; margin: 0; min-height: 25px; }
+  .main-content > h1 { font-size: clamp(28px, 7.2vw, 33px); line-height: 1.12; }
+  .main-content > .lead { max-width: 42ch; font-size: 12px; line-height: 1.65; }
+}
+@media (max-width: 380px) {
+  .hero-profile-card { gap: 7px 9px; padding: 12px; }
+  .profile-main-number strong { font-size: 33px; }
+  .profile-main-number span { font-size: 9px; }
+  .profile-meta-row { font-size: 8px; }
+}
