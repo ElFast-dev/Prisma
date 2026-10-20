@@ -26,6 +26,9 @@ jobs:
       - name: Check JavaScript syntax
         run: node --check app.js
 
+      - name: Check service worker syntax
+        run: node --check sw.js
+
       - name: Validate SDD documents
         run: node scripts/validate-sdd.mjs
 
