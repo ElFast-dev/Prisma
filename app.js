@@ -1420,7 +1420,7 @@
     const id = String(movie.tmdbId || "");
     if (!id || !tmdbCredential || !tmdbCredential.value) return;
     if (movieDetailCache.has(id)) {
-      if (movieDetail && titleKey(movieDetail.movie.title) === titleKey(movie.title)) {
+      if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) {
         const cached = movieDetailCache.get(id);
         movieDetail.movie = cached.movie;
         movieDetail.data = cached.data;
@@ -1456,14 +1456,14 @@
         providerResults:providerRoot,
         releaseDates:raw.release_dates && raw.release_dates.results ? raw.release_dates.results : []
       };
-      if (movieDetail && titleKey(movieDetail.movie.title) === titleKey(movie.title)) {
+      if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) {
         movieDetail.movie = detailsMovie; movieDetail.data = data; movieDetail.loading = false; movieDetail.error = "";
         movieDetailCache.set(id,{movie:detailsMovie,data:data});
         await persistMovieMetadata(detailsMovie);
         renderModal();
       }
     } catch (error) {
-      if (movieDetail && titleKey(movieDetail.movie.title) === titleKey(movie.title)) {
+      if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) {
         movieDetail.loading = false; movieDetail.error = error.message || "No se pudo cargar la ficha de TMDB."; renderModal();
       }
     }
@@ -1477,13 +1477,18 @@
       if (movie[field] !== undefined && movie[field] !== null && movie[field] !== "") metadata[field] = movie[field];
     });
     function mergeMatching(list) {
-      return (list || []).map(function (entry) { return titleKey(entry.title) === key ? Object.assign({},entry,metadata) : entry; });
+      return (list || []).map(function (entry) { return sameMovieRecord(entry,movie) ? Object.assign({},entry,metadata) : entry; });
     }
     state.rated = mergeMatching(state.rated);
     state.watched = mergeMatching(state.watched);
     state.watchlist = mergeMatching(state.watchlist);
     state.hidden = mergeMatching(state.hidden);
-    const index = customCatalog.findIndex(function (entry) { return titleKey(entry.title) === key; });
+    const movieId = movieTmdbId(movie);
+    const index = customCatalog.findIndex(function (entry) {
+      const existingId = movieTmdbId(entry);
+      if (movieId && existingId) return movieId === existingId;
+      return titleKey(entry.title) === key && !movieId && !existingId;
+    });
     if (index >= 0) customCatalog[index] = Object.assign({},customCatalog[index],metadata,{title:movie.title,source:"tmdb"});
     else customCatalog.unshift(Object.assign({},metadata,{title:movie.title,source:"tmdb"}));
     await dbSet(CATALOG_KEY,customCatalog);
@@ -1533,14 +1538,14 @@
   function renderMovieDetails() {
     const root = $("#modalRoot");
     if (!root || !movieDetail) return;
-    const movie = movieDetail.movie, data = movieDetail.data, rating = ratingFor(movie.title);
-    const seen = isInHistory(movie.title), pending = isInWatchlist(movie.title), hidden = isHidden(movie.title);
+    const movie = movieDetail.movie, data = movieDetail.data, rating = ratingFor(movie.title,movie.tmdbId);
+    const seen = isInHistory(movie.title,movie.tmdbId), pending = isInWatchlist(movie.title,movie.tmdbId), hidden = isHidden(movie.title,movie.tmdbId);
     const backdrop = movie.backdropUrl || movie.posterUrl || "";
     const genreChips = (movie.genres || []).slice(0,6).map(function (genre) { return '<span class="detail-chip">' + escapeHTML(displayGenre(genre)) + '</span>'; }).join("");
     const countryLine = (movie.productionCountries || []).slice(0,3).join(" · ");
     const release = movie.releaseDate ? dateLabel(movie.releaseDate) : (movie.year || "Estreno no disponible");
     const stateButton = seen ?
-      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(dateTimeLabel((state.watched || []).find(function (entry) { return titleKey(entry.title) === titleKey(movie.title); })?.watchedAt || (rating && (rating.watchedAt || rating.updatedAt)) || movie.releaseDate)) + '</small></button>' :
+      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(dateTimeLabel((state.watched || []).find(function (entry) { return sameMovieRecord(entry,movie); })?.watchedAt || (rating && (rating.watchedAt || rating.updatedAt)) || movie.releaseDate)) + '</small></button>' :
       (pending ?
         '<button class="btn btn-secondary detail-state-button" type="button" data-action="manage-pending"><span aria-hidden="true">✓</span> Añadido a pendientes</button><button class="btn btn-primary" type="button" data-action="mark-watched">Marcar como vista</button>' :
         '<button class="btn btn-primary" type="button" data-action="manage-history">Añadir al historial</button><button class="btn btn-secondary" type="button" data-action="manage-pending">＋ Pendientes</button>');
@@ -1675,7 +1680,7 @@
   function renderRatingSheet() {
     const root = $("#modalRoot");
     if (!root || !modalDraft) return;
-    const movie = modalDraft.movie, rating = ratingFor(movie.title);
+    const movie = modalDraft.movie, rating = ratingFor(movie.title,movie.tmdbId);
     const emotionChips = EMOTIONS.map(function (emotion) {
       return '<button type="button" class="emotion-chip ' + (modalDraft.emotions.indexOf(emotion) >= 0 ? "selected" : "") + '" data-action="emotion" data-emotion="' + escapeHTML(emotion) + '">' + escapeHTML(emotion) + '</button>';
     }).join("");
@@ -1685,10 +1690,11 @@
     }).join("");
     root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal rating-sheet" role="dialog" aria-modal="true" aria-labelledby="ratingTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><h2 id="ratingTitle">Calificar</h2><p>' + escapeHTML(movie.title) + '</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="Cerrar">✕</button></div><div class="rating-score-large"><strong id="ratingPreview">' + modalDraft.rating + '</strong><span>/ 10</span></div><div class="rating-stars" aria-label="Selecciona una nota">' + stars + '</div><input id="ratingInput" type="hidden" value="' + modalDraft.rating + '">' +
       '<details class="rating-memories"><summary>Añadir recuerdos (opcional)</summary><div class="form-field"><span class="field-label">¿Qué emociones recuerdas?</span><div class="emotion-grid">' + emotionChips + '</div></div><div class="form-field"><label class="field-label" for="ratingNote">¿Qué fue lo que más te hizo sentir?</label><textarea class="field" id="ratingNote" rows="3" placeholder="Una frase basta; también puedes dejarlo vacío.">' + escapeHTML(modalDraft.note) + '</textarea></div></details>' +
-      '<div class="rating-sheet-actions">' + (rating ? '<button class="btn btn-danger-outline" type="button" data-action="delete-rating" data-title="' + escapeHTML(movie.title) + '">Eliminar</button>' : '<button class="btn btn-danger-outline" type="button" data-action="close-modal">Cancelar</button>') + '<button class="btn btn-primary" type="button" data-action="save-rating">Calificar</button></div></section></div>';
+      '<div class="rating-sheet-actions">' + (rating ? '<button class="btn btn-danger-outline" type="button" data-action="delete-rating" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">Eliminar</button>' : '<button class="btn btn-danger-outline" type="button" data-action="close-modal">Cancelar</button>') + '<button class="btn btn-primary" type="button" data-action="save-rating">Calificar</button></div></section></div>';
     const note = $("#ratingNote");
     if (note) note.addEventListener("input", function (event) { modalDraft.note = event.target.value; });
   }
+
 
   function updateRatingPreview(value) {
     if (!modalDraft) return;
@@ -1721,61 +1727,75 @@
       toast("La nota debe ser un número del 1 al 10.",true);
       return;
     }
-    const key = titleKey(movie.title);
-    const existingIndex = state.rated.findIndex(function (entry) { return titleKey(entry.title) === key; });
+    const existingIndex = state.rated.findIndex(function (entry) { return sameMovieRecord(entry,movie); });
     const old = existingIndex >= 0 ? state.rated[existingIndex] : {};
     const newEntry = Object.assign({},old,{
-      id:old.id || movie.id, tmdbId:movie.tmdbId || old.tmdbId || null,
-      title:movie.title, year:movie.year || old.year || null, rating:rating,
-      posterPath:movie.posterPath || old.posterPath || "", posterUrl:movie.posterUrl || old.posterUrl || "",
-      voteAverage:movie.voteAverage || old.voteAverage || null, runtime:movie.runtime || old.runtime || null,
-      overview:movie.overview || old.overview || "", releaseDate:movie.releaseDate || old.releaseDate || null,
-      backdropUrl:movie.backdropUrl || old.backdropUrl || "", tmdbFetchedAt:movie.tmdbFetchedAt || old.tmdbFetchedAt || null,
+      id:old.id || movie.id,tmdbId:movie.tmdbId || old.tmdbId || null,
+      title:movie.title,year:movie.year || old.year || null,rating:rating,
+      posterPath:movie.posterPath || old.posterPath || "",posterUrl:movie.posterUrl || old.posterUrl || "",
+      voteAverage:movie.voteAverage || old.voteAverage || null,runtime:movie.runtime || old.runtime || null,
+      overview:movie.overview || old.overview || "",releaseDate:movie.releaseDate || old.releaseDate || null,
+      backdropPath:movie.backdropPath || old.backdropPath || "",backdropUrl:movie.backdropUrl || old.backdropUrl || "",
+      tmdbFetchedAt:movie.tmdbFetchedAt || old.tmdbFetchedAt || null,
       metadataSource:movie.metadataSource || old.metadataSource || (movie.source === "tmdb" ? "tmdb" : null),
       genres:uniqueStrings((old.genres || []).concat(movie.genres || [])),
       tags:uniqueStrings((old.tags || []).concat(movie.tags || [])),
-      emotions:modalDraft.emotions.slice(), note:String(($("#ratingNote") || {}).value || "").trim(),
-      updatedAt:new Date().toISOString(), source:"manual"
+      emotions:modalDraft.emotions.slice(),note:String(($("#ratingNote") || {}).value || "").trim(),
+      updatedAt:new Date().toISOString(),source:"manual"
     });
     if (existingIndex >= 0) state.rated[existingIndex] = newEntry;
     else state.rated.unshift(newEntry);
-    state.watchlist = state.watchlist.filter(function (entry) { return titleKey(entry.title) !== key; });
-    const watchedIndex = (state.watched || []).findIndex(function (entry) { return titleKey(entry.title) === key; });
+    state.watchlist = state.watchlist.filter(function (entry) { return !sameMovieRecord(entry,movie); });
+    const watchedIndex = (state.watched || []).findIndex(function (entry) { return sameMovieRecord(entry,movie); });
     const oldWatched = watchedIndex >= 0 ? state.watched[watchedIndex] : null;
-    const watchedRecord = Object.assign({},oldWatched || {},newEntry,{watchedAt:(oldWatched && oldWatched.watchedAt) || old.watchedAt || old.updatedAt || new Date().toISOString()});
+    const watchedRecord = Object.assign({},oldWatched || {},newEntry,{
+      watchedAt:(oldWatched && oldWatched.watchedAt) || old.watchedAt || old.updatedAt || new Date().toISOString()
+    });
     if (watchedIndex >= 0) state.watched[watchedIndex] = watchedRecord;
     else state.watched.unshift(watchedRecord);
     logEvent("Valoración guardada: " + movie.title,"Nota " + rating + "/10" + (newEntry.emotions.length ? " · " + newEntry.emotions.length + " emociones registradas" : ""),"★");
     await persistState();
     const returnToDetails = ratingReturnDetail && Boolean(movieDetail);
-    modalDraft = null; ratingReturnDetail = false;
-    if (!returnToDetails) { movieDetail = null; $("#modalRoot").innerHTML = ""; }
+    modalDraft = null;ratingReturnDetail = false;
+    if (!returnToDetails) { movieDetail = null;$("#modalRoot").innerHTML = ""; }
     combineMovies();
     renderApp();
     if (returnToDetails) renderMovieDetails();
     toast("Tu experiencia quedó guardada en este dispositivo.");
   }
 
-  async function deleteRating(title) {
-    state.rated = state.rated.filter(function (entry) { return titleKey(entry.title) !== titleKey(title); });
+  async function deleteRating(title,tmdbId) {
+    const target = {title:title,tmdbId:tmdbId || (modalDraft && modalDraft.movie.tmdbId) || ""};
+    state.rated = state.rated.filter(function (entry) { return !sameMovieRecord(entry,target); });
     logEvent("Valoración eliminada",title,"−");
     await persistState();
     const returnToDetails = ratingReturnDetail && Boolean(movieDetail);
-    modalDraft = null; ratingReturnDetail = false;
-    if (!returnToDetails) { movieDetail = null; $("#modalRoot").innerHTML = ""; }
+    modalDraft = null;ratingReturnDetail = false;
+    if (!returnToDetails) { movieDetail = null;$("#modalRoot").innerHTML = ""; }
     combineMovies();
     renderApp();
     if (returnToDetails) renderMovieDetails();
     toast("Se quitó la valoración de " + title + ".");
   }
 
-  async function toggleWatchlist(title) {
-    const key = titleKey(title);
-    const movie = (movieDetail && titleKey(movieDetail.movie.title) === key ? movieDetail.movie : findMovie(title)) ||
-      state.rated.find(function (entry) { return titleKey(entry.title) === key; }) ||
-      {title:title,id:key,genres:[],tags:[]};
-    if (isInWatchlist(title)) {
-      state.watchlist = state.watchlist.filter(function (entry) { return titleKey(entry.title) !== key; });
+  function resolveMovieForAction(title,tmdbId) {
+    const active = movieDetail && titleKey(movieDetail.movie.title) === titleKey(title) ? movieDetail.movie : null;
+    const id = String(tmdbId || (active && active.tmdbId) || "");
+    const target = {title:title,tmdbId:id};
+    return (active && (!id || movieTmdbId(active) === id) ? active : null) ||
+      findMovie(title,id) ||
+      state.rated.find(function (entry) { return sameMovieRecord(entry,target); }) ||
+      state.watchlist.find(function (entry) { return sameMovieRecord(entry,target); }) ||
+      (state.watched || []).find(function (entry) { return sameMovieRecord(entry,target); }) ||
+      (state.hidden || []).find(function (entry) { return sameMovieRecord(entry,target); }) ||
+      {title:title,id:id || titleKey(title),tmdbId:id || null,genres:[],tags:[]};
+  }
+
+  async function toggleWatchlist(title,tmdbId) {
+    const movie = resolveMovieForAction(title,tmdbId);
+    const remove = isInWatchlist(movie.title,movie.tmdbId);
+    if (remove) {
+      state.watchlist = state.watchlist.filter(function (entry) { return !sameMovieRecord(entry,movie); });
       logEvent("Quitada de pendientes",title,"−");
       toast("Se quitó de tu lista.");
     } else {
@@ -1788,46 +1808,40 @@
     if (movieDetail) renderMovieDetails(); else renderApp();
   }
 
-  async function markWatched(title) {
-    const key = titleKey(title);
-    const source = (movieDetail && titleKey(movieDetail.movie.title) === key ? movieDetail.movie : findMovie(title)) ||
-      state.watchlist.find(function (entry) { return titleKey(entry.title) === key; }) ||
-      state.rated.find(function (entry) { return titleKey(entry.title) === key; }) ||
-      {title:title,id:key};
-    const index = (state.watched || []).findIndex(function (entry) { return titleKey(entry.title) === key; });
+  async function markWatched(title,tmdbId) {
+    const source = resolveMovieForAction(title,tmdbId);
+    const index = (state.watched || []).findIndex(function (entry) { return sameMovieRecord(entry,source); });
     const previous = index >= 0 ? state.watched[index] : null;
     const watched = Object.assign({},previous || {},source,{watchedAt:(previous && previous.watchedAt) || new Date().toISOString()});
     if (index >= 0) state.watched[index] = watched;
     else state.watched.unshift(watched);
-    state.watchlist = state.watchlist.filter(function (entry) { return titleKey(entry.title) !== key; });
+    state.watchlist = state.watchlist.filter(function (entry) { return !sameMovieRecord(entry,source); });
     logEvent("Añadida al historial",title,"✓");
     await persistState();
     combineMovies();
-    if (movieDetail) {
+    if (movieDetail && sameMovieRecord(movieDetail.movie,source)) {
       movieDetail.movie = Object.assign({},movieDetail.movie,watched);
       renderMovieDetails();
     } else renderApp();
     toast("Marcada como vista.");
   }
 
-  async function toggleHidden(title) {
-    const key = titleKey(title);
-    const remove = isHidden(title);
+  async function toggleHidden(title,tmdbId) {
+    const movie = resolveMovieForAction(title,tmdbId);
+    const remove = isHidden(movie.title,movie.tmdbId);
     if (remove) {
-      state.hidden = state.hidden.filter(function (entry) { return titleKey(entry.title) !== key; });
+      state.hidden = state.hidden.filter(function (entry) { return !sameMovieRecord(entry,movie); });
     } else {
-      const movie = (movieDetail && titleKey(movieDetail.movie.title) === key ? movieDetail.movie : findMovie(title)) ||
-        state.rated.find(function (entry) { return titleKey(entry.title) === key; }) ||
-        state.watchlist.find(function (entry) { return titleKey(entry.title) === key; }) ||
-        {title:title,id:key};
       state.hidden.unshift(Object.assign({},movie,{hiddenAt:new Date().toISOString()}));
     }
     logEvent(remove ? "Película mostrada" : "Película ocultada",title,"◌");
     await persistState();
     combineMovies();
-    if (movieDetail) renderMovieDetails(); else renderApp();
+    if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) renderMovieDetails();
+    else renderApp();
     toast(remove ? "La película vuelve a aparecer en Prisma." : "La película quedó oculta en tus recomendaciones.");
   }
+
 
 
   function movieMetadataFromJSON(root) {
@@ -2289,7 +2303,7 @@
       }
       if (action === "rating-star") { updateRatingPreview(button.dataset.rating); return; }
       if (action === "save-rating") { await saveRating(); return; }
-      if (action === "delete-rating") { await deleteRating(button.dataset.title); return; }
+      if (action === "delete-rating") { await deleteRating(button.dataset.title,button.dataset.tmdbId); return; }
       if (action === "emotion") {
         if (!modalDraft) return;
         const emotion = button.dataset.emotion, index = modalDraft.emotions.indexOf(emotion);
@@ -2304,22 +2318,22 @@
         return;
       }
       if (action === "retry-movie-detail") { if (movieDetail) { movieDetailCache.delete(String(movieDetail.movie.tmdbId || "")); loadMovieDetail(movieDetail.movie); } return; }
-      if (action === "toggle-watchlist") { if (button.dataset.title) await toggleWatchlist(button.dataset.title); return; }
+      if (action === "toggle-watchlist") { if (button.dataset.title) await toggleWatchlist(button.dataset.title,button.dataset.tmdbId); return; }
       if (action === "manage-pending") {
         const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await toggleWatchlist(title);
+        if (title) await toggleWatchlist(title,movieDetail && movieDetail.movie.tmdbId);
         if (utilitySheet) { utilitySheet = null; renderModal(); }
         return;
       }
       if (action === "mark-watched" || action === "manage-history") {
         const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await markWatched(title);
+        if (title) await markWatched(title,movieDetail && movieDetail.movie.tmdbId);
         if (utilitySheet) { utilitySheet = null; renderModal(); }
         return;
       }
       if (action === "toggle-hidden" || action === "manage-hidden") {
         const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await toggleHidden(title);
+        if (title) await toggleHidden(title,movieDetail && movieDetail.movie.tmdbId);
         if (utilitySheet) { utilitySheet = null; renderModal(); }
         return;
       }
@@ -2368,7 +2382,7 @@
       if (action === "person-filter") { personListFilter = button.dataset.filter || "all"; renderPersonDetails(); return; }
       if (action === "movie-from-person") {
         const title = button.dataset.title;
-        const movie = findMovie(title) || {title:title,id:button.dataset.tmdbId || titleKey(title),tmdbId:button.dataset.tmdbId || null,source:"tmdb"};
+        const movie = findMovie(title,button.dataset.tmdbId) || {title:title,id:button.dataset.tmdbId || titleKey(title),tmdbId:button.dataset.tmdbId || null,source:"tmdb"};
         personDetail = null; openModal(movie,"details"); return;
       }
       if (action === "open-trailer") {
