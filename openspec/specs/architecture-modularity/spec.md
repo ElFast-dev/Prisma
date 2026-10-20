@@ -32,6 +32,16 @@ Las pruebas automatizadas DEBEN invocar las funciones exportadas y dependencias 
 - CUANDO CI valida el comportamiento
 - ENTONCES las pruebas ejecutan el motor a través de su interfaz exportada con datos sintéticos y dependencias controladas.
 
+### Requirement: Sistema visual dividido por responsabilidad
+
+Las reglas visuales DEBEN residir en hojas de estilo con nombres que indiquen su responsabilidad; los cambios visuales deben mantener el orden de carga y comprobarse sin pasos de compilación.
+
+#### Scenario: Añadir un estilo de ficha de película
+
+- DADO que se crea o modifica un componente visual
+- CUANDO se prepara el cambio
+- ENTONCES las reglas se colocan en el módulo de estilos pertinente y CI comprueba su existencia y orden de carga.
+
 ### Requirement: Carga modular compatible con PWA
 
 La aplicación DEBE cargar los módulos nativos desde rutas relativas compatibles con GitHub Pages y el service worker DEBE incluir los módulos locales necesarios dentro de la caché versionada del shell.

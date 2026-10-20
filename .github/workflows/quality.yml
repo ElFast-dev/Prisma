@@ -37,6 +37,7 @@ jobs:
           node --check js/catalog/csv-parser.js
           node --check js/import-export/personal-data.js
           node --check js/tmdb/client.js
+          node scripts/test-style-modularity.mjs
           node --check js/tmdb/client.js
 
       - name: Check service worker syntax

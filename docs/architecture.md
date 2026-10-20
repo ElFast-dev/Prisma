@@ -18,7 +18,16 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/import-export/personal-data.js` | Reconocimiento de exportaciones personales, normalización y combinación de registros. |
 | `js/tmdb/client.js` | Credenciales, peticiones HTTP, errores, caché de géneros y conversión de respuestas TMDB. |
-| `styles.css` | Sistema visual, composición responsive, componentes y animaciones. |
+| `styles.css` | Tokens, base y estructura general. |
+| `styles/movie-cards.css` | Tarjetas y composición de películas. |
+| `styles/dialogs-feedback.css` | Diálogos, hojas modales y avisos. |
+| `styles/responsive.css` | Responsive inicial y movimiento reducido. |
+| `styles/visual-refinements.css` | Refinamientos visuales posteriores. |
+| `styles/collection.css` | Experiencia de colección. |
+| `styles/accessibility.css` | Interacción accesible y estados de foco. |
+| `styles/catalog.css` | Tarjetas poster-first de Descubrir. |
+| `styles/collection-content.css` | Jerarquía del contenido de colección. |
+| `styles/movie-details.css` | Ajustes de ficha y puntuaciones externas. |
 | `data/catalog.json` | Catálogo de muestra. |
 | `assets/prisma.svg` | Identidad gráfica. |
 | `manifest.webmanifest` | Metadatos PWA. |
