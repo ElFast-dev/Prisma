@@ -26,7 +26,7 @@ assert.equal(manifestLink[0][1], manifestUrl, 'El manifest debe tener una URL ve
 
 assert.equal(manifest.icons.length, 1, 'El manifest debe declarar un único icono principal.');
 assert.equal(manifest.icons[0].src, iconUrl, 'El manifest debe utilizar el mismo SVG versionado que HTML.');
-assert.ok(serviceWorker.includes('const CACHE_NAME = "prisma-shell-v48"'),
+assert.ok(serviceWorker.includes('const CACHE_NAME = "prisma-shell-v49"'),
   'El shell PWA debe aumentar a v48 al cambiar el icono.');
 assert.ok(serviceWorker.includes('"' + manifestUrl + '"'),
   'El service worker debe cachear la URL exacta del manifest.');
