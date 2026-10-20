@@ -101,6 +101,17 @@ jobs:
                 await page.locator(".tmdb-browser").waitFor({ state: "visible", timeout: 10000 });
                 await page.waitForTimeout(250);
                 await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: false, animations: "disabled" });
+                await page.locator(".bottom-nav [data-nav='library']").click();
+                await page.locator(".collection-page").waitFor({ state: "visible", timeout: 10000 });
+                await page.screenshot({ path: "artifacts/" + name + "-collection.png", fullPage: false, animations: "disabled" });
+                await page.locator(".collection-tool[data-action='open-sort']").click();
+                await page.locator(".utility-sheet .sheet-option").first().waitFor({ state: "visible", timeout: 10000 });
+                const sortCount = await page.locator(".utility-sheet .sheet-option").count();
+                if (sortCount !== 7) throw new Error(name + ": expected seven sort options, found " + sortCount);
+                await page.screenshot({ path: "artifacts/" + name + "-sort-sheet.png", fullPage: false, animations: "disabled" });
+                await page.locator("[data-action='close-sheet']").click();
+                await page.locator(".collection-mode-switch [data-mode='lists']").click();
+                await page.locator(".system-lists-grid").waitFor({ state: "visible", timeout: 10000 });
               } finally {
                 await context.close();
               }
