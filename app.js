@@ -1,26 +1,24 @@
+import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js";
+import { dbGet, dbSet } from "./js/core/storage.js";
+import { emptyState, ensureState } from "./js/core/state-model.js";
+import { movieFeatures } from "./js/recommendations/features.js";
+import { createRecommendationEngine } from "./js/recommendations/engine.js";
+import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
+import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
+
 (function () {
   "use strict";
 
   const $ = function (selector, root) { return (root || document).querySelector(selector); };
   const $$ = function (selector, root) { return Array.from((root || document).querySelectorAll(selector)); };
-  const DB_NAME = "prisma-local-v1";
-  const DB_STORE = "kv";
   const STATE_KEY = "state";
   const CATALOG_KEY = "catalogCustom";
   const TMDB_CREDENTIAL_KEY = "tmdbCredential";
   const TMDB_API_BASE = "https://api.themoviedb.org/3";
   const TMDB_LOGO_URL = "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg";
   const EMOTIONS = ["Asombro", "Alegría", "Tristeza", "Tensión", "Sorpresa", "Miedo", "Esperanza", "Curiosidad", "Empatía", "Nostalgia", "Frustración", "Alivio", "Ilusión", "Inquietud"];
-  const GENRE_LABELS = {
-    "science fiction": "Ciencia ficción", "sci-fi": "Ciencia ficción", "sci fi": "Ciencia ficción",
-    "thriller": "Suspenso", "mystery": "Misterio", "crime": "Crimen", "drama": "Drama",
-    "action": "Acción", "adventure": "Aventura", "fantasy": "Fantasía", "romance": "Romance",
-    "comedy": "Comedia", "horror": "Terror", "animation": "Animación", "anime": "Anime",
-    "war": "Bélica", "sport": "Deportes", "sports": "Deportes", "family": "Familiar",
-    "biography": "Biografía", "music": "Música", "history": "Historia", "documentary": "Documental"
-  };
+ 
 
-  let dbPromise = null;
   let seedCatalog = [];
   let customCatalog = [];
   let catalog = [];
@@ -60,177 +58,7 @@
   const personDetailCache = new Map();
   const COLLECTION_GENRES = ["Acción", "Animación", "Anime", "Aventura", "Ciencia ficción", "Comedia", "Crimen", "Documental", "Drama", "Fantasía", "Guerra", "Historia", "Romance", "Terror", "Thriller", "Western"];
 
-  function emptyState() {
-    return { version: 2, rated: [], watched: [], watchlist: [], hidden: [], events: [], updatedAt: null, importedAt: null };
-  }
-
-  function openDB() {
-    if (!("indexedDB" in window)) return Promise.resolve(null);
-    if (dbPromise) return dbPromise;
-    dbPromise = new Promise(function (resolve) {
-      const request = indexedDB.open(DB_NAME, 1);
-      request.onupgradeneeded = function () {
-        const db = request.result;
-        if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: "key" });
-      };
-      request.onsuccess = function () { resolve(request.result); };
-      request.onerror = function () { resolve(null); };
-      request.onblocked = function () { resolve(null); };
-    });
-    return dbPromise;
-  }
-
-  async function dbGet(key) {
-    const db = await openDB();
-    if (!db) {
-      try { return JSON.parse(localStorage.getItem("prisma:" + key) || "null"); } catch (_) { return null; }
-    }
-    return new Promise(function (resolve) {
-      const tx = db.transaction(DB_STORE, "readonly");
-      const request = tx.objectStore(DB_STORE).get(key);
-      request.onsuccess = function () { resolve(request.result ? request.result.value : null); };
-      request.onerror = function () {
-        try { resolve(JSON.parse(localStorage.getItem("prisma:" + key) || "null")); } catch (_) { resolve(null); }
-      };
-    });
-  }
-
-  async function dbSet(key, value) {
-    const db = await openDB();
-    if (!db) {
-      localStorage.setItem("prisma:" + key, JSON.stringify(value));
-      return;
-    }
-    return new Promise(function (resolve, reject) {
-      const tx = db.transaction(DB_STORE, "readwrite");
-      tx.objectStore(DB_STORE).put({ key: key, value: value });
-      tx.oncomplete = function () { resolve(); };
-      tx.onerror = function () {
-        try { localStorage.setItem("prisma:" + key, JSON.stringify(value)); resolve(); }
-        catch (error) { reject(error); }
-      };
-      tx.onabort = function () {
-        try { localStorage.setItem("prisma:" + key, JSON.stringify(value)); resolve(); }
-        catch (error) { reject(error); }
-      };
-    });
-  }
-
-  function escapeHTML(value) {
-    return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
-    });
-  }
-
-  function titleKey(value) {
-    return String(value || "")
-      .replace(/\s*\((19|20)\d{2}\)\s*$/, "")
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
-  }
-
-  function movieTmdbId(entry) {
-    const raw = entry && (entry.tmdbId || entry.tmId || entry.tmdb_id);
-    const numeric = Number(raw);
-    return Number.isSafeInteger(numeric) && numeric > 0 ? String(numeric) : "";
-  }
-
-  function movieIdentityKey(entry) {
-    const id = movieTmdbId(entry);
-    return id ? "tmdb:" + id : "title:" + titleKey(entry && entry.title);
-  }
-
-  function sameMovieRecord(left, right) {
-    if (!left || !right) return false;
-    const leftId = movieTmdbId(left);
-    const rightId = movieTmdbId(right);
-    if (leftId && rightId) return leftId === rightId;
-    return titleKey(left.title) === titleKey(right.title);
-  }
-
-  function sameDiscoveryMovie(left, right) {
-    if (!left || !right) return false;
-    const leftId = movieTmdbId(left);
-    const rightId = movieTmdbId(right);
-    if (leftId && rightId) return leftId === rightId;
-    const leftTitle = titleKey(left.title);
-    const rightTitle = titleKey(right.title);
-    if (!leftTitle || leftTitle !== rightTitle) return false;
-    const leftYear = Number(left.year) || 0;
-    const rightYear = Number(right.year) || 0;
-    return !leftYear || !rightYear || leftYear === rightYear;
-  }
-
-  function uniqueDiscoveryMovies(movies) {
-    const unique = [];
-    (movies || []).forEach(function (movie) {
-      if (!movie || !titleKey(movie.title)) return;
-      if (!unique.some(function (existing) { return sameDiscoveryMovie(existing,movie); })) unique.push(movie);
-    });
-    return unique;
-  }
-
-  function splitList(value) {
-    if (Array.isArray(value)) return value.map(function (v) { return String(v).trim(); }).filter(Boolean);
-    return String(value || "").split(/[|;,]/).map(function (v) { return v.trim(); }).filter(Boolean);
-  }
-
-  function displayGenre(value) {
-    const raw = String(value || "").trim();
-    return GENRE_LABELS[raw.toLowerCase()] || raw;
-  }
-
-  function normalizeMovie(movie) {
-    const title = movie && (movie.title || movie.t || movie.name || movie.original_title || movie.originalTitle);
-    if (!title) return null;
-    let year = Number(movie.year || movie.releaseYear || movie.release_year || 0) || null;
-    if (!year) {
-      const match = String(title).match(/\(((?:19|20)\d{2})\)\s*$/);
-      if (match) year = Number(match[1]);
-    }
-    const cleanTitle = String(title).replace(/\s*\(((?:19|20)\d{2})\)\s*$/, "").trim();
-    const genres = splitList(movie.genres || movie.genre || movie.g);
-    const tags = splitList(movie.tags || movie.keywords || movie.keywordsText || movie.labels);
-    const overview = movie.overview || movie.plot || movie.description || movie.synopsis || "";
-    const posterPath = movie.posterPath || movie.poster_path || "";
-    const tmdbId = movie.tmdbId || movie.tmId || movie.tmdb_id || (movie.source === "tmdb" ? movie.id : null);
-    return {
-      id: String(movie.id || movie.tmdbId || movie.tmId || movie.tmdb_id || movie.movieId || titleKey(cleanTitle)),
-      tmdbId: tmdbId && Number(tmdbId) > 0 ? String(tmdbId) : null,
-      title: cleanTitle,
-      year: year,
-      genres: genres.map(displayGenre),
-      tags: tags,
-      overview: String(overview || ""),
-      posterPath: posterPath,
-      posterUrl: movie.posterUrl || (posterPath ? "https://image.tmdb.org/t/p/w500" + posterPath : ""),
-      voteAverage: Number(movie.voteAverage || movie.vote_average || 0) || null,
-      voteCount: Number(movie.voteCount || movie.vote_count || 0) || null,
-      runtime: Number(movie.runtime || 0) || null,
-      releaseDate: movie.releaseDate || movie.release_date || null,
-      backdropPath: movie.backdropPath || movie.backdrop_path || "",
-      backdropUrl: movie.backdropUrl || (movie.backdropPath || movie.backdrop_path ? "https://image.tmdb.org/t/p/w1280" + (movie.backdropPath || movie.backdrop_path) : ""),
-      tagline: movie.tagline || "",
-      status: movie.status || "",
-      productionCountries: Array.isArray(movie.productionCountries) ? movie.productionCountries : (Array.isArray(movie.production_countries) ? movie.production_countries.map(function (country) { return country.name || country.iso_3166_1; }) : []),
-      imdbId: movie.imdbId || movie.imdb_id || "",
-      tmdbFetchedAt: movie.tmdbFetchedAt || null,
-      metadataSource: movie.metadataSource || null,
-      source: movie.source || "catalog"
-    };
-  }
-
-  function uniqueStrings(items) {
-    const seen = new Set();
-    return (items || []).map(function (item) { return String(item).trim(); }).filter(function (item) {
-      const key = item.toLowerCase();
-      if (!item || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-
-  function mergeCatalogFields(target, source) {
+     function mergeCatalogFields(target, source) {
     target.genres = uniqueStrings((target.genres || []).concat(source.genres || []));
     target.tags = uniqueStrings((target.tags || []).concat(source.tags || []));
     ["year","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
@@ -340,20 +168,7 @@
       .sort(function (a, b) { return a.localeCompare(b, "es"); });
   }
 
-  function movieFeatures(movie, ratingEntry) {
-    const entry = ratingEntry || {};
-    const genres = entry.genres && entry.genres.length ? entry.genres : (movie && movie.genres) || [];
-    const tags = entry.tags && entry.tags.length ? entry.tags : (movie && movie.tags) || [];
-    return uniqueStrings(genres.map(function (g) { return "género: " + String(g).toLowerCase(); })
-      .concat(tags.map(function (t) { return "tema: " + String(t).toLowerCase(); })));
-  }
-
-  function ratingValue(entry) {
-    const value = Number(entry && (entry.rating != null ? entry.rating : (entry.r != null ? entry.r : entry.score)));
-    return Number.isFinite(value) && value >= 1 && value <= 10 ? value : null;
-  }
-
-  function summaryStats() {
+   function summaryStats() {
     const ratings = state.rated.map(ratingValue).filter(function (value) { return value != null; });
     const average = ratings.length ? ratings.reduce(function (sum, value) { return sum + value; }, 0) / ratings.length : null;
     const matched = state.rated.filter(function (entry) {
@@ -830,81 +645,12 @@
     }
   }
 
-  function buildProfile(trainingRatings) {
-    const ratings = trainingRatings || state.rated;
-    const valid = ratings.filter(function (entry) { return ratingValue(entry) != null; });
-    const average = valid.length ? valid.reduce(function (sum, entry) { return sum + ratingValue(entry); }, 0) / valid.length : 6.5;
-    const features = new Map();
-    let withMetadata = 0;
-    valid.forEach(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
-      const names = movieFeatures(movie, entry);
-      if (!names.length) return;
-      withMetadata += 1;
-      const deviation = (ratingValue(entry) - average) / 4;
-      names.forEach(function (name) {
-        const item = features.get(name) || { sum: 0, count: 0, sumRating: 0 };
-        item.sum += deviation;
-        item.count += 1;
-        item.sumRating += ratingValue(entry);
-        features.set(name, item);
-      });
-    });
-    features.forEach(function (item) {
-      item.weight = item.sum / (item.count + 0.4);
-      item.mean = item.sumRating / item.count;
-    });
-    return { average: average, features: features, count: valid.length, withMetadata: withMetadata };
-  }
-
-  function predictRating(movie, profile) {
-    const features = movieFeatures(movie, null);
-    const matches = features.map(function (feature) {
-      const item = profile.features.get(feature);
-      if (!item) return null;
-      const signalWeight = feature.indexOf("tema: ") === 0 ? 0.35 : 1;
-      return {
-        name: feature.replace(/^género: |^tema: /, ""),
-        weight: item.weight,
-        influence: item.weight * signalWeight / Math.max(1, features.length),
-        signalWeight: signalWeight,
-        count: item.count,
-        mean: item.mean,
-        raw: feature
-      };
-    }).filter(Boolean);
-    const coverage = features.length ? matches.length / features.length : 0;
-    const weighted = features.length
-      ? matches.reduce(function (sum, item) { return sum + item.influence; }, 0)
-      : 0;
-    const freshFeatures = features.filter(function (feature) { return !profile.features.has(feature); }).length;
-    const score = Math.max(1, Math.min(10, profile.average + weighted * 2.3));
-    const positive = matches.filter(function (item) { return item.influence > 0.08; }).sort(function (a, b) { return b.influence - a.influence; });
-    const negative = matches.filter(function (item) { return item.influence < -0.08; }).sort(function (a, b) { return a.influence - b.influence; });
-    const confidence = !matches.length ? "Muy baja" : (profile.withMetadata < 8 ? "Inicial" :
-      (matches.length >= 2 && coverage >= 0.6 && matches.some(function (item) { return item.count >= 3; }) ? "Moderada" : "Limitada"));
-    let explanation;
-    if (positive.length) {
-      explanation = "Coincide con señales positivas de tu historial: " + positive.slice(0, 2).map(function (item) { return item.name; }).join(" y ") + ".";
-    } else if (negative.length) {
-      explanation = "Coincide con señales asociadas a notas más bajas en tu historial: " + negative.slice(0, 2).map(function (item) { return item.name; }).join(" y ") + ".";
-    } else if (matches.length) {
-      explanation = "Comparte características que aún no han mostrado una preferencia clara en tus notas.";
-    } else {
-      explanation = "Todavía no hay suficientes características enlazadas para explicar esta recomendación; se usa tu nota media como referencia.";
-    }
-    if (negative.length && positive.length > 0 && positive.length < 2) explanation += " Señal a vigilar: " + negative[0].name + ".";
-    if (matches.length && coverage < 0.5) explanation += " La mayoría de las características aún no están respaldadas por tu historial.";
-    return {
-      score: score,
-      matches: matches,
-      explanation: explanation,
-      confidence: confidence,
-      coverage: coverage,
-      freshFeatures: freshFeatures,
-      reasonFeatures: positive.slice(0, 3).map(function (item) { return item.name; })
-    };
-  }
+  const { buildProfile, predictRating, evaluateModel } = createRecommendationEngine({
+    getRatings: function () { return state.rated; },
+    findMovie: findMovie,
+    movieFeatures: movieFeatures,
+    ratingValue: ratingValue
+  });
 
   function getRecommendations(limit) {
     const profile = buildProfile();
@@ -931,31 +677,7 @@
     return selected;
   }
 
-  function evaluateModel() {
-    const mapped = state.rated.filter(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
-      return ratingValue(entry) != null && movieFeatures(movie, entry).length > 0;
-    });
-    if (mapped.length < 5) {
-      return { available: false, count: mapped.length, mae: null, baselineMae: null, improvementPct: null };
-    }
-    const errors = [];
-    const baselineErrors = [];
-    mapped.forEach(function (heldOut, index) {
-      const training = mapped.filter(function (_, i) { return i !== index; });
-      const profile = buildProfile(training);
-      const movie = findMovie(heldOut.title,heldOut.tmdbId || heldOut.tmId);
-      const predicted = predictRating(movie || heldOut, profile).score;
-      errors.push(Math.abs(predicted - ratingValue(heldOut)));
-      baselineErrors.push(Math.abs(profile.average - ratingValue(heldOut)));
-    });
-    const mae = errors.reduce(function (sum, error) { return sum + error; }, 0) / errors.length;
-    const baselineMae = baselineErrors.reduce(function (sum, error) { return sum + error; }, 0) / baselineErrors.length;
-    const improvementPct = baselineMae > 0 ? ((baselineMae - mae) / baselineMae) * 100 : null;
-    return { available: true, count: errors.length, mae: mae, baselineMae: baselineMae, improvementPct: improvementPct };
-  }
-
-  function genreStats() {
+   function genreStats() {
     const stats = new Map();
     state.rated.forEach(function (entry) {
       const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
@@ -1951,180 +1673,7 @@
 
 
 
-  function movieMetadataFromJSON(root) {
-    const scope = root && root.movies && typeof root.movies === "object" ? root.movies : root;
-    const metaById = new Map();
-    const metaByTmdb = new Map();
-    const arrays = Object.entries(scope || {}).filter(function (entry) { return Array.isArray(entry[1]); });
-    arrays.forEach(function (entry) {
-      const name = entry[0].toLowerCase();
-      if (/rating|rated|calif|^rm$|^rw$|episode|season|^pep$/.test(name)) return;
-      entry[1].forEach(function (raw) {
-        if (!raw || typeof raw !== "object") return;
-        const mediaType = String(raw.media_type || raw.mediaType || raw.type || "").toLowerCase();
-        if (mediaType === "tv" || mediaType === "series" || mediaType === "show") return;
-        const title = raw.t || raw.title || raw.name || raw.original_title;
-        if (!title) return;
-        const record = normalizeMovie(raw);
-        if (!record) return;
-        if (raw.id != null) metaById.set(String(raw.id), record);
-        if (raw.tmId != null) metaByTmdb.set(String(raw.tmId), record);
-        if (raw.tmdb_id != null) metaByTmdb.set(String(raw.tmdb_id), record);
-      });
-    });
-    return { scope: scope, metaById: metaById, metaByTmdb: metaByTmdb };
-  }
-
-  function extractPersonalCollections(root) {
-    const scope = root && root.movies && typeof root.movies === "object" ? root.movies : root;
-    const info = movieMetadataFromJSON(root);
-    function findArray(names) {
-      for (let i = 0; i < names.length; i += 1) {
-        const key = Object.keys(scope || {}).find(function (candidate) { return candidate.toLowerCase() === names[i].toLowerCase(); });
-        if (key && Array.isArray(scope[key])) return scope[key];
-      }
-      return [];
-    }
-    function convert(raw, type) {
-      if (!raw || typeof raw !== "object") return null;
-      const rawTmdb = raw.tmId != null ? raw.tmId : (raw.tmdbId != null ? raw.tmdbId : raw.tmdb_id);
-      const numericId = Number(rawTmdb);
-      const tmdbId = Number.isSafeInteger(numericId) && numericId > 0 ? String(numericId) : null;
-      const localId = raw.id != null ? String(raw.id) : "";
-      const matched = (tmdbId && info.metaByTmdb.get(tmdbId)) || info.metaById.get(localId) || null;
-      const title = raw.t || raw.title || raw.name || (matched && matched.title);
-      if (!title) return null;
-      const forNormalization = Object.assign({}, matched || {}, raw, {
-        id: localId || (matched && matched.id) || tmdbId || titleKey(title),
-        title: String(title),
-        tmId: tmdbId,
-        tmdbId: tmdbId,
-        year: (matched && matched.year) || raw.year || null,
-        source: "imported-json"
-      });
-      const movie = normalizeMovie(forNormalization);
-      if (!movie) return null;
-      if (!tmdbId) movie.tmdbId = null;
-      movie.source = "imported-json";
-      movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
-      if (type === "watched") movie.watchedAt = raw.a || raw.watchedAt || raw.watched_at || null;
-      if (type === "pending") movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
-      if (type === "hidden") movie.hiddenAt = raw.a || raw.hiddenAt || null;
-      return movie;
-    }
-    const watchedRaw = findArray(["cH","watched","history","watched_movies","watchedmovies"]);
-    const pendingRaw = findArray(["cW","watchlist","pending","watch_later","watchlater"]);
-    const hiddenRaw = findArray(["cHid","hidden","hidden_movies","hiddenmovies"]);
-    const watched = watchedRaw.map(function (raw) { return convert(raw, "watched"); }).filter(Boolean);
-    const watchlist = pendingRaw.map(function (raw) { return convert(raw, "pending"); }).filter(Boolean);
-    const hidden = hiddenRaw.map(function (raw) { return convert(raw, "hidden"); }).filter(Boolean);
-    const records = mergeMovieListByTitle([], watched.concat(watchlist, hidden));
-    return { watched:watched, watchlist:watchlist, hidden:hidden, records:records };
-  }
-
-  function hasImportedCollection(collection) {
-    return Boolean(collection && ((collection.watched && collection.watched.length) || (collection.watchlist && collection.watchlist.length) || (collection.hidden && collection.hidden.length)));
-  }
-
-  function isEmptyMovieValue(value) {
-    return value == null || value === "" || (Array.isArray(value) && value.length === 0);
-  }
-
-  function mergeMovieEntries(existing, incoming) {
-    const old = existing || {};
-    const fresh = incoming || {};
-    const merged = Object.assign({}, fresh, old);
-    Object.keys(fresh).forEach(function (key) {
-      if (isEmptyMovieValue(merged[key]) && !isEmptyMovieValue(fresh[key])) merged[key] = fresh[key];
-    });
-    merged.genres = uniqueStrings((old.genres || []).concat(fresh.genres || []));
-    merged.tags = uniqueStrings((old.tags || []).concat(fresh.tags || []));
-    return merged;
-  }
-
-  function mergeMovieListByTitle(existing, incoming) {
-    const map = new Map();
-    (existing || []).forEach(function (entry) {
-      if (entry && entry.title) map.set(movieIdentityKey(entry),entry);
-    });
-    (incoming || []).forEach(function (entry) {
-      if (!entry || !entry.title) return;
-      let key = movieIdentityKey(entry);
-      let previous = map.get(key);
-      if (!previous) {
-        const sameTitleWithoutIdentity = Array.from(map.entries()).filter(function (pair) {
-          return titleKey(pair[1].title) === titleKey(entry.title) &&
-            (!movieTmdbId(pair[1]) || !movieTmdbId(entry));
-        });
-        if (sameTitleWithoutIdentity.length === 1) {
-          const pair = sameTitleWithoutIdentity[0];
-          map.delete(pair[0]);
-          key = movieTmdbId(entry) ? movieIdentityKey(entry) : pair[0];
-          previous = pair[1];
-        }
-      }
-      map.set(key,mergeMovieEntries(previous,entry));
-    });
-    return Array.from(map.values());
-  }
-
-
-  function findRatingArrays(scope) {
-    const arrays = Object.entries(scope || {}).filter(function (entry) {
-      return Array.isArray(entry[1]) && /^(rm|ratings|ratedmovies|rated_movies|valoraciones|calificaciones|ratingsmovies)$/i.test(entry[0]);
-    });
-    return arrays.sort(function (a, b) {
-      return (/^rm$/i.test(a[0]) ? 0 : 1) - (/^rm$/i.test(b[0]) ? 0 : 1);
-    });
-  }
-
-
-  function extractPersonalRatings(root) {
-    const info = movieMetadataFromJSON(root);
-    const scope = info.scope;
-    let arrays = findRatingArrays(scope);
-    if (!arrays.length) arrays = findRatingArrays(root);
-    let rawRatings = [];
-    arrays.forEach(function (entry) { rawRatings = rawRatings.concat(entry[1]); });
-    const imported = [];
-    const seen = new Set();
-    rawRatings.forEach(function (raw) {
-      if (!raw || typeof raw !== "object") return;
-      const rating = ratingValue({ rating: raw.r != null ? raw.r : (raw.rating != null ? raw.rating : raw.score) });
-      if (rating == null) return;
-      const id = raw.id != null ? String(raw.id) : "";
-      const tmId = raw.tmId != null ? String(raw.tmId) : String(raw.tmdb_id || "");
-      const meta = info.metaById.get(id) || info.metaByTmdb.get(tmId);
-      const title = raw.t || raw.title || raw.name || (meta && meta.title);
-      if (!title) return;
-      const key = tmId && Number(tmId) > 0 ? "tmdb:" + tmId : "title:" + titleKey(title);
-      if (!titleKey(title) || seen.has(key)) return;
-      seen.add(key);
-      imported.push({
-        id: raw.id || (meta && meta.id) || key,
-        tmId: raw.tmId || raw.tmdb_id || (meta && meta.tmId) || null,
-        title: String(title).replace(/\s*\(((?:19|20)\d{2})\)\s*$/, ""),
-        year: (meta && meta.year) || raw.year || null,
-        rating: rating,
-        genres: meta ? meta.genres : splitList(raw.genres || raw.genre),
-        tags: meta ? meta.tags : splitList(raw.tags || raw.keywords),
-        emotions: [],
-        note: "",
-        rA: raw.rA || raw.createdAt || null,
-        updatedAt: raw.rA || raw.updatedAt || null,
-        source: "imported"
-      });
-    });
-    if (!imported.length && root && Array.isArray(root.rated)) {
-      root.rated.forEach(function (raw) {
-        const rating = ratingValue(raw);
-        if (rating != null && (raw.title || raw.name)) imported.push(Object.assign({}, normalizeMovie(raw), { rating: rating, emotions: raw.emotions || [], note: raw.note || "", updatedAt: raw.updatedAt || null, source: "imported" }));
-      });
-    }
-    return { ratings: imported, metadataRecords: info.metaById.size, ratingArrays: arrays.map(function (item) { return item[0]; }), rawRatingCount: rawRatings.length, skippedRatings: Math.max(0, rawRatings.length - imported.length) };
-  }
-
-  async function importPersonalJSON(file) {
+   async function importPersonalJSON(file) {
     const text = await file.text();
     const parsed = JSON.parse(text);
     if (parsed && parsed.format === "prisma-backup" && parsed.state) {
@@ -2184,78 +1733,7 @@
   }
 
 
-  function parseCSVLine(line, delimiter) {
-    const result = [];
-    let value = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i += 1) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') { value += '"'; i += 1; }
-        else inQuotes = !inQuotes;
-      } else if (char === delimiter && !inQuotes) {
-        result.push(value);
-        value = "";
-      } else value += char;
-    }
-    result.push(value);
-    return result;
-  }
-
-  function parseCatalogCSV(text) {
-    const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(function (line) { return line.trim().length > 0; });
-    if (lines.length < 2) throw new Error("El CSV parece vacío o no contiene filas de películas.");
-    const delimiter = lines[0].indexOf("\t") >= 0 && lines[0].indexOf(",") < 0 ? "\t" : ",";
-    const headers = parseCSVLine(lines[0], delimiter).map(function (header) { return header.toLowerCase().trim().replace(/^"|"$/g, ""); });
-    function column(names) {
-      for (let i = 0; i < names.length; i += 1) {
-        const index = headers.indexOf(names[i]);
-        if (index >= 0) return index;
-      }
-      return -1;
-    }
-    const titleIndex = column(["title", "t", "name", "original_title"]);
-    if (titleIndex < 0) throw new Error("El CSV necesita una columna title o name.");
-    const yearIndex = column(["year", "release_year", "year_released"]);
-    const genreIndex = column(["genres", "genre"]);
-    const tagsIndex = column(["tags", "keywords", "labels"]);
-    const overviewIndex = column(["overview", "plot", "description", "synopsis"]);
-    const idIndex = column(["movieid", "movie_id", "id"]);
-    const tmdbIdIndex = column(["tmdbid", "tmdb_id"]);
-    const catalogRows = [];
-    const seen = new Set();
-    for (let i = 1; i < lines.length; i += 1) {
-      const values = parseCSVLine(lines[i], delimiter);
-      const title = values[titleIndex] ? values[titleIndex].trim() : "";
-      if (!title) continue;
-      let year = yearIndex >= 0 ? Number(values[yearIndex]) || null : null;
-      const match = title.match(/\(((?:19|20)\d{2})\)\s*$/);
-      if (!year && match) year = Number(match[1]);
-      const cleanTitle = title.replace(/\s*\(((?:19|20)\d{2})\)\s*$/, "");
-      const rawTmdbId = tmdbIdIndex >= 0 ? String(values[tmdbIdIndex] || "").trim() : "";
-      const numericTmdbId = Number(rawTmdbId);
-      const tmdbId = /^\d+$/.test(rawTmdbId) && Number.isSafeInteger(numericTmdbId) && numericTmdbId > 0 ? String(numericTmdbId) : null;
-      const normalizedTitle = titleKey(cleanTitle);
-      const key = tmdbId ? "tmdb:" + tmdbId : "title:" + normalizedTitle;
-      if (!normalizedTitle || seen.has(key)) continue;
-      seen.add(key);
-      catalogRows.push({
-        id: idIndex >= 0 && values[idIndex] ? String(values[idIndex]) : (tmdbId || normalizedTitle),
-        tmdbId: tmdbId,
-        title: cleanTitle,
-        year: year,
-        genres: genreIndex >= 0 ? splitList(values[genreIndex]).filter(function (genre) { return genre.toLowerCase() !== "(no genres listed)"; }).map(displayGenre) : [],
-        tags: tagsIndex >= 0 ? splitList(values[tagsIndex]) : [],
-        overview: overviewIndex >= 0 ? values[overviewIndex] || "" : "",
-        source: "csv"
-      });
-      if (catalogRows.length >= 150000) break;
-    }
-    if (!catalogRows.length) throw new Error("No se encontraron filas válidas en el catálogo.");
-    return catalogRows;
-  }
-
-  async function importCatalogCSV(file) {
+   async function importCatalogCSV(file) {
     const parsed = parseCatalogCSV(await file.text());
     const map = new Map(customCatalog.map(function (movie) { return [movieIdentityKey(movie), movie]; }));
     parsed.forEach(function (movie) {
@@ -2280,26 +1758,7 @@
     toast("Catálogo ampliado: " + parsed.length.toLocaleString("es-PA") + " títulos importados. Se guardan solo en tu navegador.");
   }
 
-  function ensureState(value) {
-    const defaults = emptyState();
-    const incoming = value && typeof value === "object" ? value : {};
-    function validList(name) {
-      return Array.isArray(incoming[name]) ? incoming[name].filter(function (entry) { return entry && entry.title; }).map(function (entry) { return Object.assign({}, entry, {title:String(entry.title)}); }) : [];
-    }
-    return Object.assign(defaults, incoming, {
-      version: 2,
-      rated: Array.isArray(incoming.rated) ? incoming.rated.filter(function (entry) { return entry && entry.title && ratingValue(entry) != null; }).map(function (entry) {
-        return Object.assign({}, entry, { title: String(entry.title), rating: ratingValue(entry), emotions: Array.isArray(entry.emotions) ? entry.emotions : [], genres: splitList(entry.genres), tags: splitList(entry.tags) });
-      }) : [],
-      watched: validList("watched"),
-      watchlist: validList("watchlist"),
-      hidden: validList("hidden"),
-      events: Array.isArray(incoming.events) ? incoming.events.slice(0, 80) : []
-    });
-  }
-
-
-  async function exportBackup() {
+   async function exportBackup() {
     const backup = {
       format: "prisma-backup",
       version: 1,

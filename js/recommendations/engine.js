@@ -1,0 +1,109 @@
+export function createRecommendationEngine(dependencies) {
+  const getRatings = dependencies.getRatings;
+  const findMovie = dependencies.findMovie;
+  const movieFeatures = dependencies.movieFeatures;
+  const ratingValue = dependencies.ratingValue;
+
+  function buildProfile(trainingRatings) {
+    const ratings = trainingRatings || getRatings();
+    const valid = ratings.filter(function (entry) { return ratingValue(entry) != null; });
+    const average = valid.length ? valid.reduce(function (sum, entry) { return sum + ratingValue(entry); }, 0) / valid.length : 6.5;
+    const features = new Map();
+    let withMetadata = 0;
+    valid.forEach(function (entry) {
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
+      const names = movieFeatures(movie, entry);
+      if (!names.length) return;
+      withMetadata += 1;
+      const deviation = (ratingValue(entry) - average) / 4;
+      names.forEach(function (name) {
+        const item = features.get(name) || { sum: 0, count: 0, sumRating: 0 };
+        item.sum += deviation;
+        item.count += 1;
+        item.sumRating += ratingValue(entry);
+        features.set(name, item);
+      });
+    });
+    features.forEach(function (item) {
+      item.weight = item.sum / (item.count + 0.4);
+      item.mean = item.sumRating / item.count;
+    });
+    return { average: average, features: features, count: valid.length, withMetadata: withMetadata };
+  }
+  
+  function predictRating(movie, profile) {
+    const features = movieFeatures(movie, null);
+    const matches = features.map(function (feature) {
+      const item = profile.features.get(feature);
+      if (!item) return null;
+      const signalWeight = feature.indexOf("tema: ") === 0 ? 0.35 : 1;
+      return {
+        name: feature.replace(/^género: |^tema: /, ""),
+        weight: item.weight,
+        influence: item.weight * signalWeight / Math.max(1, features.length),
+        signalWeight: signalWeight,
+        count: item.count,
+        mean: item.mean,
+        raw: feature
+      };
+    }).filter(Boolean);
+    const coverage = features.length ? matches.length / features.length : 0;
+    const weighted = features.length
+      ? matches.reduce(function (sum, item) { return sum + item.influence; }, 0)
+      : 0;
+    const freshFeatures = features.filter(function (feature) { return !profile.features.has(feature); }).length;
+    const score = Math.max(1, Math.min(10, profile.average + weighted * 2.3));
+    const positive = matches.filter(function (item) { return item.influence > 0.08; }).sort(function (a, b) { return b.influence - a.influence; });
+    const negative = matches.filter(function (item) { return item.influence < -0.08; }).sort(function (a, b) { return a.influence - b.influence; });
+    const confidence = !matches.length ? "Muy baja" : (profile.withMetadata < 8 ? "Inicial" :
+      (matches.length >= 2 && coverage >= 0.6 && matches.some(function (item) { return item.count >= 3; }) ? "Moderada" : "Limitada"));
+    let explanation;
+    if (positive.length) {
+      explanation = "Coincide con señales positivas de tu historial: " + positive.slice(0, 2).map(function (item) { return item.name; }).join(" y ") + ".";
+    } else if (negative.length) {
+      explanation = "Coincide con señales asociadas a notas más bajas en tu historial: " + negative.slice(0, 2).map(function (item) { return item.name; }).join(" y ") + ".";
+    } else if (matches.length) {
+      explanation = "Comparte características que aún no han mostrado una preferencia clara en tus notas.";
+    } else {
+      explanation = "Todavía no hay suficientes características enlazadas para explicar esta recomendación; se usa tu nota media como referencia.";
+    }
+    if (negative.length && positive.length > 0 && positive.length < 2) explanation += " Señal a vigilar: " + negative[0].name + ".";
+    if (matches.length && coverage < 0.5) explanation += " La mayoría de las características aún no están respaldadas por tu historial.";
+    return {
+      score: score,
+      matches: matches,
+      explanation: explanation,
+      confidence: confidence,
+      coverage: coverage,
+      freshFeatures: freshFeatures,
+      reasonFeatures: positive.slice(0, 3).map(function (item) { return item.name; })
+    };
+  }
+  
+  
+  function evaluateModel() {
+    const mapped = getRatings().filter(function (entry) {
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
+      return ratingValue(entry) != null && movieFeatures(movie, entry).length > 0;
+    });
+    if (mapped.length < 5) {
+      return { available: false, count: mapped.length, mae: null, baselineMae: null, improvementPct: null };
+    }
+    const errors = [];
+    const baselineErrors = [];
+    mapped.forEach(function (heldOut, index) {
+      const training = mapped.filter(function (_, i) { return i !== index; });
+      const profile = buildProfile(training);
+      const movie = findMovie(heldOut.title,heldOut.tmdbId || heldOut.tmId);
+      const predicted = predictRating(movie || heldOut, profile).score;
+      errors.push(Math.abs(predicted - ratingValue(heldOut)));
+      baselineErrors.push(Math.abs(profile.average - ratingValue(heldOut)));
+    });
+    const mae = errors.reduce(function (sum, error) { return sum + error; }, 0) / errors.length;
+    const baselineMae = baselineErrors.reduce(function (sum, error) { return sum + error; }, 0) / baselineErrors.length;
+    const improvementPct = baselineMae > 0 ? ((baselineMae - mae) / baselineMae) * 100 : null;
+    return { available: true, count: errors.length, mae: mae, baselineMae: baselineMae, improvementPct: improvementPct };
+  }
+
+  return { buildProfile, predictRating, evaluateModel };
+}

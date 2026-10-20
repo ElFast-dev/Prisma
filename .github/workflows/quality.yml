@@ -26,11 +26,25 @@ jobs:
       - name: Check JavaScript syntax
         run: node --check app.js
 
+      - name: Check native module syntax
+        run: |
+          node --check app.js
+          node --check js/core/movie-utils.js
+          node --check js/core/storage.js
+          node --check js/core/state-model.js
+          node --check js/recommendations/features.js
+          node --check js/recommendations/engine.js
+          node --check js/catalog/csv-parser.js
+          node --check js/import-export/personal-data.js
+
       - name: Check service worker syntax
         run: node --check sw.js
 
       - name: Validate SDD documents
         run: node scripts/validate-sdd.mjs
+
+      - name: Test modular architecture
+        run: node scripts/test-modular-architecture.mjs
 
       - name: Test CSV import identity
         run: node scripts/test-catalog-import.mjs
