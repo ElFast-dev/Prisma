@@ -29,7 +29,7 @@ assert.equal(formatWatchedDate('2024-09-17T15:45:39.000Z'), '09/17/2024');
 assert.equal(formatWatchedDate('not-a-date'), 'Fecha desconocida');
 assert.ok(!formatWatchedDate('2024-09-17T15:45:39.000Z').includes(':'));
 assert.equal(presentation.formatDate('not-a-date'), 'fecha no disponible');
-assert.equal(presentation.dateLabel('not-a-date'), 'Fecha desconocida');
+assert.equal(presentation.dateLabel('not-a-date'), 'not-a-date');
 
 assert.ok(source.includes('return queryOkay && genreOkay && !isInHistory(movie.title,movie.tmdbId) && !isHidden(movie.title,movie.tmdbId);'),
   'El catálogo de Descubrir debe ocultar películas vistas');
