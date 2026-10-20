@@ -143,7 +143,7 @@ jobs:
                 await page.locator("[data-action='show-info'][data-info='collection']").click();
                 await page.locator(".info-sheet").waitFor({ state: "visible", timeout: 10000 });
                 await page.screenshot({ path: "artifacts/" + name + "-info-sheet.png", fullPage: false, animations: "disabled" });
-                await page.locator("[data-action='close-sheet']").click();
+                await page.locator(".info-sheet .sheet-accept").click();
                 await page.locator(".collection-mode-switch [data-mode='lists']").click();
                 await page.locator(".system-lists-grid").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
