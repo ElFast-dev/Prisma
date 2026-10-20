@@ -37,6 +37,7 @@ jobs:
           node --check js/catalog/csv-parser.js
           node --check js/import-export/personal-data.js
           node --check js/tmdb/client.js
+          node --check js/tmdb/client.js
 
       - name: Check service worker syntax
         run: node --check sw.js
@@ -46,6 +47,9 @@ jobs:
 
       - name: Test modular architecture
         run: node scripts/test-modular-architecture.mjs
+
+      - name: Test isolated TMDB client
+        run: node scripts/test-tmdb-client.mjs
 
       - name: Test CSV import identity
         run: node scripts/test-catalog-import.mjs

@@ -86,7 +86,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261020-17") &&
-                  lastUI.appSrc.includes("v=ui-20261020-22") &&
+                  lastUI.appSrc.includes("v=ui-20261020-23") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&

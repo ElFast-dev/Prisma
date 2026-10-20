@@ -25,6 +25,7 @@ const requiredFiles = [
   'js/import-export/personal-data.js',
   'js/tmdb/client.js',
   'scripts/test-modular-architecture.mjs',
+  'scripts/test-tmdb-client.mjs',
   'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/proposal.md',
   'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/design.md',
   'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/tasks.md',
