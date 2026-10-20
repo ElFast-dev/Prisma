@@ -17,12 +17,17 @@ function escapeHTML(value) {
 }
 
 const helpersSource = section('  function formatVoteCount(value) {', '  function renderMovieDetails() {');
-const helpers = new Function('escapeHTML', helpersSource + '\nreturn { formatVoteCount, buildRatingMetrics };')(escapeHTML);
+const helpers = new Function('escapeHTML', helpersSource + '\nreturn { formatVoteCount, hasTrustedTMDBScore, buildRatingMetrics };')(escapeHTML);
 assert.equal(helpers.formatVoteCount(1), '1 voto');
 assert.equal(helpers.formatVoteCount(0), '');
 assert.equal(helpers.formatVoteCount(-2), '');
 assert.equal(helpers.formatVoteCount(1.5), '');
 assert.equal(helpers.formatVoteCount('no-dato'), '');
+assert.equal(helpers.hasTrustedTMDBScore({voteAverage: 8.1, source: 'tmdb'}), true);
+assert.equal(helpers.hasTrustedTMDBScore({voteAverage: 8.1, metadataSource: 'tmdb'}), true);
+assert.equal(helpers.hasTrustedTMDBScore({voteAverage: 8.1, source: 'catalog'}), false);
+assert.equal(helpers.hasTrustedTMDBScore({voteAverage: 11, source: 'tmdb'}), false);
+assert.equal(helpers.hasTrustedTMDBScore({voteAverage: 0, source: 'tmdb'}), false);
 
 const sourcedScore = helpers.buildRatingMetrics({
   title: 'Prisma & Metadatos', tmdbId: '990001', voteAverage: 8.2, voteCount: 1432, metadataSource: 'tmdb'
@@ -52,6 +57,8 @@ const unverifiedScore = helpers.buildRatingMetrics({
 }, {});
 assert.ok(!unverifiedScore.includes('<strong>9.9</strong>'), 'Una cifra sin origen TMDB confirmado no debe mostrarse como nota pública');
 assert.ok(!unverifiedScore.includes('876 votos'));
+assert.ok(source.includes('const publicRating = hasTrustedTMDBScore(item) ?'), 'Colección no debe presentar puntuaciones sin procedencia confirmada');
+assert.ok(source.includes('(hasTrustedTMDBScore(a) ? Number(a.voteAverage) : 0) - (hasTrustedTMDBScore(b) ? Number(b.voteAverage) : 0)'), 'El orden público solo usa notas TMDB verificadas');
 
 assert.ok(source.includes('voteCount: Number(movie.voteCount || movie.vote_count || 0) || null'));
 assert.ok(source.includes('voteCount: Number(raw.vote_count) || null'));
