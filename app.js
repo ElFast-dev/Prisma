@@ -668,7 +668,7 @@
     const target = $("#tmdbResults");
     if (!status || !target) return;
     if (!tmdbCredential || !tmdbCredential.value) {
-      status.innerHTML = '<p class="kicker" style="margin:0">Para explorar el catálogo completo, conecta tus credenciales personales de TMDB.</p><div style="margin-top:10px"><button class="btn btn-secondary btn-small" type="button" data-nav="data">Conectar con TMDB</button></div>';
+      status.innerHTML = '<button class="btn btn-secondary btn-small" type="button" data-nav="data">Conectar con TMDB</button>';
       target.innerHTML = '';
       return;
     }
@@ -1146,7 +1146,7 @@
     return (recent.length ? '<section class="recent-section"><div class="collection-section-title"><h2>Añadidos recientemente</h2><span>Últimos 4</span></div><div class="recent-grid">' + recent.map(recentPoster).join("") + '</div></section>' : "") +
       '<div class="collection-list-heading"><h2>' + title + ' <span>(' + all.length.toLocaleString("es-PA") + ')</span></h2><span class="sort-summary">' + escapeHTML(sortLabels[collectionSort] || "Añadidos recientemente") + '</span></div>' +
       (all.length ? (collectionLayout === "compact" ? '<div class="collection-compact-grid">' + all.map(function (item) { return collectionCompactCard(item); }).join("") + '</div>' : '<div class="collection-list">' + all.map(function (item) { return collectionRow(item,tab); }).join("") + '</div>') :
-        '<div class="empty-state collection-empty"><div class="empty-icon">' + (tab === "hidden" ? "◌" : "▣") + '</div><h3>' + noItems + '</h3><p>' + (tab === "history" ? "Cuando marques una película como vista o la califiques, aparecerá aquí." : (tab === "pending" ? "Explora el catálogo y añade películas que te apetezca ver." : "Puedes ocultar un título desde su ficha para que no aparezca en las recomendaciones.")) + '</p><button class="btn btn-secondary" type="button" data-nav="catalog">Descubrir películas</button></div>');
+        '<div class="empty-state collection-empty"><div class="empty-icon">' + (tab === "hidden" ? "◌" : "▣") + '</div><h3>' + noItems + '</h3><p>' + (tab === "history" ? "Sin películas vistas." : (tab === "pending" ? "Sin películas pendientes." : "Sin películas ocultas.")) + '</p><button class="btn btn-secondary" type="button" data-nav="catalog">Descubrir películas</button></div>');
   }
 
   function refreshCollectionContent() {
@@ -1536,7 +1536,7 @@
       (similarMarkup ? '<section class="detail-section"><div class="detail-section-heading"><h3>También podría gustarte</h3></div>' + similarMarkup + '</section>' : "") +
       (movieDetail.loading ? '<div class="detail-loading"><span class="spinner"></span><p>Completando la ficha con TMDB…</p></div>' : "") +
       (movieDetail.error ? '<div class="notice detail-error"><strong>No se pudo completar la ficha.</strong> ' + escapeHTML(movieDetail.error) + '<button class="btn btn-secondary btn-small" type="button" data-action="retry-movie-detail">Reintentar</button></div>' : "") +
-      (!data && !movieDetail.loading ? '<div class="detail-connection-note"><p>La información básica está disponible. Conecta TMDB en Ajustes para ver reparto, plataformas, tráiler y recomendaciones.</p><button class="btn btn-secondary" type="button" data-nav="data">Conectar TMDB</button></div>' : "") +
+      (!data && !movieDetail.loading ? '<div class="detail-connection-note"><span>Completar ficha</span>' + infoButton("tmdb","Información sobre cómo se completa la ficha") + '<button class="btn btn-secondary btn-small" type="button" data-nav="data">Conectar TMDB</button></div>' : "") +
       '</div></div></section></div>';
   }
 
