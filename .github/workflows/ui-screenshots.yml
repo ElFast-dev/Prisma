@@ -177,6 +177,7 @@ jobs:
                 });
                 await page.locator(".bottom-nav [data-nav='library']").click();
                 await page.locator(".collection-page").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".collection-mode-switch [data-mode='movies']").click();
                 await page.locator(".collection-tabs [data-tab='history']").click();
                 await page.locator(".collection-row-main[data-title='Prisma Test Seen']").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".collection-tabs [data-tab='pending']").click();
