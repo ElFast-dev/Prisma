@@ -2,7 +2,7 @@
 
 ## Estado
 
-En curso. La guía visual de Prisma está disponible en Canva y esta propuesta define cómo trasladar esa dirección a la aplicación real.
+Aceptada, integrada en `main` y archivada el 2026-10-20 tras la validación del PR #13. La guía visual editable permanece disponible en Canva.
 
 ## Motivación
 

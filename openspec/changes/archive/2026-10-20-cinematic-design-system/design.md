@@ -27,3 +27,15 @@ No se agrega movimiento nuevo. Los cambios de color y bordes reutilizan las tran
 ## Verificación
 
 Añadir pruebas estáticas para tokens, prioridad del orden CSS, URLs exactas y movimiento reducido. Actualizar el flujo Playwright para comprobar tanto `--bg` como `--accent`; los flujos ya existentes siguen ejercitando navegación, pósteres, colección, diálogos y viewport móvil. La revisión visual final depende de que pase el workflow de UI sobre la compilación previa a la fusión y sobre la web publicada después de desplegar.
+
+## Evidencia de verificación final
+
+- PR #13 integrado: https://github.com/ElFast-dev/Prisma/pull/13
+- SDD y calidad en el PR: https://github.com/ElFast-dev/Prisma/actions/runs/39516013820
+- Validación de Prisma en el PR: https://github.com/ElFast-dev/Prisma/actions/runs/39516013790
+- Playwright en escritorio y móvil sobre el PR: https://github.com/ElFast-dev/Prisma/actions/runs/39516013796
+- SDD y calidad tras la fusión: https://github.com/ElFast-dev/Prisma/actions/runs/39516168908
+- Validación de Prisma tras la fusión: https://github.com/ElFast-dev/Prisma/actions/runs/39516168907
+- GitHub Pages desplegado: https://github.com/ElFast-dev/Prisma/actions/runs/39516168988
+- UI publicada comprobada en escritorio y móvil: https://github.com/ElFast-dev/Prisma/actions/runs/39516242722
+- Capturas de la UI publicada: https://github.com/ElFast-dev/Prisma/actions/runs/39516242722/artifacts/12307952757
