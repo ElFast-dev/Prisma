@@ -70,6 +70,7 @@ jobs:
                   const poster = document.querySelector(".poster-art");
                   return {
                     cssHref: link && link.href,
+                    appSrc: (document.querySelector('script[src*="app.js"]') || {}).src || "",
                     rootBg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
                     headlineFont: getComputedStyle(heading).fontFamily,
                     navRadius: getComputedStyle(nav).borderRadius,
@@ -84,7 +85,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-13") &&
+                  lastUI.cssHref.includes("v=ui-20261020-14") &&
+                  lastUI.appSrc.includes("v=ui-20261020-15") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
@@ -113,7 +115,24 @@ jobs:
 
               try {
                 await openFreshPage(page, name + "-home");
+                const onboarding = page.locator(".progress-onboarding");
+                await onboarding.waitFor({ state: "visible", timeout: 10000 });
+                const onboardingTitle = (await onboarding.locator("#progress-onboarding-title").innerText()).trim();
+                if (onboardingTitle !== "Empieza a construir tu perfil") {
+                  throw new Error(name + ": first-run guidance was not shown with the expected title");
+                }
+                const onboardingDestinations = await onboarding.locator(".progress-onboarding-actions [data-nav]")
+                  .evaluateAll(nodes => nodes.map(node => node.getAttribute("data-nav")));
+                if (JSON.stringify(onboardingDestinations) !== JSON.stringify(["catalog", "data"])) {
+                  throw new Error(name + ": onboarding actions do not lead to Discover and Data: " + JSON.stringify(onboardingDestinations));
+                }
                 await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: false, animations: "disabled" });
+                await onboarding.locator(".progress-onboarding-actions [data-nav='catalog']").click();
+                await page.locator(".discover-heading h1").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".topbar [data-nav='data']").click();
+                await page.locator(".settings-grid").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".bottom-nav [data-nav='home']").click();
+                await page.locator(".progress-onboarding").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
                 await page.locator(".tmdb-browser").waitFor({ state: "visible", timeout: 10000 });
                 await page.waitForTimeout(250);
@@ -160,6 +179,10 @@ jobs:
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 if (!(await page.locator(".detail-action-strip").innerText()).includes("8/10")) throw new Error(name + ": the saved rating did not return to the film detail.");
                 await page.locator(".detail-sheet [data-action='close-modal']").click();
+                await page.locator(".bottom-nav [data-nav='home']").click();
+                if (await page.locator(".progress-onboarding").count() !== 0) {
+                  throw new Error(name + ": first-run guidance remained visible after saving a valid rating");
+                }
                 await page.locator(".topbar [data-nav='data']").click();
                 await page.locator("#jsonImportInput").setInputFiles({
                   name: "prisma-import-test.json",
