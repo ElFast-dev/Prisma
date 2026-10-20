@@ -31,6 +31,10 @@ Los archivos y rutas son relativos para funcionar en `https://elfast-dev.github.
 3. Revisa el número de películas detectadas y las que tienen metadatos suficientes.
 4. Para una copia de seguridad, usa **Exportar mis datos**. La copia contiene tu perfil personal; no la subas al repositorio público.
 
+## Enlazar tu historial con TMDB
+
+Tras importar el JSON y conectar TMDB, abre **Laboratorio → Enlazar mi historial con TMDB** y pulsa el botón de enriquecimiento. Prisma usa el `tmId` del JSON para solicitar los detalles de cada película; para IDs no válidos intenta una búsqueda exacta por título y año. Las series viven en otra sección del archivo y no se importan como películas. Las notas y emociones no se alteran. El proceso se muestra con progreso y guarda resultados en el navegador cada cinco películas para reducir pérdidas si se cierra la pestaña.
+
 ## Ampliar el catálogo
 Puedes importar un CSV con columnas como `title`, `year`, `genres`, `tags` y `overview`, o el formato MovieLens `movieId,title,genres`. Para MovieLens, el archivo pequeño `movies.csv` es suficiente para aportar títulos y géneros; no es necesario importar su archivo de valoraciones. Comprueba y respeta las condiciones de licencia del conjunto de datos que elijas. En este proyecto la importación ocurre en tu navegador.
 
