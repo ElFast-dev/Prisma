@@ -14,7 +14,7 @@ const files = [
   'js/recommendations/features.js',
   'js/recommendations/engine.js',
   'js/catalog/csv-parser.js',
-  'js/catalog/catalog-model.js?v=core-20261020-1',
+  'js/catalog/catalog-model.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
