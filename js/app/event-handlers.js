@@ -1,6 +1,5 @@
 export function registerAppEvents(ctx) {
   const posterRefreshRequested = new Set();
-  const posterRefreshRequested = new Set();
   ctx.document.addEventListener("error",function (event) {
     const image = event.target;
     if (!(image instanceof ctx.HTMLImageElement)) return;
