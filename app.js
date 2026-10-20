@@ -7,6 +7,9 @@
   const DB_STORE = "kv";
   const STATE_KEY = "state";
   const CATALOG_KEY = "catalogCustom";
+  const TMDB_CREDENTIAL_KEY = "tmdbCredential";
+  const TMDB_API_BASE = "https://api.themoviedb.org/3";
+  const TMDB_LOGO_URL = "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg";
   const EMOTIONS = ["Asombro", "Alegría", "Tristeza", "Tensión", "Sorpresa", "Miedo", "Esperanza", "Curiosidad", "Empatía", "Nostalgia", "Frustración", "Alivio", "Ilusión", "Inquietud"];
   const GENRE_LABELS = {
     "science fiction": "Ciencia ficción", "sci-fi": "Ciencia ficción", "sci fi": "Ciencia ficción",
@@ -27,6 +30,16 @@
   let catalogQuery = "";
   let activeGenre = "Todos";
   let modalDraft = null;
+  let tmdbCredential = null;
+  let tmdbGenres = new Map();
+  let tmdbResults = [];
+  let tmdbPage = 1;
+  let tmdbTotalPages = 1;
+  let tmdbMode = "popular";
+  let tmdbLoading = false;
+  let tmdbError = "";
+  let tmdbSearchTimer = null;
+  let tmdbRequestSerial = 0;
 
   function emptyState() {
     return { version: 1, rated: [], watchlist: [], events: [], updatedAt: null, importedAt: null };
@@ -119,13 +132,22 @@
     const genres = splitList(movie.genres || movie.genre || movie.g);
     const tags = splitList(movie.tags || movie.keywords || movie.keywordsText || movie.labels);
     const overview = movie.overview || movie.plot || movie.description || movie.synopsis || "";
+    const posterPath = movie.posterPath || movie.poster_path || "";
+    const tmdbId = movie.tmdbId || movie.tmId || movie.tmdb_id || (movie.source === "tmdb" ? movie.id : null);
     return {
-      id: String(movie.id || movie.tmId || movie.tmdb_id || movie.movieId || titleKey(cleanTitle)),
+      id: String(movie.id || movie.tmdbId || movie.tmId || movie.tmdb_id || movie.movieId || titleKey(cleanTitle)),
+      tmdbId: tmdbId ? String(tmdbId) : null,
       title: cleanTitle,
       year: year,
       genres: genres.map(displayGenre),
       tags: tags,
       overview: String(overview || ""),
+      posterPath: posterPath,
+      posterUrl: movie.posterUrl || (posterPath ? "https://image.tmdb.org/t/p/w500" + posterPath : ""),
+      voteAverage: Number(movie.voteAverage || movie.vote_average || 0) || null,
+      runtime: Number(movie.runtime || 0) || null,
+      tmdbFetchedAt: movie.tmdbFetchedAt || null,
+      metadataSource: movie.metadataSource || null,
       source: movie.source || "catalog"
     };
   }
@@ -156,18 +178,36 @@
         previous.year = previous.year || movie.year;
         previous.overview = previous.overview || movie.overview;
         previous.id = previous.id || movie.id;
+        previous.tmdbId = previous.tmdbId || movie.tmdbId;
+        previous.posterPath = previous.posterPath || movie.posterPath;
+        previous.posterUrl = previous.posterUrl || movie.posterUrl;
+        previous.voteAverage = previous.voteAverage || movie.voteAverage;
+        previous.runtime = previous.runtime || movie.runtime;
+        previous.tmdbFetchedAt = previous.tmdbFetchedAt || movie.tmdbFetchedAt;
+        previous.metadataSource = previous.metadataSource || movie.metadataSource;
       }
     });
     state.rated.forEach(function (rating) {
       if (!rating.title) return;
       const key = titleKey(rating.title);
+      const historyMovie = normalizeMovie(rating);
+      if (!historyMovie) return;
       if (!map.has(key)) {
-        const historyMovie = normalizeMovie(rating);
-        if (historyMovie) {
-          historyMovie.key = key;
-          historyMovie.source = "history";
-          map.set(key, historyMovie);
-        }
+        historyMovie.key = key;
+        historyMovie.source = "history";
+        map.set(key, historyMovie);
+      } else {
+        const existing = map.get(key);
+        existing.genres = uniqueStrings(existing.genres.concat(historyMovie.genres));
+        existing.tags = uniqueStrings(existing.tags.concat(historyMovie.tags));
+        existing.overview = existing.overview || historyMovie.overview;
+        existing.posterPath = existing.posterPath || historyMovie.posterPath;
+        existing.posterUrl = existing.posterUrl || historyMovie.posterUrl;
+        existing.tmdbId = existing.tmdbId || historyMovie.tmdbId;
+        existing.voteAverage = existing.voteAverage || historyMovie.voteAverage;
+        existing.runtime = existing.runtime || historyMovie.runtime;
+        existing.tmdbFetchedAt = existing.tmdbFetchedAt || historyMovie.tmdbFetchedAt;
+        existing.metadataSource = existing.metadataSource || historyMovie.metadataSource;
       }
     });
     catalog = Array.from(map.values()).sort(function (a, b) { return a.title.localeCompare(b.title, "es"); });
@@ -384,6 +424,7 @@
     const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + escapeHTML(movie.title) + '">' + actionLabel + '</button></div>';
     return '<article class="movie-card">' +
       '<div class="poster-art" role="img" aria-label="Tarjeta de ' + escapeHTML(movie.title) + '" style="background:radial-gradient(circle at 75% 22%,hsla(' + hue + ',65%,65%,.35),transparent 42%),linear-gradient(145deg,hsl(' + hue + ',32%,25%),#13131d 66%,hsl(' + ((hue + 70) % 360) + ',28%,19%))">' +
+      (movie.posterUrl ? '<img class="poster-image" src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
       '<span class="poster-symbol">✦</span><strong class="poster-title">' + escapeHTML(movie.title) + '</strong><span class="poster-year">' + escapeHTML(movie.year || "Película") + '</span></div>' +
       '<div class="movie-copy"><h3 class="movie-title">' + escapeHTML(movie.title) + '</h3><div class="movie-meta">' + escapeHTML(meta || "Metadatos pendientes") + '</div>' + score + detail + '</div></article>';
   }
@@ -611,9 +652,17 @@
     const old = existingIndex >= 0 ? state.rated[existingIndex] : {};
     const newEntry = Object.assign({}, old, {
       id: old.id || movie.id,
+      tmdbId: movie.tmdbId || old.tmdbId || null,
       title: movie.title,
       year: movie.year || old.year || null,
       rating: rating,
+      posterPath: movie.posterPath || old.posterPath || "",
+      posterUrl: movie.posterUrl || old.posterUrl || "",
+      voteAverage: movie.voteAverage || old.voteAverage || null,
+      runtime: movie.runtime || old.runtime || null,
+      overview: movie.overview || old.overview || "",
+      tmdbFetchedAt: movie.tmdbFetchedAt || old.tmdbFetchedAt || null,
+      metadataSource: movie.metadataSource || old.metadataSource || (movie.source === "tmdb" ? "tmdb" : null),
       genres: uniqueStrings((old.genres || []).concat(movie.genres || [])),
       tags: uniqueStrings((old.tags || []).concat(movie.tags || [])),
       emotions: modalDraft.emotions.slice(),
@@ -649,7 +698,7 @@
       logEvent("Quitada de pendientes", title, "−");
       toast("Se quitó de tu lista.");
     } else {
-      state.watchlist.unshift({ id: movie.id, title: movie.title, year: movie.year || null, genres: movie.genres || [], tags: movie.tags || [], addedAt: new Date().toISOString() });
+      state.watchlist.unshift({ id: movie.id, tmdbId: movie.tmdbId || null, title: movie.title, year: movie.year || null, genres: movie.genres || [], tags: movie.tags || [], posterPath: movie.posterPath || "", posterUrl: movie.posterUrl || "", overview: movie.overview || "", tmdbFetchedAt: movie.tmdbFetchedAt || null, metadataSource: movie.metadataSource || (movie.source === "tmdb" ? "tmdb" : null), addedAt: new Date().toISOString() });
       logEvent("Añadida a pendientes", title, "＋");
       toast("Añadida a tu lista para verla después.");
     }
