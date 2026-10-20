@@ -110,7 +110,8 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   const pageViews = createPageViews({
     get $() { return $; },
     get $() { return $; },
-    get state() { return state; },
+    get cardColor() { return cardColor; },
+    get state() { return state; }
     get catalog() { return catalog; },
     get currentPage() { return currentPage; },
     get catalogQuery() { return catalogQuery; },
