@@ -159,6 +159,7 @@ jobs:
                 await page.locator(".rating-sheet [data-action='save-rating']").click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 if (!(await page.locator(".detail-action-strip").innerText()).includes("8/10")) throw new Error(name + ": the saved rating did not return to the film detail.");
+                await page.locator(".detail-sheet [data-action='close-modal']").click();
                 await page.locator(".topbar [data-nav='data']").click();
                 await page.locator("#jsonImportInput").setInputFiles({
                   name: "prisma-import-test.json",
