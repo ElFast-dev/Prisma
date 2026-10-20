@@ -43,3 +43,6 @@ jobs:
 
       - name: Test model evaluation identity and baseline
         run: node scripts/test-model-evaluation.mjs
+
+      - name: Test coordinated PWA cache versions
+        run: node scripts/test-cache-versioning.mjs
