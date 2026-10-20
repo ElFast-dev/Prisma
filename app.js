@@ -1229,52 +1229,368 @@
   }
 
   function openModal(movie, mode) {
-    const root = $("#modalRoot");
-    if (!root || !movie) return;
+    if (!movie) return;
     const existing = ratingFor(movie.title);
-    modalDraft = {
-      movie: movie,
-      mode: mode || "details",
-      rating: existing ? ratingValue(existing) : 7,
-      emotions: existing && Array.isArray(existing.emotions) ? existing.emotions.slice() : [],
-      note: existing && existing.note ? existing.note : ""
-    };
+    const nextMode = mode || "details";
+    if (nextMode === "rate") {
+      ratingReturnDetail = Boolean(movieDetail);
+      modalDraft = {
+        movie: movie,
+        mode: "rate",
+        rating: existing ? ratingValue(existing) : 7,
+        emotions: existing && Array.isArray(existing.emotions) ? existing.emotions.slice() : [],
+        note: existing && existing.note ? existing.note : ""
+      };
+      utilitySheet = null;
+      renderModal();
+      return;
+    }
+    movieDetail = { movie: movie, data: null, loading: false, error: "" };
+    personDetail = null;
+    modalDraft = null;
+    utilitySheet = null;
+    ratingReturnDetail = false;
     renderModal();
-    if (tmdbCredential && tmdbCredential.value && (movie.tmdbId || movie.source === "tmdb")) enrichTMDBMovie(movie);
+    if (tmdbCredential && tmdbCredential.value && movie.tmdbId) loadMovieDetail(movie);
   }
 
   function renderModal() {
     const root = $("#modalRoot");
+    if (!root) return;
+    if (utilitySheet) { renderUtilitySheet(); return; }
+    if (personDetail) { renderPersonDetails(); return; }
+    if (modalDraft && modalDraft.mode === "rate") { renderRatingSheet(); return; }
+    if (movieDetail) { renderMovieDetails(); return; }
+    root.innerHTML = "";
+  }
+
+  function openUtilitySheet(type) {
+    utilitySheet = { type: type, sort: collectionSort, direction: collectionDirection, genres: collectionGenres.slice() };
+    renderModal();
+  }
+
+  function renderUtilitySheet() {
+    const root = $("#modalRoot");
+    if (!root || !utilitySheet) return;
+    if (utilitySheet.type === "sort") {
+      const options = [
+        {key:"title",label:"Título",hint:"Orden alfabético"},
+        {key:"public",label:"Mejores valorados",hint:"Nota pública de TMDB"},
+        {key:"rating",label:"Mi valoración",hint:"Tu nota del 1 al 10"},
+        {key:"runtime",label:"Duración",hint:"Películas más largas o cortas"},
+        {key:"release",label:"Más reciente",hint:"Fecha de estreno"},
+        {key:"added",label:"Añadidos recientemente",hint:"Fecha en que guardaste la película"},
+        {key:"random",label:"Aleatorio",hint:"Mezcla la lista"}
+      ];
+      root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal utility-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><div class="eyebrow">PERSONALIZA TU LISTA</div><h2 id="sheetTitle">Ordenar por</h2></div><button class="modal-close" type="button" data-action="close-sheet" aria-label="Cerrar">✕</button></div><button class="sort-direction" type="button" data-action="toggle-sort-direction"><span>Dirección del orden</span><strong>' + (utilitySheet.direction === "asc" ? "Ascendente ↑" : "Descendente ↓") + '</strong></button><div class="sheet-options">' + options.map(function (item) {
+        const active = utilitySheet.sort === item.key;
+        return '<button type="button" class="sheet-option ' + (active ? "active" : "") + '" data-action="choose-sort" data-sort="' + item.key + '"><span><strong>' + item.label + '</strong><small>' + item.hint + '</small></span><span class="sheet-option-mark">' + (active ? (utilitySheet.direction === "asc" ? "↑" : "↓") : "") + '</span></button>';
+      }).join("") + '</div><button class="btn btn-primary sheet-accept" type="button" data-action="accept-sort">Aceptar</button></section></div>';
+      return;
+    }
+    if (utilitySheet.type === "genres") {
+      const genres = uniqueStrings(COLLECTION_GENRES.concat(allGenres())).sort(function (a, b) { return a.localeCompare(b, "es"); });
+      root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal utility-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><div class="eyebrow">AFINA LA SELECCIÓN</div><h2 id="sheetTitle">Géneros</h2></div><button class="modal-close" type="button" data-action="close-sheet" aria-label="Cerrar">✕</button></div><p class="kicker">Puedes seleccionar varios géneros. Se mostrarán películas que coincidan con al menos uno.</p><div class="sheet-genre-grid">' + genres.map(function (genre) {
+        const selected = utilitySheet.genres.some(function (value) { return titleKey(value) === titleKey(genre); });
+        return '<button type="button" class="sheet-genre ' + (selected ? "selected" : "") + '" data-action="toggle-sheet-genre" data-genre="' + escapeHTML(genre) + '" aria-pressed="' + selected + '"><span>' + escapeHTML(genre) + '</span><b>' + (selected ? "✓" : "+") + '</b></button>';
+      }).join("") + '</div><div class="sheet-footer-actions"><button class="btn btn-quiet" type="button" data-action="clear-sheet-genres">Limpiar</button><button class="btn btn-primary" type="button" data-action="accept-genres">Aceptar</button></div></section></div>';
+      return;
+    }
+    const current = movieDetail ? movieDetail.movie : null;
+    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal utility-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><div class="eyebrow">TU COLECCIÓN</div><h2 id="sheetTitle">Gestionar listas</h2><p>' + escapeHTML(current ? current.title : "") + '</p></div><button class="modal-close" type="button" data-action="close-sheet" aria-label="Cerrar">✕</button></div><div class="manage-list-actions"><button class="manage-list-action" type="button" data-action="manage-history"><span>✓</span><strong>' + (current && isInHistory(current.title) ? "Ya está en tu historial" : "Añadir al historial") + '</strong><small>Marcar como vista sin necesidad de poner una nota.</small></button><button class="manage-list-action" type="button" data-action="manage-pending"><span>＋</span><strong>' + (current && isInWatchlist(current.title) ? "Quitar de pendientes" : "Añadir a pendientes") + '</strong><small>Guardar para verla más adelante.</small></button><button class="manage-list-action" type="button" data-action="manage-hidden"><span>◌</span><strong>' + (current && isHidden(current.title) ? "Mostrar en Prisma" : "Ocultar película") + '</strong><small>Controla si aparece en Descubrir y en tus listas visibles.</small></button></div></section></div>';
+  }
+
+  async function softTMDBRequest(path, params) {
+    try { return await tmdbRequest(path, params || {}); } catch (_) { return null; }
+  }
+
+  async function loadMovieDetail(movie) {
+    const id = String(movie.tmdbId || "");
+    if (!id || !tmdbCredential || !tmdbCredential.value) return;
+    if (movieDetailCache.has(id)) {
+      if (movieDetail && titleKey(movieDetail.movie.title) === titleKey(movie.title)) {
+        const cached = movieDetailCache.get(id);
+        movieDetail.movie = cached.movie;
+        movieDetail.data = cached.data;
+        movieDetail.loading = false;
+        renderModal();
+      }
+      return;
+    }
+    if (!movieDetail || titleKey(movieDetail.movie.title) !== titleKey(movie.title)) return;
+    movieDetail.loading = true;
+    renderModal();
+    try {
+      const raw = await tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "credits,videos,release_dates,external_ids,keywords,recommendations,similar" });
+      const providerResponse = await softTMDBRequest("/movie/" + encodeURIComponent(id) + "/watch/providers", {});
+      const normalized = fromTMDB(raw);
+      const backdropPath = raw.backdrop_path || normalized.backdropPath || "";
+      const detailsMovie = Object.assign({}, movieDetail.movie, normalized, {
+        id:String(raw.id || id), tmdbId:String(raw.id || id), title:raw.title || movieDetail.movie.title,
+        originalTitle:raw.original_title || "", releaseDate:raw.release_date || null,
+        backdropPath:backdropPath, backdropUrl:backdropPath ? "https://image.tmdb.org/t/p/w1280" + backdropPath : "",
+        tagline:raw.tagline || "", status:raw.status || "", runtime:Number(raw.runtime) || movieDetail.movie.runtime || null,
+        productionCountries:Array.isArray(raw.production_countries) ? raw.production_countries.map(function (country) { return country.name || country.iso_3166_1; }) : [],
+        imdbId:raw.external_ids && raw.external_ids.imdb_id ? raw.external_ids.imdb_id : (raw.imdb_id || ""),
+        collection:raw.belongs_to_collection || null, popularity:Number(raw.popularity) || null
+      });
+      const providerRoot = providerResponse && providerResponse.results ? providerResponse.results : {};
+      const data = {
+        credits:raw.credits || {}, videos:raw.videos && raw.videos.results ? raw.videos.results : [],
+        externalIds:raw.external_ids || {},
+        recommendations:raw.recommendations && raw.recommendations.results ? raw.recommendations.results.map(fromTMDB) : [],
+        similar:raw.similar && raw.similar.results ? raw.similar.results.map(fromTMDB) : [],
+        providers:providerRoot.PA || providerRoot.US || null,
+        providerResults:providerRoot,
+        releaseDates:raw.release_dates && raw.release_dates.results ? raw.release_dates.results : []
+      };
+      if (movieDetail && titleKey(movieDetail.movie.title) === titleKey(movie.title)) {
+        movieDetail.movie = detailsMovie; movieDetail.data = data; movieDetail.loading = false; movieDetail.error = "";
+        movieDetailCache.set(id,{movie:detailsMovie,data:data});
+        await persistMovieMetadata(detailsMovie);
+        renderModal();
+      }
+    } catch (error) {
+      if (movieDetail && titleKey(movieDetail.movie.title) === titleKey(movie.title)) {
+        movieDetail.loading = false; movieDetail.error = error.message || "No se pudo cargar la ficha de TMDB."; renderModal();
+      }
+    }
+  }
+
+  async function persistMovieMetadata(movie) {
+    if (!movie || !movie.title) return;
+    const key = titleKey(movie.title);
+    const metadata = {};
+    ["id","tmdbId","year","genres","tags","overview","posterPath","posterUrl","voteAverage","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
+      if (movie[field] !== undefined && movie[field] !== null && movie[field] !== "") metadata[field] = movie[field];
+    });
+    function mergeMatching(list) {
+      return (list || []).map(function (entry) { return titleKey(entry.title) === key ? Object.assign({},entry,metadata) : entry; });
+    }
+    state.rated = mergeMatching(state.rated);
+    state.watched = mergeMatching(state.watched);
+    state.watchlist = mergeMatching(state.watchlist);
+    state.hidden = mergeMatching(state.hidden);
+    const index = customCatalog.findIndex(function (entry) { return titleKey(entry.title) === key; });
+    if (index >= 0) customCatalog[index] = Object.assign({},customCatalog[index],metadata,{title:movie.title,source:"tmdb"});
+    else customCatalog.unshift(Object.assign({},metadata,{title:movie.title,source:"tmdb"}));
+    await dbSet(CATALOG_KEY,customCatalog);
+    await persistState();
+    combineMovies();
+  }
+
+  function niceRuntime(minutes) {
+    const runtime = Number(minutes);
+    if (!runtime || runtime < 1) return "—";
+    return Math.floor(runtime / 60) + " h " + String(runtime % 60).padStart(2,"0") + " min";
+  }
+
+  function dateLabel(value) {
+    if (!value) return "Fecha desconocida";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("es-PA",{day:"numeric",month:"long",year:"numeric"}).format(date);
+  }
+
+  function displayMovieStatus(status) {
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "released") return "Estrenada";
+    if (normalized.indexOf("post") >= 0) return "Post-producción";
+    if (normalized.indexOf("production") >= 0) return "En producción";
+    if (normalized.indexOf("planned") >= 0) return "En desarrollo";
+    return status || "Estado desconocido";
+  }
+
+  function externalMovieUrl(movie, externalIds) {
+    const imdb = (externalIds && externalIds.imdb_id) || (movie && movie.imdbId);
+    return imdb ? "https://www.imdb.com/title/" + encodeURIComponent(imdb) + "/" :
+      (movie && movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movie.tmdbId) : "https://www.themoviedb.org/");
+  }
+
+  function personImage(path) {
+    return path ? "https://image.tmdb.org/t/p/w185" + path : "";
+  }
+
+  function renderMovieDetails() {
+    const root = $("#modalRoot");
+    if (!root || !movieDetail) return;
+    const movie = movieDetail.movie, data = movieDetail.data, rating = ratingFor(movie.title);
+    const seen = isInHistory(movie.title), pending = isInWatchlist(movie.title), hidden = isHidden(movie.title);
+    const backdrop = movie.backdropUrl || movie.posterUrl || "";
+    const genreChips = (movie.genres || []).slice(0,6).map(function (genre) { return '<span class="detail-chip">' + escapeHTML(displayGenre(genre)) + '</span>'; }).join("");
+    const countryLine = (movie.productionCountries || []).slice(0,3).join(" · ");
+    const release = movie.releaseDate ? dateLabel(movie.releaseDate) : (movie.year || "Estreno no disponible");
+    const stateButton = seen ?
+      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(dateLabel(latestRecordDate(rating || movie) || movie.releaseDate)) + '</small></button>' :
+      (pending ?
+        '<button class="btn btn-secondary detail-state-button" type="button" data-action="manage-pending"><span aria-hidden="true">✓</span> Añadido a pendientes</button><button class="btn btn-primary" type="button" data-action="mark-watched">Marcar como vista</button>' :
+        '<button class="btn btn-primary" type="button" data-action="manage-history">Añadir al historial</button><button class="btn btn-secondary" type="button" data-action="manage-pending">＋ Pendientes</button>');
+    const publicScore = Number(movie.voteAverage) > 0 ? Number(movie.voteAverage).toFixed(1) : "—";
+    const voteLink = movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movie.tmdbId) : "https://www.themoviedb.org/";
+    const externalIds = data && data.externalIds ? data.externalIds : {};
+    const imdbUrl = externalMovieUrl(movie,externalIds);
+    const criticUrl = "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title);
+    const metacriticUrl = "https://www.metacritic.com/search/" + encodeURIComponent(movie.title) + "/";
+    const ratingMetrics =
+      '<div class="detail-rating-card"><strong>' + publicScore + '</strong><span>Comunidad</span><small>TMDB</small></div>' +
+      '<a class="detail-rating-card rating-external" href="' + escapeHTML(imdbUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Base de cine</span><small>IMDb</small></a>' +
+      '<a class="detail-rating-card rating-external" href="' + escapeHTML(criticUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Críticos</span><small>Rotten Tomatoes</small></a>' +
+      '<a class="detail-rating-card rating-external" href="' + escapeHTML(metacriticUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Audiencia / crítica</span><small>Metacritic</small></a>';
+    const cast = data && data.credits && Array.isArray(data.credits.cast) ? data.credits.cast.slice(0,14) : [];
+    const crew = data && data.credits && Array.isArray(data.credits.crew) ? data.credits.crew : [];
+    const director = crew.find(function (person) { return person.job === "Director"; });
+    const writers = crew.filter(function (person) { return /writer|screenplay|story/i.test(String(person.job || "")); }).slice(0,4);
+    const music = crew.find(function (person) { return /original music|composer|music/i.test(String(person.job || "")); });
+    const crewChips =
+      (director ? '<button class="crew-person" type="button" data-action="person-details" data-person-id="' + director.id + '" data-person-name="' + escapeHTML(director.name) + '"><small>Dirección</small><strong>' + escapeHTML(director.name) + '</strong></button>' : "") +
+      writers.map(function (person) { return '<button class="crew-person" type="button" data-action="person-details" data-person-id="' + person.id + '" data-person-name="' + escapeHTML(person.name) + '"><small>' + escapeHTML(person.job || "Guion") + '</small><strong>' + escapeHTML(person.name) + '</strong></button>'; }).join("") +
+      (music ? '<button class="crew-person" type="button" data-action="person-details" data-person-id="' + music.id + '" data-person-name="' + escapeHTML(music.name) + '"><small>Música</small><strong>' + escapeHTML(music.name) + '</strong></button>' : "");
+    const castMarkup = cast.length ? '<div class="person-carousel">' + cast.map(function (person) {
+      return '<button class="cast-person" type="button" data-action="person-details" data-person-id="' + person.id + '" data-person-name="' + escapeHTML(person.name) + '" data-character="' + escapeHTML(person.character || "") + '"><span class="cast-photo">' + (person.profile_path ? '<img src="' + escapeHTML(personImage(person.profile_path)) + '" alt="" loading="lazy">' : '<span>●</span>') + '</span><strong>' + escapeHTML(person.name) + '</strong><small>' + escapeHTML(person.character || "Reparto") + '</small></button>';
+    }).join("") + '</div>' : '<p class="kicker">El reparto aparecerá aquí cuando la ficha de TMDB esté disponible.</p>';
+    const providers = data && data.providers ? data.providers : null;
+    const providerCards = [];
+    if (providers) ["flatrate","free","ads","rent","buy"].forEach(function (kind) {
+      (providers[kind] || []).forEach(function (provider) {
+        if (!providerCards.some(function (existing) { return existing.id === provider.provider_id; })) providerCards.push({id:provider.provider_id,name:provider.provider_name,logo:provider.logo_path,kind:kind});
+      });
+    });
+    const providerMarkup = providerCards.length ? '<div class="provider-list">' + providerCards.map(function (provider) {
+      const label = provider.kind === "flatrate" ? "Streaming" : (provider.kind === "rent" ? "Alquiler" : (provider.kind === "buy" ? "Compra" : "Gratis / anuncios"));
+      return '<a class="provider-chip" href="' + escapeHTML(providers.link || voteLink + "/watch") + '" target="_blank" rel="noopener noreferrer">' + (provider.logo ? '<img src="https://image.tmdb.org/t/p/w92' + escapeHTML(provider.logo) + '" alt="" loading="lazy">' : "") + '<span><strong>' + escapeHTML(provider.name) + '</strong><small>' + label + '</small></span></a>';
+    }).join("") + '</div>' : (data ? '<p class="kicker">TMDB no muestra plataformas de streaming para esta película y región. <a href="' + escapeHTML(voteLink + "/watch") + '" target="_blank" rel="noopener noreferrer">Consultar disponibilidad ↗</a></p>' : '<p class="kicker">Conecta TMDB en Ajustes para consultar plataformas disponibles.</p>');
+    const collection = data && movie.collection ? movie.collection : null;
+    const collectionMarkup = collection ? '<a class="saga-card" href="https://www.themoviedb.org/collection/' + encodeURIComponent(collection.id) + '" target="_blank" rel="noopener noreferrer"><span class="saga-art">' + (collection.poster_path ? '<img src="https://image.tmdb.org/t/p/w185' + escapeHTML(collection.poster_path) + '" alt="" loading="lazy">' : "▣") + '</span><span><small>PERTENECE A LA COLECCIÓN</small><strong>' + escapeHTML(collection.name) + '</strong><p>Saga cinematográfica disponible en TMDB.</p></span><span aria-hidden="true">↗</span></a>' : "";
+    const recs = data && data.recommendations ? data.recommendations.slice(0,12) : [];
+    const similarMarkup = recs.length ? '<div class="similar-carousel">' + recs.map(function (item) {
+      const marker = isInHistory(item.title) ? "seen" : (isInWatchlist(item.title) ? "pending" : "");
+      return '<button class="similar-poster" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + (marker ? '<i class="collection-marker ' + marker + '"></i>' : "") + '<strong>' + escapeHTML(item.title) + '</strong></button>';
+    }).join("") + '</div>' : "";
+    const videos = data && data.videos ? data.videos : [];
+    const trailer = videos.find(function (video) { return video.site === "YouTube" && video.type === "Trailer"; }) || videos.find(function (video) { return video.site === "YouTube"; });
+    const trailerUrl = trailer ? "https://www.youtube.com/watch?v=" + encodeURIComponent(trailer.key) : (movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movie.tmdbId) + "/videos" : "");
+    root.innerHTML = '<div class="modal-backdrop detail-backdrop" data-action="backdrop-close"><section class="modal detail-sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle" data-modal-panel>' +
+      '<div class="detail-scroll"><header class="detail-hero" style="' + (backdrop ? 'background-image:linear-gradient(180deg,rgba(4,8,14,.18) 0%,rgba(4,8,14,.22) 35%,#08101b 100%),url(&quot;' + escapeHTML(backdrop) + '&quot;)' : '') + '"><button class="detail-back" type="button" data-action="close-modal" aria-label="Volver">‹ <span>Volver</span></button><div class="detail-hero-title"><div class="eyebrow">' + escapeHTML(movie.year || "PELÍCULA") + (movie.originalTitle && movie.originalTitle !== movie.title ? ' · ' + escapeHTML(movie.originalTitle) : "") + '</div><h2 id="detailTitle">' + escapeHTML(movie.title) + '</h2>' + (movie.tagline ? '<p>' + escapeHTML(movie.tagline) + '</p>' : "") + '</div></header>' +
+      '<div class="detail-body"><div class="detail-state-actions">' + stateButton + '<button class="btn btn-quiet" type="button" data-action="manage-lists">Gestionar listas</button><button class="btn btn-quiet" type="button" data-action="toggle-hidden">' + (hidden ? "Mostrar en Prisma" : "Ocultar") + '</button></div>' +
+      '<div class="detail-meta-line"><span>Estreno <strong>' + escapeHTML(release) + '</strong></span><span>País <strong>' + escapeHTML(countryLine || "—") + '</strong></span><span>Duración <strong>' + escapeHTML(niceRuntime(movie.runtime)) + '</strong></span><span>Estado <strong>' + escapeHTML(displayMovieStatus(movie.status)) + '</strong></span></div>' +
+      (genreChips ? '<div class="detail-chip-row">' + genreChips + '</div>' : "") +
+      '<section class="detail-section"><div class="detail-section-heading"><h3>Puntuaciones</h3><span>Datos externos</span></div><div class="detail-rating-grid">' + ratingMetrics + '</div><p class="kicker rating-disclaimer">Solo se muestra la nota pública de TMDB cuando está disponible. IMDb y las puntuaciones externas se abren como enlaces; TMDB no proporciona directamente esas cifras.</p></section>' +
+      '<section class="detail-section"><div class="detail-section-heading"><h3>Dónde verla</h3><span>Streaming, compra o alquiler</span></div>' + providerMarkup + '</section>' +
+      '<section class="detail-section synopsis-section"><div class="detail-section-heading"><h3>Sinopsis</h3></div>' + (movie.overview ? '<p>' + escapeHTML(movie.overview) + '</p>' : '<p class="kicker">No hay sinopsis disponible todavía.</p>') + '</section>' +
+      '<div class="detail-action-strip"><button class="btn btn-primary" type="button" data-action="rate">' + (rating ? "Calificar · " + ratingValue(rating) + "/10" : "Calificar") + '</button><button class="btn btn-secondary" type="button" data-action="open-reviews">Comentarios</button><button class="btn btn-secondary" type="button" data-action="open-trailer">Tráiler</button><a class="btn btn-secondary" href="' + escapeHTML(externalMovieUrl(movie,externalIds)) + '" target="_blank" rel="noopener noreferrer">Enlace ↗</a><button class="btn btn-secondary" type="button" data-action="share-movie">Compartir</button></div>' +
+      '<section class="detail-section"><div class="detail-section-heading"><h3>Reparto &amp; equipo</h3><span>Personas</span></div>' + castMarkup + (crewChips ? '<div class="crew-list">' + crewChips + '</div>' : "") + '</section>' +
+      (collectionMarkup ? '<section class="detail-section"><div class="detail-section-heading"><h3>Colecciones</h3></div>' + collectionMarkup + '</section>' : "") +
+      (similarMarkup ? '<section class="detail-section"><div class="detail-section-heading"><h3>También podría gustarte</h3><span>Según TMDB</span></div>' + similarMarkup + '</section>' : "") +
+      (movieDetail.loading ? '<div class="detail-loading"><span class="spinner"></span><p>Completando la ficha con TMDB…</p></div>' : "") +
+      (movieDetail.error ? '<div class="notice detail-error"><strong>No se pudo completar la ficha.</strong> ' + escapeHTML(movieDetail.error) + '<button class="btn btn-secondary btn-small" type="button" data-action="retry-movie-detail">Reintentar</button></div>' : "") +
+      (!data && !movieDetail.loading ? '<div class="detail-connection-note"><p>La información básica está disponible. Conecta TMDB en Ajustes para ver reparto, plataformas, tráiler y recomendaciones.</p><button class="btn btn-secondary" type="button" data-nav="data">Conectar TMDB</button></div>' : "") +
+      '</div></div></section></div>';
+  }
+
+  function openPersonDetails(id, name, character) {
+    personDetail = {id:String(id),name:name || "Persona",character:character || "",person:null,credits:null,loading:true,error:""};
+    personListFilter = "all";
+    renderModal();
+    if (personDetailCache.has(String(id))) {
+      personDetail = Object.assign(personDetail, personDetailCache.get(String(id)), {loading:false});
+      renderModal();
+      return;
+    }
+    if (!tmdbCredential || !tmdbCredential.value) {
+      personDetail.loading = false; personDetail.error = "Conecta TMDB para consultar biografías y filmografías."; renderModal(); return;
+    }
+    const requestId = String(id);
+    Promise.all([
+      softTMDBRequest("/person/" + encodeURIComponent(requestId), {language:"es-ES"}),
+      softTMDBRequest("/person/" + encodeURIComponent(requestId) + "/movie_credits", {language:"es-ES"})
+    ]).then(function (responses) {
+      if (!personDetail || personDetail.id !== requestId) return;
+      personDetail.person = responses[0] || {};
+      personDetail.credits = responses[1] || {cast:[],crew:[]};
+      personDetail.loading = false;
+      if (!responses[0]) personDetail.error = "No se pudo recuperar la ficha de esta persona.";
+      personDetailCache.set(requestId,{person:personDetail.person,credits:personDetail.credits,error:personDetail.error});
+      renderModal();
+    });
+  }
+
+  function personAge(birthday, deathday) {
+    if (!birthday) return "Edad desconocida";
+    const born = new Date(birthday), end = deathday ? new Date(deathday) : new Date();
+    if (Number.isNaN(born.getTime()) || Number.isNaN(end.getTime())) return "Edad desconocida";
+    let age = end.getFullYear() - born.getFullYear();
+    if (end.getMonth() < born.getMonth() || (end.getMonth() === born.getMonth() && end.getDate() < born.getDate())) age -= 1;
+    return age + " años";
+  }
+
+  function renderPersonDetails() {
+    const root = $("#modalRoot");
+    if (!root || !personDetail) return;
+    const person = personDetail.person || {};
+    const biography = person.biography || "";
+    let credits = personDetail.credits ? (personDetail.credits.cast || []).concat(personDetail.credits.crew || []) : [];
+    const seen = new Set();
+    credits = credits.filter(function (movie) {
+      if (!movie || !movie.id || seen.has(movie.id)) return false;
+      seen.add(movie.id); return true;
+    });
+    if (personListFilter === "collection") credits = credits.filter(function (item) { return isMovieInCollection(item.title || item.name); });
+    credits.sort(function (a,b) {
+      const ay = Number(String(a.release_date || "").slice(0,4)) || 0, by = Number(String(b.release_date || "").slice(0,4)) || 0;
+      if (!ay && by) return -1;
+      if (ay && !by) return 1;
+      return by - ay || String(a.title || a.name || "").localeCompare(String(b.title || b.name || ""),"es");
+    });
+    const roles = personDetail.character ? '<span class="person-role">' + escapeHTML(personDetail.character) + '</span>' : "";
+    const films = credits.map(function (item) {
+      const movie = fromTMDB(item), year = item.release_date ? String(item.release_date).slice(0,4) : "TBA";
+      const role = item.character || item.job || "";
+      const marker = isMovieInCollection(movie.title) ? '<span class="collection-marker ' + (isInHistory(movie.title) ? "seen" : (isInWatchlist(movie.title) ? "pending" : "hidden")) + '"></span>' : "";
+      return '<button class="person-film-row" type="button" data-action="movie-from-person" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '"><span class="person-film-poster">' + (movie.posterUrl ? '<img src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy">' : '<span>▣</span>') + '</span><span class="person-film-copy"><span class="collection-release">' + year + '</span><strong>' + escapeHTML(movie.title) + '</strong><small>' + escapeHTML(role) + '</small><span>' + escapeHTML(item.overview || "Sin sinopsis disponible.") + '</span></span>' + marker + '<span class="film-clapper" aria-hidden="true">▣</span></button>';
+    }).join("");
+    root.innerHTML = '<div class="modal-backdrop detail-backdrop" data-action="backdrop-close"><section class="modal person-sheet" role="dialog" aria-modal="true" aria-labelledby="personTitle" data-modal-panel><div class="person-header"><button class="detail-back" type="button" data-action="person-back">‹ <span>Volver a la película</span></button><div class="person-header-content">' + (person.profile_path ? '<img src="https://image.tmdb.org/t/p/w342' + escapeHTML(person.profile_path) + '" alt="" class="person-portrait">' : '<div class="person-portrait person-portrait-empty">●</div>') + '<div><h2 id="personTitle">' + escapeHTML(person.name || personDetail.name) + '</h2>' + roles + '<p>' + escapeHTML(personAge(person.birthday,person.deathday)) + (person.birthday ? " · " + escapeHTML(dateLabel(person.birthday)) : "") + '</p><p>' + escapeHTML(person.place_of_birth || "Lugar de nacimiento desconocido") + '</p><a href="https://www.themoviedb.org/person/' + encodeURIComponent(personDetail.id) + '" target="_blank" rel="noopener noreferrer">Ver ficha en TMDB ↗</a></div></div></div><div class="person-body"><section class="detail-section"><div class="detail-section-heading"><h3>Biografía</h3></div><p>' + escapeHTML(biography || (personDetail.loading ? "Cargando biografía…" : "No hay una biografía disponible en TMDB para esta persona.")) + '</p></section><section class="detail-section"><div class="detail-section-heading"><h3>Filmografía</h3><span>' + credits.length + ' títulos</span></div><div class="person-filter-tabs"><button class="' + (personListFilter === "all" ? "active" : "") + '" type="button" data-action="person-filter" data-filter="all">Películas</button><button class="' + (personListFilter === "collection" ? "active" : "") + '" type="button" data-action="person-filter" data-filter="collection">Colección</button></div>' + (films ? '<div class="person-film-list">' + films + '</div>' : '<div class="empty-inline"><strong>No hay películas en esta vista</strong><p>Prueba la filmografía completa o guarda títulos en tu colección.</p></div>') + '</section>' + (personDetail.error ? '<div class="notice">' + escapeHTML(personDetail.error) + '</div>' : "") + '</div></section></div>';
+  }
+
+  function renderRatingSheet() {
+    const root = $("#modalRoot");
     if (!root || !modalDraft) return;
-    const movie = modalDraft.movie;
-    const rating = ratingFor(movie.title);
+    const movie = modalDraft.movie, rating = ratingFor(movie.title);
     const emotionChips = EMOTIONS.map(function (emotion) {
       return '<button type="button" class="emotion-chip ' + (modalDraft.emotions.indexOf(emotion) >= 0 ? "selected" : "") + '" data-action="emotion" data-emotion="' + escapeHTML(emotion) + '">' + escapeHTML(emotion) + '</button>';
     }).join("");
-    const features = (movie.genres || []).concat((movie.tags || []).slice(0, 5));
-    const overview = movie.overview ? '<p>' + escapeHTML(movie.overview) + '</p>' : '<p>Aún no hay sinopsis guardada para esta película. Puedes registrar tu nota sin completar ningún análisis.</p>';
-    const prediction = movie.prediction ? '<div class="notice"><strong>Estimación de Prisma: ' + movie.prediction.score.toFixed(1).replace(".", ",") + '/10.</strong> ' + escapeHTML(movie.prediction.explanation) + ' Confianza: ' + escapeHTML(movie.prediction.confidence) + '. Esta cifra es experimental.</div>' : "";
-    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" data-modal-panel>' +
-      '<div class="modal-top"><div><div class="eyebrow">' + escapeHTML(movie.year || "Película") + ' · ' + (rating ? "Ya calificada" : "Nueva película") + '</div><h2 id="modalTitle">' + escapeHTML(movie.title) + '</h2><div class="chip-row">' + features.slice(0, 8).map(function (feature) { return '<span class="chip">' + escapeHTML(displayGenre(feature)) + '</span>'; }).join("") + '</div></div><button class="modal-close" type="button" data-action="close-modal" aria-label="Cerrar">✕</button></div>' +
-      '<div style="margin-top:18px">' + overview + prediction + '</div>' +
-      '<div class="hero-actions"><button type="button" class="btn btn-secondary" data-action="toggle-watchlist" data-title="' + escapeHTML(movie.title) + '">' + (isInWatchlist(movie.title) ? "✓ En mi lista" : "＋ Quiero verla") + '</button><button type="button" class="btn btn-quiet" data-action="close-modal">Cerrar</button></div>' +
-      '<hr style="border:0;border-top:1px solid var(--line);margin:23px 0">' +
-      '<div class="eyebrow">Tu experiencia</div><h3 style="margin-top:8px">¿Qué nota le das?</h3><div style="display:flex;align-items:center;gap:13px"><div class="rating-number" id="ratingPreview">' + modalDraft.rating + '</div><div class="form-field" style="flex:1;margin:0"><label class="field-label" for="ratingInput">Tu puntuación del 1 al 10</label><input class="field" id="ratingInput" type="range" min="1" max="10" step="1" value="' + modalDraft.rating + '"></div></div>' +
-      '<div class="form-field"><span class="field-label">¿Qué emociones recuerdas? (opcional)</span><div class="emotion-grid">' + emotionChips + '</div><p class="kicker" style="margin-top:8px">No hace falta recordar toda la trama. Selecciona solo lo que te venga a la mente.</p></div>' +
-      '<div class="form-field"><label class="field-label" for="ratingNote">¿Qué fue lo que más te hizo sentir? (opcional)</label><textarea class="field" id="ratingNote" rows="3" placeholder="Una frase basta; también puedes dejarlo vacío.">' + escapeHTML(modalDraft.note) + '</textarea></div>' +
-      '<div class="hero-actions"><button class="btn btn-primary" type="button" data-action="save-rating">Guardar mi experiencia</button>' + (rating ? '<button class="btn btn-danger" type="button" data-action="delete-rating" data-title="' + escapeHTML(movie.title) + '">Quitar nota</button>' : "") + '</div>' +
-      '</section></div>';
-    $("#ratingInput").addEventListener("input", function (event) {
-      modalDraft.rating = Number(event.target.value);
-      $("#ratingPreview").textContent = String(modalDraft.rating);
+    const stars = Array.from({length:10},function (_,i) {
+      const value = i + 1;
+      return '<button type="button" class="rating-star ' + (value <= modalDraft.rating ? "active" : "") + '" data-action="rating-star" data-rating="' + value + '" aria-label="Puntuar ' + value + ' de 10" aria-pressed="' + (value === modalDraft.rating) + '">★</button>';
+    }).join("");
+    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal rating-sheet" role="dialog" aria-modal="true" aria-labelledby="ratingTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><div class="eyebrow">TU EXPERIENCIA PERSONAL</div><h2 id="ratingTitle">Calificar</h2><p>' + escapeHTML(movie.title) + '</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="Cerrar">✕</button></div><div class="rating-score-large"><strong id="ratingPreview">' + modalDraft.rating + '</strong><span>/ 10</span></div><div class="rating-stars" aria-label="Selecciona una nota">' + stars + '</div><input id="ratingInput" type="hidden" value="' + modalDraft.rating + '">' +
+      '<details class="rating-memories"><summary>Añadir recuerdos (opcional)</summary><div class="form-field"><span class="field-label">¿Qué emociones recuerdas?</span><div class="emotion-grid">' + emotionChips + '</div></div><div class="form-field"><label class="field-label" for="ratingNote">¿Qué fue lo que más te hizo sentir?</label><textarea class="field" id="ratingNote" rows="3" placeholder="Una frase basta; también puedes dejarlo vacío.">' + escapeHTML(modalDraft.note) + '</textarea></div></details>' +
+      '<div class="rating-sheet-actions">' + (rating ? '<button class="btn btn-danger-outline" type="button" data-action="delete-rating" data-title="' + escapeHTML(movie.title) + '">Eliminar</button>' : '<button class="btn btn-danger-outline" type="button" data-action="close-modal">Cancelar</button>') + '<button class="btn btn-primary" type="button" data-action="save-rating">Calificar</button></div></section></div>';
+    const note = $("#ratingNote");
+    if (note) note.addEventListener("input", function (event) { modalDraft.note = event.target.value; });
+  }
+
+  function updateRatingPreview(value) {
+    if (!modalDraft) return;
+    modalDraft.rating = Number(value);
+    const preview = $("#ratingPreview"), input = $("#ratingInput");
+    if (preview) preview.textContent = String(modalDraft.rating);
+    if (input) input.value = String(modalDraft.rating);
+    $$(".rating-star").forEach(function (star) {
+      const active = Number(star.dataset.rating) <= modalDraft.rating;
+      star.classList.toggle("active",active);
+      star.setAttribute("aria-pressed",String(Number(star.dataset.rating) === modalDraft.rating));
     });
-    $("#ratingNote").addEventListener("input", function (event) { modalDraft.note = event.target.value; });
   }
 
   function closeModal() {
-    modalDraft = null;
-    $("#modalRoot").innerHTML = "";
+    if (modalDraft && modalDraft.mode === "rate" && ratingReturnDetail && movieDetail) {
+      modalDraft = null; ratingReturnDetail = false; renderModal(); return;
+    }
+    modalDraft = null; ratingReturnDetail = false; movieDetail = null; personDetail = null; utilitySheet = null;
+    const root = $("#modalRoot");
+    if (root) root.innerHTML = "";
   }
+
 
   async function saveRating() {
     if (!modalDraft) return;
