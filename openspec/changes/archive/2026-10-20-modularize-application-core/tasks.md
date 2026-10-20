@@ -40,5 +40,14 @@
 - [x] Enlazar `fetch` al contexto del navegador al inyectarlo en el ciclo de vida.
 - [x] Probar la construcción de los factories extraídos de TMDB para detectar exports que dependen de funciones locales.
 - [x] Ejecutar la validación SDD, las pruebas funcionales y la verificación Playwright de escritorio/móvil sobre la vista previa del PR.
-- [ ] Tras la fusión, verificar GitHub Pages publicado en escritorio y móvil y registrar el resultado final.
-- [ ] Archivar el expediente al cumplir los criterios de aceptación.
+- [x] Tras la fusión, verificar GitHub Pages publicado en escritorio y móvil y registrar el resultado final.
+- [x] Archivar el expediente al cumplir los criterios de aceptación.
+
+
+## Verificación final del expediente
+
+- [x] SDD y calidad estática en el commit integrado: https://github.com/ElFast-dev/Prisma/actions/runs/39511497069
+- [x] Validación de Prisma en el commit integrado: https://github.com/ElFast-dev/Prisma/actions/runs/39511496845
+- [x] Despliegue de GitHub Pages: https://github.com/ElFast-dev/Prisma/actions/runs/39511496883
+- [x] Playwright sobre la web publicada, escritorio y móvil: https://github.com/ElFast-dev/Prisma/actions/runs/39511532497
+- [x] Commit integrado comprobado en `main`: `ff4e2174f64d3034039010ac3dc7b635a164e6b4`
