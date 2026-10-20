@@ -41,6 +41,7 @@
   let tmdbSearchTimer = null;
   let tmdbRequestSerial = 0;
   let tmdbHistorySync = { running: false, total: 0, done: 0, updated: 0, failed: 0, current: "", finishedAt: null };
+  let tmdbEnrichRequested = false;
   let collectionTab = "history";
   let collectionMode = "movies";
   let collectionQuery = "";
@@ -189,7 +190,7 @@
 
   function combineMovies() {
     const map = new Map();
-    seedCatalog.concat(customCatalog).forEach(function (raw) {
+    seedCatalog.concat(customCatalog, state.watched || [], state.watchlist || [], state.hidden || []).forEach(function (raw) {
       const movie = normalizeMovie(raw);
       if (!movie) return;
       const key = titleKey(movie.title);
@@ -382,7 +383,7 @@
   }
 
   function pruneTMDBCache() {
-    const limit = 1000 * 60 * 60 * 24 * 30;
+    const limit = 1000 * 60 * 60 * 24 * 179;
     const now = Date.now();
     function isExpired(entry) {
       if (!entry || !entry.tmdbFetchedAt) return false;
@@ -390,46 +391,30 @@
       return Number.isFinite(fetchedAt) && now - fetchedAt > limit;
     }
     function strip(entry) {
-      delete entry.genres;
-      delete entry.tags;
-      delete entry.overview;
-      delete entry.posterPath;
-      delete entry.posterUrl;
-      delete entry.voteAverage;
-      delete entry.runtime;
-      delete entry.tmdbFetchedAt;
-      delete entry.metadataSource;
+      ["genres","tags","overview","posterPath","posterUrl","voteAverage","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (key) { delete entry[key]; });
       return entry;
     }
     let changed = false;
-    customCatalog = customCatalog.map(function (entry) {
-      if (entry.metadataSource === "tmdb" && isExpired(entry)) {
-        changed = true;
-        return strip(Object.assign({}, entry, { genres: [], tags: [], overview: "", posterPath: "", posterUrl: "" }));
-      }
-      return entry;
-    });
-    state.rated = state.rated.map(function (entry) {
-      if (entry.metadataSource === "tmdb" && isExpired(entry)) {
-        changed = true;
-        const copy = Object.assign({}, entry);
-        strip(copy);
-        return copy;
-      }
-      return entry;
-    });
-    state.watchlist = state.watchlist.map(function (entry) {
-      if (entry.metadataSource === "tmdb" && isExpired(entry)) {
-        changed = true;
-        return strip(Object.assign({}, entry));
-      }
-      return entry;
-    });
+    function pruneList(list) {
+      return (list || []).map(function (entry) {
+        if (entry && entry.metadataSource === "tmdb" && isExpired(entry)) {
+          changed = true;
+          return strip(Object.assign({},entry));
+        }
+        return entry;
+      });
+    }
+    customCatalog = pruneList(customCatalog);
+    state.rated = pruneList(state.rated);
+    state.watched = pruneList(state.watched);
+    state.watchlist = pruneList(state.watchlist);
+    state.hidden = pruneList(state.hidden);
     if (changed) {
-      dbSet(CATALOG_KEY, customCatalog).catch(function () {});
+      dbSet(CATALOG_KEY,customCatalog).catch(function () {});
       persistState();
     }
   }
+
 
   async function ensureTMDBGenres() {
     if (tmdbGenres.size) return;
@@ -486,7 +471,7 @@
   }
 
   function pendingHistoryTMDBCount() {
-    return state.rated.filter(historyNeedsTMDB).length;
+    return catalog.filter(historyNeedsTMDB).length;
   }
 
   async function findTMDBDetailsForRating(entry) {
@@ -527,9 +512,29 @@
     entry.posterUrl = enriched.posterUrl || entry.posterUrl || "";
     entry.voteAverage = enriched.voteAverage || entry.voteAverage || null;
     entry.runtime = enriched.runtime || entry.runtime || null;
+    entry.releaseDate = enriched.releaseDate || entry.releaseDate || null;
+    entry.backdropPath = enriched.backdropPath || entry.backdropPath || "";
+    entry.backdropUrl = enriched.backdropUrl || entry.backdropUrl || "";
+    entry.tagline = enriched.tagline || entry.tagline || "";
+    entry.status = enriched.status || entry.status || "";
+    entry.productionCountries = (enriched.productionCountries && enriched.productionCountries.length) ? enriched.productionCountries : (entry.productionCountries || []);
+    entry.imdbId = enriched.imdbId || entry.imdbId || "";
     entry.tmdbFetchedAt = enriched.tmdbFetchedAt || new Date().toISOString();
     entry.metadataSource = "tmdb";
   }
+
+  function applyTMDBDetailsToLocalCollection(title, enriched) {
+    const key = titleKey(title);
+    ["rated","watched","watchlist","hidden"].forEach(function (listName) {
+      state[listName] = (state[listName] || []).map(function (entry) {
+        if (titleKey(entry.title) !== key) return entry;
+        const updated = Object.assign({},entry);
+        applyTMDBDetailsToRating(updated,enriched);
+        return updated;
+      });
+    });
+  }
+
 
   function upsertTMDBCatalogEntry(rating, enriched) {
     const stored = Object.assign({}, enriched, {
@@ -563,38 +568,37 @@
     const pending = pendingHistoryTMDBCount();
     const connected = Boolean(tmdbCredential && tmdbCredential.value);
     const status = tmdbHistorySync.running ?
-      "Procesando " + tmdbHistorySync.done + " de " + tmdbHistorySync.total + " películas. Actualizadas: " + tmdbHistorySync.updated + ". Errores o no encontradas: " + tmdbHistorySync.failed + "." :
-      (tmdbHistorySync.finishedAt ?
-        "Última pasada: " + tmdbHistorySync.updated + " actualizadas y " + tmdbHistorySync.failed + " con error/no encontradas." :
-        "Enlaza tus valoraciones con sus fichas de TMDB mediante el identificador TMDB del JSON. Las series están fuera de esta lista.");
+      "Completando " + tmdbHistorySync.done.toLocaleString("es-PA") + " de " + tmdbHistorySync.total.toLocaleString("es-PA") :
+      (tmdbHistorySync.finishedAt ? tmdbHistorySync.updated.toLocaleString("es-PA") + " actualizadas · " + tmdbHistorySync.failed.toLocaleString("es-PA") + " sin coincidencia" : "");
     const percent = tmdbHistorySync.total ? Math.round(tmdbHistorySync.done / tmdbHistorySync.total * 100) : 0;
     const button = !connected ?
-      '<button class="btn btn-secondary" type="button" data-nav="data">Conectar TMDB en Datos</button>' :
+      '<button class="btn btn-secondary" type="button" data-nav="data">Conectar TMDB</button>' :
       '<button class="btn btn-primary" type="button" data-action="enrich-history" ' + (tmdbHistorySync.running || pending === 0 ? "disabled" : "") + '>' +
-      (tmdbHistorySync.running ? "Enriqueciendo…" : (pending === 0 ? "Historial actualizado" : "Enriquecer " + pending + " películas con TMDB")) + '</button>';
-    return '<section class="panel tmdb-history-panel" style="margin-top:17px"><div class="panel-head"><div><h3>Enlazar mi historial con TMDB</h3><p>Añade géneros, sinopsis, palabras clave y carteles para que el motor tenga señales reales sobre las películas que ya calificaste.</p></div><span class="badge ' + (connected ? "badge-mint" : "") + '">' + (connected ? "Conectado" : "Desconectado") + '</span></div>' +
-      '<div class="metrics-grid">' + metric("Por enriquecer", pending.toLocaleString("es-PA"), "Metadatos pendientes") + metric("Procesadas", tmdbHistorySync.done.toLocaleString("es-PA"), "En esta pasada") + metric("Actualizadas", tmdbHistorySync.updated.toLocaleString("es-PA"), "Con datos recuperados") + metric("Con error", tmdbHistorySync.failed.toLocaleString("es-PA"), "No encontradas o fallidas") + '</div>' +
-      (tmdbHistorySync.running ? '<progress class="tmdb-progress" max="100" value="' + percent + '">' + percent + '%</progress>' : "") +
-      '<p class="kicker" style="margin-top:12px">' + escapeHTML(status) + '</p><div class="hero-actions">' + button + '</div>' +
-      '<p class="kicker" style="margin-top:10px">Las notas y emociones no cambian. Los datos obtenidos de TMDB se refrescan pasado un tiempo; esta acción puede tardar porque consulta cada película por separado.</p></section>';
+      (tmdbHistorySync.running ? "Completando…" : (pending === 0 ? "Todo actualizado" : "Completar " + pending.toLocaleString("es-PA") + " títulos")) + '</button>';
+    return '<section class="panel tmdb-history-panel"><div class="panel-head"><div class="panel-title-row"><h3>Carátulas y datos</h3>' + infoButton("metadata","Información sobre carátulas y datos") + '</div><span class="badge ' + (connected ? "badge-mint" : "") + '">' + (connected ? "TMDB conectado" : "TMDB desconectado") + '</span></div>' +
+      '<div class="metadata-action-row"><span>' + pending.toLocaleString("es-PA") + ' por completar</span><div class="hero-actions">' + button + '</div></div>' +
+      (tmdbHistorySync.running ? '<progress class="tmdb-progress" max="100" value="' + percent + '">' + percent + '%</progress><p class="metadata-progress-label">' + escapeHTML(status) + ' · ' + percent + '%</p>' : (status ? '<p class="metadata-progress-label">' + escapeHTML(status) + '</p>' : "")) +
+      '</section>';
   }
+
 
   async function enrichRatedHistoryWithTMDB() {
     if (!tmdbCredential || !tmdbCredential.value) {
-      toast("Primero conecta TMDB desde Datos.", true);
+      toast("Conecta TMDB en Ajustes para cargar las carátulas y completar los datos.",true);
       clickNav("data");
       return;
     }
     if (tmdbHistorySync.running) {
-      toast("El enriquecimiento del historial ya está en marcha.");
+      tmdbEnrichRequested = true;
+      toast("Los títulos nuevos se añadirán a la cola actual.");
       return;
     }
-    const targets = state.rated.filter(historyNeedsTMDB);
+    const targets = catalog.filter(historyNeedsTMDB);
     if (!targets.length) {
-      toast("Tu historial ya tiene metadatos recientes de TMDB.");
+      toast("Las carátulas y los datos del catálogo están actualizados.");
       return;
     }
-    tmdbHistorySync = { running: true, total: targets.length, done: 0, updated: 0, failed: 0, current: "", finishedAt: null };
+    tmdbHistorySync = {running:true,total:targets.length,done:0,updated:0,failed:0,current:"",finishedAt:null};
     renderApp();
     let cursor = 0;
     let lastPersisted = 0;
@@ -613,12 +617,13 @@
             if (!enriched || !enriched.title) {
               tmdbHistorySync.failed += 1;
             } else {
-              applyTMDBDetailsToRating(entry, enriched);
-              upsertTMDBCatalogEntry(entry, enriched);
+              applyTMDBDetailsToRating(entry,enriched);
+              applyTMDBDetailsToLocalCollection(entry.title,enriched);
+              upsertTMDBCatalogEntry(entry,enriched);
               tmdbHistorySync.updated += 1;
             }
           }
-        } catch (error) {
+        } catch (_) {
           tmdbHistorySync.failed += 1;
         } finally {
           tmdbHistorySync.done += 1;
@@ -626,32 +631,33 @@
             lastPersisted = tmdbHistorySync.done;
             state.updatedAt = new Date().toISOString();
             await persistState();
-            await dbSet(CATALOG_KEY, customCatalog);
+            await dbSet(CATALOG_KEY,customCatalog);
             combineMovies();
-            if (currentPage === "lab" || currentPage === "data") renderApp();
+            if (currentPage === "library") refreshCollectionContent();
+            else renderApp();
           }
         }
-        await new Promise(function (resolve) { window.setTimeout(resolve, 120); });
+        await new Promise(function (resolve) { window.setTimeout(resolve,120); });
       }
     }
-    await Promise.all([worker(), worker(), worker()]);
+    await Promise.all([worker(),worker(),worker()]);
     tmdbHistorySync.running = false;
     tmdbHistorySync.finishedAt = new Date().toISOString();
     tmdbHistorySync.current = "";
-    state.events.unshift({
-      title: "Historial enriquecido con TMDB",
-      description: tmdbHistorySync.updated + " actualizadas; " + tmdbHistorySync.failed + " no encontradas o fallidas",
-      symbol: "✦",
-      at: tmdbHistorySync.finishedAt
-    });
-    state.events = state.events.slice(0, 80);
+    state.events.unshift({title:"Carátulas y datos actualizados",description:tmdbHistorySync.updated + " actualizadas; " + tmdbHistorySync.failed + " sin coincidencia",symbol:"✦",at:tmdbHistorySync.finishedAt});
+    state.events = state.events.slice(0,80);
     state.updatedAt = tmdbHistorySync.finishedAt;
     await persistState();
-    await dbSet(CATALOG_KEY, customCatalog);
+    await dbSet(CATALOG_KEY,customCatalog);
     combineMovies();
     renderApp();
-    toast("Terminado: " + tmdbHistorySync.updated + " películas actualizadas; " + tmdbHistorySync.failed + " con error o sin coincidencia.");
+    toast("Completado: " + tmdbHistorySync.updated.toLocaleString("es-PA") + " títulos actualizados; " + tmdbHistorySync.failed.toLocaleString("es-PA") + " sin coincidencia.");
+    if (tmdbEnrichRequested) {
+      tmdbEnrichRequested = false;
+      window.setTimeout(function () { enrichRatedHistoryWithTMDB(); },250);
+    }
   }
+
 
   function renderTMDBAttribution() {
     return '<section class="tmdb-attribution" aria-label="Atribución de TMDB"><a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="' + TMDB_LOGO_URL + '" alt="TMDB" loading="lazy"></a><div><strong>Datos e imágenes de The Movie Database (TMDB)</strong><p>Este producto utiliza TMDB y las API de TMDB, pero no está respaldado, certificado ni aprobado por TMDB.</p><a href="https://www.themoviedb.org/about/logos-attribution" target="_blank" rel="noopener noreferrer">Logos y atribución oficial ↗</a></div></section>';
@@ -682,8 +688,7 @@
       return;
     }
     target.innerHTML = movieGrid(tmdbResults) +
-      (tmdbPage < tmdbTotalPages ? '<div style="display:flex;justify-content:center;margin-top:17px"><button class="btn btn-secondary" type="button" data-action="tmdb-more">' + (tmdbLoading ? "Cargando…" : "Cargar más películas") + '</button></div>' : "") +
-      '<p class="kicker" style="margin-top:12px">Las películas y los carteles proceden de TMDB. La nota estimada por Prisma es distinta de la valoración pública de TMDB.</p>';
+      (tmdbPage < tmdbTotalPages ? '<div class="load-more-wrap"><button class="btn btn-secondary" type="button" data-action="tmdb-more">' + (tmdbLoading ? "Cargando…" : "Cargar más") + '</button></div>' : "");
   }
 
   async function loadTMDBPage(page, mode, append) {
@@ -910,9 +915,15 @@
       '<div class="movie-copy"><h3 class="movie-title">' + escapeHTML(movie.title) + '</h3><div class="movie-meta">' + escapeHTML(meta || "Metadatos pendientes") + '</div>' + score + detail + '</div></article>';
   }
 
-  function metric(label, value, note) {
-    return '<div class="metric-card"><div class="metric-label">' + label + '</div><div class="metric-value">' + value + '</div><div class="metric-note">' + note + '</div></div>';
+  function infoButton(topic, label) {
+    const accessibleLabel = label || "Más información";
+    return '<button class="info-button" type="button" data-action="show-info" data-info="' + escapeHTML(topic) + '" aria-label="' + escapeHTML(accessibleLabel) + '" title="' + escapeHTML(accessibleLabel) + '">!</button>';
   }
+
+  function metric(label, value, note) {
+    return '<div class="metric-card"><div class="metric-label">' + label + '</div><div class="metric-value">' + value + '</div>' + (note ? '<div class="metric-note">' + note + '</div>' : "") + '</div>';
+  }
+
 
   function sectionHead(title, description, action) {
     return '<div class="section-head"><div><h2>' + title + '</h2><p>' + description + '</p></div>' + (action || "") + '</div>';
@@ -924,25 +935,23 @@
 
   function renderHome() {
     const stats = summaryStats();
-    const history = getCollectionItems("history").sort(function (a, b) { return dateScore(b.watchedAt) - dateScore(a.watchedAt); });
-    const genres = genreStats().slice().sort(function (a, b) { return b.average - a.average; }).slice(0, 6);
-    const events = state.events.slice(0, 5).map(function (event) {
+    const history = getCollectionItems("history").sort(function (a,b) { return dateScore(b.watchedAt)-dateScore(a.watchedAt); });
+    const genres = genreStats().slice().sort(function (a,b) { return b.average-a.average; }).slice(0,6);
+    const events = state.events.slice(0,5).map(function (event) {
       return '<div class="event-item"><div class="event-mark">' + escapeHTML(event.symbol || "•") + '</div><div class="event-copy"><strong>' + escapeHTML(event.title) + '</strong><small>' + escapeHTML(event.description) + ' · ' + escapeHTML(formatDate(event.at)) + '</small></div></div>';
     }).join("");
-    return '<section class="progress-heading"><div><div class="eyebrow">TU ESPACIO PERSONAL</div><h1>Progreso</h1><p class="lead">Una mirada a tu historia, tus gustos y cómo va aprendiendo Prisma.</p></div><button class="btn btn-secondary" type="button" data-nav="lab">Análisis del motor ↗</button></section>' +
+    return '<section class="page-heading"><h1>Progreso</h1>' + infoButton("progress","Información sobre Progreso") + '<button class="btn btn-secondary btn-small page-heading-action" type="button" data-nav="lab">Laboratorio ↗</button></section>' +
       '<div class="metrics-grid progress-metrics">' +
-      metric("En tu historial", String(history.length), "Películas que ya viste") +
-      metric("Valoradas", String(stats.total), "Notas del 1 al 10") +
-      metric("Pendientes", String(state.watchlist.length), "Por ver cuando quieras") +
-      metric("Nota media", stats.average == null ? "—" : stats.average.toFixed(1).replace(".", ","), "Tu escala personal") +
+      metric("Vistas",String(history.length),"") +
+      metric("Valoradas",String(stats.total),"") +
+      metric("Pendientes",String(state.watchlist.length),"") +
+      metric("Nota media",stats.average == null ? "—" : stats.average.toFixed(1).replace(".",","),"") +
       '</div>' +
-      '<div class="progress-columns"><section class="panel"><div class="panel-head"><div><h3>Qué te suele gustar</h3><p>Promedio de tus notas por género, con al menos dos películas.</p></div><span class="badge">Tu perfil</span></div>' +
-      (genres.length ? '<div class="bar-list">' + genres.map(function (item) { return barRow(displayGenre(item.name), item.average, 10, item.average.toFixed(1).replace(".", ",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Aún faltan señales</strong><p>Cuando más películas tengan géneros enlazados, Prisma podrá mostrar patrones de tus valoraciones.</p></div>') +
-      '</section><section class="panel"><div class="panel-head"><div><h3>Actividad reciente</h3><p>Las últimas acciones guardadas en este dispositivo.</p></div></div>' +
-      (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Tu historia empieza aquí</strong><p>Cuando califiques una película, la actividad aparecerá en esta sección.</p><button class="btn btn-secondary" type="button" data-nav="catalog">Descubrir películas</button></div>') +
-      '</section></div>' +
-      '<section class="progress-next"><div><div class="eyebrow">SIGUIENTE PASO</div><h2>Encuentra tu próxima película</h2><p>Explora el catálogo y guarda lo que te llame la atención. Tu historial ayuda a Prisma a ordenar las sugerencias.</p></div><button class="btn btn-primary" type="button" data-nav="catalog">Ir a Descubrir ↗</button></section>' +
-      '<footer>Las estadísticas describen tus datos guardados. Las predicciones del recomendador son experimentales y no garantizan que una película te vaya a gustar.</footer>';
+      '<div class="progress-columns"><section class="panel"><div class="panel-head"><h3>Géneros mejor valorados</h3>' + infoButton("genres","Información sobre las tendencias por género") + '</div>' +
+      (genres.length ? '<div class="bar-list">' + genres.map(function (item) { return barRow(displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Faltan metadatos</strong><p>Completa las carátulas y los datos para analizar más películas.</p><button class="btn btn-secondary btn-small" type="button" data-nav="lab">Completar datos</button></div>') +
+      '</section><section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' +
+      (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') +
+      '</section></div>';
   }
 
 
@@ -976,19 +985,19 @@
 
   function renderCatalog() {
     const genres = ["Todos"].concat(allGenres());
-    const genreChips = genres.slice(0, 13).map(function (genre) {
+    const genreChips = genres.slice(0,13).map(function (genre) {
       return '<button class="chip ' + (activeGenre === genre ? "active" : "") + '" type="button" data-action="genre" data-genre="' + escapeHTML(genre) + '">' + escapeHTML(displayGenre(genre)) + '</button>';
     }).join("");
     const recs = getRecommendations(4);
-    const searchCaption = catalogQuery.trim() ? 'Resultados locales para «' + escapeHTML(catalogQuery.trim()) + '»' : "Catálogo local";
-    return '<section class="discover-heading"><div><div class="eyebrow">DESCUBRIMIENTO PERSONAL</div><h1>Descubrir</h1><p class="lead">Películas seleccionadas a partir de tus gustos, junto a títulos que puedes explorar.</p></div><span class="discover-count">' + catalog.length.toLocaleString("es-PA") + ' títulos locales</span></section>' +
-      '<section class="discover-recommendations"><div class="section-head"><div><h2>Recomendadas para ti</h2><p>Una estimación experimental basada en tus valoraciones y los metadatos disponibles.</p></div></div>' +
-      (recs.length ? '<div class="movie-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie); }).join("") + '</div>' : '<div class="empty-inline"><strong>Prisma necesita unas cuantas señales</strong><p>Califica películas o enlaza más géneros para empezar a crear recomendaciones personales.</p><button class="btn btn-secondary" type="button" data-nav="library">Abrir colección</button></div>') +
+    const searchCaption = catalogQuery.trim() ? 'Resultados para «' + escapeHTML(catalogQuery.trim()) + '»' : "Catálogo";
+    return '<section class="page-heading discover-heading"><h1>Descubrir</h1>' + infoButton("discover","Información sobre Descubrir") + '<span class="discover-count">' + catalog.length.toLocaleString("es-PA") + ' títulos</span></section>' +
+      '<section class="discover-recommendations"><div class="section-head"><h2>Recomendadas para ti</h2>' + infoButton("recommendations","Cómo funcionan las recomendaciones") + '</div>' +
+      (recs.length ? '<div class="movie-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie); }).join("") + '</div>' : '<div class="empty-inline"><strong>No hay recomendaciones todavía</strong><button class="btn btn-secondary btn-small" type="button" data-nav="library">Abrir colección</button></div>') +
       '</section>' +
-      '<section class="panel tmdb-browser discover-tmdb"><div class="panel-head"><div><h3>Explorar TMDB</h3><p>Busca en el catálogo remoto o descubre títulos populares.</p></div><span class="badge badge-mint">TMDB</span></div><div id="tmdbStatus" class="kicker">Conecta tus credenciales desde Datos para activar la búsqueda global.</div><div id="tmdbResults" class="tmdb-results"></div></section>' +
-      '<section class="local-catalog-section"><div class="section-head"><div><div class="eyebrow">TU CATÁLOGO</div><h2 id="catalogSearchTitle">' + searchCaption + '</h2><p id="catalogCount">Cargando resultados…</p></div><button class="btn btn-secondary btn-small" type="button" data-action="import-catalog">＋ Importar CSV</button></div><div class="chip-row catalog-genre-chips">' + genreChips + '</div><div id="localCatalogResults"></div></section>' +
-      '<footer>Los resultados remotos se consultan por páginas; Prisma no descarga la base de datos entera. Tus valoraciones permanecen en el almacenamiento local.</footer>';
+      '<section class="panel tmdb-browser discover-tmdb"><div class="panel-head"><h3>Explorar TMDB</h3>' + infoButton("tmdb","Información sobre TMDB") + '</div><div id="tmdbStatus" class="kicker"></div><div id="tmdbResults" class="tmdb-results"></div></section>' +
+      '<section class="local-catalog-section"><div class="section-head"><h2 id="catalogSearchTitle">' + searchCaption + '</h2><span id="catalogCount">Cargando…</span><button class="btn btn-secondary btn-small" type="button" data-action="import-catalog" aria-label="Importar catálogo CSV">＋ CSV</button></div><div class="chip-row catalog-genre-chips">' + genreChips + '</div><div id="localCatalogResults"></div></section>';
   }
+
 
   function dateScore(value) {
     if (!value) return 0;
@@ -1120,12 +1129,12 @@
       const pendingCount = getCollectionItems("pending").length;
       const hiddenCount = getCollectionItems("hidden").length;
       const cards = [
-        {tab:"history",title:"Historial",description:"Películas que ya viste.",count:historyCount,icon:"✓"},
-        {tab:"pending",title:"Pendientes",description:"Las que te guardaste para otro día.",count:pendingCount,icon:"＋"},
-        {tab:"hidden",title:"Ocultos",description:"Títulos que no quieres ver en las recomendaciones.",count:hiddenCount,icon:"◌"}
+        {tab:"history",title:"Historial",description:"",count:historyCount,icon:"✓"},
+        {tab:"pending",title:"Pendientes",description:"",count:pendingCount,icon:"＋"},
+        {tab:"hidden",title:"Ocultos",description:"",count:hiddenCount,icon:"◌"}
       ];
       return '<div class="system-lists-grid">' + cards.map(function (item) {
-        return '<button class="system-list-card" type="button" data-action="collection-open-tab" data-tab="' + item.tab + '"><span class="system-list-icon">' + item.icon + '</span><span class="system-list-copy"><strong>' + item.title + '</strong><small>' + item.description + '</small></span><span class="system-list-count">' + item.count.toLocaleString("es-PA") + '</span></button>';
+        return '<button class="system-list-card" type="button" data-action="collection-open-tab" data-tab="' + item.tab + '"><span class="system-list-icon">' + item.icon + '</span><span class="system-list-copy"><strong>' + item.title + '</strong></span><span class="system-list-count">' + item.count.toLocaleString("es-PA") + '</span></button>';
       }).join("") + '</div>';
     }
     const tab = collectionTab;
@@ -1135,7 +1144,7 @@
     const sortLabels = {title:"Título",public:"Mejores valorados",rating:"Mi valoración",runtime:"Duración",release:"Más reciente",added:"Añadidos recientemente",random:"Aleatorio"};
     const noItems = tab === "history" ? "Tu historial está vacío" : (tab === "pending" ? "No tienes películas pendientes" : "No has ocultado ninguna película");
     return (recent.length ? '<section class="recent-section"><div class="collection-section-title"><h2>Añadidos recientemente</h2><span>Últimos 4</span></div><div class="recent-grid">' + recent.map(recentPoster).join("") + '</div></section>' : "") +
-      '<div class="collection-list-heading"><div><h2>' + title + ' <span>(' + all.length.toLocaleString("es-PA") + ')</span></h2><p>' + (tab === "history" ? "Tu historial cinematográfico, con tus notas personales." : (tab === "pending" ? "Guarda aquí lo que quieras ver más adelante." : "Los títulos ocultos no aparecerán en Descubrir.")) + '</p></div><span class="sort-summary">' + escapeHTML(sortLabels[collectionSort] || "Añadidos recientemente") + '</span></div>' +
+      '<div class="collection-list-heading"><h2>' + title + ' <span>(' + all.length.toLocaleString("es-PA") + ')</span></h2><span class="sort-summary">' + escapeHTML(sortLabels[collectionSort] || "Añadidos recientemente") + '</span></div>' +
       (all.length ? (collectionLayout === "compact" ? '<div class="collection-compact-grid">' + all.map(function (item) { return collectionCompactCard(item); }).join("") + '</div>' : '<div class="collection-list">' + all.map(function (item) { return collectionRow(item,tab); }).join("") + '</div>') :
         '<div class="empty-state collection-empty"><div class="empty-icon">' + (tab === "hidden" ? "◌" : "▣") + '</div><h3>' + noItems + '</h3><p>' + (tab === "history" ? "Cuando marques una película como vista o la califiques, aparecerá aquí." : (tab === "pending" ? "Explora el catálogo y añade películas que te apetezca ver." : "Puedes ocultar un título desde su ficha para que no aparezca en las recomendaciones.")) + '</p><button class="btn btn-secondary" type="button" data-nav="catalog">Descubrir películas</button></div>');
   }
@@ -1151,13 +1160,12 @@
       {key:"pending",label:"Pendientes",count:getCollectionItems("pending").length},
       {key:"hidden",label:"Ocultos",count:getCollectionItems("hidden").length}
     ];
-    return '<section class="collection-page"><div class="collection-header"><div><div class="eyebrow">TU CINE, A TU MANERA</div><h1>Colección</h1><p class="lead">Tus películas vistas, las que quieres ver y las que prefieres dejar fuera.</p></div><button class="btn btn-secondary collection-search-toggle" type="button" data-action="toggle-collection-search" aria-label="Buscar en mi colección">⌕</button></div>' +
+    return '<section class="collection-page"><div class="collection-header"><div class="collection-title-row"><h1>Colección</h1>' + infoButton("collection","Información sobre tu colección") + '</div><button class="btn btn-secondary collection-search-toggle" type="button" data-action="toggle-collection-search" aria-label="Buscar en mi colección" title="Buscar en mi colección">⌕</button></div>' +
       '<div class="collection-mode-switch" role="tablist" aria-label="Tipo de colección"><button type="button" role="tab" class="' + (collectionMode === "movies" ? "active" : "") + '" data-action="collection-mode" data-mode="movies" aria-selected="' + (collectionMode === "movies") + '">Películas</button><button type="button" role="tab" class="' + (collectionMode === "lists" ? "active" : "") + '" data-action="collection-mode" data-mode="lists" aria-selected="' + (collectionMode === "lists") + '">Listas</button></div>' +
-      (showCollectionSearch ? '<label class="collection-search"><span aria-hidden="true">⌕</span><input type="search" data-collection-search value="' + escapeHTML(collectionQuery) + '" placeholder="Buscar solo en mi colección…" aria-label="Buscar solo en mi colección"><button type="button" data-action="toggle-collection-search" aria-label="Cerrar búsqueda">✕</button></label>' : "") +
+      (showCollectionSearch ? '<label class="collection-search"><span aria-hidden="true">⌕</span><input type="search" data-collection-search value="' + escapeHTML(collectionQuery) + '" placeholder="Buscar en mi colección…" aria-label="Buscar solo en mi colección"><button type="button" data-action="toggle-collection-search" aria-label="Cerrar búsqueda">✕</button></label>' : "") +
       (collectionMode === "movies" ? '<div class="collection-tabs" role="tablist" aria-label="Vistas de la colección">' + tabs.map(function (tab) { return '<button type="button" role="tab" class="' + (collectionTab === tab.key ? "active" : "") + '" data-action="collection-tab" data-tab="' + tab.key + '" aria-selected="' + (collectionTab === tab.key) + '">' + tab.label + '<span>' + tab.count.toLocaleString("es-PA") + '</span></button>'; }).join("") + '</div>' : "") +
-      (collectionMode === "movies" ? '<div class="collection-tools"><div class="collection-tools-left"><button class="collection-tool" type="button" data-action="open-sort"><span>⇅</span> Ordenar <i>' + (collectionDirection === "asc" ? "↑" : "↓") + '</i></button><button class="collection-tool ' + (collectionGenres.length ? "has-filter" : "") + '" type="button" data-action="open-genres"><span>☷</span> Géneros' + (collectionGenres.length ? '<b>' + collectionGenres.length + '</b>' : "") + '</button>' + (collectionTab === "pending" ? '<button class="collection-tool ' + (onlyReleased ? "has-filter" : "") + '" type="button" data-action="toggle-released">Estrenada</button>' : "") + '</div><button class="collection-view-toggle" type="button" data-action="toggle-layout" aria-label="Cambiar la vista">' + (collectionLayout === "list" ? "▦ Vista compacta" : "☰ Vista de lista") + '</button></div>' : "") +
-      '<div id="collectionResultsRoot">' + renderCollectionContent() + '</div></section>' +
-      '<footer>El historial, tus pendientes y tus notas se guardan en este navegador. Exporta una copia de seguridad desde Ajustes para conservar tus datos.</footer>';
+      (collectionMode === "movies" ? '<div class="collection-tools"><div class="collection-tools-left"><button class="collection-tool" type="button" data-action="open-sort"><span>⇅</span> Ordenar <i>' + (collectionDirection === "asc" ? "↑" : "↓") + '</i></button><button class="collection-tool ' + (collectionGenres.length ? "has-filter" : "") + '" type="button" data-action="open-genres"><span>☷</span> Géneros' + (collectionGenres.length ? '<b>' + collectionGenres.length + '</b>' : "") + '</button>' + (collectionTab === "pending" ? '<button class="collection-tool ' + (onlyReleased ? "has-filter" : "") + '" type="button" data-action="toggle-released">Estrenada</button>' : "") + '</div><button class="collection-view-toggle" type="button" data-action="toggle-layout" aria-label="Cambiar la vista">' + (collectionLayout === "list" ? "▦ Compacta" : "☰ Lista") + '</button></div>' : "") +
+      '<div id="collectionResultsRoot">' + renderCollectionContent() + '</div></section>';
   }
 
 
@@ -1172,30 +1180,26 @@
     const evaluation = evaluateModel();
     const genres = genreStats();
     const overall = stats.average || 6.5;
-    const top = genres.slice().sort(function (a, b) { return b.average - a.average; }).slice(0, 7);
-    const bottom = genres.slice().sort(function (a, b) { return a.average - b.average; }).slice(0, 7);
-    const events = state.events.slice(0, 8).map(function (event) {
+    const top = genres.slice().sort(function (a,b) { return b.average-a.average; }).slice(0,7);
+    const bottom = genres.slice().sort(function (a,b) { return a.average-b.average; }).slice(0,7);
+    const events = state.events.slice(0,8).map(function (event) {
       return '<div class="event-item"><div class="event-mark">' + escapeHTML(event.symbol || "✦") + '</div><div class="event-copy"><strong>' + escapeHTML(event.title) + '</strong><small>' + escapeHTML(event.description) + ' · ' + escapeHTML(formatDate(event.at)) + '</small></div></div>';
     }).join("");
-    const learningNotice = profile.withMetadata < 5 ?
-      '<div class="notice"><strong>Datos insuficientes para evaluar todavía.</strong> El motor ha importado tus notas, pero solo ' + profile.withMetadata + ' películas tienen géneros o etiquetas para aprender. Importa un catálogo CSV con títulos y géneros para enlazar más historial.</div>' :
-      '<div class="notice good"><strong>El motor encuentra características en ' + profile.withMetadata + ' de ' + stats.total + ' películas.</strong> Las señales de género se calculan a partir de tus calificaciones enlazadas. Una cantidad pequeña de películas sigue produciendo conclusiones preliminares.</div>';
-    const evaluationText = evaluation.available ?
-      '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".", ",") + '</div><div class="metric-note">Error absoluto medio en validación leave-one-out, sobre ' + evaluation.count + ' películas enlazadas. Menor es mejor; aún es una prueba pequeña.</div>' :
-      '<div class="metric-value">—</div><div class="metric-note">Se necesitan al menos 5 películas calificadas con características enlazadas para estimar este error.</div>';
-    return '<div class="eyebrow">Laboratorio personal</div><h1>¿Qué está aprendiendo Prisma?</h1><p class="lead">Observa qué información tiene el motor, qué preferencias aparecen en tus notas y si sus predicciones se acercan a tus puntuaciones reales.</p>' +
-      '<div class="metrics-grid">' + metric("Versión", "0.1", "Motor de contenido explicable") + metric("Historial enlazado", profile.withMetadata + "/" + stats.total, "Películas con géneros o temas") + metric("Señales aprendidas", String(profile.features.size), "Géneros y etiquetas distintas") + metric("Nota base", overall.toFixed(2).replace(".", ","), "Promedio histórico personal") + '</div>' +
-      '<div style="margin-top:16px">' + learningNotice + '</div>' + renderTMDBHistoryPanel() +
-      '<div class="two-col" style="margin-top:18px"><section class="panel"><div class="panel-head"><div><h3>Géneros con notas más altas</h3><p>Solo grupos con al menos dos películas.</p></div><span class="badge">Exploratorio</span></div>' +
-      (top.length ? '<div class="bar-list">' + top.map(function (item) { return barRow(displayGenre(item.name), item.average, 10, item.average.toFixed(1).replace(".", ",") + " · n=" + item.count); }).join("") + '</div>' : '<p class="kicker">Todavía no hay suficientes datos de género. Amplía el catálogo y vuelve a calcular.</p>') +
-      '</section><section class="panel"><div class="panel-head"><div><h3>Grupos con notas más bajas</h3><p>No significa que rechaces todo el género.</p></div></div>' +
-      (bottom.length ? '<div class="bar-list">' + bottom.map(function (item) { return barRow(displayGenre(item.name), item.average, 10, item.average.toFixed(1).replace(".", ",") + " · n=" + item.count); }).join("") + '</div>' : '<p class="kicker">Todavía no hay suficientes datos de género.</p>') +
+    const evaluationMarkup = evaluation.available ?
+      '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".",",") + '</div><div class="metric-note">n=' + evaluation.count + '</div>' :
+      '<div class="metric-value">—</div>';
+    return '<section class="page-heading"><h1>Laboratorio</h1>' + infoButton("lab","Información sobre el Laboratorio") + '</section>' +
+      '<div class="metrics-grid">' + metric("Historial enlazado",profile.withMetadata + "/" + stats.total,"") + metric("Señales",String(profile.features.size),"") + metric("Nota media",overall.toFixed(1).replace(".",","),"") + '</div>' +
+      '<div class="lab-metadata-host">' + renderTMDBHistoryPanel() + '</div>' +
+      '<div class="two-col lab-charts"><section class="panel"><div class="panel-head"><h3>Géneros mejor valorados</h3></div>' +
+      (top.length ? '<div class="bar-list">' + top.map(function (item) { return barRow(displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Datos insuficientes</strong></div>') +
+      '</section><section class="panel"><div class="panel-head"><h3>Géneros con notas más bajas</h3></div>' +
+      (bottom.length ? '<div class="bar-list">' + bottom.map(function (item) { return barRow(displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Datos insuficientes</strong></div>') +
       '</section></div>' +
-      '<div class="two-col" style="margin-top:17px"><section class="panel"><div class="panel-head"><div><h3>Prueba del modelo</h3><p>Oculta una película cada vez y predice su nota usando las demás.</p></div></div>' + evaluationText + '</section>' +
-      '<section class="panel"><div class="panel-head"><div><h3>Historial de aprendizaje</h3><p>Acciones que han cambiado tus datos.</p></div></div>' +
-      (events ? '<div class="event-list">' + events + '</div>' : '<p class="kicker">Cuando califiques películas o importes datos, el registro aparecerá aquí.</p>') + '</section></div>' +
-      '<footer>El laboratorio distingue los datos observados de las estimaciones. La validación leave-one-out es experimental: las películas con metadatos escasos pueden hacer que el error no sea representativo.</footer>';
+      '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación del modelo</h3>' + infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
+      '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>';
   }
+
 
   function formatDate(value) {
     if (!value) return "fecha no disponible";
@@ -1207,27 +1211,29 @@
   function renderTMDBSettings() {
     const kind = tmdbCredential && tmdbCredential.kind === "apiKey" ? "apiKey" : "readToken";
     const connected = Boolean(tmdbCredential && tmdbCredential.value);
-    return '<section class="panel tmdb-settings" style="margin-top:22px"><div class="panel-head"><div><h3>Conectar con TMDB</h3><p>Configura tu token de lectura o clave API v3. No la escribas en el código ni en GitHub.</p></div><span class="badge ' + (connected ? "badge-mint" : "") + '">' + (connected ? "Configurada aquí" : "Sin conectar") + '</span></div>' +
+    return '<section class="panel tmdb-settings"><div class="panel-head"><div class="panel-title-row"><h3>TMDB</h3>' + infoButton("privacy","Información sobre la conexión TMDB") + '</div><span class="badge ' + (connected ? "badge-mint" : "") + '">' + (connected ? "Conectado" : "Sin conectar") + '</span></div>' +
       '<div class="form-field"><label class="field-label" for="tmdbAuthType">Tipo de credencial</label><select id="tmdbAuthType" class="field"><option value="readToken" ' + (kind === "readToken" ? "selected" : "") + '>Token de acceso de lectura</option><option value="apiKey" ' + (kind === "apiKey" ? "selected" : "") + '>Clave API v3</option></select></div>' +
       '<div class="form-field"><label class="field-label" for="tmdbCredentialInput">Credencial TMDB</label><input class="field" id="tmdbCredentialInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="' + (connected ? "Guardada; deja vacío para conservarla" : "Pega aquí tu credencial") + '"></div>' +
       '<div class="hero-actions"><button class="btn btn-primary" type="button" data-action="save-tmdb">Guardar en este dispositivo</button><button class="btn btn-secondary" type="button" data-action="test-tmdb">Probar conexión</button>' + (connected ? '<button class="btn btn-danger" type="button" data-action="remove-tmdb">Eliminar credencial</button>' : "") + '</div>' +
-      '<div class="notice" style="margin-top:14px"><strong>Importante:</strong> se guarda solo en el almacenamiento local y no se incluye en tus respaldos ni en GitHub. Como Prisma es una web estática, el navegador debe enviar la credencial directamente a TMDB; no queda protegida como un secreto de servidor. <a href="https://developer.themoviedb.org/docs/faq" target="_blank" rel="noopener noreferrer">Condiciones y atribución de TMDB</a>.</div></section>';
+      '</section>';
   }
 
   function renderData() {
     const stats = summaryStats();
-    return '<div class="eyebrow">Privacidad y mantenimiento</div><h1>Tus datos, bajo tu control</h1><p class="lead">Importa tu historial, amplía el catálogo y guarda una copia de seguridad.</p>' + renderTMDBSettings() +
-      '<div class="settings-grid" style="margin-top:22px"><section class="panel"><div class="panel-head"><div><h3>Importar mi historial JSON</h3><p>Leerá las valoraciones de películas y omitirá entradas claramente identificadas como series.</p></div><span class="badge">Local</span></div><button class="btn btn-primary" type="button" data-action="import-json">Seleccionar JSON</button><p class="kicker" style="margin-top:13px">El importador busca la sección movies y listas de valoraciones como rM o ratings. Puedes conservar notas antiguas sin emociones registradas.</p></section>' +
-      '<section class="panel"><div class="panel-head"><div><h3>Ampliar el catálogo</h3><p>Importa un CSV que incluya títulos y, si es posible, géneros o etiquetas.</p></div><span class="badge">Local</span></div><button class="btn btn-primary" type="button" data-action="import-catalog">Seleccionar CSV</button><p class="kicker" style="margin-top:13px">Compatible con columnas title/year/genres/tags/overview y con movies.csv de MovieLens. Los datos importados se quedan en este dispositivo.</p></section>' +
-      '<section class="panel"><div class="panel-head"><div><h3>Copia de seguridad</h3><p>Exporta tu perfil para recuperarlo en el futuro.</p></div><span class="badge badge-mint">Recomendado</span></div><div class="hero-actions" style="margin-top:10px"><button class="btn btn-secondary" type="button" data-action="export-backup">Exportar mis datos</button><button class="btn btn-quiet" type="button" data-action="restore-backup">Restaurar copia</button></div><p class="kicker" style="margin-top:13px">El archivo de respaldo incluye tus calificaciones, lista de pendientes y emociones. No lo publiques en GitHub.</p></section>' +
-      '<section class="panel"><div class="panel-head"><div><h3>Estado de tu perfil</h3><p>Información local y fecha de la última modificación.</p></div></div>' +
-      '<div class="setting-row"><div><strong>Películas calificadas</strong><p>Valoraciones personales guardadas.</p></div><span class="badge">' + stats.total + '</span></div>' +
-      '<div class="setting-row"><div><strong>Metadatos enlazados</strong><p>Películas con géneros o etiquetas utilizables.</p></div><span class="badge">' + stats.matched + '</span></div>' +
-      '<div class="setting-row"><div><strong>Última actualización</strong><p>Solo se registra cuando cambias datos.</p></div><span class="kicker">' + escapeHTML(formatDate(state.updatedAt)) + '</span></div>' +
-      '<div class="setting-row"><div><strong>Restablecer perfil</strong><p>Borra las notas, pendientes y emociones de este navegador.</p></div><button class="btn btn-danger btn-small" type="button" data-action="reset">Borrar</button></div></section></div>' +
-      '<div class="notice" style="margin-top:16px"><strong>Importante sobre privacidad.</strong> Tu perfil se almacena en el almacenamiento local del navegador. Si borras sus datos, cambias de navegador o dispositivo, podrías perderlo. Exporta copias de seguridad regularmente. Los metadatos de catálogo pueden provenir de fuentes externas, pero tus valoraciones no se envían a ellas.</div>' +
-      '<footer>Prisma está diseñado para un solo usuario. La web pública contiene el código y el catálogo de muestra; las preferencias personales no forman parte del repositorio.</footer>';
+    return '<section class="page-heading"><h1>Ajustes</h1>' + infoButton("privacy","Información sobre privacidad y datos") + '</section>' +
+      renderTMDBSettings() +
+      '<div class="data-metadata-host">' + renderTMDBHistoryPanel() + '</div>' +
+      '<div class="settings-grid settings-grid-clean">' +
+      '<section class="panel"><div class="panel-head"><h3>Importar historial JSON</h3>' + infoButton("import","Qué importa el JSON") + '</div><button class="btn btn-primary" type="button" data-action="import-json">Importar JSON</button></section>' +
+      '<section class="panel"><div class="panel-head"><h3>Ampliar catálogo</h3>' + infoButton("import","Información sobre importaciones") + '</div><button class="btn btn-secondary" type="button" data-action="import-catalog">Importar CSV</button></section>' +
+      '<section class="panel"><div class="panel-head"><h3>Copia de seguridad</h3>' + infoButton("privacy","Información sobre copias de seguridad") + '</div><div class="hero-actions"><button class="btn btn-secondary" type="button" data-action="export-backup">Exportar</button><button class="btn btn-quiet" type="button" data-action="restore-backup">Restaurar</button></div></section>' +
+      '<section class="panel"><div class="panel-head"><h3>Estado del perfil</h3></div>' +
+      '<div class="setting-row"><div><strong>Películas valoradas</strong></div><span class="badge">' + stats.total.toLocaleString("es-PA") + '</span></div>' +
+      '<div class="setting-row"><div><strong>Metadatos enlazados</strong></div><span class="badge">' + stats.matched.toLocaleString("es-PA") + '</span></div>' +
+      '<div class="setting-row"><div><strong>Última actualización</strong></div><span class="kicker">' + escapeHTML(formatDate(state.updatedAt)) + '</span></div>' +
+      '<div class="setting-row"><div><strong>Restablecer perfil</strong></div><button class="btn btn-danger btn-small" type="button" data-action="reset">Borrar datos</button></div></section></div>';
   }
+
 
   function renderApp() {
     const root = $("#appRoot");
@@ -1280,13 +1286,36 @@
   }
 
   function openUtilitySheet(type) {
-    utilitySheet = { type: type, sort: collectionSort, direction: collectionDirection, genres: collectionGenres.slice() };
+    utilitySheet = { type:type, key:"", sort:collectionSort, direction:collectionDirection, genres:collectionGenres.slice() };
+    renderModal();
+  }
+
+  function openInfoSheet(key) {
+    utilitySheet = {type:"info",key:key || "collection"};
     renderModal();
   }
 
   function renderUtilitySheet() {
     const root = $("#modalRoot");
     if (!root || !utilitySheet) return;
+    if (utilitySheet.type === "info") {
+      const help = {
+        progress:{title:"Progreso",body:"Resume las películas vistas, las notas y la media personal de este navegador. Las tendencias por género usan los metadatos enlazados disponibles."},
+        discover:{title:"Descubrir",body:"Aquí tienes recomendaciones, búsqueda TMDB y catálogo local. Las recomendaciones no incluyen películas vistas, pendientes u ocultas."},
+        recommendations:{title:"Recomendaciones",body:"Prisma compara géneros y etiquetas disponibles con tus valoraciones. La nota mostrada es una estimación personal, no una puntuación pública ni una garantía."},
+        collection:{title:"Tu colección",body:"Historial reúne películas vistas o valoradas. Pendientes guarda títulos para más tarde. Ocultos los retira de recomendaciones sin borrar sus notas. La búsqueda y los filtros solo afectan a la colección."},
+        genres:{title:"Géneros",body:"Puedes seleccionar varios. Se muestran películas que coinciden con al menos uno de los géneros escogidos."},
+        metadata:{title:"Carátulas y datos",body:"El JSON aporta títulos, identificadores TMDB, fechas y valoraciones; no incluye imágenes ni sinopsis. Prisma usa los identificadores para recuperar carátulas, géneros, sinopsis, duración y otros datos. Los resultados se guardan en este navegador."},
+        tmdb:{title:"TMDB",body:"TMDB proporciona imágenes y datos de películas. Si no hay dato externo verificable, Prisma ofrece un enlace en vez de inventar una puntuación."},
+        import:{title:"Importar JSON",body:"Prisma importa movies.cH (vistas), movies.cW (pendientes) y movies.rM (valoraciones). Las series de shows se ignoran. Tus notas manuales existentes tienen prioridad."},
+        privacy:{title:"Privacidad",body:"Notas, listas y credencial TMDB se guardan en este navegador. No publiques tu JSON en GitHub. Exporta una copia de seguridad antes de borrar los datos del navegador."},
+        lab:{title:"Laboratorio",body:"Muestra patrones de tus valoraciones y comprueba el motor con el historial enlazado. Las medidas son experimentales."},
+        ratings:{title:"Puntuaciones",body:"La puntuación pública aparece si la fuente la entrega. IMDb, Rotten Tomatoes y Metacritic se abren como enlaces si sus cifras no están disponibles directamente."}
+      };
+      const info = help[utilitySheet.key] || help.collection;
+      root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal utility-sheet info-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><h2 id="sheetTitle">' + escapeHTML(info.title) + '</h2><button class="modal-close" type="button" data-action="close-sheet" aria-label="Cerrar">✕</button></div><p class="info-sheet-copy">' + escapeHTML(info.body) + '</p><button class="btn btn-primary sheet-accept" type="button" data-action="close-sheet">Entendido</button></section></div>';
+      return;
+    }
     if (utilitySheet.type === "sort") {
       const options = [
         {key:"title",label:"Título",hint:"Orden alfabético"},
@@ -1498,13 +1527,13 @@
       '<div class="detail-body"><div class="detail-state-actions">' + stateButton + '<button class="btn btn-quiet" type="button" data-action="manage-lists">Gestionar listas</button><button class="btn btn-quiet" type="button" data-action="toggle-hidden">' + (hidden ? "Mostrar en Prisma" : "Ocultar") + '</button></div>' +
       '<div class="detail-meta-line"><span>Estreno <strong>' + escapeHTML(release) + '</strong></span><span>País <strong>' + escapeHTML(countryLine || "—") + '</strong></span><span>Duración <strong>' + escapeHTML(niceRuntime(movie.runtime)) + '</strong></span><span>Estado <strong>' + escapeHTML(displayMovieStatus(movie.status)) + '</strong></span></div>' +
       (genreChips ? '<div class="detail-chip-row">' + genreChips + '</div>' : "") +
-      '<section class="detail-section"><div class="detail-section-heading"><h3>Puntuaciones</h3><span>Datos externos</span></div><div class="detail-rating-grid">' + ratingMetrics + '</div><p class="kicker rating-disclaimer">Solo se muestra la nota pública de TMDB cuando está disponible. IMDb y las puntuaciones externas se abren como enlaces; TMDB no proporciona directamente esas cifras.</p></section>' +
-      '<section class="detail-section"><div class="detail-section-heading"><h3>Dónde verla</h3><span>Streaming, compra o alquiler</span></div>' + providerMarkup + '</section>' +
+      '<section class="detail-section"><div class="detail-section-heading"><h3>Puntuaciones</h3>' + infoButton("ratings","Información sobre puntuaciones externas") + '</div><div class="detail-rating-grid">' + ratingMetrics + '</div></section>' +
+      '<section class="detail-section"><div class="detail-section-heading"><h3>Dónde verla</h3></div>' + providerMarkup + '</section>' +
       '<section class="detail-section synopsis-section"><div class="detail-section-heading"><h3>Sinopsis</h3></div>' + (movie.overview ? '<p>' + escapeHTML(movie.overview) + '</p>' : '<p class="kicker">No hay sinopsis disponible todavía.</p>') + '</section>' +
       '<div class="detail-action-strip"><button class="btn btn-primary" type="button" data-action="rate">' + (rating ? "Calificar · " + ratingValue(rating) + "/10" : "Calificar") + '</button><button class="btn btn-secondary" type="button" data-action="open-reviews">Comentarios</button><button class="btn btn-secondary" type="button" data-action="open-trailer">Tráiler</button><a class="btn btn-secondary" href="' + escapeHTML(externalMovieUrl(movie,externalIds)) + '" target="_blank" rel="noopener noreferrer">Enlace ↗</a><button class="btn btn-secondary" type="button" data-action="share-movie">Compartir</button></div>' +
-      '<section class="detail-section"><div class="detail-section-heading"><h3>Reparto &amp; equipo</h3><span>Personas</span></div>' + castMarkup + (crewChips ? '<div class="crew-list">' + crewChips + '</div>' : "") + '</section>' +
+      '<section class="detail-section"><div class="detail-section-heading"><h3>Reparto &amp; equipo</h3></div>' + castMarkup + (crewChips ? '<div class="crew-list">' + crewChips + '</div>' : "") + '</section>' +
       (collectionMarkup ? '<section class="detail-section"><div class="detail-section-heading"><h3>Colecciones</h3></div>' + collectionMarkup + '</section>' : "") +
-      (similarMarkup ? '<section class="detail-section"><div class="detail-section-heading"><h3>También podría gustarte</h3><span>Según TMDB</span></div>' + similarMarkup + '</section>' : "") +
+      (similarMarkup ? '<section class="detail-section"><div class="detail-section-heading"><h3>También podría gustarte</h3></div>' + similarMarkup + '</section>' : "") +
       (movieDetail.loading ? '<div class="detail-loading"><span class="spinner"></span><p>Completando la ficha con TMDB…</p></div>' : "") +
       (movieDetail.error ? '<div class="notice detail-error"><strong>No se pudo completar la ficha.</strong> ' + escapeHTML(movieDetail.error) + '<button class="btn btn-secondary btn-small" type="button" data-action="retry-movie-detail">Reintentar</button></div>' : "") +
       (!data && !movieDetail.loading ? '<div class="detail-connection-note"><p>La información básica está disponible. Conecta TMDB en Ajustes para ver reparto, plataformas, tráiler y recomendaciones.</p><button class="btn btn-secondary" type="button" data-nav="data">Conectar TMDB</button></div>' : "") +
@@ -2114,6 +2143,23 @@
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
+  document.addEventListener("error",function (event) {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement)) return;
+    const host = image.parentElement;
+    if (image.classList.contains("poster-image")) {
+      image.remove();
+      return;
+    }
+    if (!host || !host.matches(".collection-row-poster,.compact-poster,.cast-photo,.person-film-poster,.similar-poster,.saga-art,.provider-chip")) return;
+    image.remove();
+    if (host.querySelector(".poster-fallback,.image-fallback")) return;
+    const fallback = document.createElement("span");
+    fallback.className = host.matches(".provider-chip") ? "image-fallback" : "poster-fallback";
+    fallback.textContent = "▣";
+    host.appendChild(fallback);
+  },true);
+
   document.addEventListener("click",async function (event) {
     const nav = event.target.closest("[data-nav]");
     if (nav) {
@@ -2136,6 +2182,7 @@
       if (action === "export-backup") { await exportBackup(); return; }
       if (action === "restore-backup") { $("#backupImportInput").click(); return; }
       if (action === "reset") { await resetAll(); return; }
+      if (action === "show-info") { openInfoSheet(button.dataset.info || "collection"); return; }
       if (action === "genre") { activeGenre = button.dataset.genre || "Todos"; renderApp(); return; }
       if (action === "details") {
         const requestedId = button.dataset.tmdbId || "";
@@ -2345,6 +2392,7 @@
       pruneTMDBCache();
       combineMovies();
       renderApp();
+      if (tmdbCredential && tmdbCredential.value) window.setTimeout(function () { enrichRatedHistoryWithTMDB(); },350);
       if ("serviceWorker" in navigator && window.isSecureContext) {
         navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(function () {
           // La app sigue funcionando si el navegador no permite service workers.
