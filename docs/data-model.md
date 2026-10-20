@@ -46,3 +46,8 @@ La exportación usa un objeto con `format: "prisma-backup"`, número de versión
 3. Preferir IDs fiables para emparejar películas y no fusionar dos IDs TMDB distintos.
 4. Mantener formatos de respaldo reconocibles y documentar cualquier migración.
 5. No emplear una copia de seguridad real en pruebas o CI; usar datos sintéticos.
+
+
+## Descubrimiento y ficha
+
+Descubrir deduplica registros por ID TMDB positivo y, si falta, por título normalizado y año disponible. La identidad mantiene separados los remakes con IDs TMDB diferentes. El catálogo local y los resultados de TMDB omiten películas ya vistas o valoradas; las recomendaciones omiten también las pendientes y ocultas. La ficha completa tiene scroll propio para mostrar sinopsis largas y secciones posteriores. La fecha del historial se presenta como MM/DD/YYYY sin hora.
