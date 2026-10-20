@@ -886,7 +886,7 @@
     const warning = stats.total && profile.withMetadata < 8 ?
       '<div class="notice"><strong>El motor está empezando.</strong> Hay ' + profile.withMetadata + ' películas calificadas enlazadas a géneros o etiquetas. Tus otras notas se conservarán, pero para aprender mejor de ellas importa también un catálogo con títulos y géneros.</div>' : "";
     const empty = stats.total === 0 ?
-      '<div class="empty-state"><div class="empty-icon">✧</div><h3>Vamos a conocer tus gustos</h3><p>Importa tu historial JSON para que Prisma empiece a construir un perfil a partir de tus notas. Las series se ignoran.</p><button type="button" class="btn btn-primary" data-action="import-json">Importar mi JSON</button></div>' : "";
+      '<div class="onboarding-callout"><div class="empty-icon">✧</div><div class="onboarding-copy"><strong>Personaliza tus recomendaciones</strong><p>Importa tus notas para adaptar Prisma a tus gustos. Las series se ignoran.</p></div><button type="button" class="btn btn-primary btn-small" data-action="import-json">Importar JSON</button></div>' : "";
     const recSection = recs.length ?
       recs.map(function (movie) { return movieCard(movie); }).join("") :
       '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No hay recomendaciones disponibles todavía</h3><p>Amplía el catálogo o revisa tus pendientes para darle más opciones a Prisma.</p><button type="button" class="btn btn-secondary" data-nav="catalog">Explorar catálogo</button></div>';
