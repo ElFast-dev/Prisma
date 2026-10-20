@@ -1,14 +1,14 @@
 # Tareas: sistema visual cinematográfico
 
 ## Especificación
-- [ ] Registrar el alcance visual, las decisiones de tokens, los límites y los criterios de aceptación antes de implementar.
-- [ ] Definir requisitos de interfaz para la paleta coherente y el movimiento reducido.
+- [x] Registrar el alcance visual, las decisiones de tokens, los límites y los criterios de aceptación antes de implementar.
+- [x] Definir requisitos de interfaz para la paleta coherente y el movimiento reducido.
 
 ## Implementación
-- [ ] Añadir la hoja final de sistema visual y armonizar acento, foco y estados de interacción.
-- [ ] Actualizar versiones CSS, inventario de la PWA y nombre de caché.
-- [ ] Extender las pruebas de modularidad visual, SDD y tokens.
-- [ ] Actualizar las aserciones Playwright para fondo/acento de marca y conservar los flujos existentes.
+- [x] Añadir la hoja final de sistema visual y armonizar acento, foco y estados de interacción.
+- [x] Actualizar versiones CSS, inventario de la PWA y nombre de caché.
+- [x] Extender las pruebas de modularidad visual, SDD y tokens.
+- [x] Actualizar las aserciones Playwright para fondo/acento de marca y conservar los flujos existentes.
 
 ## Validación y cierre
 - [ ] Validar SDD, sintaxis, pruebas estáticas y flujos Playwright en el PR.

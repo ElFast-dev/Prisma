@@ -1,0 +1,129 @@
+/* Prisma design system — final visual tokens and interaction states. */
+:root {
+  color-scheme: dark;
+  --bg: #080c12;
+  --bg-elevated: #0d111b;
+  --surface: #111722;
+  --surface-raised: #171f2b;
+  --surface-soft: #242b3b;
+  --line: rgba(226,230,255,.085);
+  --line-strong: rgba(226,230,255,.15);
+  --text: #f2f4f7;
+  --muted: #a8b0bf;
+  --subtle: #818b9b;
+  --accent: #c4b5fd;
+  --accent-strong: #a78bfa;
+  --accent-wash: rgba(167,139,250,.14);
+  --mint: #a1e4d3;
+  --gold: #f0d1a0;
+  --danger: #f2a5ad;
+}
+body {
+  background:
+    radial-gradient(ellipse at 78% -18%, rgba(139,92,246,.105), transparent 42rem),
+    linear-gradient(180deg, #090b14 0%, var(--bg) 38rem);
+}
+::selection { color: #15101f; background: var(--accent); }
+.brand img { box-shadow: 0 0 28px rgba(167,139,250,.15); }
+.avatar-button {
+  border-color: rgba(196,181,253,.27);
+  color: var(--accent);
+  background: linear-gradient(140deg, rgba(167,139,250,.16), rgba(167,139,250,.035));
+}
+.eyebrow { color: var(--accent); }
+.eyebrow::before { background: var(--accent-strong); box-shadow: 0 0 9px rgba(167,139,250,.28); }
+.gradient-text {
+  background: linear-gradient(100deg, #f2efff 0%, #c4b5fd 60%, #a5b4fc 100%);
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.btn-primary {
+  color: #171221;
+  background: linear-gradient(135deg, #e9ddff, #c4b5fd);
+  box-shadow: 0 5px 18px rgba(167,139,250,.13), inset 0 1px 0 rgba(255,255,255,.4);
+}
+.btn-primary:focus-visible { outline-color: #ddd2ff; }
+.btn-secondary { border-color: var(--line-strong); }
+.btn-quiet { color: #d0c5ff; }
+.bottom-nav { border-color: rgba(196,181,253,.12); }
+.nav-item.active {
+  color: #f1edff;
+  background: rgba(167,139,250,.14);
+  border-color: rgba(196,181,253,.17);
+}
+.hero.hero-v2 {
+  border-color: rgba(196,181,253,.14);
+  background:
+    radial-gradient(ellipse at 78% 7%, rgba(139,92,246,.12), transparent 36%),
+    linear-gradient(112deg, rgba(24,22,38,.98) 0%, rgba(13,16,27,.98) 72%);
+}
+.hero.hero-v2::before {
+  border-color: rgba(196,181,253,.08);
+  box-shadow: 0 0 0 32px rgba(196,181,253,.018), 0 0 0 75px rgba(196,181,253,.012);
+  background: radial-gradient(circle, rgba(167,139,250,.1), transparent 68%);
+}
+.hero-eyebrow-mark, .profile-status-dot {
+  background: var(--accent-strong);
+  box-shadow: 0 0 12px rgba(167,139,250,.28);
+}
+.hero-profile-card { border-color: rgba(196,181,253,.14); }
+.profile-private {
+  border-color: rgba(196,181,253,.15);
+  color: #d8ceff;
+  background: rgba(167,139,250,.09);
+}
+.profile-progress span { background: linear-gradient(90deg, #a78bfa, #7dd3fc); }
+.profile-import-link { color: #c4b5fd; }
+.badge {
+  color: #d8ceff;
+  background: var(--accent-wash);
+  border-color: rgba(196,181,253,.19);
+}
+.chip.active, .emotion-chip.selected {
+  color: #eee9ff;
+  border-color: rgba(196,181,253,.39);
+  background: var(--accent-wash);
+}
+.field:focus, .field:focus-visible {
+  border-color: rgba(196,181,253,.65);
+  box-shadow: 0 0 0 3px rgba(167,139,250,.12);
+}
+.bar-fill { background: linear-gradient(90deg, #a78bfa, #7dd3fc); }
+.event-mark, .empty-icon {
+  color: var(--accent);
+  background: var(--accent-wash);
+  border-color: rgba(196,181,253,.2);
+}
+.info-button {
+  border-color: rgba(196,181,253,.38);
+  background: rgba(167,139,250,.09);
+  color: #d8ceff;
+}
+.info-button:focus-visible, .collection-row-main:focus-visible,
+.collection-row-side .score-link:focus-visible, .movie-poster-trigger:focus-visible {
+  outline-color: var(--accent);
+}
+.collection-row-side .score-link { border-color: rgba(196,181,253,.2); }
+.movie-card-poster-only .movie-poster-trigger { border-color: rgba(196,181,253,.13); }
+@media (hover: hover) and (pointer: fine) {
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
+  .nav-item.active:hover { background: rgba(167,139,250,.19); }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #f1eaff, #d2c4ff);
+    box-shadow: 0 7px 24px rgba(167,139,250,.18);
+  }
+  .btn-secondary:hover { border-color: rgba(196,181,253,.3); }
+  .chip:hover, .emotion-chip:hover { border-color: rgba(196,181,253,.35); }
+  .avatar-button:hover { border-color: rgba(196,181,253,.5); }
+  .movie-card:hover .poster-art { border-color: rgba(196,181,253,.3); }
+  .movie-card-poster-only .movie-poster-trigger:hover { border-color: rgba(196,181,253,.58); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html, body { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+  }
+}
