@@ -1,0 +1,118 @@
+.modal-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0;
+  background: rgba(3,4,9,.76);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  animation: scrim-in .22s ease both;
+}
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: 92dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 26px 25px calc(25px + env(safe-area-inset-bottom));
+  border: 1px solid rgba(226,230,255,.12);
+  border-radius: 25px 25px 0 0;
+  background: #13151e;
+  box-shadow: 0 -15px 80px rgba(0,0,0,.35);
+  animation: modal-up .35s var(--ease-out) both;
+}
+@keyframes modal-up { from { transform: translateY(24px); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
+.modal-top { display: flex; gap: 15px; align-items: start; justify-content: space-between; }
+.modal-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  background: rgba(255,255,255,.035);
+  transition: color .2s ease, background .2s ease, transform .2s var(--ease-out);
+}
+.modal-close:active { transform: rotate(8deg) scale(.93); }
+.modal h2 { margin-top: 9px; font-size: clamp(28px,6vw,36px); }
+.rating-number { color: var(--gold); font-size: 44px; font-weight: 650; letter-spacing: -.075em; font-variant-numeric: tabular-nums; }
+.emotion-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+.emotion-chip {
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: rgba(255,255,255,.02);
+  color: var(--muted);
+  font-size: 11px;
+  transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s var(--ease-out);
+}
+.emotion-chip.selected { border-color: rgba(113,183,255,.45); background: var(--accent-wash); color: var(--accent); }
+.emotion-chip:active { transform: scale(.96); }
+.toast-root {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: calc(91px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: grid;
+  gap: 8px;
+  width: min(92vw, 430px);
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background: rgba(30,31,45,.96);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.5;
+  box-shadow: 0 12px 32px rgba(0,0,0,.34);
+  animation: toast-in .3s var(--ease-out) both;
+}
+.toast.error { border-color: rgba(242,165,173,.35); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+.loading-state { padding: 80px 0; display: grid; place-items: center; color: var(--muted); }
+.spinner {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  animation: spin .75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.tmdb-progress { display: block; width: 100%; height: 6px; margin-top: 14px; overflow: hidden; border: 0; border-radius: 999px; background: var(--surface-soft); accent-color: var(--accent-strong); }
+.tmdb-history-panel .metrics-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.tmdb-history-panel button:disabled { opacity: .55; cursor: not-allowed; }
+.tmdb-attribution {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 30px 0 0;
+  padding: 17px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,.012);
+}
+.tmdb-attribution > a { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+.tmdb-attribution img { display: block; width: 50px; height: 50px; object-fit: contain; }
+.tmdb-attribution strong { display: block; font-size: 11px; font-weight: 650; }
+.tmdb-attribution p { font-size: 10px; margin: 5px 0; line-height: 1.5; }
+.tmdb-attribution a, .text-link { color: #8fc9ff; font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
+.tmdb-logo { display: block; width: 62px; height: 62px; object-fit: contain; margin-bottom: 14px; }
+.tmdb-credits { margin-top: 16px; }
+footer {
+  margin-top: 45px;
+  padding: 19px 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--subtle);
+  font-size: 10px;
+  line-height: 1.7;
+}

@@ -1,43 +1,81 @@
-# Arquitectura actual de Prisma
+# Arquitectura de Prisma
 
 ## Resumen
 
-Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScript nativos. No hay dependencias npm ni un backend de aplicación. El despliegue está preparado para GitHub Pages.
+Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScript nativos. No necesita un backend ni dependencias de ejecución; GitHub Pages sirve los archivos estáticos y el navegador carga ES modules directamente.
 
-## Piezas principales
+## Mapa de módulos
 
-| Ruta | Responsabilidad observada |
+| Ruta | Responsabilidad |
 | --- | --- |
-| `index.html` | Estructura de la página, elementos de navegación y puntos de montaje de la aplicación. |
-| `styles.css` | Sistema visual oscuro, composición responsive, componentes y animaciones. |
-| `app.js` | Estado, almacenamiento, importación/exportación, catálogo, TMDB, recomendaciones, renderizado y eventos. |
-| `data/catalog.json` | Catálogo de muestra distribuido con la aplicación. |
-| `assets/prisma.svg` | Identidad gráfica de Prisma. |
-| `manifest.webmanifest` | Metadatos de instalación PWA. |
-| `sw.js` | Caché de recursos de mismo origen y recuperación offline del documento cuando hay una copia guardada. |
-| `.github/workflows/deploy-pages.yml` | Publicación estática mediante GitHub Pages. |
+| `index.html` | Documento, navegación, puntos de montaje y entrada ES module versionada. |
+| `app.js` | Punto de entrada y composición: mantiene el estado global de interfaz e inyecta dependencias entre los módulos. Los renderizadores, acciones de dominio, ciclo de vida y servicios principales viven en módulos dedicados. |
+| `js/core/movie-utils.js` | Identidad y normalización de películas, listas, validación de notas y escape de texto. |
+| `js/core/state-model.js` | Estado inicial y normalización del estado persistido/importado. |
+| `js/core/storage.js` | IndexedDB y fallback a localStorage. |
+| `js/recommendations/features.js` | Extracción de características de una película. |
+| `js/recommendations/engine.js` | Perfil de preferencias, predicción y evaluación leave-one-out con dependencias explícitas. |
+| `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
+| `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
+| `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
+| `js/ui/presentation-utils.js` | Utilidades puras de presentación: fechas, formatos, enlaces externos y fragmentos HTML reutilizables. |
+| `js/ui/page-views.js` | Renderizadores de Progreso, Descubrir, Colección, Laboratorio, Ajustes y componentes de catálogo. |
+| `js/ui/modal-views.js` | Renderizadores de fichas de película/persona, diálogo de puntuación y paneles auxiliares. |
+| `js/app/movie-actions.js` | Acciones de dominio para valorar, borrar notas, marcar vistas, gestionar pendientes y ocultar películas. |
+| `js/import-export/actions.js` | Orquestación de las importaciones JSON/CSV, copias de seguridad, restauración y restablecimiento local. |
+| `js/app/event-handlers.js` | Listeners globales de click, input, errores de imágenes y selección de archivos, conectados mediante un contexto explícito. |
+| `js/tmdb/settings-actions.js` | Guardado, prueba y eliminación de credenciales TMDB sin mezclar acciones con el coordinador. |
+| `js/ui/tmdb-views.js` | Renderizado de atribución, resultados de búsqueda y estado de sincronización de TMDB. |
+| `js/tmdb/history-sync.js` | Limpieza de caché local, coincidencia de historial con TMDB, enriquecimiento y persistencia progresiva del catálogo personal. |
+| `js/tmdb/browser-actions.js` | Consultas TMDB para explorar el catálogo y completar características de películas de forma diferida. |
+| `js/tmdb/movie-details.js` | Carga y persistencia de fichas de película, personas y metadatos relacionados. |
+| `js/ui/modal-controller.js` | Estado de interacción para fichas, puntuaciones y paneles auxiliares. |
+| `js/recommendations/ranking.js` | Orden y diversificación de recomendaciones, además de estadísticas por género. |
+| `js/app/runtime.js` | Eventos de actividad, persistencia principal y notificaciones breves. |
+| `js/app/lifecycle.js` | Navegación, inicialización del perfil local y registro del service worker. |
+| `js/import-export/personal-data.js` | Reconocimiento de exportaciones personales, normalización y combinación de registros. |
+| `js/tmdb/client.js` | Credenciales, peticiones HTTP, errores, caché de géneros y conversión de respuestas TMDB. |
+| `styles.css` | Tokens, base y estructura general. |
+| `styles/movie-cards.css` | Tarjetas y composición de películas. |
+| `styles/dialogs-feedback.css` | Diálogos, hojas modales y avisos. |
+| `styles/responsive.css` | Responsive inicial y movimiento reducido. |
+| `styles/visual-refinements.css` | Refinamientos visuales posteriores. |
+| `styles/collection.css` | Experiencia de colección. |
+| `styles/accessibility.css` | Interacción accesible y estados de foco. |
+| `styles/catalog.css` | Tarjetas poster-first de Descubrir. |
+| `styles/collection-content.css` | Jerarquía del contenido de colección. |
+| `styles/movie-details.css` | Ajustes de ficha y puntuaciones externas. |
+| `data/catalog.json` | Catálogo de muestra. |
+| `assets/prisma.svg` | Identidad gráfica. |
+| `manifest.webmanifest` | Metadatos PWA. |
+| `sw.js` | Caché versionada y recuperación offline limitada. |
 
-## Estado y persistencia
+## Reglas de diseño
 
-El código concentra la lógica en una IIFE de `app.js`. El estado principal y el catálogo personalizado se guardan con IndexedDB cuando está disponible, con respaldo basado en localStorage para los casos previstos en el código. La credencial opcional de TMDB se guarda por separado en el navegador.
+El código nuevo debe residir en un módulo con una responsabilidad concreta. El motor, los analizadores y las utilidades puras no deben consultar el DOM, escribir almacenamiento ni depender de estado de interfaz. Las dependencias cambiantes se inyectan como funciones. La capa de aplicación coordina efectos secundarios y conecta los módulos.
 
-El perfil no tiene una API de sincronización remota. Borrar los datos del sitio del navegador puede borrar el perfil; por eso la exportación de una copia es una operación importante.
+La extracción de responsabilidades de este expediente está completa: dominio, persistencia, modelos de catálogo y colección, recomendador, vistas de página y modales, eventos, acciones de usuario, importación/exportación, runtime, ciclo de vida e integración TMDB tienen módulos definidos e interfaces explícitas. `app.js` queda como raíz de composición y mantiene el estado compartido necesario para conectar esas piezas. Las pruebas deben seguir protegiendo esos límites; la funcionalidad nueva debe colocarse en el módulo que corresponda, no volver a concentrarse en la entrada.
 
-## Integraciones externas
+## Estado y privacidad
 
-TMDB es opcional y se consulta desde el navegador después de configurar una credencial. La aplicación también puede solicitar recursos de imágenes alojados por TMDB cuando hay rutas de carteles o fondos. No se debe incluir una credencial real en archivos del repositorio, especificaciones, pruebas, logs o artefactos de CI.
+El perfil personal continúa guardándose en el navegador mediante IndexedDB cuando existe, con fallback a localStorage. No hay sincronización de perfil con un servidor. La credencial opcional de TMDB se mantiene en el navegador. Exportar una copia sigue siendo importante porque borrar los datos del sitio puede eliminar el perfil.
+
+No se deben incluir historiales personales, credenciales, copias privadas ni notas reales en el repositorio, especificaciones, logs o CI. Las pruebas utilizan datos sintéticos.
 
 ## Catálogo y recomendador
 
-Los registros pasan por una normalización común. El motor usa las señales de géneros y etiquetas disponibles en los registros personales o en el catálogo para construir un perfil, producir predicciones acotadas entre 1 y 10 y redactar una explicación. La información insuficiente debe seguir siendo visible como limitación, no disimularse. Las predicciones combinan géneros con mayor influencia que etiquetas dispersas y amortiguan el ajuste hacia la media del perfil cuando la candidata tiene características desconocidas. El nivel de confianza depende de la cobertura y el soporte de las señales. El laboratorio realiza validación leave-one-out sobre valoraciones con metadatos enlazados, respeta los IDs TMDB de cada película retenida y compara el MAE con una referencia basada en la media del pliegue de entrenamiento. Esta medida es experimental y no sustituye una evaluación externa.
+Los registros se normalizan por funciones de dominio compartidas. El motor recibe proveedores de valoraciones, búsqueda de películas, características y validación, lo que permite probar el perfil y la evaluación sin DOM ni almacenamiento. Las predicciones siguen limitadas de 1 a 10, dan mayor influencia a los géneros que a etiquetas aisladas y exponen cobertura/confianza según las señales disponibles. La evaluación leave-one-out respeta IDs TMDB de remakes y compara MAE con la media del pliegue de entrenamiento; sigue siendo una métrica experimental.
 
-## Despliegue y caché
+## TMDB
 
-El workflow de Pages se activa al hacer push a main o manualmente y publica el contenido estático del repositorio. El service worker mantiene una caché versionada y proporciona una copia del documento para navegación offline cuando existe. Las modificaciones a rutas o nombres de activos deben revisar también el manifiesto, el service worker y las referencias desde HTML. Cuando cambia el JavaScript, se debe incrementar su query string de versión y el nombre de caché del shell; `index.html`, `APP_ASSETS` y las comprobaciones de la interfaz deben declarar el mismo URL para evitar reutilizar código anterior.
+TMDB es opcional y se consulta desde el navegador tras configurar una credencial. Las imágenes y metadatos pueden depender de recursos alojados por TMDB. No se realizan llamadas autenticadas a TMDB durante las pruebas ordinarias.
 
-## Restricciones de evolución
+## GitHub Pages y caché
 
-- Mantener la implementación compatible con despliegue estático y rutas relativas de GitHub Pages.
-- Evitar dependencias de ejecución innecesarias mientras la arquitectura siga siendo estática.
-- Evitar reescribir la arquitectura monolítica por estética; cada refactor debe justificar su alcance y beneficio.
-- Añadir pruebas automatizadas de comportamiento de forma incremental, sin usar datos personales reales ni requerir llamadas reales a TMDB.
+Los módulos usan rutas relativas para funcionar bajo el subdirectorio `/Prisma/`. El documento carga `app.js` como ES module. El service worker mantiene una caché identificada por versión, incluye la entrada y sus módulos locales, y borra versiones antiguas. Al modificar JS, hay que actualizar la URL versionada de la entrada, el inventario de recursos, el número de caché y la verificación Playwright.
+
+## Restricciones
+
+- Mantener el despliegue estático y evitar un proceso de compilación mientras los módulos nativos sean suficientes.
+- No cambiar formatos personales ni algoritmo en un refactor de arquitectura.
+- Todo límite modular importante debe estar protegido por pruebas automatizadas; las pruebas deben invocar APIs públicas, no extraer código por marcadores textuales.

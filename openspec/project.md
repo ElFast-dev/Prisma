@@ -23,6 +23,12 @@ Los documentos de referencia se elaboran a partir del código inspeccionado. Cua
 
 Para arreglos triviales, el expediente puede ser breve, pero debe incluir causa o hipótesis, criterio de corrección, tarea y evidencia de verificación.
 
+## Modularidad obligatoria
+
+La arquitectura del cliente debe separar dominio, almacenamiento, integraciones, motor, analizadores y presentación en módulos con dependencias explícitas. Los módulos de dominio no deben acoplarse al DOM ni realizar efectos secundarios. Los cambios de arquitectura siguen SDD y agregan pruebas que ejerciten las APIs exportadas.
+
+La migración del código heredado se hace por responsabilidades y no autoriza ampliar el producto hasta completar la separación pendiente de vistas, controladores y TMDB. Cada extracción debe preservar el comportamiento, las rutas relativas de GitHub Pages, los formatos de datos y la caché PWA.
+
 ## Formato de especificaciones
 
 Cada archivo spec.md usa los encabezados:

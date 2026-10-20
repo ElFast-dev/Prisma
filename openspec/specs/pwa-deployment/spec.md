@@ -34,9 +34,9 @@ Prisma DEBE describir el soporte offline como limitado por los recursos previame
 
 ### Requirement: Invalidación coherente de recursos versionados
 
-Cuando cambie el JavaScript o cualquier recurso estático incluido en la caché del shell, Prisma DEBE publicar una URL versionada nueva para el recurso modificado y un nombre de caché del shell nuevo. El inventario del service worker y las comprobaciones automatizadas de la versión publicada DEBEN usar el mismo URL que index.html.
+Cuando cambie JavaScript, CSS o cualquier recurso estático incluido en la caché del shell, Prisma DEBE publicar una URL versionada nueva para el recurso modificado y un nombre de caché del shell nuevo. El inventario del service worker y las comprobaciones automatizadas de la versión publicada DEBEN usar el mismo URL que index.html.
 
-#### Scenario: Se publica una versión nueva de JavaScript
+#### Scenario: Se publica una versión nueva de un recurso estático
 
 - DADO que cambia el contenido de app.js
 - CUANDO se prepara una publicación estática de Prisma

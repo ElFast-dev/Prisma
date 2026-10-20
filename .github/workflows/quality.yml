@@ -26,11 +26,47 @@ jobs:
       - name: Check JavaScript syntax
         run: node --check app.js
 
+      - name: Check native module syntax
+        run: |
+          node --check app.js
+          node --check js/core/movie-utils.js
+          node --check js/core/storage.js
+          node --check js/core/state-model.js
+          node --check js/recommendations/features.js
+          node --check js/recommendations/engine.js
+          node --check js/catalog/csv-parser.js
+          node --check js/catalog/catalog-model.js
+          node --check js/collection/collection-model.js
+          node --check js/ui/presentation-utils.js
+          node --check js/ui/page-views.js
+          node --check js/ui/modal-views.js
+          node --check js/app/movie-actions.js
+          node --check js/import-export/actions.js
+          node --check js/app/event-handlers.js
+          node --check js/tmdb/settings-actions.js
+          node --check js/ui/tmdb-views.js
+          node --check js/tmdb/history-sync.js
+          node --check js/tmdb/browser-actions.js
+          node --check js/app/lifecycle.js
+          node --check js/app/runtime.js
+          node --check js/recommendations/ranking.js
+          node --check js/ui/modal-controller.js
+          node --check js/tmdb/movie-details.js
+          node --check js/import-export/personal-data.js
+          node --check js/tmdb/client.js
+          node scripts/test-style-modularity.mjs
+
       - name: Check service worker syntax
         run: node --check sw.js
 
       - name: Validate SDD documents
         run: node scripts/validate-sdd.mjs
+
+      - name: Test modular architecture and ES module linking
+        run: node scripts/test-modular-architecture.mjs
+
+      - name: Test isolated TMDB client
+        run: node scripts/test-tmdb-client.mjs
 
       - name: Test CSV import identity
         run: node scripts/test-catalog-import.mjs

@@ -1,0 +1,39 @@
+/* SDD: clean poster-first catalog and consistent collection hierarchy. */
+.poster-grid { align-items: start; }
+.movie-card-poster-only {
+  min-width: 0; padding: 0; border: 0; border-radius: 11px;
+  background: transparent; box-shadow: none;
+}
+.movie-card-poster-only .movie-poster-trigger {
+  display: flex; width: 100%; min-width: 0; aspect-ratio: 2 / 3;
+  align-items: flex-end; justify-content: flex-start; padding: 0;
+  border: 1px solid rgba(207,225,247,.12); border-radius: 11px;
+  background-color: #111c2a; box-shadow: 0 5px 18px rgba(0,0,0,.16);
+  color: #f1f7ff; font: inherit; text-align: left;
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.movie-card-poster-only .movie-poster-trigger::before,
+.movie-card-poster-only .movie-poster-trigger::after { display: none; }
+.movie-card-poster-only .poster-image { object-position: center top; transition: transform .32s ease; }
+.movie-card-poster-only .poster-image ~ .poster-title,
+.movie-card-poster-only .poster-year { display: none; }
+.movie-card-poster-only .poster-title {
+  display: block; width: 100%; margin: 0; padding: 18px 12px 14px;
+  background: linear-gradient(180deg,transparent,rgba(7,12,20,.88));
+  font-family: Inter,ui-sans-serif,system-ui,sans-serif;
+  font-size: clamp(12px,1.1vw,15px); font-weight: 650; letter-spacing: -.025em;
+  line-height: 1.2; text-shadow: 0 1px 10px rgba(0,0,0,.5);
+}
+.movie-card-poster-only .poster-symbol {
+  margin: auto auto 7px; color: rgba(215,234,255,.66); border-color: rgba(215,234,255,.22);
+}
+.movie-poster-trigger:focus-visible { outline: 2px solid #8fc9ff; outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .movie-card-poster-only .movie-poster-trigger:hover { border-color: rgba(143,201,255,.56); box-shadow: 0 10px 26px rgba(0,0,0,.28); }
+  .movie-card-poster-only .movie-poster-trigger:hover .poster-image { transform: scale(1.035); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movie-card-poster-only .movie-poster-trigger, .movie-card-poster-only .poster-image { transition: none !important; }
+}
+
