@@ -12,4 +12,4 @@
 
 ## Evidencia y límites
 
-El código actual se inspeccionó mediante los archivos versionados del repositorio. No se modificó la aplicación funcional. En el commit c4aacc003f6878e36fba75a7ee883ad66f1575db, GitHub Actions informó éxito en el workflow SDD and static quality (run 39473050217) y en Validate Prisma (run 39473050665). Se debe revisar el resultado de las nuevas ejecuciones que genere cualquier commit posterior antes de cerrar el expediente. La primera CI no acredita comportamiento correcto en un navegador; solo comprueba sintaxis y estructura documental.
+El código base se inspeccionó mediante los archivos versionados. La adopción del flujo SDD no alteró la lógica de ejecución; un cambio piloto acotado añadió la preservación de IDs TMDB en CSV. GitHub Actions pasó SDD and static quality (run #15), Validate Prisma (run #122) y Prisma UI screenshots (run #95). La CI verifica sintaxis, estructura documental, parser CSV y un flujo de navegador; no acredita automáticamente todos los casos de la aplicación. La PR permanece en borrador y el expediente de adopción no se archiva hasta la revisión y aceptación.
