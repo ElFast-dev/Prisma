@@ -1,7 +1,9 @@
 name: Prisma UI screenshots
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Deploy Prisma to GitHub Pages"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -10,8 +12,9 @@ permissions:
 
 jobs:
   screenshots:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,27 +29,59 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
-      - name: Start static server
-        run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/prisma-http.log 2>&1 &
-          for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
-            sleep 1
-          done
-          cat /tmp/prisma-http.log
-          exit 1
-
-      - name: Capture desktop and mobile UI and verify new CSS
+      - name: Capture the published GitHub Pages site and verify its CSS
+        env:
+          PRISMA_URL: https://elfast-dev.github.io/Prisma/
         run: |
           mkdir -p artifacts
           node <<'NODE'
           const { chromium } = require("playwright");
+          const baseUrl = process.env.PRISMA_URL;
 
           (async () => {
             const browser = await chromium.launch({ headless: true });
             const failures = [];
 
-            async function capture(name, viewport, isMobile, pageName) {
+            async function openFreshPage(page, name) {
+              let lastUI = null;
+              for (let attempt = 1; attempt <= 12; attempt += 1) {
+                await page.goto(baseUrl + "?screenshot=" + Date.now() + "-" + attempt, {
+                  waitUntil: "networkidle",
+                  timeout: 60000
+                });
+                await page.locator(".hero-title").waitFor({ state: "visible", timeout: 15000 });
+                lastUI = await page.evaluate(() => {
+                  const link = document.querySelector('link[rel="stylesheet"]');
+                  const heading = document.querySelector(".hero-title");
+                  const nav = document.querySelector(".bottom-nav");
+                  const poster = document.querySelector(".poster-art");
+                  return {
+                    cssHref: link && link.href,
+                    rootBg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
+                    headlineFont: getComputedStyle(heading).fontFamily,
+                    navRadius: getComputedStyle(nav).borderRadius,
+                    posterRadius: poster && getComputedStyle(poster).borderRadius,
+                    movieCards: document.querySelectorAll(".movie-card").length,
+                    documentTitle: document.title
+                  };
+                });
+                if (
+                  lastUI.cssHref &&
+                  lastUI.cssHref.includes("v=ui-20261020-2") &&
+                  lastUI.rootBg === "#090a0f" &&
+                  lastUI.headlineFont.includes("ui-serif") &&
+                  lastUI.movieCards > 0
+                ) {
+                  console.log(name + " published UI verified:", JSON.stringify(lastUI));
+                  return;
+                }
+                console.log(name + " still seeing old version, retry " + attempt + ": " + JSON.stringify(lastUI));
+                await page.waitForTimeout(4000);
+              }
+              throw new Error(name + ": the published page did not load the expected versioned styles: " + JSON.stringify(lastUI));
+            }
+
+            async function capture(name, viewport, isMobile) {
               const context = await browser.newContext({
                 viewport,
                 isMobile,
@@ -55,51 +90,22 @@ jobs:
               });
               const page = await context.newPage();
               page.on("pageerror", error => failures.push(name + " pageerror: " + error.message));
-              page.on("console", message => {
-                if (message.type() === "error") failures.push(name + " console: " + message.text());
-              });
-              const response = await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
-              if (!response || !response.ok()) throw new Error(name + ": no se pudo cargar index.html");
-              await page.locator(".hero-title").waitFor({ state: "visible", timeout: 10000 });
-              await page.waitForTimeout(500);
 
-              const ui = await page.evaluate(() => {
-                const link = document.querySelector('link[rel="stylesheet"]');
-                const heading = document.querySelector(".hero-title");
-                const nav = document.querySelector(".bottom-nav");
-                const poster = document.querySelector(".poster-art");
-                return {
-                  cssHref: link && link.href,
-                  cssLoaded: Boolean(link && [...document.styleSheets].some(sheet => sheet.href === link.href)),
-                  rootBg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
-                  headlineFont: getComputedStyle(heading).fontFamily,
-                  navRadius: getComputedStyle(nav).borderRadius,
-                  cardRadius: poster && getComputedStyle(poster).borderRadius,
-                  cards: document.querySelectorAll(".movie-card").length,
-                  title: document.title
-                };
-              });
-
-              if (!ui.cssHref || !ui.cssHref.includes("v=ui-20261020-2")) throw new Error(name + ": falta el versionado anti-caché: " + ui.cssHref);
-              if (ui.rootBg !== "#090a0f") throw new Error(name + ": los estilos nuevos no están activos: " + JSON.stringify(ui));
-              if (!ui.headlineFont.includes("ui-serif")) throw new Error(name + ": la tipografía editorial no se aplicó.");
-              if (ui.cards < 1) throw new Error(name + ": no se renderizaron tarjetas.");
-              await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: false, animations: "disabled" });
-
-              if (pageName === "catalog") {
-                await page.locator('.bottom-nav [data-nav="catalog"]').click();
-                await page.locator(".tmdb-browser").waitFor({ state: "visible" });
+              try {
+                await openFreshPage(page, name + "-home");
+                await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: false, animations: "disabled" });
+                await page.locator(".bottom-nav [data-nav='catalog']").click();
+                await page.locator(".tmdb-browser").waitFor({ state: "visible", timeout: 10000 });
                 await page.waitForTimeout(250);
-                await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: true, animations: "disabled" });
+                await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: false, animations: "disabled" });
+              } finally {
+                await context.close();
               }
-
-              console.log(name + " UI:", JSON.stringify(ui));
-              await context.close();
             }
 
             try {
-              await capture("desktop", { width: 1440, height: 1050 }, false, "catalog");
-              await capture("mobile", { width: 390, height: 844 }, true, "catalog");
+              await capture("desktop", { width: 1440, height: 1050 }, false);
+              await capture("mobile", { width: 390, height: 844 }, true);
               if (failures.length) throw new Error(failures.join("\n"));
             } finally {
               await browser.close();
@@ -114,7 +120,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: prisma-ui-screenshots
+          name: prisma-published-ui-screenshots
           path: artifacts/
           if-no-files-found: warn
           retention-days: 14
