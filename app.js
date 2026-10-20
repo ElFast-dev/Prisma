@@ -21,6 +21,7 @@
   let seedCatalog = [];
   let customCatalog = [];
   let catalog = [];
+  let catalogByTitle = new Map();
   let state = emptyState();
   let currentPage = "home";
   let catalogQuery = "";
@@ -169,12 +170,12 @@
         }
       }
     });
-    catalog = Array.from(map.values());
+    catalog = Array.from(map.values()).sort(function (a, b) { return a.title.localeCompare(b.title, "es"); });
+    catalogByTitle = map;
   }
 
   function findMovie(title) {
-    const key = titleKey(title);
-    return catalog.find(function (movie) { return movie.key === key; }) || null;
+    return catalogByTitle.get(titleKey(title)) || null;
   }
 
   function ratingFor(title) {
@@ -408,7 +409,7 @@
     const empty = stats.total === 0 ?
       '<div class="empty-state"><div class="empty-icon">✧</div><h3>Vamos a conocer tus gustos</h3><p>Importa tu historial JSON para que Prisma empiece a construir un perfil a partir de tus notas. Las series se ignoran.</p><button type="button" class="btn btn-primary" data-action="import-json">Importar mi JSON</button></div>' : "";
     const recSection = recs.length ?
-      movieGrid(recs) :
+      recs.map(function (movie) { return movieCard(movie); }).join("") :
       '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No hay recomendaciones disponibles todavía</h3><p>Amplía el catálogo o revisa tus pendientes para darle más opciones a Prisma.</p><button type="button" class="btn btn-secondary" data-nav="catalog">Explorar catálogo</button></div>';
     return '<section class="hero"><div class="hero-content"><div class="eyebrow">Tu laboratorio cinematográfico · V 0.1</div>' +
       '<h1 class="hero-title">No busques cualquier película.<br><span class="gradient-text">Encuentra la que te haga sentir.</span></h1>' +
@@ -437,11 +438,6 @@
       const queryOkay = !query || text.indexOf(query) >= 0;
       const genreOkay = activeGenre === "Todos" || (movie.genres || []).some(function (genre) { return genre.toLowerCase() === activeGenre.toLowerCase(); });
       return queryOkay && genreOkay;
-    }).sort(function (a, b) {
-      const ar = ratingFor(a.title), br = ratingFor(b.title);
-      if (ar && !br) return -1;
-      if (br && !ar) return 1;
-      return a.title.localeCompare(b.title, "es");
     });
   }
 
