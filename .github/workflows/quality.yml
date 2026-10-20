@@ -37,3 +37,6 @@ jobs:
 
       - name: Test rating-source transparency
         run: node scripts/test-movie-rating-sources.mjs
+
+      - name: Test discovery and film detail UX
+        run: node scripts/test-discovery-detail-polish.mjs

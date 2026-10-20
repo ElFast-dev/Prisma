@@ -85,8 +85,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-16") &&
-                  lastUI.appSrc.includes("v=ui-20261020-17") &&
+                  lastUI.cssHref.includes("v=ui-20261020-17") &&
+                  lastUI.appSrc.includes("v=ui-20261020-18") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
@@ -129,6 +129,19 @@ jobs:
                 await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: false, animations: "disabled" });
                 await onboarding.locator(".progress-onboarding-actions [data-nav='catalog']").click();
                 await page.locator(".discover-heading h1").waitFor({ state: "visible", timeout: 10000 });
+                const recommendedMovies = await page.locator(".featured-recommendations .movie-poster-trigger").evaluateAll(nodes =>
+                  nodes.map(node => ({
+                    id: node.getAttribute("data-tmdb-id") || "",
+                    title: (node.getAttribute("data-title") || "").trim().toLowerCase(),
+                    year: node.getAttribute("data-year") || ""
+                  }))
+                );
+                const recommendationKeys = recommendedMovies.map(movie =>
+                  movie.id ? "tmdb:" + movie.id : "title:" + movie.title + ":" + movie.year
+                );
+                if (new Set(recommendationKeys).size !== recommendationKeys.length) {
+                  throw new Error(name + ": Recomendadas para ti contains duplicate movie identities: " + JSON.stringify(recommendedMovies));
+                }
                 await page.locator(".topbar [data-nav='data']").click();
                 await page.locator(".settings-grid").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='home']").click();
@@ -236,6 +249,14 @@ jobs:
                 await page.locator(".collection-mode-switch [data-mode='movies']").click();
                 await page.locator(".collection-tabs [data-tab='history']").click();
                 await page.locator(".collection-row-main[data-title='Prisma Test Seen']").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".collection-row-main[data-title='Prisma Test Seen']").click();
+                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+                const watchedDateLabel = (await page.locator(".detail-state-button small").innerText()).trim();
+                const dateParts = watchedDateLabel.split("/");
+                if (dateParts.length !== 3 || dateParts[0].length !== 2 || dateParts[1].length !== 2 || dateParts[2].length !== 4 || watchedDateLabel.includes(":")) {
+                  throw new Error(name + ": watched date must be MM/DD/YYYY without time: " + watchedDateLabel);
+                }
+                await page.locator(".detail-sheet [data-action='close-modal']").click();
                 const recentLayout = await page.locator(".recent-grid").evaluate(node => ({
                   columns: getComputedStyle(node).gridTemplateColumns.split(" ").length,
                   count: node.querySelectorAll(".recent-movie").length
@@ -300,15 +321,24 @@ jobs:
                   throw new Error(name + ": a series was included in the movie import");
                 }
 
+                await page.locator(".bottom-nav [data-nav='catalog']").click();
+                await page.locator("[data-global-search]").fill("Prisma Test Seen");
+                await page.waitForTimeout(250);
+                const alreadySeenDiscoverCards = await page.locator(".local-catalog-section .movie-card [data-action='details'][data-title='Prisma Test Seen']").count();
+                if (alreadySeenDiscoverCards !== 0) {
+                  throw new Error(name + ": a movie already watched still appears in local Discover");
+                }
+                await page.locator("[data-global-search]").fill("");
+                await page.waitForTimeout(500);
                 await page.locator(".topbar [data-nav='data']").click();
                 await page.locator("#catalogImportInput").setInputFiles({
                   name: "prisma-remake-test.csv",
                   mimeType: "text/csv",
                   buffer: Buffer.from(
-                    "movieId,title,year,tmdb_id,genres\n" +
-                    "50001,Prisma CSV Remake Fixture,1998,990001,Drama\n" +
-                    "50002,Prisma CSV Remake Fixture,2024,990002,Action\n" +
-                    "60001,Prisma MovieLens Namespace Fixture (2001),2001,,Drama"
+                    "movieId,title,year,tmdb_id,genres,overview\n" +
+                    "50001,Prisma CSV Remake Fixture,1998,990001,Drama,\"" + ("La historia sigue a una investigadora que descubre un misterio en su ciudad. ").repeat(28) + "\"\n" +
+                    "50002,Prisma CSV Remake Fixture,2024,990002,Action,Una sinopsis breve\n" +
+                    "60001,Prisma MovieLens Namespace Fixture (2001),2001,,Drama,Sinopsis auxiliar"
                   )
                 });
                 await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 3 títulos importados."));
@@ -369,6 +399,26 @@ jobs:
                 // Hiding one remake must not hide the other movie that shares its title.
                 await page.locator("#localCatalogResults .movie-card [data-action='details'][data-tmdb-id='990001']").click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+                const longSynopsisText = (await page.locator(".detail-sheet .synopsis-section p").innerText()).trim();
+                const detailScrollBefore = await page.locator(".detail-sheet .detail-scroll").evaluate(node => ({
+                  clientHeight: node.clientHeight,
+                  scrollHeight: node.scrollHeight,
+                  overflowY: getComputedStyle(node).overflowY
+                }));
+                if (longSynopsisText.length < 1000 || detailScrollBefore.scrollHeight <= detailScrollBefore.clientHeight || detailScrollBefore.overflowY !== "auto") {
+                  throw new Error(name + ": long synopsis cannot scroll inside the movie detail sheet: " + JSON.stringify({ synopsisLength: longSynopsisText.length, ...detailScrollBefore }));
+                }
+                await page.locator(".detail-sheet .detail-scroll").evaluate(node => { node.scrollTop = node.scrollHeight; });
+                const reachedSynopsisEnd = await page.locator(".detail-sheet .detail-scroll").evaluate(node => Math.ceil(node.scrollTop + node.clientHeight) >= node.scrollHeight - 1);
+                if (!reachedSynopsisEnd) throw new Error(name + ": movie detail cannot scroll to its final sections");
+                await page.locator(".detail-sheet .detail-scroll").evaluate(node => { node.scrollTop = 0; });
+                const ratingCardSize = await page.locator(".detail-rating-card").first().evaluate(node => {
+                  const rect = node.getBoundingClientRect();
+                  return { width: rect.width, height: rect.height, minHeight: getComputedStyle(node).minHeight };
+                });
+                if (ratingCardSize.height >= ratingCardSize.width || ratingCardSize.height > 80) {
+                  throw new Error(name + ": rating links still render as oversized squares: " + JSON.stringify(ratingCardSize));
+                }
                 await page.locator(".detail-state-actions [data-action='toggle-hidden']").click();
                 await page.waitForFunction(() => {
                   const button = document.querySelector(".detail-state-actions [data-action='toggle-hidden']");

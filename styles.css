@@ -1346,7 +1346,8 @@ h1,h2,h3 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMac
   width: min(940px,100%); max-width: 940px; max-height: 94dvh; padding: 0; overflow: hidden;
   border-radius: 20px; background: #0a111b;
 }
-.detail-scroll,.person-sheet { overflow: auto; overscroll-behavior: contain; }
+.detail-scroll { max-height: inherit; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.person-sheet { overflow: auto; overscroll-behavior: contain; }
 .detail-hero {
   position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 300px; padding: 20px 25px 28px;
   background-color: #15263a; background-position: center 35%; background-size: cover;
@@ -1944,4 +1945,23 @@ h1,h2,h3 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMac
 }
 @media (prefers-reduced-motion: reduce) {
   .collection-tool,.collection-view-toggle,.recent-movie { transition: none !important; }
+}
+
+
+/* Detalles: el contenido largo debe desplazarse dentro de la ficha, sin quedar recortado. */
+.detail-scroll { max-height: inherit; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.synopsis-section p { overflow-wrap: anywhere; }
+
+/* Puntuaciones externas: tarjetas compactas en vez de cuadrados altos. */
+.detail-rating-grid { gap: 7px; }
+.detail-rating-card { min-height: 0; padding: 8px 10px; gap: 2px; justify-content: center; }
+.detail-rating-card strong { font-size: 18px; }
+.detail-rating-card span { font-size: 9px; }
+.detail-rating-card small { font-size: 8px; }
+.rating-external strong { font-size: 16px; }
+@media (max-width: 760px) {
+  .detail-scroll { max-height: inherit; }
+  .detail-rating-grid { gap: 6px; }
+  .detail-rating-card { min-height: 0; padding: 7px 8px; }
+  .detail-rating-card strong { font-size: 17px; }
 }

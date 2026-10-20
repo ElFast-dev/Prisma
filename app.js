@@ -148,6 +148,28 @@
     return titleKey(left.title) === titleKey(right.title);
   }
 
+  function sameDiscoveryMovie(left, right) {
+    if (!left || !right) return false;
+    const leftId = movieTmdbId(left);
+    const rightId = movieTmdbId(right);
+    if (leftId && rightId) return leftId === rightId;
+    const leftTitle = titleKey(left.title);
+    const rightTitle = titleKey(right.title);
+    if (!leftTitle || leftTitle !== rightTitle) return false;
+    const leftYear = Number(left.year) || 0;
+    const rightYear = Number(right.year) || 0;
+    return !leftYear || !rightYear || leftYear === rightYear;
+  }
+
+  function uniqueDiscoveryMovies(movies) {
+    const unique = [];
+    (movies || []).forEach(function (movie) {
+      if (!movie || !titleKey(movie.title)) return;
+      if (!unique.some(function (existing) { return sameDiscoveryMovie(existing,movie); })) unique.push(movie);
+    });
+    return unique;
+  }
+
   function splitList(value) {
     if (Array.isArray(value)) return value.map(function (v) { return String(v).trim(); }).filter(Boolean);
     return String(value || "").split(/[|;,]/).map(function (v) { return v.trim(); }).filter(Boolean);
@@ -727,8 +749,11 @@
       return;
     }
     const label = tmdbMode === "search" ? "Resultados para «" + catalogQuery.trim() + "»" : "Películas populares en TMDB";
+    const visibleResults = uniqueDiscoveryMovies(tmdbResults).filter(function (movie) {
+      return !isInHistory(movie.title,movie.tmdbId) && !isHidden(movie.title,movie.tmdbId);
+    });
     status.textContent = (tmdbLoading ? "Consultando TMDB…" : (tmdbError ? "No se pudo completar la consulta." : label)) +
-      (tmdbResults.length && !tmdbLoading && !tmdbError ? " · " + tmdbResults.length + " resultados cargados" : "");
+      (tmdbResults.length && !tmdbLoading && !tmdbError ? " · " + visibleResults.length + " disponibles" : "");
     if (tmdbLoading && !tmdbResults.length) {
       target.innerHTML = '<div class="loading-state"><span class="spinner"></span><p>Buscando películas…</p></div>';
       return;
@@ -741,7 +766,10 @@
       target.innerHTML = '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No hay resultados</h3><p>Prueba otra búsqueda.</p></div>';
       return;
     }
-    target.innerHTML = movieGrid(tmdbResults) +
+    const resultsMarkup = visibleResults.length
+      ? movieGrid(visibleResults)
+      : '<div class="empty-inline discovery-filtered-empty"><strong>No hay películas nuevas en estos resultados.</strong><span>Los títulos vistos y ocultos se omiten de Descubrir.</span></div>';
+    target.innerHTML = resultsMarkup +
       (tmdbPage < tmdbTotalPages ? '<div class="load-more-wrap"><button class="btn btn-secondary" type="button" data-action="tmdb-more">' + (tmdbLoading ? "Cargando…" : "Cargar más") + '</button></div>' : "");
   }
 
@@ -862,12 +890,8 @@
 
   function getRecommendations(limit) {
     const profile = buildProfile();
-    const ratedKeys = new Set(state.rated.map(movieIdentityKey));
-    const pendingKeys = new Set(state.watchlist.map(movieIdentityKey));
-    const watchedKeys = new Set((state.watched || []).map(movieIdentityKey));
-    const hiddenKeys = new Set((state.hidden || []).map(movieIdentityKey));
-    const results = catalog.filter(function (movie) {
-      return !ratedKeys.has(movie.key) && !pendingKeys.has(movie.key) && !watchedKeys.has(movie.key) && !hiddenKeys.has(movie.key) && movie.source !== "history";
+    const results = uniqueDiscoveryMovies(catalog).filter(function (movie) {
+      return !isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history";
     }).map(function (movie) {
       const prediction = predictRating(movie, profile);
       return Object.assign({}, movie, { prediction: prediction });
@@ -966,7 +990,7 @@
     const posterFallback = '<span class="poster-symbol" aria-hidden="true">✦</span><strong class="poster-title">' + escapeHTML(movie.title) + '</strong><span class="poster-year">' + escapeHTML(movie.year || "Película") + '</span>';
     if (opts.posterOnly) {
       return '<article class="movie-card movie-card-poster-only">' +
-        '<button class="poster-art movie-poster-trigger" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '" aria-label="Ver detalles de ' + escapeHTML(movie.title) + '" style="' + posterBackground + '">' +
+        '<button class="poster-art movie-poster-trigger" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '" data-year="' + escapeHTML(movie.year || "") + '" aria-label="Ver detalles de ' + escapeHTML(movie.title) + '" style="' + posterBackground + '">' +
         posterImage + posterFallback + '</button></article>';
     }
     const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">' + actionLabel + '</button></div>';
@@ -1029,11 +1053,11 @@
 
   function filterCatalog() {
     const query = titleKey(catalogQuery);
-    return catalog.filter(function (movie) {
+    return uniqueDiscoveryMovies(catalog).filter(function (movie) {
       const text = titleKey(movie.title + " " + (movie.genres || []).join(" ") + " " + (movie.tags || []).join(" ") + " " + (movie.year || ""));
       const queryOkay = !query || text.indexOf(query) >= 0;
       const genreOkay = activeGenre === "Todos" || (movie.genres || []).some(function (genre) { return titleKey(genre) === titleKey(activeGenre); });
-      return queryOkay && genreOkay && !isHidden(movie.title, movie.tmdbId);
+      return queryOkay && genreOkay && !isInHistory(movie.title,movie.tmdbId) && !isHidden(movie.title,movie.tmdbId);
     });
   }
 
@@ -1525,11 +1549,13 @@
     return new Intl.DateTimeFormat("es-PA",{day:"numeric",month:"long",year:"numeric"}).format(date);
   }
 
-  function dateTimeLabel(value) {
+  function formatWatchedDate(value) {
     if (!value) return "Fecha desconocida";
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return new Intl.DateTimeFormat("es-PA",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(date);
+    if (Number.isNaN(date.getTime())) return "Fecha desconocida";
+    const month = String(date.getMonth() + 1).padStart(2,"0");
+    const day = String(date.getDate()).padStart(2,"0");
+    return month + "/" + day + "/" + date.getFullYear();
   }
 
   function displayMovieStatus(status) {
@@ -1601,7 +1627,7 @@
     const release = movie.releaseDate ? dateLabel(movie.releaseDate) : (movie.year || "Estreno no disponible");
     const markedAt = (state.watched || []).find(function (entry) { return sameMovieRecord(entry,movie); })?.watchedAt || (rating && (rating.watchedAt || rating.updatedAt)) || null;
     const stateButton = seen ?
-      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(markedAt ? dateTimeLabel(markedAt) : "Fecha no registrada") + '</small></button>' :
+      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(markedAt ? formatWatchedDate(markedAt) : "Fecha no registrada") + '</small></button>' :
       (pending ?
         '<button class="btn btn-secondary detail-state-button" type="button" data-action="manage-pending"><span aria-hidden="true">✓</span> Añadido a pendientes</button><button class="btn btn-primary" type="button" data-action="mark-watched">Marcar como vista</button>' :
         '<button class="btn btn-primary" type="button" data-action="manage-history">Añadir al historial</button><button class="btn btn-secondary" type="button" data-action="manage-pending">＋ Pendientes</button>');
@@ -1633,7 +1659,9 @@
     }).join("") + '</div>' : (data ? '<a class="btn btn-secondary btn-small" href="' + escapeHTML(voteLink + "/watch") + '" target="_blank" rel="noopener noreferrer">Consultar disponibilidad ↗</a>' : '<span class="kicker">—</span>');
     const collection = data && movie.collection ? movie.collection : null;
     const collectionMarkup = collection ? '<a class="saga-card" href="https://www.themoviedb.org/collection/' + encodeURIComponent(collection.id) + '" target="_blank" rel="noopener noreferrer"><span class="saga-art">' + (collection.poster_path ? '<img src="https://image.tmdb.org/t/p/w185' + escapeHTML(collection.poster_path) + '" alt="" loading="lazy">' : "▣") + '</span><span><small>PERTENECE A LA COLECCIÓN</small><strong>' + escapeHTML(collection.name) + '</strong></span><span aria-hidden="true">↗</span></a>' : "";
-    const recs = data && data.recommendations ? data.recommendations.slice(0,12) : [];
+    const recs = data && data.recommendations ? uniqueDiscoveryMovies(data.recommendations).filter(function (item) {
+      return !isMovieInCollection(item.title,item.tmdbId);
+    }).slice(0,12) : [];
     const similarMarkup = recs.length ? '<div class="similar-carousel">' + recs.map(function (item) {
       const marker = isInHistory(item.title,item.tmdbId) ? "seen" : (isInWatchlist(item.title,item.tmdbId) ? "pending" : "");
       return '<button class="similar-poster" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + (marker ? '<i class="collection-marker ' + marker + '"></i>' : "") + '<strong>' + escapeHTML(item.title) + '</strong></button>';
