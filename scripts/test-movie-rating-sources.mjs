@@ -16,7 +16,7 @@ function escapeHTML(value) {
   })[character]);
 }
 
-const helpersSource = section('  function formatVoteCount(value) {', '  function renderMovieDetails() {');
+const helpersSource = section('  function hasTrustedTMDBScore(movie) {', '  function renderMovieDetails() {');
 const helpers = new Function('escapeHTML', helpersSource + '\nreturn { formatVoteCount, hasTrustedTMDBScore, buildRatingMetrics };')(escapeHTML);
 assert.equal(helpers.formatVoteCount(1), '1 voto');
 assert.equal(helpers.formatVoteCount(0), '');
