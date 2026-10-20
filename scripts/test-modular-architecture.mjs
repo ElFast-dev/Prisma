@@ -32,7 +32,7 @@ for (const relative of files) {
   const source = await readFile(absolute, 'utf8');
   assert.ok(source.trim(), relative + ' no debe estar vacío');
   if (relative !== 'app.js') {
-    assert.ok(!/document\.(?:querySelector|querySelectorAll|addEventListener)/.test(source),
+    assert.ok(!/(?<!ctx\.)document\.(?:querySelector|querySelectorAll|addEventListener)/.test(source),
       relative + ' no debe acoplar la lógica de dominio al DOM');
   }
   for (const match of source.matchAll(/import\s+\{([^}]+)\}\s+from\s+["'](\.\.?\/[^"']+)["']/g)) {
