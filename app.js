@@ -739,7 +739,7 @@
   }
 
   function renderCatalogResults() {
-    const target = $("#catalogResults");
+    const target = $("#localCatalogResults");
     if (!target) return;
     const results = filterCatalog();
     const cap = 80;
