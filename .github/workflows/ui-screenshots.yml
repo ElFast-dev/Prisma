@@ -197,7 +197,7 @@ jobs:
                     "60001,Prisma MovieLens Namespace Fixture (2001),2001,,Drama"
                   )
                 });
-                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 1 títulos importados."));
+                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 3 títulos importados."));
 
                 async function readCustomCatalogFixture() {
                   return page.evaluate(() => new Promise((resolve, reject) => {
@@ -234,7 +234,7 @@ jobs:
                   mimeType: "text/csv",
                   buffer: Buffer.from("movieId,title,year,tmdb_id,genres\n50001,Prisma CSV Remake Fixture,1998,990001,Comedy")
                 });
-                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado:"));
+                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 1 títulos importados."));
                 const reimportedFixture = await readCustomCatalogFixture();
                 const reimportedRemakes = reimportedFixture.filter(movie => movie.title === "Prisma CSV Remake Fixture");
                 const reimportedIds = reimportedRemakes.map(movie => movie.tmdbId).sort();
