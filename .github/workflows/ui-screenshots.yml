@@ -197,7 +197,7 @@ jobs:
                     "60001,Prisma MovieLens Namespace Fixture (2001),2001,,Drama"
                   )
                 });
-                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado:"));
+                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 1 títulos importados."));
 
                 async function readCustomCatalogFixture() {
                   return page.evaluate(() => new Promise((resolve, reject) => {
