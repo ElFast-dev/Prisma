@@ -44,7 +44,8 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `styles/accessibility.css` | Interacción accesible y estados de foco. |
 | `styles/catalog.css` | Tarjetas poster-first de Descubrir. |
 | `styles/collection-content.css` | Jerarquía del contenido de colección. |
-| `styles/movie-details.css` | Ajustes de ficha y puntuaciones externas. |\n| `styles/brand-system.css` | Tokens centrales de marca, paleta cinematográfica, estados interactivos coherentes y respeto global por movimiento reducido. |
+| `styles/movie-details.css` | Ajustes de ficha y puntuaciones externas. |
+| `styles/brand-system.css` | Tokens centrales de marca, paleta cinematográfica, estados interactivos coherentes y respeto global por movimiento reducido. |
 | `data/catalog.json` | Catálogo de muestra. |
 | `assets/prisma.svg` | Identidad gráfica. |
 | `manifest.webmanifest` | Metadatos PWA. |
@@ -54,7 +55,9 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 
 El código nuevo debe residir en un módulo con una responsabilidad concreta. El motor, los analizadores y las utilidades puras no deben consultar el DOM, escribir almacenamiento ni depender de estado de interfaz. Las dependencias cambiantes se inyectan como funciones. La capa de aplicación coordina efectos secundarios y conecta los módulos.
 
-La capa visual final se unifica en `styles/brand-system.css`, que concentra la identidad cromática y las reglas transversales de interacción; las hojas anteriores conservan los componentes de cada área.\n\nLa extracción de responsabilidades de este expediente está completa: dominio, persistencia, modelos de catálogo y colección, recomendador, vistas de página y modales, eventos, acciones de usuario, importación/exportación, runtime, ciclo de vida e integración TMDB tienen módulos definidos e interfaces explícitas. `app.js` queda como raíz de composición y mantiene el estado compartido necesario para conectar esas piezas. Las pruebas deben seguir protegiendo esos límites; la funcionalidad nueva debe colocarse en el módulo que corresponda, no volver a concentrarse en la entrada.
+La capa visual final se unifica en `styles/brand-system.css`, que concentra la identidad cromática y las reglas transversales de interacción; las hojas anteriores conservan los componentes de cada área.
+
+La extracción de responsabilidades de este expediente está completa: dominio, persistencia, modelos de catálogo y colección, recomendador, vistas de página y modales, eventos, acciones de usuario, importación/exportación, runtime, ciclo de vida e integración TMDB tienen módulos definidos e interfaces explícitas. `app.js` queda como raíz de composición y mantiene el estado compartido necesario para conectar esas piezas. Las pruebas deben seguir protegiendo esos límites; la funcionalidad nueva debe colocarse en el módulo que corresponda, no volver a concentrarse en la entrada.
 
 ## Estado y privacidad
 
