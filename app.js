@@ -460,7 +460,7 @@
   function historyNeedsTMDB(entry) {
     const fetchedAt = entry && entry.tmdbFetchedAt ? new Date(entry.tmdbFetchedAt).getTime() : 0;
     const isFresh = entry && entry.metadataSource === "tmdb" &&
-      Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30;
+      Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 179;
     if (isFresh) return false;
     return Boolean(entry && entry.title);
   }
@@ -1241,7 +1241,7 @@
     const primaryPage = currentPage === "lab" ? "home" : (currentPage === "data" ? "library" : currentPage);
     $$(".nav-item").forEach(function (button) { button.classList.toggle("active",button.dataset.nav === primaryPage); });
     const views = {home:renderHome,catalog:renderCatalog,library:renderLibrary,lab:renderLab,data:renderData};
-    root.innerHTML = (views[currentPage] || renderHome)() + renderTMDBAttribution();
+    root.innerHTML = (views[currentPage] || renderHome)() + (currentPage === "data" ? renderTMDBAttribution() : "");
     if (currentPage === "catalog") {
       renderCatalogResults();
       renderTMDBResults();
