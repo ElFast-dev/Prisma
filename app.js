@@ -1355,7 +1355,7 @@
         externalIds:raw.external_ids || {},
         recommendations:raw.recommendations && raw.recommendations.results ? raw.recommendations.results.map(fromTMDB) : [],
         similar:raw.similar && raw.similar.results ? raw.similar.results.map(fromTMDB) : [],
-        providers:providerRoot.PA || providerRoot.US || null,
+        providers:providerRoot.PA || null,
         providerResults:providerRoot,
         releaseDates:raw.release_dates && raw.release_dates.results ? raw.release_dates.results : []
       };
