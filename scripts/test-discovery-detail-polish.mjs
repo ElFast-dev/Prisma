@@ -5,13 +5,6 @@ import { createPresentationUtils } from '../js/ui/presentation-utils.js';
 
 const [source, collectionSource] = await Promise.all([readFile('app.js', 'utf8'), readFile('js/collection/collection-model.js', 'utf8')]);
 
-function section(startMarker, endMarker) {
-  const start = source.indexOf(startMarker);
-  const end = source.indexOf(endMarker, start);
-  assert.ok(start >= 0 && end > start, 'No se pudo localizar: ' + startMarker);
-  return source.slice(start, end);
-}
-
 const identity = { sameDiscoveryMovie, uniqueDiscoveryMovies };
 assert.equal(identity.sameDiscoveryMovie({ title: 'Título alternativo', tmdbId: '123' }, { title: 'Original Title', tmdbId: '123' }), true,
   'El mismo ID TMDB debe identificar una misma película aunque cambie el título');
@@ -30,11 +23,13 @@ const unique = identity.uniqueDiscoveryMovies([
 ]);
 assert.equal(unique.length, 4, 'Debe eliminar copias exactas y conservar remakes e identidades diferentes');
 
-const dateSource = section('  function formatWatchedDate(value) {', '  function displayMovieStatus(status) {');
-const formatWatchedDate = new Function(dateSource + '\nreturn formatWatchedDate;')();
+const presentation = createPresentationUtils({ escapeHTML: value => String(value == null ? '' : value) });
+const formatWatchedDate = presentation.formatWatchedDate;
 assert.equal(formatWatchedDate('2024-09-17T15:45:39.000Z'), '09/17/2024');
 assert.equal(formatWatchedDate('not-a-date'), 'Fecha desconocida');
 assert.ok(!formatWatchedDate('2024-09-17T15:45:39.000Z').includes(':'));
+assert.equal(presentation.formatDate('not-a-date'), 'fecha no disponible');
+assert.equal(presentation.dateLabel('not-a-date'), 'Fecha desconocida');
 
 assert.ok(source.includes('return queryOkay && genreOkay && !isInHistory(movie.title,movie.tmdbId) && !isHidden(movie.title,movie.tmdbId);'),
   'El catálogo de Descubrir debe ocultar películas vistas');
