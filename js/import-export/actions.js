@@ -117,7 +117,7 @@ export function createImportExportActions(ctx) {
 
   async function resetAll() {
     if (!window.confirm("¿Borrar tus valoraciones, historial, pendientes, películas ocultas y emociones guardadas en este navegador? Esta acción no se puede deshacer sin una copia de seguridad.")) return;
-    ctx.state = emptyState();
+    ctx.state = ctx.emptyState();
     ctx.customCatalog = [];
     await ctx.dbSet(ctx.STATE_KEY, ctx.state);
     await ctx.dbSet(ctx.CATALOG_KEY, ctx.customCatalog);
