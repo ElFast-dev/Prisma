@@ -183,6 +183,7 @@
       posterPath: posterPath,
       posterUrl: movie.posterUrl || (posterPath ? "https://image.tmdb.org/t/p/w500" + posterPath : ""),
       voteAverage: Number(movie.voteAverage || movie.vote_average || 0) || null,
+      voteCount: Number(movie.voteCount || movie.vote_count || 0) || null,
       runtime: Number(movie.runtime || 0) || null,
       releaseDate: movie.releaseDate || movie.release_date || null,
       backdropPath: movie.backdropPath || movie.backdrop_path || "",
@@ -210,7 +211,7 @@
   function mergeCatalogFields(target, source) {
     target.genres = uniqueStrings((target.genres || []).concat(source.genres || []));
     target.tags = uniqueStrings((target.tags || []).concat(source.tags || []));
-    ["year","overview","posterPath","posterUrl","voteAverage","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
+    ["year","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
       const current = target[field];
       const empty = current == null || current === "" || (Array.isArray(current) && current.length === 0);
       const incoming = source[field];
@@ -439,7 +440,7 @@
       return Number.isFinite(fetchedAt) && now - fetchedAt > limit;
     }
     function strip(entry) {
-      ["genres","tags","overview","posterPath","posterUrl","voteAverage","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (key) { delete entry[key]; });
+      ["genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (key) { delete entry[key]; });
       return entry;
     }
     let changed = false;
@@ -490,6 +491,7 @@
       posterPath: posterPath,
       posterUrl: posterPath ? "https://image.tmdb.org/t/p/w500" + posterPath : "",
       voteAverage: Number(raw.vote_average) || null,
+      voteCount: Number(raw.vote_count) || null,
       runtime: Number(raw.runtime) || null,
       popularity: Number(raw.popularity) || null,
       releaseDate: raw.release_date || null,
@@ -559,6 +561,7 @@
     entry.posterPath = enriched.posterPath || entry.posterPath || "";
     entry.posterUrl = enriched.posterUrl || entry.posterUrl || "";
     entry.voteAverage = enriched.voteAverage || entry.voteAverage || null;
+    entry.voteCount = enriched.voteCount || entry.voteCount || null;
     entry.runtime = enriched.runtime || entry.runtime || null;
     entry.releaseDate = enriched.releaseDate || entry.releaseDate || null;
     entry.backdropPath = enriched.backdropPath || entry.backdropPath || "";
@@ -1077,7 +1080,7 @@
     const stored = entry || {};
     const known = findMovie(stored.title,stored.tmdbId || stored.tmId) || {};
     const result = Object.assign({},known,stored);
-    ["posterUrl","posterPath","overview","releaseDate","backdropUrl","runtime","voteAverage","tmdbId","status","imdbId"].forEach(function (key) {
+    ["posterUrl","posterPath","overview","releaseDate","backdropUrl","runtime","voteAverage","voteCount","tmdbId","status","imdbId"].forEach(function (key) {
       if (!result[key]) result[key] = known[key] || (key === "posterUrl" ? "" : null);
     });
     if (!Array.isArray(result.genres) || !result.genres.length) result.genres = known.genres || [];
@@ -1139,7 +1142,7 @@
       let result = 0;
       if (collectionSort === "title") result = String(a.title || "").localeCompare(String(b.title || ""),"es");
       else if (collectionSort === "rating") result = (ratingValue(a) || 0) - (ratingValue(b) || 0);
-      else if (collectionSort === "public") result = (Number(a.voteAverage) || 0) - (Number(b.voteAverage) || 0);
+      else if (collectionSort === "public") result = (hasTrustedTMDBScore(a) ? Number(a.voteAverage) : 0) - (hasTrustedTMDBScore(b) ? Number(b.voteAverage) : 0);
       else if (collectionSort === "runtime") result = (Number(a.runtime) || 0) - (Number(b.runtime) || 0);
       else if (collectionSort === "release") result = dateScore(a.releaseDate) - dateScore(b.releaseDate) || (Number(a.year) || 0) - (Number(b.year) || 0);
       else result = dateScore(latestRecordDate(a)) - dateScore(latestRecordDate(b));
@@ -1177,7 +1180,7 @@
 
   function collectionRow(item, tab) {
     const rating = ratingValue(item);
-    const publicRating = Number(item.voteAverage) > 0 ?
+    const publicRating = hasTrustedTMDBScore(item) ?
       '<span class="collection-score public-score" title="Valoración pública de TMDB"><span aria-hidden="true">★</span> ' + Number(item.voteAverage).toFixed(1) + '</span>' :
       (item.tmdbId ? '<a class="collection-score score-link" href="https://www.themoviedb.org/movie/' + encodeURIComponent(item.tmdbId) + '" target="_blank" rel="noopener noreferrer" aria-label="Consultar puntuación pública de TMDB">↗</a>' : '<span class="collection-score score-muted">—</span>');
     const personalRating = tab === "pending" ? "" :
@@ -1486,7 +1489,7 @@
     if (!movie || !movie.title) return;
     const key = titleKey(movie.title);
     const metadata = {};
-    ["id","tmdbId","year","genres","tags","overview","posterPath","posterUrl","voteAverage","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
+    ["id","tmdbId","year","genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
       if (movie[field] !== undefined && movie[field] !== null && movie[field] !== "") metadata[field] = movie[field];
     });
     function mergeMatching(list) {
@@ -1548,6 +1551,45 @@
     return path ? "https://image.tmdb.org/t/p/w185" + path : "";
   }
 
+  function hasTrustedTMDBScore(movie) {
+    const film = movie || {};
+    const average = Number(film.voteAverage);
+    const trustedSource = film.metadataSource === "tmdb" || film.source === "tmdb";
+    return trustedSource && Number.isFinite(average) && average > 0 && average <= 10;
+  }
+
+  function formatVoteCount(value) {
+    const count = Number(value);
+    if (!Number.isSafeInteger(count) || count < 1) return "";
+    return count.toLocaleString("es-PA") + (count === 1 ? " voto" : " votos");
+  }
+
+  function buildRatingMetrics(movie, externalIds) {
+    const film = movie || {};
+    const title = String(film.title || "Película");
+    const movieId = film.tmdbId ? String(film.tmdbId) : "";
+    const tmdbUrl = movieId
+      ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movieId)
+      : "https://www.themoviedb.org/search?query=" + encodeURIComponent(title);
+    const imdbId = (externalIds && externalIds.imdb_id) || film.imdbId || "";
+    const imdbUrl = imdbId
+      ? "https://www.imdb.com/title/" + encodeURIComponent(imdbId) + "/"
+      : "https://www.imdb.com/find/?q=" + encodeURIComponent(title);
+    const criticUrl = "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(title);
+    const metacriticUrl = "https://www.metacritic.com/search/" + encodeURIComponent(title) + "/";
+    const average = Number(film.voteAverage);
+    const hasScore = hasTrustedTMDBScore(film);
+    const votes = hasScore ? formatVoteCount(film.voteCount) : "";
+    const communityMetric = hasScore
+      ? '<a class="detail-rating-card" href="' + escapeHTML(tmdbUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Ver la puntuación de la comunidad de ' + escapeHTML(title) + ' en TMDB" title="Puntuación pública de TMDB"><strong>' + average.toFixed(1) + '</strong><span>Nota media</span><small>TMDB' + (votes ? ' · ' + escapeHTML(votes) : '') + '</small></a>'
+      : '<a class="detail-rating-card rating-external" href="' + escapeHTML(tmdbUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Consultar puntuación de ' + escapeHTML(title) + ' en TMDB"><strong>↗</strong><span>Consultar nota</span><small>TMDB</small></a>';
+
+    return communityMetric +
+      '<a class="detail-rating-card rating-external" href="' + escapeHTML(imdbUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Buscar ' + escapeHTML(title) + ' en IMDb" title="Abrir IMDb"><strong>↗</strong><span>Buscar título</span><small>IMDb</small></a>' +
+      '<a class="detail-rating-card rating-external" href="' + escapeHTML(criticUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Buscar críticas y puntuaciones de ' + escapeHTML(title) + ' en Rotten Tomatoes" title="Buscar en Rotten Tomatoes"><strong>↗</strong><span>Buscar título</span><small>Rotten Tomatoes</small></a>' +
+      '<a class="detail-rating-card rating-external" href="' + escapeHTML(metacriticUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Buscar críticas y puntuaciones de ' + escapeHTML(title) + ' en Metacritic" title="Buscar en Metacritic"><strong>↗</strong><span>Buscar título</span><small>Metacritic</small></a>';
+  }
+
   function renderMovieDetails() {
     const root = $("#modalRoot");
     if (!root || !movieDetail) return;
@@ -1565,17 +1607,7 @@
         '<button class="btn btn-primary" type="button" data-action="manage-history">Añadir al historial</button><button class="btn btn-secondary" type="button" data-action="manage-pending">＋ Pendientes</button>');
     const voteLink = movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movie.tmdbId) : "https://www.themoviedb.org/";
     const externalIds = data && data.externalIds ? data.externalIds : {};
-    const imdbUrl = externalMovieUrl(movie,externalIds);
-    const criticUrl = "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title);
-    const metacriticUrl = "https://www.metacritic.com/search/" + encodeURIComponent(movie.title) + "/";
-    const communityMetric = Number(movie.voteAverage) > 0 ?
-      '<div class="detail-rating-card"><strong>' + Number(movie.voteAverage).toFixed(1) + '</strong><span>Comunidad</span><small>TMDB</small></div>' :
-      '<a class="detail-rating-card rating-external" href="' + escapeHTML(voteLink) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Comunidad</span><small>TMDB</small></a>';
-    const ratingMetrics =
-      communityMetric +
-      '<a class="detail-rating-card rating-external" href="' + escapeHTML(imdbUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Base de cine</span><small>IMDb</small></a>' +
-      '<a class="detail-rating-card rating-external" href="' + escapeHTML(criticUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Críticos</span><small>Rotten Tomatoes</small></a>' +
-      '<a class="detail-rating-card rating-external" href="' + escapeHTML(metacriticUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Audiencia / crítica</span><small>Metacritic</small></a>';
+    const ratingMetrics = buildRatingMetrics(movie,externalIds);
     const cast = data && data.credits && Array.isArray(data.credits.cast) ? data.credits.cast.slice(0,14) : [];
     const crew = data && data.credits && Array.isArray(data.credits.crew) ? data.credits.crew : [];
     const director = crew.find(function (person) { return person.job === "Director"; });
@@ -1747,7 +1779,7 @@
       id:old.id || movie.id,tmdbId:movie.tmdbId || old.tmdbId || null,
       title:movie.title,year:movie.year || old.year || null,rating:rating,
       posterPath:movie.posterPath || old.posterPath || "",posterUrl:movie.posterUrl || old.posterUrl || "",
-      voteAverage:movie.voteAverage || old.voteAverage || null,runtime:movie.runtime || old.runtime || null,
+      voteAverage:movie.voteAverage || old.voteAverage || null,voteCount:movie.voteCount || old.voteCount || null,runtime:movie.runtime || old.runtime || null,
       overview:movie.overview || old.overview || "",releaseDate:movie.releaseDate || old.releaseDate || null,
       backdropPath:movie.backdropPath || old.backdropPath || "",backdropUrl:movie.backdropUrl || old.backdropUrl || "",
       tmdbFetchedAt:movie.tmdbFetchedAt || old.tmdbFetchedAt || null,

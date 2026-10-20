@@ -21,6 +21,8 @@ Los registros de valoración contienen al menos título y una nota numérica ent
 
 El normalizador unifica variantes comunes de nombre de campos —por ejemplo, título, año, géneros, etiquetas, sinopsis, ruta de cartel e identificador de TMDB— en un registro de catálogo. Los metadatos ausentes no deben interpretarse como datos confirmados.
 
+Los metadatos públicos incluyen voteAverage y voteCount cuando la fuente TMDB entrega esos campos. voteCount conserva el recuento de votos externo, no la cantidad de valoraciones personales. La ficha solo presenta una puntuación numérica como TMDB cuando la procedencia está confirmada; las búsquedas de otras fuentes se identifican como enlaces externos.
+
 La aplicación tiene una identidad basada en identificadores de TMDB positivos cuando existen y usa un título normalizado como alternativa cuando faltan. Aun así, algunas rutas de importación agrupan o deduplican por título normalizado. Esto significa que la preservación de remakes y películas homónimas necesita pruebas específicas para cada origen de datos; no se debe asumir que cualquier columna CSV llamada id sea automáticamente un TMDB ID.
 
 ## Persistencia
