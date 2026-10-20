@@ -246,7 +246,8 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     get uniqueStrings() { return uniqueStrings; },
     get logEvent() { return logEvent; },
     get enrichRatedHistoryWithTMDB() { return enrichRatedHistoryWithTMDB; },
-    get ensureState() { return ensureState; }
+    get ensureState() { return ensureState; },
+    get emptyState() { return emptyState; }
   });
   const { importPersonalJSON, importCatalogCSV, exportBackup, restoreBackup, resetAll } = importExportActions;
 
