@@ -37,10 +37,10 @@ console.log('Sistema visual modular correcto: ' + paths.length + ' hojas con ord
 
 
 const brandSystem = await readFile('styles/brand-system.css', 'utf8');
-assert.match(brandSystem, /--accent:\\s*#a78bfa/i, 'El sistema de marca debe centralizar el acento violeta de Prisma');
-assert.match(brandSystem, /--bg:\\s*#080c12/i, 'El sistema de marca debe mantener el fondo oscuro de Prisma');
-assert.match(brandSystem, /prefers-reduced-motion:\\s*reduce/i, 'La capa de marca debe respetar movimiento reducido');
-assert.match(brandSystem, /transition-duration:\\s*0s\\s*!important/i, 'El movimiento reducido debe desactivar transiciones globales');
+assert.match(brandSystem, /--accent:\s*#a78bfa/i, 'El sistema de marca debe centralizar el acento violeta de Prisma');
+assert.match(brandSystem, /--bg:\s*#080c12/i, 'El sistema de marca debe mantener el fondo oscuro de Prisma');
+assert.match(brandSystem, /prefers-reduced-motion:\s*reduce/i, 'La capa de marca debe respetar movimiento reducido');
+assert.match(brandSystem, /transition-duration:\s*0s\s*!important/i, 'El movimiento reducido debe desactivar transiciones globales');
 const logo = await readFile('assets/prisma.svg', 'utf8');
 assert.match(logo, /#a78bfa/i, 'El isotipo debe compartir el acento violeta de la interfaz');
 assert.match(logo, /#7dd3fc/i, 'El isotipo debe conservar el acento cian secundario');

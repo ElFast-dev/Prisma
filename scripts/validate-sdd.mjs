@@ -3,6 +3,11 @@ import { join } from 'node:path';
 
 const requiredFiles = [
   'docs/product.md',
+  'styles/brand-system.css',
+  'openspec/changes/2026-10-20-cinematic-brand-system/proposal.md',
+  'openspec/changes/2026-10-20-cinematic-brand-system/design.md',
+  'openspec/changes/2026-10-20-cinematic-brand-system/tasks.md',
+  'openspec/changes/2026-10-20-cinematic-brand-system/specs/interface/spec.md',
   'docs/architecture.md',
   'docs/data-model.md',
   'docs/decisions/0001-sdd-workflow.md',
