@@ -6,13 +6,15 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   screenshots:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -29,9 +31,20 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
-      - name: Capture the published GitHub Pages site and verify its CSS
+      - name: Serve the pull request build for browser tests
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 -m http.server 8765 --directory . > /tmp/prisma-preview.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8765/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/prisma-preview.log
+          exit 1
+
+      - name: Capture the site and verify UI flows
         env:
-          PRISMA_URL: https://elfast-dev.github.io/Prisma/
+          PRISMA_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8765/' || 'https://elfast-dev.github.io/Prisma/' }}
         run: |
           mkdir -p artifacts
           node <<'NODE'
