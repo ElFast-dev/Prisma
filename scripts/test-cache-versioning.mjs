@@ -54,6 +54,7 @@ for (const [filename, source] of modules) {
   }
 }
 for (const [filename] of modules.slice(1)) {
-  assert.ok(cached.has('./' + filename), 'El service worker debe incluir ' + filename);
+  assert.ok([...cached].some(asset => asset.split('?')[0] === './' + filename),
+    'El service worker debe incluir ' + filename + ' aunque use una URL versionada');
 }
 console.log('Versionado PWA y módulos coherentes: ' + scriptUrl + ' · caché ' + cacheName + ' · ' + modules.length + ' módulos verificados.');

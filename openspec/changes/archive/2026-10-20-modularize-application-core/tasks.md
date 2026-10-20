@@ -6,7 +6,7 @@
 
 ## Extracción de núcleo
 - [x] Extraer utilidades puras de película e identidad.
-- [ ] Extraer almacenamiento local manteniendo IndexedDB y fallback a localStorage.
+- [x] Extraer almacenamiento local manteniendo IndexedDB y fallback a localStorage.
 - [x] Extraer el motor de recomendaciones y evaluación mediante inyección de dependencias.
 - [x] Extraer lectores de CSV/TSV y funciones puras de interpretación/mezcla de JSON personal.
 - [x] Extraer el cliente HTTP de TMDB y el mapeo de sus respuestas.
