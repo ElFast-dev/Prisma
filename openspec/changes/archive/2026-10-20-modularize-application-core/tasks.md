@@ -37,6 +37,7 @@
 - [x] Actualizar documentación de arquitectura y política SDD.
 - [x] Añadir diagnóstico del contenido de arranque y errores de consola a la prueba UI para localizar regresiones al cargar ES modules.
 - [x] Eliminar las implementaciones duplicadas del controlador modal y validar que la navegación/puntuación usen la API extraída.
+- [x] Enlazar `fetch` al contexto del navegador al inyectarlo en el ciclo de vida.
 - [x] Probar la construcción de los factories extraídos de TMDB para detectar exports que dependen de funciones locales.
 - [ ] Ejecutar todos los checks de CI y verificar la web publicada en escritorio y móvil.
 - [ ] Archivar el expediente al cumplir los criterios de aceptación.

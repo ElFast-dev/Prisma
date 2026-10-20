@@ -459,7 +459,7 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     get document() { return document; },
     get window() { return window; },
     get navigator() { return navigator; },
-    get fetch() { return fetch; },
+    get fetch() { return window.fetch.bind(window); },
     get dbGet() { return dbGet; },
     get STATE_KEY() { return STATE_KEY; },
     get CATALOG_KEY() { return CATALOG_KEY; },
