@@ -46,3 +46,19 @@ Puedes importar un CSV con columnas como `title`, `year`, `genres`, `tags` y `ov
 
 ## Desarrollo
 No hay dependencias npm. Es HTML, CSS y JavaScript nativo, por lo que puedes editarlo desde un navegador/entorno de desarrollo en Android y publicarlo como archivos estáticos.
+
+## Desarrollo guiado por especificaciones (SDD)
+
+Prisma mantiene sus reglas de producto y arquitectura en `docs/`, las especificaciones de comportamiento en `openspec/specs/` y cada cambio pendiente en `openspec/changes/<slug>/`.
+
+Antes de modificar una funcionalidad, crea un expediente con propuesta, escenarios de aceptación, diseño y tareas. Implementa únicamente el alcance descrito, ejecuta la verificación apropiada, actualiza las especificaciones vigentes y archiva el expediente solo cuando se haya comprobado su convergencia. El procedimiento completo está en `openspec/project.md`.
+
+### Checks automáticos
+
+El workflow `.github/workflows/quality.yml` ejecuta:
+
+- `node --check app.js`, para detectar errores de sintaxis JavaScript.
+- `node scripts/validate-sdd.mjs`, para validar los artefactos SDD, sus requisitos y sus escenarios.
+
+Estos checks no sustituyen pruebas de comportamiento, regresión ni comprobaciones visuales del navegador. Los cambios funcionales deben añadir la cobertura necesaria para sus riesgos. No subas historiales personales, archivos de copia de seguridad ni credenciales a GitHub.
+
