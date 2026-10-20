@@ -1219,14 +1219,16 @@
   function renderApp() {
     const root = $("#appRoot");
     if (!root) return;
-    $$(".nav-item").forEach(function (button) { button.classList.toggle("active", button.dataset.nav === currentPage); });
-    const views = { home: renderHome, catalog: renderCatalog, library: renderLibrary, lab: renderLab, data: renderData };
+    const primaryPage = currentPage === "lab" ? "home" : (currentPage === "data" ? "library" : currentPage);
+    $$(".nav-item").forEach(function (button) { button.classList.toggle("active",button.dataset.nav === primaryPage); });
+    const views = {home:renderHome,catalog:renderCatalog,library:renderLibrary,lab:renderLab,data:renderData};
     root.innerHTML = (views[currentPage] || renderHome)() + renderTMDBAttribution();
     if (currentPage === "catalog") {
       renderCatalogResults();
       renderTMDBResults();
     }
   }
+
 
   function openModal(movie, mode) {
     if (!movie) return;
@@ -1976,16 +1978,21 @@
   }
 
   function clickNav(page) {
-    if (["home", "catalog", "library", "lab", "data"].indexOf(page) < 0) return;
+    if (["home","catalog","library","lab","data"].indexOf(page) < 0) return;
+    if (page !== currentPage) {
+      modalDraft = null; movieDetail = null; personDetail = null; utilitySheet = null; ratingReturnDetail = false;
+      const modalRoot = $("#modalRoot");
+      if (modalRoot) modalRoot.innerHTML = "";
+    }
     currentPage = page;
     renderApp();
     if (page === "catalog" && tmdbCredential && tmdbCredential.value) {
-      loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
+      loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false);
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({top:0,behavior:"smooth"});
   }
 
-  document.addEventListener("click", async function (event) {
+  document.addEventListener("click",async function (event) {
     const nav = event.target.closest("[data-nav]");
     if (nav) {
       event.preventDefault();
@@ -2001,49 +2008,180 @@
       if (action === "save-tmdb") { await saveTMDBCredential(); return; }
       if (action === "test-tmdb") { await testTMDBCredential(); return; }
       if (action === "remove-tmdb") { await removeTMDBCredential(); return; }
-      if (action === "tmdb-retry") { await loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false); return; }
-      if (action === "tmdb-more") { await loadTMDBPage(tmdbPage + 1, tmdbMode, true); return; }
+      if (action === "tmdb-retry") { await loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false); return; }
+      if (action === "tmdb-more") { await loadTMDBPage(tmdbPage + 1,tmdbMode,true); return; }
       if (action === "enrich-history") { await enrichRatedHistoryWithTMDB(); return; }
       if (action === "export-backup") { await exportBackup(); return; }
       if (action === "restore-backup") { $("#backupImportInput").click(); return; }
       if (action === "reset") { await resetAll(); return; }
       if (action === "genre") { activeGenre = button.dataset.genre || "Todos"; renderApp(); return; }
-      if (action === "details" || action === "rate") {
-        const movie = tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); }) || findMovie(button.dataset.title);
-        if (movie) openModal(movie, action);
+      if (action === "details") {
+        const requestedId = button.dataset.tmdbId || "";
+        let movie = tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); }) ||
+          findMovie(button.dataset.title) ||
+          getCollectionItems("history").concat(getCollectionItems("pending"),getCollectionItems("hidden")).find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); });
+        if (movie && requestedId && !movie.tmdbId) movie = Object.assign({},movie,{tmdbId:requestedId,source:"tmdb"});
+        if (!movie && button.dataset.title) movie = {title:button.dataset.title,id:requestedId || titleKey(button.dataset.title),tmdbId:requestedId || null,source:requestedId ? "tmdb" : "catalog"};
+        if (movie) openModal(movie,"details");
         return;
       }
-      if (action === "toggle-watchlist") { await toggleWatchlist(button.dataset.title); return; }
+      if (action === "rate") {
+        const inDetail = Boolean(button.closest(".detail-sheet"));
+        const movie = (movieDetail && inDetail ? movieDetail.movie : null) ||
+          tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title || (movieDetail && movieDetail.movie.title)); }) ||
+          findMovie(button.dataset.title || (movieDetail && movieDetail.movie.title)) || (movieDetail && movieDetail.movie);
+        if (movie) openModal(movie,"rate");
+        return;
+      }
+      if (action === "rating-star") { updateRatingPreview(button.dataset.rating); return; }
       if (action === "save-rating") { await saveRating(); return; }
       if (action === "delete-rating") { await deleteRating(button.dataset.title); return; }
-      if (action === "close-modal") { closeModal(); return; }
       if (action === "emotion") {
         if (!modalDraft) return;
-        const emotion = button.dataset.emotion;
-        const index = modalDraft.emotions.indexOf(emotion);
-        if (index >= 0) modalDraft.emotions.splice(index, 1);
-        else modalDraft.emotions.push(emotion);
+        const emotion = button.dataset.emotion, index = modalDraft.emotions.indexOf(emotion);
+        if (index >= 0) modalDraft.emotions.splice(index,1); else modalDraft.emotions.push(emotion);
         renderModal();
         return;
       }
-      if (action === "backdrop-close" && event.target === button) { closeModal(); return; }
+      if (action === "close-modal") { closeModal(); return; }
+      if (action === "backdrop-close" && event.target === button) {
+        if (utilitySheet) { utilitySheet = null; renderModal(); }
+        else closeModal();
+        return;
+      }
+      if (action === "retry-movie-detail") { if (movieDetail) { movieDetailCache.delete(String(movieDetail.movie.tmdbId || "")); loadMovieDetail(movieDetail.movie); } return; }
+      if (action === "toggle-watchlist") { if (button.dataset.title) await toggleWatchlist(button.dataset.title); return; }
+      if (action === "manage-pending") {
+        const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
+        if (title) await toggleWatchlist(title);
+        if (utilitySheet) { utilitySheet = null; renderModal(); }
+        return;
+      }
+      if (action === "mark-watched" || action === "manage-history") {
+        const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
+        if (title) await markWatched(title);
+        if (utilitySheet) { utilitySheet = null; renderModal(); }
+        return;
+      }
+      if (action === "toggle-hidden" || action === "manage-hidden") {
+        const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
+        if (title) await toggleHidden(title);
+        if (utilitySheet) { utilitySheet = null; renderModal(); }
+        return;
+      }
+      if (action === "manage-lists") { openUtilitySheet("manage"); return; }
+      if (action === "open-sort") { openUtilitySheet("sort"); return; }
+      if (action === "open-genres") { openUtilitySheet("genres"); return; }
+      if (action === "choose-sort") {
+        if (!utilitySheet) return;
+        utilitySheet.sort = button.dataset.sort || "added";
+        utilitySheet.direction = utilitySheet.sort === "title" ? "asc" : "desc";
+        renderModal();
+        return;
+      }
+      if (action === "toggle-sort-direction") { if (utilitySheet) { utilitySheet.direction = utilitySheet.direction === "asc" ? "desc" : "asc"; renderModal(); } return; }
+      if (action === "accept-sort") {
+        if (utilitySheet) { collectionSort = utilitySheet.sort; collectionDirection = utilitySheet.direction; }
+        utilitySheet = null; renderApp(); renderModal(); return;
+      }
+      if (action === "toggle-sheet-genre") {
+        if (!utilitySheet) return;
+        const genre = button.dataset.genre || "";
+        const index = utilitySheet.genres.findIndex(function (value) { return titleKey(value) === titleKey(genre); });
+        if (index >= 0) utilitySheet.genres.splice(index,1); else utilitySheet.genres.push(genre);
+        renderModal(); return;
+      }
+      if (action === "clear-sheet-genres") { if (utilitySheet) utilitySheet.genres = []; renderModal(); return; }
+      if (action === "accept-genres") {
+        if (utilitySheet) collectionGenres = utilitySheet.genres.slice();
+        utilitySheet = null; renderApp(); renderModal(); return;
+      }
+      if (action === "toggle-layout") { collectionLayout = collectionLayout === "list" ? "compact" : "list"; renderApp(); return; }
+      if (action === "toggle-released") { onlyReleased = !onlyReleased; renderApp(); return; }
+      if (action === "toggle-collection-search") {
+        showCollectionSearch = !showCollectionSearch;
+        if (!showCollectionSearch) collectionQuery = "";
+        renderApp();
+        const search = $("[data-collection-search]");
+        if (search) search.focus();
+        return;
+      }
+      if (action === "collection-tab") { collectionTab = button.dataset.tab || "history"; collectionMode = "movies"; renderApp(); return; }
+      if (action === "collection-mode") { collectionMode = button.dataset.mode || "movies"; renderApp(); return; }
+      if (action === "collection-open-tab") { collectionTab = button.dataset.tab || "history"; collectionMode = "movies"; renderApp(); return; }
+      if (action === "person-details") { openPersonDetails(button.dataset.personId,button.dataset.personName,button.dataset.character); return; }
+      if (action === "person-back") { personDetail = null; renderModal(); return; }
+      if (action === "person-filter") { personListFilter = button.dataset.filter || "all"; renderPersonDetails(); return; }
+      if (action === "movie-from-person") {
+        const title = button.dataset.title;
+        const movie = findMovie(title) || {title:title,id:button.dataset.tmdbId || titleKey(title),tmdbId:button.dataset.tmdbId || null,source:"tmdb"};
+        personDetail = null; openModal(movie,"details"); return;
+      }
+      if (action === "open-trailer") {
+        const videos = movieDetail && movieDetail.data ? movieDetail.data.videos : [];
+        const trailer = (videos || []).find(function (video) { return video.site === "YouTube" && video.type === "Trailer"; }) ||
+          (videos || []).find(function (video) { return video.site === "YouTube"; });
+        const url = trailer ? "https://www.youtube.com/watch?v=" + encodeURIComponent(trailer.key) :
+          (movieDetail && movieDetail.movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movieDetail.movie.tmdbId) + "/videos" : "");
+        if (url) window.open(url,"_blank","noopener,noreferrer"); else toast("No hay enlace de tráiler disponible. Conecta TMDB para consultar los vídeos.",true);
+        return;
+      }
+      if (action === "open-reviews") {
+        if (movieDetail && movieDetail.movie.tmdbId) window.open("https://www.themoviedb.org/movie/" + encodeURIComponent(movieDetail.movie.tmdbId) + "/reviews","_blank","noopener,noreferrer");
+        else toast("Conecta TMDB para abrir los comentarios públicos de esta película.",true);
+        return;
+      }
+      if (action === "share-movie") {
+        const movie = movieDetail && movieDetail.movie;
+        if (!movie) return;
+        const url = movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movie.tmdbId) : window.location.href;
+        const payload = {title:movie.title,text:"Mira " + movie.title + " en Prisma",url:url};
+        if (navigator.share) await navigator.share(payload);
+        else if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(url); toast("Enlace copiado."); }
+        else window.prompt("Copia el enlace de la película",url);
+        return;
+      }
+      if (action === "close-sheet") { utilitySheet = null; renderModal(); return; }
     } catch (error) {
-      toast(error && error.message ? error.message : "No se pudo completar la acción.", true);
+      toast(error && error.message ? error.message : "No se pudo completar la acción.",true);
     }
   });
 
-  document.addEventListener("input", function (event) {
+  document.addEventListener("input",function (event) {
+    if (event.target.matches("[data-global-search]")) {
+      catalogQuery = event.target.value;
+      activeGenre = "Todos";
+      if (currentPage !== "catalog") { currentPage = "catalog"; renderApp(); }
+      else {
+        renderCatalogResults();
+        const caption = $("#catalogSearchTitle");
+        if (caption) caption.textContent = catalogQuery.trim() ? "Resultados para «" + catalogQuery.trim() + "»" : "Catálogo local";
+      }
+      if (tmdbSearchTimer) window.clearTimeout(tmdbSearchTimer);
+      tmdbSearchTimer = window.setTimeout(function () {
+        if (currentPage === "catalog" && tmdbCredential && tmdbCredential.value) {
+          loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false);
+        }
+      },450);
+      return;
+    }
     if (event.target.matches("[data-catalog-search]")) {
       catalogQuery = event.target.value;
       renderCatalogResults();
       if (tmdbSearchTimer) window.clearTimeout(tmdbSearchTimer);
       tmdbSearchTimer = window.setTimeout(function () {
         if (currentPage === "catalog" && tmdbCredential && tmdbCredential.value) {
-          loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
+          loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false);
         }
-      }, 450);
+      },450);
+      return;
+    }
+    if (event.target.matches("[data-collection-search]")) {
+      collectionQuery = event.target.value;
+      refreshCollectionContent();
     }
   });
+
 
   $("#jsonImportInput").addEventListener("change", async function (event) {
     const file = event.target.files && event.target.files[0];
