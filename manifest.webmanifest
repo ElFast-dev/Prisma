@@ -1,0 +1,19 @@
+{
+  "name": "Prisma — Cine a tu medida",
+  "short_name": "Prisma",
+  "description": "Tu laboratorio personal de recomendaciones cinematográficas.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0b11",
+  "theme_color": "#101018",
+  "icons": [
+    {
+      "src": "./assets/prisma.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
