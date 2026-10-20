@@ -11,8 +11,7 @@ function section(startMarker, endMarker) {
   return source.slice(start, end);
 }
 
-const identitySource = section('  function titleKey(value) {', '  function splitList(value) {');
-const identity = new Function(identitySource + '\nreturn { sameDiscoveryMovie, uniqueDiscoveryMovies };')();
+const identity = { sameDiscoveryMovie, uniqueDiscoveryMovies };
 assert.equal(identity.sameDiscoveryMovie({ title: 'Título alternativo', tmdbId: '123' }, { title: 'Original Title', tmdbId: '123' }), true,
   'El mismo ID TMDB debe identificar una misma película aunque cambie el título');
 assert.equal(identity.sameDiscoveryMovie({ title: 'Remake', year: 1998, tmdbId: '123' }, { title: 'Remake', year: 2024, tmdbId: '456' }), false,
