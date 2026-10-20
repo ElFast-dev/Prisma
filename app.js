@@ -958,11 +958,18 @@
     const actionLabel = rating ? "Editar nota" : "Calificar";
     const score = movie.prediction ? '<div class="movie-score">✦ ' + movie.prediction.score.toFixed(1).replace(".", ",") + '/10 estimado</div>' : (rating ? '<div class="movie-score">★ Tu nota: ' + ratingValue(rating) + '/10</div>' : "");
     const meta = [movie.year, (movie.genres || []).slice(0, 2).map(displayGenre).join(" · ")].filter(Boolean).join(" · ");
+    const posterBackground = 'background:radial-gradient(circle at 75% 22%,hsla(' + hue + ',65%,65%,.35),transparent 42%),linear-gradient(145deg,hsl(' + hue + ',32%,25%),#13131d 66%,hsl(' + ((hue + 14) % 360) + ',28%,19%))';
+    const posterImage = movie.posterUrl ? '<img class="poster-image" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '" src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '';
+    const posterFallback = '<span class="poster-symbol" aria-hidden="true">✦</span><strong class="poster-title">' + escapeHTML(movie.title) + '</strong><span class="poster-year">' + escapeHTML(movie.year || "Película") + '</span>';
+    if (opts.posterOnly) {
+      return '<article class="movie-card movie-card-poster-only">' +
+        '<button class="poster-art movie-poster-trigger" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '" aria-label="Ver detalles de ' + escapeHTML(movie.title) + '" style="' + posterBackground + '">' +
+        posterImage + posterFallback + '</button></article>';
+    }
     const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">' + actionLabel + '</button></div>';
     return '<article class="movie-card">' +
-      '<div class="poster-art" role="img" aria-label="Tarjeta de ' + escapeHTML(movie.title) + '" style="background:radial-gradient(circle at 75% 22%,hsla(' + hue + ',65%,65%,.35),transparent 42%),linear-gradient(145deg,hsl(' + hue + ',32%,25%),#13131d 66%,hsl(' + ((hue + 14) % 360) + ',28%,19%))">' +
-      (movie.posterUrl ? '<img class="poster-image" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '" src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
-      '<span class="poster-symbol">✦</span><strong class="poster-title">' + escapeHTML(movie.title) + '</strong><span class="poster-year">' + escapeHTML(movie.year || "Película") + '</span></div>' +
+      '<div class="poster-art" role="img" aria-label="Tarjeta de ' + escapeHTML(movie.title) + '" style="' + posterBackground + '">' +
+      posterImage + posterFallback + '</div>' +
       '<div class="movie-copy"><h3 class="movie-title">' + escapeHTML(movie.title) + '</h3><div class="movie-meta">' + escapeHTML(meta || "Metadatos pendientes") + '</div>' + score + detail + '</div></article>';
   }
 
@@ -1014,7 +1021,7 @@
 
 
   function movieGrid(movies) {
-    return '<div class="movie-grid">' + movies.map(function (movie) { return movieCard(movie); }).join("") + '</div>';
+    return '<div class="movie-grid poster-grid">' + movies.map(function (movie) { return movieCard(movie,{posterOnly:true}); }).join("") + '</div>';
   }
 
   function filterCatalog() {
@@ -1049,7 +1056,7 @@
     const searchCaption = catalogQuery.trim() ? 'Resultados para «' + escapeHTML(catalogQuery.trim()) + '»' : "Catálogo";
     return '<section class="page-heading discover-heading"><h1>Descubrir</h1>' + infoButton("discover","Información sobre Descubrir") + '<span class="discover-count">' + catalog.length.toLocaleString("es-PA") + ' títulos</span></section>' +
       '<section class="discover-recommendations"><div class="section-head"><h2>Recomendadas para ti</h2>' + infoButton("recommendations","Cómo funcionan las recomendaciones") + '</div>' +
-      (recs.length ? '<div class="movie-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie); }).join("") + '</div>' : '<div class="empty-inline"><strong>No hay recomendaciones todavía</strong><button class="btn btn-secondary btn-small" type="button" data-nav="library">Abrir colección</button></div>') +
+      (recs.length ? '<div class="movie-grid poster-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie,{posterOnly:true}); }).join("") + '</div>' : '<div class="empty-inline"><strong>No hay recomendaciones todavía</strong><button class="btn btn-secondary btn-small" type="button" data-nav="library">Abrir colección</button></div>') +
       '</section>' +
       '<section class="panel tmdb-browser discover-tmdb"><div class="panel-head"><h3>Explorar TMDB</h3>' + infoButton("tmdb","Información sobre TMDB") + '</div><div id="tmdbStatus" class="kicker"></div><div id="tmdbResults" class="tmdb-results"></div></section>' +
       '<section class="local-catalog-section"><div class="section-head"><h2 id="catalogSearchTitle">' + searchCaption + '</h2><span id="catalogCount">Cargando…</span><button class="btn btn-secondary btn-small" type="button" data-action="import-catalog" aria-label="Importar catálogo CSV">＋ CSV</button></div><div class="chip-row catalog-genre-chips">' + genreChips + '</div><div id="localCatalogResults"></div></section>';
@@ -1211,7 +1218,7 @@
     const tab = collectionTab;
     const all = getCollectionItems(tab);
     const recent = tab === "history" ? all.slice().sort(function (a, b) { return dateScore(latestRecordDate(b)) - dateScore(latestRecordDate(a)); }).slice(0, 4) : [];
-    const title = tab === "history" ? "Todos" : (tab === "pending" ? "Por ver" : "Ocultos");
+    const title = tab === "history" ? "Todos" : (tab === "pending" ? "Pendientes" : "Ocultos");
     const sortLabels = {title:"Título",public:"Mejores valorados",rating:"Mi valoración",runtime:"Duración",release:"Más reciente",added:"Añadidos recientemente",random:"Aleatorio"};
     const noItems = tab === "history" ? "Tu historial está vacío" : (tab === "pending" ? "No tienes películas pendientes" : "No has ocultado ninguna película");
     return (recent.length ? '<section class="recent-section"><div class="collection-section-title"><h2>Añadidos recientemente</h2><span>Últimos 4</span></div><div class="recent-grid">' + recent.map(recentPoster).join("") + '</div></section>' : "") +
@@ -1231,11 +1238,14 @@
       {key:"pending",label:"Pendientes",count:getCollectionItems("pending").length},
       {key:"hidden",label:"Ocultos",count:getCollectionItems("hidden").length}
     ];
-    return '<section class="collection-page"><div class="collection-header"><div class="collection-title-row"><h1>Colección</h1>' + infoButton("collection","Información sobre tu colección") + '</div><button class="btn btn-secondary collection-search-toggle" type="button" data-action="toggle-collection-search" aria-label="Buscar en mi colección" title="Buscar en mi colección">⌕</button></div>' +
-      '<div class="collection-mode-switch" role="tablist" aria-label="Tipo de colección"><button type="button" role="tab" class="' + (collectionMode === "movies" ? "active" : "") + '" data-action="collection-mode" data-mode="movies" aria-selected="' + (collectionMode === "movies") + '">Películas</button><button type="button" role="tab" class="' + (collectionMode === "lists" ? "active" : "") + '" data-action="collection-mode" data-mode="lists" aria-selected="' + (collectionMode === "lists") + '">Listas</button></div>' +
-      (showCollectionSearch ? '<label class="collection-search"><span aria-hidden="true">⌕</span><input type="search" data-collection-search value="' + escapeHTML(collectionQuery) + '" placeholder="Buscar en mi colección…" aria-label="Buscar solo en mi colección"><button type="button" data-action="toggle-collection-search" aria-label="Cerrar búsqueda">✕</button></label>' : "") +
-      (collectionMode === "movies" ? '<div class="collection-tabs" role="tablist" aria-label="Vistas de la colección">' + tabs.map(function (tab) { return '<button type="button" role="tab" class="' + (collectionTab === tab.key ? "active" : "") + '" data-action="collection-tab" data-tab="' + tab.key + '" aria-selected="' + (collectionTab === tab.key) + '">' + tab.label + '<span>' + tab.count.toLocaleString("es-PA") + '</span></button>'; }).join("") + '</div>' : "") +
-      (collectionMode === "movies" ? '<div class="collection-tools"><div class="collection-tools-left"><button class="collection-tool" type="button" data-action="open-sort"><span>⇅</span> Ordenar <i>' + (collectionDirection === "asc" ? "↑" : "↓") + '</i></button><button class="collection-tool ' + (collectionGenres.length ? "has-filter" : "") + '" type="button" data-action="open-genres"><span>☷</span> Géneros' + (collectionGenres.length ? '<b>' + collectionGenres.length + '</b>' : "") + '</button>' + (collectionTab === "pending" ? '<button class="collection-tool ' + (onlyReleased ? "has-filter" : "") + '" type="button" data-action="toggle-released">Estrenada</button>' : "") + '</div><button class="collection-view-toggle" type="button" data-action="toggle-layout" aria-label="Cambiar la vista">' + (collectionLayout === "list" ? "▦ Compacta" : "☰ Lista") + '</button></div>' : "") +
+    const modeSwitch = '<div class="collection-mode-switch" role="tablist" aria-label="Tipo de colección"><button type="button" role="tab" class="' + (collectionMode === "movies" ? "active" : "") + '" data-action="collection-mode" data-mode="movies" aria-selected="' + (collectionMode === "movies") + '">Películas</button><button type="button" role="tab" class="' + (collectionMode === "lists" ? "active" : "") + '" data-action="collection-mode" data-mode="lists" aria-selected="' + (collectionMode === "lists") + '">Listas</button></div>';
+    const movieTabs = collectionMode === "movies" ?
+      '<div class="collection-tabs" role="tablist" aria-label="Vistas de la colección">' + tabs.map(function (tab) { return '<button type="button" role="tab" class="' + (collectionTab === tab.key ? "active" : "") + '" data-action="collection-tab" data-tab="' + tab.key + '" aria-selected="' + (collectionTab === tab.key) + '">' + tab.label + '<span>' + tab.count.toLocaleString("es-PA") + '</span></button>'; }).join("") + '</div>' : "";
+    const searchPanel = showCollectionSearch && collectionMode === "movies" ?
+      '<label class="collection-search"><span aria-hidden="true">⌕</span><input type="search" data-collection-search value="' + escapeHTML(collectionQuery) + '" placeholder="Buscar en mi colección…" aria-label="Buscar solo en mi colección"><button type="button" data-action="toggle-collection-search" aria-label="Cerrar búsqueda">✕</button></label>' : "";
+    const tools = collectionMode === "movies" ?
+      '<div class="collection-tools"><div class="collection-tools-left"><button class="collection-tool collection-search-trigger" type="button" data-action="toggle-collection-search" aria-label="Buscar en mi colección" title="Buscar en mi colección"><span aria-hidden="true">⌕</span> Buscar</button><button class="collection-tool" type="button" data-action="open-sort"><span aria-hidden="true">⇅</span> Ordenar <i>' + (collectionDirection === "asc" ? "↑" : "↓") + '</i></button><button class="collection-tool ' + (collectionGenres.length ? "has-filter" : "") + '" type="button" data-action="open-genres"><span aria-hidden="true">☷</span> Géneros' + (collectionGenres.length ? '<b>' + collectionGenres.length + '</b>' : "") + '</button>' + (collectionTab === "pending" ? '<button class="collection-tool ' + (onlyReleased ? "has-filter" : "") + '" type="button" data-action="toggle-released" aria-pressed="' + onlyReleased + '">Estrenada</button>' : "") + '</div><div class="collection-tools-right"><button class="collection-view-toggle" type="button" data-action="toggle-layout" aria-label="Cambiar la vista">' + (collectionLayout === "list" ? "▦ Compacta" : "☰ Lista") + '</button>' + infoButton("collection","Información sobre tu colección") + '</div></div>' : "";
+    return '<section class="collection-page">' + modeSwitch + movieTabs + searchPanel + tools +
       '<div id="collectionResultsRoot">' + renderCollectionContent() + '</div></section>';
   }
 
@@ -1547,8 +1557,9 @@
     const genreChips = (movie.genres || []).slice(0,6).map(function (genre) { return '<span class="detail-chip">' + escapeHTML(displayGenre(genre)) + '</span>'; }).join("");
     const countryLine = (movie.productionCountries || []).slice(0,3).join(" · ");
     const release = movie.releaseDate ? dateLabel(movie.releaseDate) : (movie.year || "Estreno no disponible");
+    const markedAt = (state.watched || []).find(function (entry) { return sameMovieRecord(entry,movie); })?.watchedAt || (rating && (rating.watchedAt || rating.updatedAt)) || null;
     const stateButton = seen ?
-      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(dateTimeLabel((state.watched || []).find(function (entry) { return sameMovieRecord(entry,movie); })?.watchedAt || (rating && (rating.watchedAt || rating.updatedAt)) || movie.releaseDate)) + '</small></button>' :
+      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(markedAt ? dateTimeLabel(markedAt) : "Fecha no registrada") + '</small></button>' :
       (pending ?
         '<button class="btn btn-secondary detail-state-button" type="button" data-action="manage-pending"><span aria-hidden="true">✓</span> Añadido a pendientes</button><button class="btn btn-primary" type="button" data-action="mark-watched">Marcar como vista</button>' :
         '<button class="btn btn-primary" type="button" data-action="manage-history">Añadir al historial</button><button class="btn btn-secondary" type="button" data-action="manage-pending">＋ Pendientes</button>');

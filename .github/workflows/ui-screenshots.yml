@@ -85,8 +85,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-14") &&
-                  lastUI.appSrc.includes("v=ui-20261020-15") &&
+                  lastUI.cssHref.includes("v=ui-20261020-15") &&
+                  lastUI.appSrc.includes("v=ui-20261020-16") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
@@ -138,20 +138,47 @@ jobs:
                 await page.waitForTimeout(250);
                 await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: false, animations: "disabled" });
                 await page.evaluate(() => {
-                  const art = document.querySelector(".poster-art");
-                  if (!art) throw new Error("No poster placeholder was rendered");
-                  const broken = document.createElement("img");
-                  broken.className = "poster-image";
-                  broken.alt = "";
-                  broken.src = new URL("__prisma-broken-poster-test__.jpg", location.href).href;
-                  art.prepend(broken);
+                  const host = document.createElement("button");
+                  host.id = "posterFallbackTest";
+                  host.className = "poster-art movie-poster-trigger";
+                  host.type = "button";
+                  host.setAttribute("aria-label", "Fallback de póster de prueba");
+                  host.innerHTML = '<img class="poster-image" src="' + new URL("__prisma-broken-poster-test__.jpg", location.href).href + '" alt=""><strong class="poster-title">Fallback de póster</strong>';
+                  document.querySelector("#localCatalogResults").appendChild(host);
                 });
-                await page.waitForFunction(() => !document.querySelector(".poster-art .poster-image"), null, { timeout: 10000 });
-                if (!(await page.locator(".poster-art .poster-title").first().isVisible())) {
+                await page.waitForFunction(() => !document.querySelector("#posterFallbackTest .poster-image"), null, { timeout: 10000 });
+                if (!(await page.locator("#posterFallbackTest .poster-title").isVisible())) {
                   throw new Error(name + ": poster title fallback stayed hidden after an image error");
                 }
+                await page.locator("#posterFallbackTest").evaluate(node => node.remove());
                 await page.locator(".bottom-nav [data-nav='library']").click();
                 await page.locator(".collection-page").waitFor({ state: "visible", timeout: 10000 });
+                const collectionHeader = await page.evaluate(() => {
+                  const modes = Array.from(document.querySelectorAll(".collection-mode-switch [role='tab']"));
+                  const tabs = Array.from(document.querySelectorAll(".collection-tabs [role='tab']"));
+                  const tools = document.querySelector(".collection-tools");
+                  return {
+                    modes: modes.map(node => node.innerText.trim()),
+                    modePositions: modes.map(node => node.getBoundingClientRect().left),
+                    tabs: tabs.map(node => node.getAttribute("data-tab")),
+                    toolActions: Array.from(tools.querySelectorAll("[data-action]")).map(node => node.getAttribute("data-action")),
+                    hasRedundantTitle: Boolean(document.querySelector(".collection-title-row"))
+                  };
+                });
+                if (JSON.stringify(collectionHeader.modes) !== JSON.stringify(["Películas", "Listas"]) ||
+                    collectionHeader.modePositions[0] >= collectionHeader.modePositions[1] ||
+                    JSON.stringify(collectionHeader.tabs) !== JSON.stringify(["history", "pending", "hidden"]) ||
+                    collectionHeader.hasRedundantTitle) {
+                  throw new Error(name + ": the collection hierarchy is not ordered as specified: " + JSON.stringify(collectionHeader));
+                }
+                for (const action of ["toggle-collection-search", "open-sort", "open-genres", "toggle-layout"]) {
+                  if (!collectionHeader.toolActions.includes(action)) {
+                    throw new Error(name + ": collection toolbar misses action " + action);
+                  }
+                }
+                await page.locator(".collection-search-trigger").click();
+                await page.locator("[data-collection-search]").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".collection-search [data-action='toggle-collection-search']").click();
                 await page.screenshot({ path: "artifacts/" + name + "-collection.png", fullPage: false, animations: "disabled" });
                 await page.locator(".collection-tool[data-action='open-sort']").click();
                 await page.locator(".utility-sheet .sheet-option").first().waitFor({ state: "visible", timeout: 10000 });
@@ -163,6 +190,12 @@ jobs:
                 await page.locator(".info-sheet").waitFor({ state: "visible", timeout: 10000 });
                 await page.screenshot({ path: "artifacts/" + name + "-info-sheet.png", fullPage: false, animations: "disabled" });
                 await page.locator(".info-sheet .sheet-accept").click();
+                await page.locator(".collection-tool[data-action='open-genres']").click();
+                await page.locator(".sheet-genre-grid .sheet-genre").first().waitFor({ state: "visible", timeout: 10000 });
+                if (await page.locator(".sheet-genre-grid .sheet-genre").count() < 15) {
+                  throw new Error(name + ": the genre sheet is missing expected choices");
+                }
+                await page.locator("[data-action='close-sheet']").click();
                 await page.locator(".collection-mode-switch [data-mode='lists']").click();
                 await page.locator(".system-lists-grid").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
@@ -203,6 +236,23 @@ jobs:
                 await page.locator(".collection-mode-switch [data-mode='movies']").click();
                 await page.locator(".collection-tabs [data-tab='history']").click();
                 await page.locator(".collection-row-main[data-title='Prisma Test Seen']").waitFor({ state: "visible", timeout: 10000 });
+                const recentLayout = await page.locator(".recent-grid").evaluate(node => ({
+                  columns: getComputedStyle(node).gridTemplateColumns.split(" ").length,
+                  count: node.querySelectorAll(".recent-movie").length
+                }));
+                if (recentLayout.columns !== 2 || recentLayout.count > 4 || recentLayout.count === 0) {
+                  throw new Error(name + ": recent history does not use a 2×2 maximum layout: " + JSON.stringify(recentLayout));
+                }
+                await page.locator(".collection-tabs [data-tab='pending']").click();
+                const releaseFilter = page.locator(".collection-tool[data-action='toggle-released']");
+                await releaseFilter.waitFor({ state: "visible", timeout: 10000 });
+                await releaseFilter.click();
+                if (await releaseFilter.getAttribute("aria-pressed") !== "true") {
+                  throw new Error(name + ": released-only filter did not expose its active state");
+                }
+                await releaseFilter.click();
+                await page.locator(".collection-row-main[data-title='Prisma Test Pending']").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".collection-tabs [data-tab='history']").click();
 
                 const testRow = page.locator(".collection-row:has(.collection-row-main[data-title='Prisma Test Seen'])");
                 const testRowMain = testRow.locator(".collection-row-main");
@@ -299,6 +349,21 @@ jobs:
                   .evaluateAll(nodes => nodes.map(node => node.getAttribute("data-tmdb-id")).sort());
                 if (JSON.stringify(displayedRemakeIds) !== JSON.stringify(["990001", "990002"])) {
                   throw new Error(name + ": the combined catalog did not display both distinct TMDB identities: " + JSON.stringify(displayedRemakeIds));
+                }
+                const cleanPosterCards = await page.locator("#localCatalogResults .movie-card").evaluateAll(cards => cards.map(card => {
+                  const poster = card.querySelector(".movie-poster-trigger");
+                  const image = poster && poster.querySelector(".poster-image");
+                  const title = poster && poster.querySelector(".poster-title");
+                  return {
+                    posterOnly: card.classList.contains("movie-card-poster-only"),
+                    isButton: Boolean(poster && poster.tagName === "BUTTON"),
+                    accessibleName: Boolean(poster && poster.getAttribute("aria-label")),
+                    hasDuplicateCopy: Boolean(card.querySelector(".movie-copy,.movie-actions,.movie-score,.movie-meta")),
+                    titleOverlayVisible: Boolean(image && title && getComputedStyle(title).display !== "none")
+                  };
+                }));
+                if (cleanPosterCards.length !== 2 || cleanPosterCards.some(card => !card.posterOnly || !card.isButton || !card.accessibleName || card.hasDuplicateCopy || card.titleOverlayVisible)) {
+                  throw new Error(name + ": Discover poster cards still duplicate metadata or are not accessible: " + JSON.stringify(cleanPosterCards));
                 }
 
                 // Hiding one remake must not hide the other movie that shares its title.
