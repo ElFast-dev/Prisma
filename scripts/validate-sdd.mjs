@@ -79,7 +79,7 @@ for (const file of specFiles) {
       errors.push(file + ': el requisito "' + label + '" no contiene un escenario');
     }
 
-    if (!/\b(?:MUST|SHALL|DEBE|DEBERÁ|DEBERAN|NO DEBE)\b/i.test(block)) {
+    if (!/\b(?:MUST|SHALL|DEBEN|DEBE|DEBERÁN|DEBERÁ|DEBERAN|NO DEBEN|NO DEBE)\b/i.test(block)) {
       errors.push(file + ': el requisito "' + label + '" necesita una declaración normativa (DEBE/MUST/SHALL)');
     }
   }
