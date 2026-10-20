@@ -185,6 +185,50 @@ jobs:
                 if ((await page.locator(".collection-page").innerText()).includes("Prisma Series Must Not Import")) {
                   throw new Error(name + ": a series was included in the movie import");
                 }
+
+                await page.locator(".topbar [data-nav='data']").click();
+                await page.locator("#catalogImportInput").setInputFiles({
+                  name: "prisma-remake-test.csv",
+                  mimeType: "text/csv",
+                  buffer: Buffer.from(
+                    "title,year,tmdb_id,genres\\n" +
+                    "Prisma CSV Remake Fixture,1998,990001,Drama\\n" +
+                    "Prisma CSV Remake Fixture,2024,990002,Action\\n" +
+                    "Prisma CSV Remake Fixture,2000,990001,Comedy\\n" +
+                    "Prisma MovieLens Namespace Fixture (2001),2001,,Drama"
+                  )
+                });
+                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado:"));
+
+                async function readCustomCatalogFixture() {
+                  return page.evaluate(() => new Promise((resolve, reject) => {
+                    const open = indexedDB.open("prisma-local-v1", 1);
+                    open.onerror = () => reject(open.error || new Error("Could not open Prisma database"));
+                    open.onsuccess = () => {
+                      const db = open.result;
+                      const request = db.transaction("kv", "readonly").objectStore("kv").get("catalogCustom");
+                      request.onerror = () => reject(request.error || new Error("Could not read the custom catalog"));
+                      request.onsuccess = () => {
+                        resolve((request.result && Array.isArray(request.result.value) ? request.result.value : [])
+                          .filter(movie => /Prisma (CSV Remake|MovieLens Namespace) Fixture/.test(movie.title))
+                          .map(movie => ({ title: movie.title, tmdbId: movie.tmdbId || null, id: movie.id, year: movie.year }))
+                        );
+                        db.close();
+                      };
+                    };
+                  }));
+                }
+
+                const importedFixture = await readCustomCatalogFixture();
+                const remakes = importedFixture.filter(movie => movie.title === "Prisma CSV Remake Fixture");
+                const tmdbIds = remakes.map(movie => movie.tmdbId).sort();
+                if (remakes.length !== 2 || JSON.stringify(tmdbIds) !== JSON.stringify(["990001", "990002"])) {
+                  throw new Error(name + ": CSV import collapsed remakes with distinct TMDB IDs: " + JSON.stringify(importedFixture));
+                }
+                const movieLensRow = importedFixture.find(movie => movie.title === "Prisma MovieLens Namespace Fixture");
+                if (!movieLensRow || movieLensRow.tmdbId) {
+                  throw new Error(name + ": a generic source ID was incorrectly treated as a TMDB ID: " + JSON.stringify(movieLensRow));
+                }
               } finally {
                 await context.close();
               }
