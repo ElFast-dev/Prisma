@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const source = await readFile('app.js', 'utf8');
+const [appSource, domainSource] = await Promise.all([
+  readFile('app.js', 'utf8'),
+  readFile('js/core/movie-utils.js', 'utf8')
+]);
+const source = appSource + '\\n' + domainSource;
 
 function section(startMarker, endMarker) {
   const start = source.indexOf(startMarker);
