@@ -208,6 +208,11 @@
         previous.posterUrl = previous.posterUrl || movie.posterUrl;
         previous.voteAverage = previous.voteAverage || movie.voteAverage;
         previous.runtime = previous.runtime || movie.runtime;
+        previous.releaseDate = previous.releaseDate || movie.releaseDate;
+        previous.backdropUrl = previous.backdropUrl || movie.backdropUrl;
+        previous.status = previous.status || movie.status;
+        previous.productionCountries = previous.productionCountries || movie.productionCountries;
+        previous.imdbId = previous.imdbId || movie.imdbId;
         previous.tmdbFetchedAt = previous.tmdbFetchedAt || movie.tmdbFetchedAt;
         previous.metadataSource = previous.metadataSource || movie.metadataSource;
       }
@@ -231,6 +236,11 @@
         existing.tmdbId = existing.tmdbId || historyMovie.tmdbId;
         existing.voteAverage = existing.voteAverage || historyMovie.voteAverage;
         existing.runtime = existing.runtime || historyMovie.runtime;
+        existing.releaseDate = existing.releaseDate || historyMovie.releaseDate;
+        existing.backdropUrl = existing.backdropUrl || historyMovie.backdropUrl;
+        existing.status = existing.status || historyMovie.status;
+        existing.productionCountries = existing.productionCountries || historyMovie.productionCountries;
+        existing.imdbId = existing.imdbId || historyMovie.imdbId;
         existing.tmdbFetchedAt = existing.tmdbFetchedAt || historyMovie.tmdbFetchedAt;
         existing.metadataSource = existing.metadataSource || historyMovie.metadataSource;
       }
@@ -942,11 +952,12 @@
 
   function filterCatalog() {
     const query = titleKey(catalogQuery);
+    const hiddenKeys = new Set((state.hidden || []).map(function (entry) { return titleKey(entry.title); }));
     return catalog.filter(function (movie) {
       const text = titleKey(movie.title + " " + (movie.genres || []).join(" ") + " " + (movie.tags || []).join(" ") + " " + (movie.year || ""));
       const queryOkay = !query || text.indexOf(query) >= 0;
-      const genreOkay = activeGenre === "Todos" || (movie.genres || []).some(function (genre) { return genre.toLowerCase() === activeGenre.toLowerCase(); });
-      return queryOkay && genreOkay;
+      const genreOkay = activeGenre === "Todos" || (movie.genres || []).some(function (genre) { return titleKey(genre) === titleKey(activeGenre); });
+      return queryOkay && genreOkay && !hiddenKeys.has(titleKey(movie.title));
     });
   }
 
@@ -975,7 +986,7 @@
       (recs.length ? '<div class="movie-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie); }).join("") + '</div>' : '<div class="empty-inline"><strong>Prisma necesita unas cuantas señales</strong><p>Califica películas o enlaza más géneros para empezar a crear recomendaciones personales.</p><button class="btn btn-secondary" type="button" data-nav="library">Abrir colección</button></div>') +
       '</section>' +
       '<section class="panel tmdb-browser discover-tmdb"><div class="panel-head"><div><h3>Explorar TMDB</h3><p>Busca en el catálogo remoto o descubre títulos populares.</p></div><span class="badge badge-mint">TMDB</span></div><div id="tmdbStatus" class="kicker">Conecta tus credenciales desde Datos para activar la búsqueda global.</div><div id="tmdbResults" class="tmdb-results"></div></section>' +
-      '<section class="local-catalog-section"><div class="section-head"><div><div class="eyebrow">TU CATÁLOGO</div><h2>' + searchCaption + '</h2><p id="catalogCount">Cargando resultados…</p></div><button class="btn btn-secondary btn-small" type="button" data-action="import-catalog">＋ Importar CSV</button></div><div class="chip-row catalog-genre-chips">' + genreChips + '</div><div id="localCatalogResults"></div></section>' +
+      '<section class="local-catalog-section"><div class="section-head"><div><div class="eyebrow">TU CATÁLOGO</div><h2 id="catalogSearchTitle">' + searchCaption + '</h2><p id="catalogCount">Cargando resultados…</p></div><button class="btn btn-secondary btn-small" type="button" data-action="import-catalog">＋ Importar CSV</button></div><div class="chip-row catalog-genre-chips">' + genreChips + '</div><div id="localCatalogResults"></div></section>' +
       '<footer>Los resultados remotos se consultan por páginas; Prisma no descarga la base de datos entera. Tus valoraciones permanecen en el almacenamiento local.</footer>';
   }
 
@@ -1967,7 +1978,7 @@
   }
 
   async function resetAll() {
-    if (!window.confirm("¿Borrar tus valoraciones, pendientes y emociones guardadas en este navegador? Esta acción no se puede deshacer sin una copia de seguridad.")) return;
+    if (!window.confirm("¿Borrar tus valoraciones, historial, pendientes, películas ocultas y emociones guardadas en este navegador? Esta acción no se puede deshacer sin una copia de seguridad.")) return;
     state = emptyState();
     customCatalog = [];
     await dbSet(STATE_KEY, state);
