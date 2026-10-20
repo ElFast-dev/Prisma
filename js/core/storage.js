@@ -18,7 +18,7 @@ export function openDB() {
   return dbPromise;
 }
 
-async function dbGet(key) {
+export async function dbGet(key) {
   const db = await openDB();
   if (!db) {
     try { return JSON.parse(localStorage.getItem("prisma:" + key) || "null"); } catch (_) { return null; }
@@ -33,7 +33,7 @@ async function dbGet(key) {
   });
 }
 
-async function dbSet(key, value) {
+export async function dbSet(key, value) {
   const db = await openDB();
   if (!db) {
     localStorage.setItem("prisma:" + key, JSON.stringify(value));

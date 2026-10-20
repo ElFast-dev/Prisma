@@ -46,7 +46,7 @@ jobs:
       - name: Validate SDD documents
         run: node scripts/validate-sdd.mjs
 
-      - name: Test modular architecture
+      - name: Test modular architecture and ES module linking
         run: node scripts/test-modular-architecture.mjs
 
       - name: Test isolated TMDB client
