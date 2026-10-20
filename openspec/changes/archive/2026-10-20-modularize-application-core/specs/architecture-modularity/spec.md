@@ -61,3 +61,14 @@ CI DEBE comprobar que los módulos declarados existen, que las importaciones loc
 - DADO que una modificación vuelve a insertar funciones extraídas en la entrada o introduce una importación local no inventariada
 - CUANDO se ejecutan las pruebas de arquitectura
 - ENTONCES CI falla e identifica el límite modular incumplido.
+
+
+### Requirement: Modelo del catálogo aislado
+
+El modelo del catálogo DEBE administrar la combinación e identidad de películas en un módulo aparte del controlador de la interfaz, usando proveedores explícitos para acceder al estado y al índice del catálogo.
+
+#### Scenario: Se combinan fuentes del catálogo
+
+- DADO que Prisma recibe películas del catálogo de muestra, la biblioteca personal e historial valorado
+- CUANDO se reconstruye el catálogo
+- ENTONCES la combinación y búsqueda ocurren en el módulo de catálogo y la interfaz recibe el resultado a través de su API.

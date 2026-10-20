@@ -1,9 +1,10 @@
 import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js";
-import { dbGet, dbSet } from "./js/core/storage.js";
+import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine } from "./js/recommendations/engine.js";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
+import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -65,135 +66,25 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   const ensureTMDBGenres = tmdbClient.ensureGenres;
   const fromTMDB = tmdbClient.fromTMDB;
 
-     function mergeCatalogFields(target, source) {
-    target.genres = uniqueStrings((target.genres || []).concat(source.genres || []));
-    target.tags = uniqueStrings((target.tags || []).concat(source.tags || []));
-    ["year","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
-      const current = target[field];
-      const empty = current == null || current === "" || (Array.isArray(current) && current.length === 0);
-      const incoming = source[field];
-      const incomingEmpty = incoming == null || incoming === "" || (Array.isArray(incoming) && incoming.length === 0);
-      if (empty && !incomingEmpty) target[field] = incoming;
-    });
-    if (!target.tmdbId && source.tmdbId) target.tmdbId = source.tmdbId;
-    if (!target.id && source.id) target.id = source.id;
-    return target;
-  }
+  const catalogModel = createCatalogModel({
+    getSeedCatalog: function () { return seedCatalog; },
+    getCustomCatalog: function () { return customCatalog; },
+    getState: function () { return state; },
+    getCatalog: function () { return catalog; },
+    getCatalogByTitle: function () { return catalogByTitle; },
+    setCatalog: function (value) { catalog = value; },
+    setCatalogByTitle: function (value) { catalogByTitle = value; },
+    normalizeMovie: normalizeMovie,
+    titleKey: titleKey,
+    movieTmdbId: movieTmdbId,
+    movieIdentityKey: movieIdentityKey,
+    uniqueStrings: uniqueStrings,
+    ratingValue: ratingValue,
+    movieFeatures: movieFeatures
+  });
+  const { combineMovies, findMovie, ratingFor, allGenres, summaryStats } = catalogModel;
 
-  function combineMovies() {
-    const grouped = new Map();
-    const baseRecords = seedCatalog.concat(customCatalog, state.watched || [], state.watchlist || [], state.hidden || []);
-    const baseIdentities = new Set();
-    function collect(raw, isBase) {
-      const movie = normalizeMovie(raw);
-      if (!movie) return;
-      const title = titleKey(movie.title);
-      if (!title) return;
-      if (!grouped.has(title)) grouped.set(title, []);
-      grouped.get(title).push({movie:movie,isBase:Boolean(isBase)});
-      if (isBase) baseIdentities.add(movieIdentityKey(movie));
-    }
-    baseRecords.forEach(function (movie) { collect(movie,true); });
-    (state.rated || []).forEach(function (movie) { collect(movie,false); });
-
-    const combined = [];
-    grouped.forEach(function (items) {
-      const byTmdb = new Map();
-      let noId = null;
-      let noIdHasBase = false;
-      items.forEach(function (record) {
-        const movie = record.movie;
-        const tmdbId = movieTmdbId(movie);
-        if (!tmdbId) {
-          noId = noId ? mergeCatalogFields(noId,movie) : Object.assign({},movie);
-          noIdHasBase = noIdHasBase || record.isBase;
-          return;
-        }
-        if (byTmdb.has(tmdbId)) {
-          const prior = byTmdb.get(tmdbId);
-          mergeCatalogFields(prior.movie,movie);
-          prior.isBase = prior.isBase || record.isBase;
-        } else {
-          byTmdb.set(tmdbId,{movie:Object.assign({},movie),isBase:record.isBase});
-        }
-      });
-
-      if (!byTmdb.size) {
-        if (noId) {
-          noId.key = movieIdentityKey(noId);
-          if (!noIdHasBase) noId.source = "history";
-          combined.push(noId);
-        }
-        return;
-      }
-      if (byTmdb.size === 1 && noId) {
-        const only = Array.from(byTmdb.values())[0];
-        mergeCatalogFields(only.movie,noId);
-        only.isBase = only.isBase || noIdHasBase;
-      }
-      byTmdb.forEach(function (record) {
-        const movie = record.movie;
-        movie.key = movieIdentityKey(movie);
-        if (!record.isBase && !baseIdentities.has(movie.key)) movie.source = "history";
-        combined.push(movie);
-      });
-    });
-    catalog = combined.sort(function (a,b) {
-      return a.title.localeCompare(b.title,"es") ||
-        (Number(a.year) || 0) - (Number(b.year) || 0) ||
-        String(movieTmdbId(a)).localeCompare(String(movieTmdbId(b)));
-    });
-    catalogByTitle = new Map();
-    catalog.forEach(function (movie) {
-      const title = titleKey(movie.title);
-      if (!catalogByTitle.has(title)) catalogByTitle.set(title,movie);
-    });
-  }
-
-  function findMovie(title, tmdbId) {
-    const id = movieTmdbId({tmdbId:tmdbId});
-    if (id) return catalog.find(function (movie) { return movieTmdbId(movie) === id; }) || null;
-    return catalogByTitle.get(titleKey(title)) || null;
-  }
-
-  function ratingFor(title, tmdbId) {
-    const id = movieTmdbId({tmdbId:tmdbId});
-    const key = titleKey(title);
-    if (id) {
-      const exactMatch = state.rated.find(function (entry) { return movieTmdbId(entry) === id; });
-      if (exactMatch) return exactMatch;
-      const sameTitle = state.rated.filter(function (entry) { return titleKey(entry.title) === key; });
-      const noIdMatches = sameTitle.filter(function (entry) { return !movieTmdbId(entry); });
-      return sameTitle.length === 1 && noIdMatches.length === 1 ? noIdMatches[0] : null;
-    }
-    return state.rated.find(function (entry) { return titleKey(entry.title) === key; }) || null;
-  }
-
-
-  function allGenres() {
-    return uniqueStrings(catalog.reduce(function (all, movie) { return all.concat(movie.genres || []); }, []))
-      .sort(function (a, b) { return a.localeCompare(b, "es"); });
-  }
-
-   function summaryStats() {
-    const ratings = state.rated.map(ratingValue).filter(function (value) { return value != null; });
-    const average = ratings.length ? ratings.reduce(function (sum, value) { return sum + value; }, 0) / ratings.length : null;
-    const matched = state.rated.filter(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
-      return movieFeatures(movie, entry).length > 0;
-    }).length;
-    return {
-      total: ratings.length,
-      average: average,
-      high: ratings.filter(function (value) { return value >= 8; }).length,
-      tens: ratings.filter(function (value) { return value === 10; }).length,
-      matched: matched,
-      watchlist: state.watchlist.length,
-      catalog: catalog.length
-    };
-  }
-
-  async function saveTMDBCredential() {
+     async function saveTMDBCredential() {
     const input = $("#tmdbCredentialInput");
     const kindControl = $("#tmdbAuthType");
     const typed = input ? input.value.trim() : "";
