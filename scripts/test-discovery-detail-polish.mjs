@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { sameDiscoveryMovie, uniqueDiscoveryMovies } from '../js/core/movie-utils.js';
 import { createPresentationUtils } from '../js/ui/presentation-utils.js';
 
-const [source, collectionSource, pageViewsSource] = await Promise.all([readFile('app.js', 'utf8'), readFile('js/collection/collection-model.js', 'utf8'), readFile('js/ui/page-views.js', 'utf8')]);
+const [source, collectionSource, pageViewsSource, tmdbViewsSource] = await Promise.all([readFile('app.js', 'utf8'), readFile('js/collection/collection-model.js', 'utf8'), readFile('js/ui/page-views.js', 'utf8'), readFile('js/ui/tmdb-views.js', 'utf8')]);
 
 const identity = { sameDiscoveryMovie, uniqueDiscoveryMovies };
 assert.equal(identity.sameDiscoveryMovie({ title: 'Título alternativo', tmdbId: '123' }, { title: 'Original Title', tmdbId: '123' }), true,
@@ -35,7 +35,7 @@ assert.ok(pageViewsSource.includes('return queryOkay && genreOkay && !ctx.isInHi
   'El catálogo de Descubrir debe ocultar películas vistas');
 assert.ok(source.includes('!isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history"'),
   'El recomendador debe excluir vistas, pendientes y ocultas');
-assert.ok(source.includes('return !isInHistory(movie.title,movie.tmdbId) && !isHidden(movie.title,movie.tmdbId);'),
+assert.ok(tmdbViewsSource.includes('return !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
   'Los resultados remotos de TMDB deben omitir películas ya vistas u ocultas');
 
 console.log('Pruebas de Descubrir y ficha correctas: identidades únicas, historial excluido y fecha sin hora.');
