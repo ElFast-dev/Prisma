@@ -54,6 +54,12 @@ Cuando dos registros normalizados tienen IDs TMDB positivos diferentes, Prisma D
 - CUANDO se importa el catálogo
 - ENTONCES el identificador se conserva como ID de origen y no se interpreta como `tmdbId`
 
+#### Scenario: Ocultar solo una identidad TMDB
+
+- DADO que el catálogo tiene dos películas del mismo título e IDs TMDB 990001 y 990002, y se oculta la película 990001
+- CUANDO se vuelve a consultar el catálogo local
+- ENTONCES la película 990001 no aparece y la película 990002 continúa visible
+
 ## Limitaciones conocidas
 
 Las filas CSV sin un ID TMDB explícito y válido continúan usando el título normalizado como fallback de deduplicación. Por ello, no se garantiza distinguir todos los remakes u homónimos cuando la fuente no proporciona una identidad TMDB fiable. Los IDs genéricos de origen no deben interpretarse como IDs TMDB.

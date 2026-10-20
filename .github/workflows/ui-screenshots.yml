@@ -278,6 +278,28 @@ jobs:
                   throw new Error(name + ": the combined catalog did not display both distinct TMDB identities: " + JSON.stringify(displayedRemakeIds));
                 }
 
+                // Hiding one remake must not hide the other movie that shares its title.
+                await page.locator("#localCatalogResults .movie-card [data-action='details'][data-tmdb-id='990001']").click();
+                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".detail-state-actions [data-action='toggle-hidden']").click();
+                await page.waitForFunction(() => {
+                  const button = document.querySelector(".detail-state-actions [data-action='toggle-hidden']");
+                  return button && button.innerText.trim() === "Mostrar en Prisma";
+                }, null, { timeout: 10000 });
+                const hiddenActionLabel = (await page.locator(".detail-state-actions [data-action='toggle-hidden']").innerText()).trim();
+                if (hiddenActionLabel !== "Mostrar en Prisma") {
+                  throw new Error(name + ": the selected remake was not marked hidden");
+                }
+                await page.locator(".detail-sheet [data-action='close-modal']").click();
+                await page.locator(".bottom-nav [data-nav='home']").click();
+                await page.locator(".bottom-nav [data-nav='catalog']").click();
+                await page.waitForFunction(() => document.querySelectorAll("#localCatalogResults .movie-card [data-action='details']").length === 1);
+                const remainingRemakeIds = await page.locator("#localCatalogResults .movie-card [data-action='details']")
+                  .evaluateAll(nodes => nodes.map(node => node.getAttribute("data-tmdb-id")));
+                if (JSON.stringify(remainingRemakeIds) !== JSON.stringify(["990002"])) {
+                  throw new Error(name + ": hiding TMDB ID 990001 also hid a distinct identity: " + JSON.stringify(remainingRemakeIds));
+                }
+
                 await page.locator(".topbar [data-nav='data']").click();
                 await page.locator("#catalogImportInput").setInputFiles({
                   name: "prisma-remake-reimport-test.csv",

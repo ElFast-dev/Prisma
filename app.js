@@ -1012,12 +1012,11 @@
 
   function filterCatalog() {
     const query = titleKey(catalogQuery);
-    const hiddenKeys = new Set((state.hidden || []).map(function (entry) { return titleKey(entry.title); }));
     return catalog.filter(function (movie) {
       const text = titleKey(movie.title + " " + (movie.genres || []).join(" ") + " " + (movie.tags || []).join(" ") + " " + (movie.year || ""));
       const queryOkay = !query || text.indexOf(query) >= 0;
       const genreOkay = activeGenre === "Todos" || (movie.genres || []).some(function (genre) { return titleKey(genre) === titleKey(activeGenre); });
-      return queryOkay && genreOkay && !hiddenKeys.has(titleKey(movie.title));
+      return queryOkay && genreOkay && !isHidden(movie.title, movie.tmdbId);
     });
   }
 
