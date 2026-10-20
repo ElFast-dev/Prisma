@@ -28,6 +28,11 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/tmdb-views.js` | Renderizado de atribución, resultados de búsqueda y estado de sincronización de TMDB. |
 | `js/tmdb/history-sync.js` | Limpieza de caché local, coincidencia de historial con TMDB, enriquecimiento y persistencia progresiva del catálogo personal. |
 | `js/tmdb/browser-actions.js` | Consultas TMDB para explorar el catálogo y completar características de películas de forma diferida. |
+| `js/tmdb/movie-details.js` | Carga y persistencia de fichas de película, personas y metadatos relacionados. |
+| `js/ui/modal-controller.js` | Estado de interacción para fichas, puntuaciones y paneles auxiliares. |
+| `js/recommendations/ranking.js` | Orden y diversificación de recomendaciones, además de estadísticas por género. |
+| `js/app/runtime.js` | Eventos de actividad, persistencia principal y notificaciones breves. |
+| `js/app/lifecycle.js` | Navegación, inicialización del perfil local y registro del service worker. |
 | `js/import-export/personal-data.js` | Reconocimiento de exportaciones personales, normalización y combinación de registros. |
 | `js/tmdb/client.js` | Credenciales, peticiones HTTP, errores, caché de géneros y conversión de respuestas TMDB. |
 | `styles.css` | Tokens, base y estructura general. |

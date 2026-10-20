@@ -26,6 +26,11 @@ const files = [
   'js/ui/tmdb-views.js',
   'js/tmdb/history-sync.js',
   'js/tmdb/browser-actions.js',
+  'js/app/lifecycle.js',
+  'js/app/runtime.js',
+  'js/recommendations/ranking.js',
+  'js/ui/modal-controller.js',
+  'js/tmdb/movie-details.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -83,6 +88,16 @@ assert.ok(!app.includes('async function enrichRatedHistoryWithTMDB('));
 assert.ok(!app.includes('async function loadTMDBPage('));
 assert.ok(app.includes('createTMDBHistorySync('));
 assert.ok(app.includes('createTMDBBrowserActions('));
+assert.ok(!app.includes('async function loadMovieDetail('));
+assert.ok(!app.includes('function renderModal('));
+assert.ok(!app.includes('function getRecommendations('));
+assert.ok(!app.includes('function toast('));
+assert.ok(!app.includes('async function init('));
+assert.ok(app.includes('createTMDBMovieDetails('));
+assert.ok(app.includes('createModalController('));
+assert.ok(app.includes('createRecommendationRanking('));
+assert.ok(app.includes('createAppRuntime('));
+assert.ok(app.includes('createAppLifecycle('));
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));

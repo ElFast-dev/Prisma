@@ -17,6 +17,11 @@
 - [x] Actualizar `app.js` para importar módulos y conservar la composición y el comportamiento existentes.
 
 ## Calidad y publicación
+- [x] Extraer el servicio de detalle de películas y personas de TMDB.
+- [x] Separar el estado y control de modales de los componentes visuales.
+- [x] Separar la clasificación de recomendaciones y estadísticas del coordinador.
+- [x] Extraer persistencia de estado, eventos y notificaciones al módulo de runtime.
+- [x] Extraer la navegación y el arranque a un módulo de ciclo de vida.
 - [x] Separar la limpieza de caché y sincronización de metadatos del historial a un módulo de integración.
 - [x] Separar las búsquedas remotas y la carga diferida de metadatos TMDB en otro módulo.
 - [x] Separar las vistas de búsqueda, atribución y sincronización de TMDB del controlador principal.

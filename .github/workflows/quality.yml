@@ -47,6 +47,11 @@ jobs:
           node --check js/ui/tmdb-views.js
           node --check js/tmdb/history-sync.js
           node --check js/tmdb/browser-actions.js
+          node --check js/app/lifecycle.js
+          node --check js/app/runtime.js
+          node --check js/recommendations/ranking.js
+          node --check js/ui/modal-controller.js
+          node --check js/tmdb/movie-details.js
           node --check js/import-export/personal-data.js
           node --check js/tmdb/client.js
           node scripts/test-style-modularity.mjs

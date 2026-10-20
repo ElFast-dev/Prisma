@@ -193,3 +193,58 @@ Las consultas de búsqueda/paginación a TMDB y la carga diferida de metadatos D
 - DADO que una petición anterior sigue en curso cuando cambia la búsqueda
 - CUANDO llega la respuesta antigua
 - ENTONCES esa respuesta no sobrescribe el resultado de la petición más reciente.
+
+
+### Requirement: Servicio de detalles separado
+
+El acceso a detalles de películas y personas, y la persistencia de metadatos ampliados DEBE vivir en el módulo de servicio TMDB, separado de la presentación.
+
+#### Scenario: Se abre una ficha enriquecida
+
+- DADO que el usuario abre una película con ID TMDB y la conexión está configurada
+- CUANDO se solicitan detalles ampliados
+- ENTONCES el servicio carga detalles/proveedores/personas y actualiza el estado mediante dependencias explícitas.
+
+
+### Requirement: Controlador de modales separado
+
+Las transiciones de abrir, cerrar y cambiar entre fichas, puntuaciones y paneles auxiliares DEBEN estar coordinadas por un módulo de controlador distinto del renderizado visual.
+
+#### Scenario: Se abre el diálogo de puntuación
+
+- DADO que el usuario selecciona calificar una película
+- CUANDO se cambia del detalle al diálogo de puntuación
+- ENTONCES el controlador cambia el estado modal, mantiene el retorno al detalle cuando corresponde y delega el marcado en las vistas.
+
+
+### Requirement: Ranking de recomendaciones separado
+
+La selección, diversificación y estadísticas descriptivas de recomendaciones DEBE residir fuera del archivo de entrada, usando el motor de perfil y predicción como dependencias.
+
+#### Scenario: Se generan recomendaciones
+
+- DADO que existe un catálogo y un perfil local
+- CUANDO se solicita una lista de recomendaciones
+- ENTONCES el módulo ordena y diversifica candidatas y excluye las películas ya presentes en la colección.
+
+
+### Requirement: Runtime de la aplicación separado
+
+La persistencia del estado principal, los eventos de actividad y los avisos visibles DEBE residir en un módulo de runtime y estar disponible como una interfaz explícita para las acciones.
+
+#### Scenario: Se persiste una acción
+
+- DADO que se cambia una colección o se registra una valoración
+- CUANDO se actualiza el estado personal
+- ENTONCES las acciones llaman al módulo runtime para persistir y comunicar errores de guardado.
+
+
+### Requirement: Ciclo de vida separado
+
+La navegación principal, la carga inicial de datos y el registro del service worker DEBE estar contenida en el módulo de ciclo de vida, sin duplicarse en el coordinador.
+
+#### Scenario: Se inicia Prisma
+
+- DADO que el navegador carga la entrada de la aplicación
+- CUANDO finaliza la lectura de catálogo, estado y credencial opcional
+- ENTONCES el ciclo de vida normaliza los datos, construye el catálogo, renderiza la vista inicial y registra la PWA si procede.

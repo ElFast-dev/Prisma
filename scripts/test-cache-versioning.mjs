@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, personalData, tmdbClient] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -25,6 +25,11 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, feature
   readFile('js/ui/tmdb-views.js', 'utf8'),
   readFile('js/tmdb/history-sync.js', 'utf8'),
   readFile('js/tmdb/browser-actions.js', 'utf8'),
+  readFile('js/tmdb/movie-details.js', 'utf8'),
+  readFile('js/ui/modal-controller.js', 'utf8'),
+  readFile('js/recommendations/ranking.js', 'utf8'),
+  readFile('js/app/runtime.js', 'utf8'),
+  readFile('js/app/lifecycle.js', 'utf8'),
   readFile('js/import-export/personal-data.js', 'utf8'),
   readFile('js/tmdb/client.js', 'utf8')
 ]);
@@ -67,6 +72,11 @@ const modules = [
   ['js/ui/tmdb-views.js', tmdbViews],
   ['js/tmdb/history-sync.js', tmdbHistorySync],
   ['js/tmdb/browser-actions.js', tmdbBrowserActions],
+  ['js/tmdb/movie-details.js', tmdbMovieDetails],
+  ['js/ui/modal-controller.js', modalController],
+  ['js/recommendations/ranking.js', ranking],
+  ['js/app/runtime.js', runtime],
+  ['js/app/lifecycle.js', lifecycle],
   ['js/import-export/personal-data.js', personalData],
   ['js/tmdb/client.js', tmdbClient]
 ];

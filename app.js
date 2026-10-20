@@ -16,6 +16,11 @@ import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
 import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
 import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261020-1";
+import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-20261020-1";
+import { createModalController } from "./js/ui/modal-controller.js?v=core-20261020-1";
+import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261020-1";
+import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
+import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -325,6 +330,68 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   });
   const { loadTMDBPage, enrichTMDBMovie } = tmdbBrowserActions;
 
+  const tmdbMovieDetails = createTMDBMovieDetails({
+    get tmdbRequest() { return tmdbRequest; },
+    get tmdbCredential() { return tmdbCredential; },
+    get movieDetail() { return movieDetail; },
+    get sameMovieRecord() { return sameMovieRecord; },
+    get movieDetailCache() { return movieDetailCache; },
+    get renderModal() { return renderModal; },
+    get titleKey() { return titleKey; },
+    get fromTMDB() { return fromTMDB; },
+    get state() { return state; },
+    get uniqueStrings() { return uniqueStrings; },
+    get movieTmdbId() { return movieTmdbId; },
+    get customCatalog() { return customCatalog; },
+    get dbSet() { return dbSet; },
+    get CATALOG_KEY() { return CATALOG_KEY; },
+    get persistState() { return persistState; },
+    get combineMovies() { return combineMovies; },
+    get personDetail() { return personDetail; },
+    set personDetail(value) { personDetail = value; },
+    get personListFilter() { return personListFilter; },
+    set personListFilter(value) { personListFilter = value; },
+    get personDetailCache() { return personDetailCache; }
+  });
+  const { softTMDBRequest, loadMovieDetail, persistMovieMetadata, mergeMatching, openPersonDetails } = tmdbMovieDetails;
+
+  const modalController = createModalController({
+    get $() { return $; },
+    get ratingFor() { return ratingFor; },
+    get ratingValue() { return ratingValue; },
+    get ratingReturnDetail() { return ratingReturnDetail; },
+    set ratingReturnDetail(value) { ratingReturnDetail = value; },
+    get movieDetail() { return movieDetail; },
+    set movieDetail(value) { movieDetail = value; },
+    get modalDraft() { return modalDraft; },
+    set modalDraft(value) { modalDraft = value; },
+    get personDetail() { return personDetail; },
+    set personDetail(value) { personDetail = value; },
+    get utilitySheet() { return utilitySheet; },
+    set utilitySheet(value) { utilitySheet = value; },
+    get tmdbCredential() { return tmdbCredential; },
+    get loadMovieDetail() { return loadMovieDetail; },
+    get collectionSort() { return collectionSort; },
+    get collectionDirection() { return collectionDirection; },
+    get collectionGenres() { return collectionGenres; },
+    get renderUtilitySheet() { return renderUtilitySheet; },
+    get renderPersonDetails() { return renderPersonDetails; },
+    get renderRatingSheet() { return renderRatingSheet; },
+    get renderMovieDetails() { return renderMovieDetails; }
+  });
+  const { openModal, renderModal, openUtilitySheet, openInfoSheet, updateRatingPreview, closeModal } = modalController;
+
+  const appRuntime = createAppRuntime({
+    get state() { return state; },
+    get dbSet() { return dbSet; },
+    get STATE_KEY() { return STATE_KEY; },
+    get $() { return $; },
+    get document() { return document; },
+    get window() { return window; },
+    get toast() { return toast; }
+  });
+  const { logEvent, persistState, toast } = appRuntime;
+
   const tmdbViews = createTMDBViews({
     get $() { return $; },
     get pendingHistoryTMDBCount() { return pendingHistoryTMDBCount; },
@@ -354,229 +421,6 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     ratingValue: ratingValue
   });
 
-  function getRecommendations(limit) {
-    const profile = buildProfile();
-    const results = uniqueDiscoveryMovies(catalog).filter(function (movie) {
-      return !isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history";
-    }).map(function (movie) {
-      const prediction = predictRating(movie, profile);
-      return Object.assign({}, movie, { prediction: prediction });
-    });
-    results.sort(function (a, b) {
-      const aScore = a.prediction.score + Math.min(a.prediction.freshFeatures, 3) * 0.025;
-      const bScore = b.prediction.score + Math.min(b.prediction.freshFeatures, 3) * 0.025;
-      return bScore - aScore || b.prediction.matches.length - a.prediction.matches.length || a.title.localeCompare(b.title);
-    });
-    const selected = [];
-    const genreCounts = new Map();
-    results.forEach(function (movie) {
-      if (selected.length >= (limit || 8)) return;
-      const mainGenre = (movie.genres && movie.genres[0]) || "Otros";
-      if ((genreCounts.get(mainGenre) || 0) >= 2 && results.length > (limit || 8) * 1.4) return;
-      selected.push(movie);
-      genreCounts.set(mainGenre, (genreCounts.get(mainGenre) || 0) + 1);
-    });
-    return selected;
-  }
-
-   function genreStats() {
-    const stats = new Map();
-    state.rated.forEach(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
-      const rating = ratingValue(entry);
-      if (rating == null) return;
-      const genres = (entry.genres && entry.genres.length ? entry.genres : (movie && movie.genres)) || [];
-      genres.forEach(function (genre) {
-        const current = stats.get(genre) || { sum: 0, count: 0 };
-        current.sum += rating;
-        current.count += 1;
-        stats.set(genre, current);
-      });
-    });
-    return Array.from(stats.entries()).map(function (entry) {
-      return { name: entry[0], average: entry[1].sum / entry[1].count, count: entry[1].count };
-    }).filter(function (item) { return item.count >= 2; }).sort(function (a, b) { return b.average - a.average; });
-  }
-
-  function logEvent(title, description, symbol) {
-    state.events.unshift({ title: title, description: description, symbol: symbol || "✦", at: new Date().toISOString() });
-    state.events = state.events.slice(0, 80);
-    state.updatedAt = new Date().toISOString();
-    persistState();
-  }
-
-  async function persistState() {
-    try { await dbSet(STATE_KEY, state); }
-    catch (error) { toast("No pude guardar los datos. Exporta una copia de seguridad.", true); }
-  }
-
-  function toast(message, isError) {
-    const root = $("#toastRoot");
-    if (!root) return;
-    const node = document.createElement("div");
-    node.className = "toast" + (isError ? " error" : "");
-    node.textContent = message;
-    root.appendChild(node);
-    window.setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 3600);
-  }
-
-  function openModal(movie, mode) {
-    if (!movie) return;
-    const existing = ratingFor(movie.title);
-    const nextMode = mode || "details";
-    if (nextMode === "rate") {
-      ratingReturnDetail = Boolean(movieDetail);
-      modalDraft = {
-        movie: movie,
-        mode: "rate",
-        rating: existing ? ratingValue(existing) : 7,
-        emotions: existing && Array.isArray(existing.emotions) ? existing.emotions.slice() : [],
-        note: existing && existing.note ? existing.note : ""
-      };
-      utilitySheet = null;
-      renderModal();
-      return;
-    }
-    movieDetail = { movie: movie, data: null, loading: false, error: "" };
-    personDetail = null;
-    modalDraft = null;
-    utilitySheet = null;
-    ratingReturnDetail = false;
-    renderModal();
-    if (tmdbCredential && tmdbCredential.value && movie.tmdbId) loadMovieDetail(movie);
-  }
-
-  function renderModal() {
-    const root = $("#modalRoot");
-    if (!root) return;
-    if (utilitySheet) { renderUtilitySheet(); return; }
-    if (personDetail) { renderPersonDetails(); return; }
-    if (modalDraft && modalDraft.mode === "rate") { renderRatingSheet(); return; }
-    if (movieDetail) { renderMovieDetails(); return; }
-    root.innerHTML = "";
-  }
-
-  function openUtilitySheet(type) {
-    utilitySheet = { type:type, key:"", sort:collectionSort, direction:collectionDirection, genres:collectionGenres.slice() };
-    renderModal();
-  }
-
-  function openInfoSheet(key) {
-    utilitySheet = {type:"info",key:key || "collection"};
-    renderModal();
-  }
-
-  async function softTMDBRequest(path, params) {
-    try { return await tmdbRequest(path, params || {}); } catch (_) { return null; }
-  }
-
-  async function loadMovieDetail(movie) {
-    const id = String(movie.tmdbId || "");
-    if (!id || !tmdbCredential || !tmdbCredential.value) return;
-    if (movieDetailCache.has(id)) {
-      if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) {
-        const cached = movieDetailCache.get(id);
-        movieDetail.movie = cached.movie;
-        movieDetail.data = cached.data;
-        movieDetail.loading = false;
-        renderModal();
-      }
-      return;
-    }
-    if (!movieDetail || titleKey(movieDetail.movie.title) !== titleKey(movie.title)) return;
-    movieDetail.loading = true;
-    renderModal();
-    try {
-      const raw = await tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "credits,videos,release_dates,external_ids,keywords,recommendations,similar" });
-      const providerResponse = await softTMDBRequest("/movie/" + encodeURIComponent(id) + "/watch/providers", {});
-      const normalized = fromTMDB(raw);
-      const backdropPath = raw.backdrop_path || normalized.backdropPath || "";
-      const detailsMovie = Object.assign({}, movieDetail.movie, normalized, {
-        id:String(raw.id || id), tmdbId:String(raw.id || id), title:raw.title || movieDetail.movie.title,
-        originalTitle:raw.original_title || "", releaseDate:raw.release_date || null,
-        backdropPath:backdropPath, backdropUrl:backdropPath ? "https://image.tmdb.org/t/p/w1280" + backdropPath : "",
-        tagline:raw.tagline || "", status:raw.status || "", runtime:Number(raw.runtime) || movieDetail.movie.runtime || null,
-        productionCountries:Array.isArray(raw.production_countries) ? raw.production_countries.map(function (country) { return country.name || country.iso_3166_1; }) : [],
-        imdbId:raw.external_ids && raw.external_ids.imdb_id ? raw.external_ids.imdb_id : (raw.imdb_id || ""),
-        collection:raw.belongs_to_collection || null, popularity:Number(raw.popularity) || null
-      });
-      const providerRoot = providerResponse && providerResponse.results ? providerResponse.results : {};
-      const data = {
-        credits:raw.credits || {}, videos:raw.videos && raw.videos.results ? raw.videos.results : [],
-        externalIds:raw.external_ids || {},
-        recommendations:raw.recommendations && raw.recommendations.results ? raw.recommendations.results.map(fromTMDB) : [],
-        similar:raw.similar && raw.similar.results ? raw.similar.results.map(fromTMDB) : [],
-        providers:providerRoot.PA || null,
-        providerResults:providerRoot,
-        releaseDates:raw.release_dates && raw.release_dates.results ? raw.release_dates.results : []
-      };
-      if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) {
-        movieDetail.movie = detailsMovie; movieDetail.data = data; movieDetail.loading = false; movieDetail.error = "";
-        movieDetailCache.set(id,{movie:detailsMovie,data:data});
-        await persistMovieMetadata(detailsMovie);
-        renderModal();
-      }
-    } catch (error) {
-      if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) {
-        movieDetail.loading = false; movieDetail.error = error.message || "No se pudo cargar la ficha de TMDB."; renderModal();
-      }
-    }
-  }
-
-  async function persistMovieMetadata(movie) {
-    if (!movie || !movie.title) return;
-    const key = titleKey(movie.title);
-    const metadata = {};
-    ["id","tmdbId","year","genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
-      if (movie[field] !== undefined && movie[field] !== null && movie[field] !== "") metadata[field] = movie[field];
-    });
-    function mergeMatching(list) {
-      return (list || []).map(function (entry) { return sameMovieRecord(entry,movie) ? Object.assign({},entry,metadata) : entry; });
-    }
-    state.rated = mergeMatching(state.rated);
-    state.watched = mergeMatching(state.watched);
-    state.watchlist = mergeMatching(state.watchlist);
-    state.hidden = mergeMatching(state.hidden);
-    const movieId = movieTmdbId(movie);
-    const index = customCatalog.findIndex(function (entry) {
-      const existingId = movieTmdbId(entry);
-      if (movieId && existingId) return movieId === existingId;
-      return titleKey(entry.title) === key && !movieId && !existingId;
-    });
-    if (index >= 0) customCatalog[index] = Object.assign({},customCatalog[index],metadata,{title:movie.title,source:"tmdb"});
-    else customCatalog.unshift(Object.assign({},metadata,{title:movie.title,source:"tmdb"}));
-    await dbSet(CATALOG_KEY,customCatalog);
-    await persistState();
-    combineMovies();
-  }
-
-  function openPersonDetails(id, name, character) {
-    personDetail = {id:String(id),name:name || "Persona",character:character || "",person:null,credits:null,loading:true,error:""};
-    personListFilter = "all";
-    renderModal();
-    if (personDetailCache.has(String(id))) {
-      personDetail = Object.assign(personDetail, personDetailCache.get(String(id)), {loading:false});
-      renderModal();
-      return;
-    }
-    if (!tmdbCredential || !tmdbCredential.value) {
-      personDetail.loading = false; personDetail.error = "Conecta TMDB para consultar biografías y filmografías."; renderModal(); return;
-    }
-    const requestId = String(id);
-    Promise.all([
-      softTMDBRequest("/person/" + encodeURIComponent(requestId), {language:"es-ES"}),
-      softTMDBRequest("/person/" + encodeURIComponent(requestId) + "/movie_credits", {language:"es-ES"})
-    ]).then(function (responses) {
-      if (!personDetail || personDetail.id !== requestId) return;
-      personDetail.person = responses[0] || {};
-      personDetail.credits = responses[1] || {cast:[],crew:[]};
-      personDetail.loading = false;
-      if (!responses[0]) personDetail.error = "No se pudo recuperar la ficha de esta persona.";
-      personDetailCache.set(requestId,{person:personDetail.person,credits:personDetail.credits,error:personDetail.error});
-      renderModal();
-    });
-  }
-
   function updateRatingPreview(value) {
     if (!modalDraft) return;
     modalDraft.rating = Number(value);
@@ -600,20 +444,47 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   }
 
 
-  function clickNav(page) {
-    if (["home","catalog","library","lab","data"].indexOf(page) < 0) return;
-    if (page !== currentPage) {
-      modalDraft = null; movieDetail = null; personDetail = null; utilitySheet = null; ratingReturnDetail = false;
-      const modalRoot = $("#modalRoot");
-      if (modalRoot) modalRoot.innerHTML = "";
-    }
-    currentPage = page;
-    renderApp();
-    if (page === "catalog" && tmdbCredential && tmdbCredential.value) {
-      loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false);
-    }
-    window.scrollTo({top:0,behavior:"smooth"});
-  }
+  const appLifecycle = createAppLifecycle({
+    get state() { return state; },
+    set state(value) { state = value; },
+    get seedCatalog() { return seedCatalog; },
+    set seedCatalog(value) { seedCatalog = value; },
+    get customCatalog() { return customCatalog; },
+    set customCatalog(value) { customCatalog = value; },
+    get tmdbCredential() { return tmdbCredential; },
+    set tmdbCredential(value) { tmdbCredential = value; },
+    get currentPage() { return currentPage; },
+    set currentPage(value) { currentPage = value; },
+    get modalDraft() { return modalDraft; },
+    set modalDraft(value) { modalDraft = value; },
+    get movieDetail() { return movieDetail; },
+    set movieDetail(value) { movieDetail = value; },
+    get personDetail() { return personDetail; },
+    set personDetail(value) { personDetail = value; },
+    get utilitySheet() { return utilitySheet; },
+    set utilitySheet(value) { utilitySheet = value; },
+    get ratingReturnDetail() { return ratingReturnDetail; },
+    set ratingReturnDetail(value) { ratingReturnDetail = value; },
+    get $() { return $; },
+    get document() { return document; },
+    get window() { return window; },
+    get navigator() { return navigator; },
+    get fetch() { return fetch; },
+    get dbGet() { return dbGet; },
+    get STATE_KEY() { return STATE_KEY; },
+    get CATALOG_KEY() { return CATALOG_KEY; },
+    get TMDB_CREDENTIAL_KEY() { return TMDB_CREDENTIAL_KEY; },
+    get normalizeMovie() { return normalizeMovie; },
+    get ensureState() { return ensureState; },
+    get pruneTMDBCache() { return pruneTMDBCache; },
+    get combineMovies() { return combineMovies; },
+    get renderApp() { return renderApp; },
+    get enrichRatedHistoryWithTMDB() { return enrichRatedHistoryWithTMDB; },
+    get loadTMDBPage() { return loadTMDBPage; },
+    get catalogQuery() { return catalogQuery; },
+    get escapeHTML() { return escapeHTML; }
+  });
+  const { clickNav, init } = appLifecycle;
 
   registerAppEvents({
     get $() { return $; },
@@ -705,35 +576,6 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     get importCatalogCSV() { return importCatalogCSV; },
     get toast() { return toast; }
   });
-
-  async function init() {
-    try {
-      const results = await Promise.all([
-        fetch("./data/catalog.json").then(function (response) {
-          if (!response.ok) throw new Error("No se pudo cargar el catálogo de muestra.");
-          return response.json();
-        }),
-        dbGet(STATE_KEY),
-        dbGet(CATALOG_KEY),
-        dbGet(TMDB_CREDENTIAL_KEY)
-      ]);
-      seedCatalog = Array.isArray(results[0]) ? results[0].map(normalizeMovie).filter(Boolean) : [];
-      state = ensureState(results[1]);
-      customCatalog = Array.isArray(results[2]) ? results[2].map(normalizeMovie).filter(Boolean) : [];
-      tmdbCredential = results[3] && results[3].value ? results[3] : null;
-      pruneTMDBCache();
-      combineMovies();
-      renderApp();
-      if (tmdbCredential && tmdbCredential.value) window.setTimeout(function () { enrichRatedHistoryWithTMDB(); },350);
-      if ("serviceWorker" in navigator && window.isSecureContext) {
-        navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(function () {
-          // La app sigue funcionando si el navegador no permite service workers.
-        });
-      }
-    } catch (error) {
-      $("#appRoot").innerHTML = '<div class="empty-state"><div class="empty-icon">!</div><h2>No se pudo iniciar Prisma</h2><p>' + escapeHTML(error.message || "Error al cargar los archivos") + '</p><button type="button" class="btn btn-primary" onclick="location.reload()">Reintentar</button></div>';
-    }
-  }
 
   init();
 }());
