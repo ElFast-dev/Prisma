@@ -41,9 +41,26 @@
   let tmdbSearchTimer = null;
   let tmdbRequestSerial = 0;
   let tmdbHistorySync = { running: false, total: 0, done: 0, updated: 0, failed: 0, current: "", finishedAt: null };
+  let collectionTab = "history";
+  let collectionMode = "movies";
+  let collectionQuery = "";
+  let collectionGenres = [];
+  let collectionSort = "added";
+  let collectionDirection = "desc";
+  let collectionLayout = "list";
+  let onlyReleased = false;
+  let showCollectionSearch = false;
+  let utilitySheet = null;
+  let movieDetail = null;
+  let personDetail = null;
+  let personListFilter = "all";
+  let ratingReturnDetail = false;
+  const movieDetailCache = new Map();
+  const personDetailCache = new Map();
+  const COLLECTION_GENRES = ["Acción", "Animación", "Anime", "Aventura", "Ciencia ficción", "Comedia", "Crimen", "Documental", "Drama", "Fantasía", "Guerra", "Historia", "Romance", "Terror", "Thriller", "Western"];
 
   function emptyState() {
-    return { version: 1, rated: [], watchlist: [], events: [], updatedAt: null, importedAt: null };
+    return { version: 2, rated: [], watched: [], watchlist: [], hidden: [], events: [], updatedAt: null, importedAt: null };
   }
 
   function openDB() {
@@ -147,6 +164,13 @@
       posterUrl: movie.posterUrl || (posterPath ? "https://image.tmdb.org/t/p/w500" + posterPath : ""),
       voteAverage: Number(movie.voteAverage || movie.vote_average || 0) || null,
       runtime: Number(movie.runtime || 0) || null,
+      releaseDate: movie.releaseDate || movie.release_date || null,
+      backdropPath: movie.backdropPath || movie.backdrop_path || "",
+      backdropUrl: movie.backdropUrl || (movie.backdropPath || movie.backdrop_path ? "https://image.tmdb.org/t/p/w1280" + (movie.backdropPath || movie.backdrop_path) : ""),
+      tagline: movie.tagline || "",
+      status: movie.status || "",
+      productionCountries: Array.isArray(movie.productionCountries) ? movie.productionCountries : (Array.isArray(movie.production_countries) ? movie.production_countries.map(function (country) { return country.name || country.iso_3166_1; }) : []),
+      imdbId: movie.imdbId || movie.imdb_id || "",
       tmdbFetchedAt: movie.tmdbFetchedAt || null,
       metadataSource: movie.metadataSource || null,
       source: movie.source || "catalog"
@@ -425,6 +449,13 @@
       voteAverage: Number(raw.vote_average) || null,
       runtime: Number(raw.runtime) || null,
       popularity: Number(raw.popularity) || null,
+      releaseDate: raw.release_date || null,
+      backdropPath: raw.backdrop_path || "",
+      backdropUrl: raw.backdrop_path ? "https://image.tmdb.org/t/p/w1280" + raw.backdrop_path : "",
+      tagline: raw.tagline || "",
+      status: raw.status || "",
+      productionCountries: Array.isArray(raw.production_countries) ? raw.production_countries.map(function (country) { return country.name || country.iso_3166_1; }) : [],
+      imdbId: raw.imdb_id || "",
       tmdbFetchedAt: new Date().toISOString(),
       metadataSource: "tmdb",
       source: "tmdb"
@@ -764,8 +795,10 @@
     const profile = buildProfile();
     const ratedKeys = new Set(state.rated.map(function (entry) { return titleKey(entry.title); }));
     const pendingKeys = new Set(state.watchlist.map(function (entry) { return titleKey(entry.title); }));
+    const watchedKeys = new Set((state.watched || []).map(function (entry) { return titleKey(entry.title); }));
+    const hiddenKeys = new Set((state.hidden || []).map(function (entry) { return titleKey(entry.title); }));
     const results = catalog.filter(function (movie) {
-      return !ratedKeys.has(movie.key) && !pendingKeys.has(movie.key) && movie.source !== "history";
+      return !ratedKeys.has(movie.key) && !pendingKeys.has(movie.key) && !watchedKeys.has(movie.key) && !hiddenKeys.has(movie.key) && movie.source !== "history";
     }).map(function (movie) {
       const prediction = predictRating(movie, profile);
       return Object.assign({}, movie, { prediction: prediction });
@@ -1383,14 +1416,21 @@
   function ensureState(value) {
     const defaults = emptyState();
     const incoming = value && typeof value === "object" ? value : {};
+    function validList(name) {
+      return Array.isArray(incoming[name]) ? incoming[name].filter(function (entry) { return entry && entry.title; }).map(function (entry) { return Object.assign({}, entry, {title:String(entry.title)}); }) : [];
+    }
     return Object.assign(defaults, incoming, {
+      version: 2,
       rated: Array.isArray(incoming.rated) ? incoming.rated.filter(function (entry) { return entry && entry.title && ratingValue(entry) != null; }).map(function (entry) {
         return Object.assign({}, entry, { title: String(entry.title), rating: ratingValue(entry), emotions: Array.isArray(entry.emotions) ? entry.emotions : [], genres: splitList(entry.genres), tags: splitList(entry.tags) });
       }) : [],
-      watchlist: Array.isArray(incoming.watchlist) ? incoming.watchlist.filter(function (entry) { return entry && entry.title; }) : [],
+      watched: validList("watched"),
+      watchlist: validList("watchlist"),
+      hidden: validList("hidden"),
       events: Array.isArray(incoming.events) ? incoming.events.slice(0, 80) : []
     });
   }
+
 
   async function exportBackup() {
     const backup = {
