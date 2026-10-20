@@ -337,7 +337,7 @@
     const ratings = state.rated.map(ratingValue).filter(function (value) { return value != null; });
     const average = ratings.length ? ratings.reduce(function (sum, value) { return sum + value; }, 0) / ratings.length : null;
     const matched = state.rated.filter(function (entry) {
-      const movie = findMovie(entry.title);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
       return movieFeatures(movie, entry).length > 0;
     }).length;
     return {
@@ -806,7 +806,7 @@
     const features = new Map();
     let withMetadata = 0;
     valid.forEach(function (entry) {
-      const movie = findMovie(entry.title);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
       const names = movieFeatures(movie, entry);
       if (!names.length) return;
       withMetadata += 1;
@@ -859,10 +859,10 @@
 
   function getRecommendations(limit) {
     const profile = buildProfile();
-    const ratedKeys = new Set(state.rated.map(function (entry) { return titleKey(entry.title); }));
-    const pendingKeys = new Set(state.watchlist.map(function (entry) { return titleKey(entry.title); }));
-    const watchedKeys = new Set((state.watched || []).map(function (entry) { return titleKey(entry.title); }));
-    const hiddenKeys = new Set((state.hidden || []).map(function (entry) { return titleKey(entry.title); }));
+    const ratedKeys = new Set(state.rated.map(movieIdentityKey));
+    const pendingKeys = new Set(state.watchlist.map(movieIdentityKey));
+    const watchedKeys = new Set((state.watched || []).map(movieIdentityKey));
+    const hiddenKeys = new Set((state.hidden || []).map(movieIdentityKey));
     const results = catalog.filter(function (movie) {
       return !ratedKeys.has(movie.key) && !pendingKeys.has(movie.key) && !watchedKeys.has(movie.key) && !hiddenKeys.has(movie.key) && movie.source !== "history";
     }).map(function (movie) {
@@ -888,7 +888,7 @@
 
   function evaluateModel() {
     const mapped = state.rated.filter(function (entry) {
-      const movie = findMovie(entry.title);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
       return ratingValue(entry) != null && movieFeatures(movie, entry).length > 0;
     });
     if (mapped.length < 5) return { available: false, count: mapped.length, mae: null };
@@ -906,7 +906,7 @@
   function genreStats() {
     const stats = new Map();
     state.rated.forEach(function (entry) {
-      const movie = findMovie(entry.title);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
       const rating = ratingValue(entry);
       if (rating == null) return;
       const genres = (entry.genres && entry.genres.length ? entry.genres : (movie && movie.genres)) || [];
@@ -954,11 +954,11 @@
   function movieCard(movie, options) {
     const opts = options || {};
     const hue = cardColor(movie);
-    const rating = ratingFor(movie.title);
+    const rating = ratingFor(movie.title,movie.tmdbId);
     const actionLabel = rating ? "Editar nota" : "Calificar";
     const score = movie.prediction ? '<div class="movie-score">✦ ' + movie.prediction.score.toFixed(1).replace(".", ",") + '/10 estimado</div>' : (rating ? '<div class="movie-score">★ Tu nota: ' + ratingValue(rating) + '/10</div>' : "");
     const meta = [movie.year, (movie.genres || []).slice(0, 2).map(displayGenre).join(" · ")].filter(Boolean).join(" · ");
-    const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + escapeHTML(movie.title) + '">' + actionLabel + '</button></div>';
+    const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">' + actionLabel + '</button></div>';
     return '<article class="movie-card">' +
       '<div class="poster-art" role="img" aria-label="Tarjeta de ' + escapeHTML(movie.title) + '" style="background:radial-gradient(circle at 75% 22%,hsla(' + hue + ',65%,65%,.35),transparent 42%),linear-gradient(145deg,hsl(' + hue + ',32%,25%),#13131d 66%,hsl(' + ((hue + 14) % 360) + ',28%,19%))">' +
       (movie.posterUrl ? '<img class="poster-image" src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
@@ -1062,7 +1062,7 @@
 
   function enrichCollectionMovie(entry) {
     const stored = entry || {};
-    const known = findMovie(stored.title) || {};
+    const known = findMovie(stored.title,stored.tmdbId || stored.tmId) || {};
     const result = Object.assign({}, known, stored);
     ["posterUrl", "posterPath", "overview", "releaseDate", "backdropUrl", "runtime", "voteAverage", "tmdbId", "status", "imdbId"].forEach(function (key) {
       if (!result[key]) result[key] = known[key] || (key === "posterUrl" ? "" : null);
@@ -1145,7 +1145,7 @@
 
   function recentPoster(item) {
     const background = item.posterUrl ? 'background-image:linear-gradient(180deg,rgba(4,9,15,.03),rgba(4,9,15,.84)),url(&quot;' + escapeHTML(item.posterUrl) + '&quot;)' : "";
-    return '<button class="recent-movie" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" style="' + background + '"><span class="recent-movie-meta">' + escapeHTML(item.year || "Película") + '</span><strong>' + escapeHTML(item.title) + '</strong></button>';
+    return '<button class="recent-movie" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '" style="' + background + '"><span class="recent-movie-meta">' + escapeHTML(item.year || "Película") + '</span><strong>' + escapeHTML(item.title) + '</strong></button>';
   }
 
   function collectionRow(item, tab) {
@@ -1160,7 +1160,7 @@
     const stateLabel = tab === "hidden" ? '<span class="collection-row-state">Oculta</span>' :
       (tab === "pending" ? '<span class="collection-row-state pending-state">Pendiente</span>' : "");
     return '<div class="collection-row">' +
-      '<button class="collection-row-main" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '">' +
+      '<button class="collection-row-main" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' +
       '<span class="collection-row-poster">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + '</span>' +
       '<span class="collection-row-copy"><span class="collection-release">' + escapeHTML(release) + '</span><strong>' + escapeHTML(item.title) + '</strong><span class="collection-synopsis">' + synopsis + '</span></span>' +
       '</button><span class="collection-row-side"><span class="collection-row-scores">' + personalRating + publicRating + '</span>' + stateLabel + '</span></div>';
@@ -1169,7 +1169,7 @@
   function collectionCompactCard(item) {
     const rating = ratingValue(item);
     const seenMarker = isInHistory(item.title) ? "seen" : (isInWatchlist(item.title) ? "pending" : "hidden");
-    return '<button class="collection-compact-card" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '">' +
+    return '<button class="collection-compact-card" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' +
       '<span class="compact-poster">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + '<i class="collection-marker ' + seenMarker + '"></i></span>' +
       '<strong>' + escapeHTML(item.title) + '</strong><small>' + escapeHTML(item.year || "") + (rating ? " · ★ " + rating + "/10" : "") + '</small></button>';
   }
@@ -2251,9 +2251,11 @@
       if (action === "genre") { activeGenre = button.dataset.genre || "Todos"; renderApp(); return; }
       if (action === "details") {
         const requestedId = button.dataset.tmdbId || "";
-        let movie = tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); }) ||
-          findMovie(button.dataset.title) ||
-          getCollectionItems("history").concat(getCollectionItems("pending"),getCollectionItems("hidden")).find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); });
+        let movie = (requestedId ? tmdbResults.find(function (item) { return movieTmdbId(item) === requestedId; }) : null) ||
+          findMovie(button.dataset.title,requestedId) ||
+          getCollectionItems("history").concat(getCollectionItems("pending"),getCollectionItems("hidden")).find(function (item) {
+            return requestedId ? movieTmdbId(item) === requestedId : titleKey(item.title) === titleKey(button.dataset.title);
+          });
         if (movie && requestedId && !movie.tmdbId) movie = Object.assign({},movie,{tmdbId:requestedId,source:"tmdb"});
         if (!movie && button.dataset.title) movie = {title:button.dataset.title,id:requestedId || titleKey(button.dataset.title),tmdbId:requestedId || null,source:requestedId ? "tmdb" : "catalog"};
         if (movie) openModal(movie,"details");
@@ -2261,9 +2263,10 @@
       }
       if (action === "rate") {
         const inDetail = Boolean(button.closest(".detail-sheet"));
+        const requestedId = button.dataset.tmdbId || (movieDetail && movieDetail.movie.tmdbId) || "";
         const movie = (movieDetail && inDetail ? movieDetail.movie : null) ||
-          tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title || (movieDetail && movieDetail.movie.title)); }) ||
-          findMovie(button.dataset.title || (movieDetail && movieDetail.movie.title)) || (movieDetail && movieDetail.movie);
+          (requestedId ? tmdbResults.find(function (item) { return movieTmdbId(item) === requestedId; }) : null) ||
+          findMovie(button.dataset.title || (movieDetail && movieDetail.movie.title),requestedId) || (movieDetail && movieDetail.movie);
         if (movie) openModal(movie,"rate");
         return;
       }
