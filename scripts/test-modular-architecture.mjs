@@ -15,6 +15,7 @@ const files = [
   'js/recommendations/engine.js',
   'js/catalog/csv-parser.js',
   'js/catalog/catalog-model.js',
+  'js/collection/collection-model.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -46,6 +47,8 @@ for (const relative of files) {
 }
 assert.ok(!app.includes('function parseCatalogCSV('));
 assert.ok(!app.includes('function combineMovies('));
+assert.ok(!app.includes('function getCollectionItems('));
+assert.ok(app.includes('createCollectionModel('));
 assert.ok(app.includes('createCatalogModel('));
 assert.ok(!app.includes('function movieMetadataFromJSON('));
 assert.ok(!app.includes('function predictRating('));

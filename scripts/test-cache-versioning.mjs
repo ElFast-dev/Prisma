@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, personalData, tmdbClient] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, collectionModel, personalData, tmdbClient] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -14,6 +14,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, feature
   readFile('js/recommendations/engine.js', 'utf8'),
   readFile('js/catalog/csv-parser.js', 'utf8'),
   readFile('js/catalog/catalog-model.js', 'utf8'),
+  readFile('js/collection/collection-model.js', 'utf8'),
   readFile('js/import-export/personal-data.js', 'utf8'),
   readFile('js/tmdb/client.js', 'utf8')
 ]);
@@ -45,6 +46,7 @@ const modules = [
   ['js/recommendations/engine.js', engine],
   ['js/catalog/csv-parser.js', csvParser],
   ['js/catalog/catalog-model.js', catalogModel],
+  ['js/collection/collection-model.js', collectionModel],
   ['js/import-export/personal-data.js', personalData],
   ['js/tmdb/client.js', tmdbClient]
 ];

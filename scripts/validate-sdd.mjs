@@ -24,6 +24,7 @@ const requiredFiles = [
   'js/recommendations/engine.js',
   'js/catalog/csv-parser.js',
   'js/catalog/catalog-model.js',
+  'js/collection/collection-model.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js',
   'scripts/test-modular-architecture.mjs',

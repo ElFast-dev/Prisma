@@ -72,3 +72,14 @@ El modelo del catálogo DEBE administrar la combinación e identidad de películ
 - DADO que Prisma recibe películas del catálogo de muestra, la biblioteca personal e historial valorado
 - CUANDO se reconstruye el catálogo
 - ENTONCES la combinación y búsqueda ocurren en el módulo de catálogo y la interfaz recibe el resultado a través de su API.
+
+
+### Requirement: Modelo de colección aislado
+
+La lógica de consulta, enriquecimiento, filtrado y clasificación de los registros de la colección DEBE vivir en un módulo separado de la presentación y recibir el estado y los filtros mediante dependencias explícitas.
+
+#### Scenario: Aplicar filtros a la colección
+
+- DADO que el usuario elige historial, pendientes u ocultos y ajusta búsqueda, géneros u orden
+- CUANDO se solicitan los elementos de la colección
+- ENTONCES el módulo de colección devuelve los registros filtrados sin acceder al DOM ni renderizar HTML.
