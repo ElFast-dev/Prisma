@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101018">
+  <meta name="description" content="Prisma: tu laboratorio personal de recomendaciones cinematográficas.">
+  <title>Prisma — Cine a tu medida</title>
+  <link rel="icon" href="./assets/prisma.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a href="./" class="brand" aria-label="Prisma, inicio" data-nav="home">
+        <img src="./assets/prisma.svg" alt="" width="38" height="38">
+        <span class="brand-copy"><strong>prisma</strong><small>tu universo de cine</small></span>
+      </a>
+      <div class="topbar-right">
+        <span class="privacy-pill"><span class="status-dot"></span> Perfil privado</span>
+        <button class="avatar-button" type="button" data-nav="data" aria-label="Abrir datos y ajustes">P</button>
+      </div>
+    </header>
+
+    <main id="appRoot" class="main-content">
+      <div class="loading-state"><span class="spinner"></span><p>Preparando tu universo cinematográfico…</p></div>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navegación principal">
+      <button class="nav-item active" type="button" data-nav="home"><span class="nav-icon">✦</span><span>Para ti</span></button>
+      <button class="nav-item" type="button" data-nav="catalog"><span class="nav-icon">▦</span><span>Catálogo</span></button>
+      <button class="nav-item" type="button" data-nav="library"><span class="nav-icon">▤</span><span>Mi lista</span></button>
+      <button class="nav-item" type="button" data-nav="lab"><span class="nav-icon">⌁</span><span>Laboratorio</span></button>
+      <button class="nav-item" type="button" data-nav="data"><span class="nav-icon">⚙</span><span>Datos</span></button>
+    </nav>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot" class="toast-root" role="status" aria-live="polite"></div>
+  <input id="jsonImportInput" type="file" accept=".json,application/json" hidden>
+  <input id="catalogImportInput" type="file" accept=".csv,text/csv,.tsv,text/tab-separated-values" hidden>
+  <input id="backupImportInput" type="file" accept=".json,application/json" hidden>
+</body>
+</html>
