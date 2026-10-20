@@ -67,7 +67,7 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-7") &&
+                  lastUI.cssHref.includes("v=ui-20261020-8") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.movieCards > 0
