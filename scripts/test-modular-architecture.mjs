@@ -18,6 +18,7 @@ const files = [
   'js/collection/collection-model.js',
   'js/ui/presentation-utils.js',
   'js/ui/page-views.js',
+  'js/ui/modal-views.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -54,6 +55,11 @@ assert.ok(!app.includes('function buildRatingMetrics('));
 assert.ok(!app.includes('function renderHome('));
 assert.ok(!app.includes('function renderLibrary('));
 assert.ok(!app.includes('function renderApp('));
+assert.ok(!app.includes('function renderMovieDetails('));
+assert.ok(!app.includes('function renderPersonDetails('));
+assert.ok(!app.includes('function renderRatingSheet('));
+assert.ok(!app.includes('function renderUtilitySheet('));
+assert.ok(app.includes('createModalViews('));
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));

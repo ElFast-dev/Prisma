@@ -17,6 +17,7 @@
 - [x] Actualizar `app.js` para importar módulos y conservar la composición y el comportamiento existentes.
 
 ## Calidad y publicación
+- [x] Extraer renderizadores de fichas, personas, puntuaciones y paneles auxiliares del controlador principal.
 - [x] Extraer renderizadores de páginas y componentes de colección a un módulo de vistas con dependencias explícitas.
 - [x] Reescribir pruebas de importación y recomendación para llamar a las APIs de módulos en lugar de extraer código fuente por texto.
 - [x] Añadir prueba de arquitectura modular a CI y requerir sus artefactos en el validador SDD.

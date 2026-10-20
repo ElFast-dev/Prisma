@@ -105,3 +105,14 @@ Los renderizadores de las páginas y componentes visuales principales DEBEN vivi
 - DADO que se modifica la presentación de Progreso, Descubrir, Colección, Laboratorio o Ajustes
 - CUANDO se ejecuta la aplicación
 - ENTONCES la implementación reside en el módulo de vistas y la entrada solo conecta sus dependencias y selecciona la vista.
+
+
+### Requirement: Vistas modales separadas de sus acciones
+
+Los renderizadores de fichas, personas, puntuaciones y paneles auxiliares DEBEN vivir en un módulo de interfaz distinto de las acciones que guardan valoraciones, listas y estado de navegación.
+
+#### Scenario: Cambio visual en una ficha o panel
+
+- DADO que se modifica la presentación de una ficha de película, de una persona o del panel de puntuación
+- CUANDO se ejecuta Prisma
+- ENTONCES el marcado visual procede del módulo modal y las acciones siguen coordinadas mediante controladores separados.
