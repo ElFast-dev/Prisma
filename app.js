@@ -9,6 +9,7 @@ import { createCollectionModel } from "./js/collection/collection-model.js?v=cor
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261020-1";
 import { createPageViews } from "./js/ui/page-views.js?v=core-20261020-1";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261020-1";
+import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -191,6 +192,32 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     get ratingValue() { return ratingValue; }
   });
   const { renderUtilitySheet, renderMovieDetails, renderPersonDetails, renderRatingSheet } = modalViews;
+
+  const movieActions = createMovieActions({
+    get $() { return $; },
+    get state() { return state; },
+    get modalDraft() { return modalDraft; },
+    set modalDraft(value) { modalDraft = value; },
+    get movieDetail() { return movieDetail; },
+    set movieDetail(value) { movieDetail = value; },
+    get ratingReturnDetail() { return ratingReturnDetail; },
+    set ratingReturnDetail(value) { ratingReturnDetail = value; },
+    get sameMovieRecord() { return sameMovieRecord; },
+    get uniqueStrings() { return uniqueStrings; },
+    get logEvent() { return logEvent; },
+    get persistState() { return persistState; },
+    get combineMovies() { return combineMovies; },
+    get renderApp() { return renderApp; },
+    get renderMovieDetails() { return renderMovieDetails; },
+    get toast() { return toast; },
+    get titleKey() { return titleKey; },
+    get movieTmdbId() { return movieTmdbId; },
+    get findMovie() { return findMovie; },
+    get isInWatchlist() { return isInWatchlist; },
+    get isHidden() { return isHidden; },
+    get ratingValue() { return ratingValue; }
+  });
+  const { saveRating, deleteRating, resolveMovieForAction, toggleWatchlist, markWatched, toggleHidden } = movieActions;
 
      async function saveTMDBCredential() {
     const input = $("#tmdbCredentialInput");
@@ -832,132 +859,7 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   }
 
 
-  async function saveRating() {
-    if (!modalDraft) return;
-    const movie = modalDraft.movie;
-    const rating = Number($("#ratingInput").value);
-    if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
-      toast("La nota debe ser un número del 1 al 10.",true);
-      return;
-    }
-    const existingIndex = state.rated.findIndex(function (entry) { return sameMovieRecord(entry,movie); });
-    const old = existingIndex >= 0 ? state.rated[existingIndex] : {};
-    const newEntry = Object.assign({},old,{
-      id:old.id || movie.id,tmdbId:movie.tmdbId || old.tmdbId || null,
-      title:movie.title,year:movie.year || old.year || null,rating:rating,
-      posterPath:movie.posterPath || old.posterPath || "",posterUrl:movie.posterUrl || old.posterUrl || "",
-      voteAverage:movie.voteAverage || old.voteAverage || null,voteCount:movie.voteCount || old.voteCount || null,runtime:movie.runtime || old.runtime || null,
-      overview:movie.overview || old.overview || "",releaseDate:movie.releaseDate || old.releaseDate || null,
-      backdropPath:movie.backdropPath || old.backdropPath || "",backdropUrl:movie.backdropUrl || old.backdropUrl || "",
-      tmdbFetchedAt:movie.tmdbFetchedAt || old.tmdbFetchedAt || null,
-      metadataSource:movie.metadataSource || old.metadataSource || (movie.source === "tmdb" ? "tmdb" : null),
-      genres:uniqueStrings((old.genres || []).concat(movie.genres || [])),
-      tags:uniqueStrings((old.tags || []).concat(movie.tags || [])),
-      emotions:modalDraft.emotions.slice(),note:String(($("#ratingNote") || {}).value || "").trim(),
-      updatedAt:new Date().toISOString(),source:"manual"
-    });
-    if (existingIndex >= 0) state.rated[existingIndex] = newEntry;
-    else state.rated.unshift(newEntry);
-    state.watchlist = state.watchlist.filter(function (entry) { return !sameMovieRecord(entry,movie); });
-    const watchedIndex = (state.watched || []).findIndex(function (entry) { return sameMovieRecord(entry,movie); });
-    const oldWatched = watchedIndex >= 0 ? state.watched[watchedIndex] : null;
-    const watchedRecord = Object.assign({},oldWatched || {},newEntry,{
-      watchedAt:(oldWatched && oldWatched.watchedAt) || old.watchedAt || old.updatedAt || new Date().toISOString()
-    });
-    if (watchedIndex >= 0) state.watched[watchedIndex] = watchedRecord;
-    else state.watched.unshift(watchedRecord);
-    logEvent("Valoración guardada: " + movie.title,"Nota " + rating + "/10" + (newEntry.emotions.length ? " · " + newEntry.emotions.length + " emociones registradas" : ""),"★");
-    await persistState();
-    const returnToDetails = ratingReturnDetail && Boolean(movieDetail);
-    modalDraft = null;ratingReturnDetail = false;
-    if (!returnToDetails) { movieDetail = null;$("#modalRoot").innerHTML = ""; }
-    combineMovies();
-    renderApp();
-    if (returnToDetails) renderMovieDetails();
-    toast("Tu experiencia quedó guardada en este dispositivo.");
-  }
-
-  async function deleteRating(title,tmdbId) {
-    const target = {title:title,tmdbId:tmdbId || (modalDraft && modalDraft.movie.tmdbId) || ""};
-    state.rated = state.rated.filter(function (entry) { return !sameMovieRecord(entry,target); });
-    logEvent("Valoración eliminada",title,"−");
-    await persistState();
-    const returnToDetails = ratingReturnDetail && Boolean(movieDetail);
-    modalDraft = null;ratingReturnDetail = false;
-    if (!returnToDetails) { movieDetail = null;$("#modalRoot").innerHTML = ""; }
-    combineMovies();
-    renderApp();
-    if (returnToDetails) renderMovieDetails();
-    toast("Se quitó la valoración de " + title + ".");
-  }
-
-  function resolveMovieForAction(title,tmdbId) {
-    const active = movieDetail && titleKey(movieDetail.movie.title) === titleKey(title) ? movieDetail.movie : null;
-    const id = String(tmdbId || (active && active.tmdbId) || "");
-    const target = {title:title,tmdbId:id};
-    return (active && (!id || movieTmdbId(active) === id) ? active : null) ||
-      findMovie(title,id) ||
-      state.rated.find(function (entry) { return sameMovieRecord(entry,target); }) ||
-      state.watchlist.find(function (entry) { return sameMovieRecord(entry,target); }) ||
-      (state.watched || []).find(function (entry) { return sameMovieRecord(entry,target); }) ||
-      (state.hidden || []).find(function (entry) { return sameMovieRecord(entry,target); }) ||
-      {title:title,id:id || titleKey(title),tmdbId:id || null,genres:[],tags:[]};
-  }
-
-  async function toggleWatchlist(title,tmdbId) {
-    const movie = resolveMovieForAction(title,tmdbId);
-    const remove = isInWatchlist(movie.title,movie.tmdbId);
-    if (remove) {
-      state.watchlist = state.watchlist.filter(function (entry) { return !sameMovieRecord(entry,movie); });
-      logEvent("Quitada de pendientes",title,"−");
-      toast("Se quitó de tu lista.");
-    } else {
-      state.watchlist.unshift(Object.assign({},movie,{title:movie.title,addedAt:new Date().toISOString()}));
-      logEvent("Añadida a pendientes",title,"＋");
-      toast("Añadida a tu lista para verla después.");
-    }
-    await persistState();
-    combineMovies();
-    if (movieDetail) renderMovieDetails(); else renderApp();
-  }
-
-  async function markWatched(title,tmdbId) {
-    const source = resolveMovieForAction(title,tmdbId);
-    const index = (state.watched || []).findIndex(function (entry) { return sameMovieRecord(entry,source); });
-    const previous = index >= 0 ? state.watched[index] : null;
-    const watched = Object.assign({},previous || {},source,{watchedAt:(previous && previous.watchedAt) || new Date().toISOString()});
-    if (index >= 0) state.watched[index] = watched;
-    else state.watched.unshift(watched);
-    state.watchlist = state.watchlist.filter(function (entry) { return !sameMovieRecord(entry,source); });
-    logEvent("Añadida al historial",title,"✓");
-    await persistState();
-    combineMovies();
-    if (movieDetail && sameMovieRecord(movieDetail.movie,source)) {
-      movieDetail.movie = Object.assign({},movieDetail.movie,watched);
-      renderMovieDetails();
-    } else renderApp();
-    toast("Marcada como vista.");
-  }
-
-  async function toggleHidden(title,tmdbId) {
-    const movie = resolveMovieForAction(title,tmdbId);
-    const remove = isHidden(movie.title,movie.tmdbId);
-    if (remove) {
-      state.hidden = state.hidden.filter(function (entry) { return !sameMovieRecord(entry,movie); });
-    } else {
-      state.hidden.unshift(Object.assign({},movie,{hiddenAt:new Date().toISOString()}));
-    }
-    logEvent(remove ? "Película mostrada" : "Película ocultada",title,"◌");
-    await persistState();
-    combineMovies();
-    if (movieDetail && sameMovieRecord(movieDetail.movie,movie)) renderMovieDetails();
-    else renderApp();
-    toast(remove ? "La película vuelve a aparecer en Prisma." : "La película quedó oculta en tus recomendaciones.");
-  }
-
-
-
-   async function importPersonalJSON(file) {
+  async function importPersonalJSON(file) {
     const text = await file.text();
     const parsed = JSON.parse(text);
     if (parsed && parsed.format === "prisma-backup" && parsed.state) {

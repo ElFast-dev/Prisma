@@ -28,6 +28,7 @@ const requiredFiles = [
   'js/ui/presentation-utils.js',
   'js/ui/page-views.js',
   'js/ui/modal-views.js',
+  'js/app/movie-actions.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js',
   'scripts/test-modular-architecture.mjs',

@@ -116,3 +116,14 @@ Los renderizadores de fichas, personas, puntuaciones y paneles auxiliares DEBEN 
 - DADO que se modifica la presentación de una ficha de película, de una persona o del panel de puntuación
 - CUANDO se ejecuta Prisma
 - ENTONCES el marcado visual procede del módulo modal y las acciones siguen coordinadas mediante controladores separados.
+
+
+### Requirement: Acciones de colección separadas del controlador
+
+Las operaciones que modifican valoraciones, historial, pendientes u ocultos DEBEN residir en un módulo de acciones separado de los renderizadores y enlazarse con el estado, la persistencia y la interfaz mediante dependencias explícitas.
+
+#### Scenario: El usuario guarda una valoración
+
+- DADO que el usuario confirma una nota entre 1 y 10
+- CUANDO se procesa la acción
+- ENTONCES el módulo de acciones actualiza los datos personales y coordina su persistencia mediante las dependencias recibidas sin duplicar la lógica dentro del coordinador.

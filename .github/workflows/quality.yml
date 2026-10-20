@@ -40,6 +40,7 @@ jobs:
           node --check js/ui/presentation-utils.js
           node --check js/ui/page-views.js
           node --check js/ui/modal-views.js
+          node --check js/app/movie-actions.js
           node --check js/import-export/personal-data.js
           node --check js/tmdb/client.js
           node scripts/test-style-modularity.mjs
