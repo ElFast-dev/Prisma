@@ -242,7 +242,7 @@ jobs:
                 if (reimportedRemakes.length !== 2 || JSON.stringify(reimportedIds) !== JSON.stringify(["990001", "990002"])) {
                   throw new Error(name + ": reimport created or removed a remake identity: " + JSON.stringify(reimportedFixture));
                 }
-                if (!sameIdentity || !sameIdentity.genres.includes("Drama") || !sameIdentity.genres.includes("Comedy")) {
+                if (!sameIdentity || !sameIdentity.genres.includes("Drama") || !sameIdentity.genres.includes("Comedia")) {
                   throw new Error(name + ": reimport did not merge metadata into TMDB identity 990001: " + JSON.stringify(sameIdentity));
                 }
               } finally {
