@@ -191,11 +191,10 @@ jobs:
                   name: "prisma-remake-test.csv",
                   mimeType: "text/csv",
                   buffer: Buffer.from(
-                    "title,year,tmdb_id,genres\\n" +
-                    "Prisma CSV Remake Fixture,1998,990001,Drama\\n" +
-                    "Prisma CSV Remake Fixture,2024,990002,Action\\n" +
-                    "Prisma CSV Remake Fixture,2000,990001,Comedy\\n" +
-                    "Prisma MovieLens Namespace Fixture (2001),2001,,Drama"
+                    "movieId,title,year,tmdb_id,genres\n" +
+                    "50001,Prisma CSV Remake Fixture,1998,990001,Drama\n" +
+                    "50002,Prisma CSV Remake Fixture,2024,990002,Action\n" +
+                    "60001,Prisma MovieLens Namespace Fixture (2001),2001,,Drama"
                   )
                 });
                 await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado:"));
@@ -211,7 +210,7 @@ jobs:
                       request.onsuccess = () => {
                         resolve((request.result && Array.isArray(request.result.value) ? request.result.value : [])
                           .filter(movie => /Prisma (CSV Remake|MovieLens Namespace) Fixture/.test(movie.title))
-                          .map(movie => ({ title: movie.title, tmdbId: movie.tmdbId || null, id: movie.id, year: movie.year }))
+                          .map(movie => ({ title: movie.title, tmdbId: movie.tmdbId || null, id: movie.id, year: movie.year, genres: movie.genres || [] }))
                         );
                         db.close();
                       };
@@ -226,8 +225,25 @@ jobs:
                   throw new Error(name + ": CSV import collapsed remakes with distinct TMDB IDs: " + JSON.stringify(importedFixture));
                 }
                 const movieLensRow = importedFixture.find(movie => movie.title === "Prisma MovieLens Namespace Fixture");
-                if (!movieLensRow || movieLensRow.tmdbId) {
+                if (!movieLensRow || movieLensRow.tmdbId || String(movieLensRow.id) !== "60001") {
                   throw new Error(name + ": a generic source ID was incorrectly treated as a TMDB ID: " + JSON.stringify(movieLensRow));
+                }
+
+                await page.locator("#catalogImportInput").setInputFiles({
+                  name: "prisma-remake-reimport-test.csv",
+                  mimeType: "text/csv",
+                  buffer: Buffer.from("movieId,title,year,tmdb_id,genres\n50001,Prisma CSV Remake Fixture,1998,990001,Comedy")
+                });
+                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado:"));
+                const reimportedFixture = await readCustomCatalogFixture();
+                const reimportedRemakes = reimportedFixture.filter(movie => movie.title === "Prisma CSV Remake Fixture");
+                const reimportedIds = reimportedRemakes.map(movie => movie.tmdbId).sort();
+                const sameIdentity = reimportedRemakes.find(movie => movie.tmdbId === "990001");
+                if (reimportedRemakes.length !== 2 || JSON.stringify(reimportedIds) !== JSON.stringify(["990001", "990002"])) {
+                  throw new Error(name + ": reimport created or removed a remake identity: " + JSON.stringify(reimportedFixture));
+                }
+                if (!sameIdentity || !sameIdentity.genres.includes("Drama") || !sameIdentity.genres.includes("Comedy")) {
+                  throw new Error(name + ": reimport did not merge metadata into TMDB identity 990001: " + JSON.stringify(sameIdentity));
                 }
               } finally {
                 await context.close();
