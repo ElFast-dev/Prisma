@@ -84,7 +84,7 @@ jobs:
               if (ui.rootBg !== "#090a0f") throw new Error(name + ": los estilos nuevos no están activos: " + JSON.stringify(ui));
               if (!ui.headlineFont.includes("ui-serif")) throw new Error(name + ": la tipografía editorial no se aplicó.");
               if (ui.cards < 1) throw new Error(name + ": no se renderizaron tarjetas.");
-              await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: true, animations: "disabled" });
+              await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: false, animations: "disabled" });
 
               if (pageName === "catalog") {
                 await page.locator('.bottom-nav [data-nav="catalog"]').click();
