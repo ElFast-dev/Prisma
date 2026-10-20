@@ -357,7 +357,8 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
   const modalController = createModalController({
     get $() { return $; },
-    get ratingFor() { return ratingFor; },
+    get $() { return $; },
+    get ratingFor() { return ratingFor; }
     get ratingValue() { return ratingValue; },
     get ratingReturnDetail() { return ratingReturnDetail; },
     set ratingReturnDetail(value) { ratingReturnDetail = value; },
@@ -432,29 +433,6 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     get ratingValue() { return ratingValue; }
   });
   const { getRecommendations, genreStats } = recommendationRanking;
-
-  function updateRatingPreview(value) {
-    if (!modalDraft) return;
-    modalDraft.rating = Number(value);
-    const preview = $("#ratingPreview"), input = $("#ratingInput");
-    if (preview) preview.textContent = String(modalDraft.rating);
-    if (input) input.value = String(modalDraft.rating);
-    $$(".rating-star").forEach(function (star) {
-      const active = Number(star.dataset.rating) <= modalDraft.rating;
-      star.classList.toggle("active",active);
-      star.setAttribute("aria-pressed",String(Number(star.dataset.rating) === modalDraft.rating));
-    });
-  }
-
-  function closeModal() {
-    if (modalDraft && modalDraft.mode === "rate" && ratingReturnDetail && movieDetail) {
-      modalDraft = null; ratingReturnDetail = false; renderModal(); return;
-    }
-    modalDraft = null; ratingReturnDetail = false; movieDetail = null; personDetail = null; utilitySheet = null;
-    const root = $("#modalRoot");
-    if (root) root.innerHTML = "";
-  }
-
 
   const appLifecycle = createAppLifecycle({
     get state() { return state; },

@@ -51,7 +51,7 @@ export function createModalController(ctx) {
     const preview = ctx.$("#ratingPreview"), input = ctx.$("#ratingInput");
     if (preview) preview.textContent = String(ctx.modalDraft.rating);
     if (input) input.value = String(ctx.modalDraft.rating);
-    $$(".rating-star").forEach(function (star) {
+    ctx.$(".rating-star").forEach(function (star) {
       const active = Number(star.dataset.rating) <= ctx.modalDraft.rating;
       star.classList.toggle("active",active);
       star.setAttribute("aria-pressed",String(Number(star.dataset.rating) === ctx.modalDraft.rating));

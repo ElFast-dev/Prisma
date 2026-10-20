@@ -90,6 +90,8 @@ assert.ok(app.includes('createTMDBHistorySync('));
 assert.ok(app.includes('createTMDBBrowserActions('));
 assert.ok(!app.includes('async function loadMovieDetail('));
 assert.ok(!app.includes('function renderModal('));
+assert.ok(!app.includes('function updateRatingPreview('));
+assert.ok(!app.includes('function closeModal('));
 assert.ok(!app.includes('function getRecommendations('));
 assert.ok(!app.includes('function toast('));
 assert.ok(!app.includes('async function init('));
