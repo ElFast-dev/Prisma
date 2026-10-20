@@ -357,8 +357,8 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
   const modalController = createModalController({
     get $() { return $; },
-    get $() { return $; },
-    get ratingFor() { return ratingFor; }
+    get $$() { return $$; },
+    get ratingFor() { return ratingFor; },
     get ratingValue() { return ratingValue; },
     get ratingReturnDetail() { return ratingReturnDetail; },
     set ratingReturnDetail(value) { ratingReturnDetail = value; },
