@@ -211,7 +211,7 @@
         previous.releaseDate = previous.releaseDate || movie.releaseDate;
         previous.backdropUrl = previous.backdropUrl || movie.backdropUrl;
         previous.status = previous.status || movie.status;
-        previous.productionCountries = previous.productionCountries || movie.productionCountries;
+        if ((!previous.productionCountries || !previous.productionCountries.length) && movie.productionCountries && movie.productionCountries.length) previous.productionCountries = movie.productionCountries;
         previous.imdbId = previous.imdbId || movie.imdbId;
         previous.tmdbFetchedAt = previous.tmdbFetchedAt || movie.tmdbFetchedAt;
         previous.metadataSource = previous.metadataSource || movie.metadataSource;
@@ -239,7 +239,7 @@
         existing.releaseDate = existing.releaseDate || historyMovie.releaseDate;
         existing.backdropUrl = existing.backdropUrl || historyMovie.backdropUrl;
         existing.status = existing.status || historyMovie.status;
-        existing.productionCountries = existing.productionCountries || historyMovie.productionCountries;
+        if ((!existing.productionCountries || !existing.productionCountries.length) && historyMovie.productionCountries && historyMovie.productionCountries.length) existing.productionCountries = historyMovie.productionCountries;
         existing.imdbId = existing.imdbId || historyMovie.imdbId;
         existing.tmdbFetchedAt = existing.tmdbFetchedAt || historyMovie.tmdbFetchedAt;
         existing.metadataSource = existing.metadataSource || historyMovie.metadataSource;
@@ -1092,16 +1092,18 @@
     const rating = ratingValue(item);
     const publicRating = Number(item.voteAverage) > 0 ?
       '<span class="collection-score public-score" title="Valoración pública de TMDB"><span aria-hidden="true">★</span> ' + Number(item.voteAverage).toFixed(1) + '</span>' :
-      (item.tmdbId ? '<a class="score-link" href="https://www.themoviedb.org/movie/' + encodeURIComponent(item.tmdbId) + '" target="_blank" rel="noopener noreferrer" aria-label="Ver puntuación pública">↗</a>' : '<span class="collection-score score-muted">—</span>');
+      (item.tmdbId ? '<a class="collection-score score-link" href="https://www.themoviedb.org/movie/' + encodeURIComponent(item.tmdbId) + '" target="_blank" rel="noopener noreferrer" aria-label="Consultar puntuación pública de TMDB">↗</a>' : '<span class="collection-score score-muted">—</span>');
     const personalRating = tab === "pending" ? "" :
       (rating ? '<span class="collection-score personal-score"><span aria-hidden="true">★</span> ' + rating + '/10</span>' : '<span class="collection-score score-muted">Sin nota</span>');
-    const release = item.releaseDate || item.year || "Estreno pendiente";
+    const release = item.releaseDate ? dateLabel(item.releaseDate) : (item.year || "Estreno pendiente");
     const synopsis = item.overview ? escapeHTML(item.overview) : "Sin sinopsis disponible.";
-    return '<button class="collection-row" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '">' +
+    const stateLabel = tab === "hidden" ? '<span class="collection-row-state">Oculta</span>' :
+      (tab === "pending" ? '<span class="collection-row-state pending-state">Pendiente</span>' : "");
+    return '<div class="collection-row">' +
+      '<button class="collection-row-main" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '">' +
       '<span class="collection-row-poster">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + '</span>' +
-      '<span class="collection-row-copy"><span class="collection-release">' + escapeHTML(release) + '</span><strong>' + escapeHTML(item.title) + '</strong><span class="collection-synopsis">' + synopsis + '</span><span class="collection-row-scores">' + personalRating + publicRating + '</span></span>' +
-      (tab === "hidden" ? '<span class="collection-row-state">Oculta</span>' : (tab === "pending" ? '<span class="collection-row-state pending-state">Pendiente</span>' : "")) +
-      '</button>';
+      '<span class="collection-row-copy"><span class="collection-release">' + escapeHTML(release) + '</span><strong>' + escapeHTML(item.title) + '</strong><span class="collection-synopsis">' + synopsis + '</span></span>' +
+      '</button><span class="collection-row-side"><span class="collection-row-scores">' + personalRating + publicRating + '</span>' + stateLabel + '</span></div>';
   }
 
   function collectionCompactCard(item) {
@@ -1405,6 +1407,13 @@
     return new Intl.DateTimeFormat("es-PA",{day:"numeric",month:"long",year:"numeric"}).format(date);
   }
 
+  function dateTimeLabel(value) {
+    if (!value) return "Fecha desconocida";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("es-PA",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(date);
+  }
+
   function displayMovieStatus(status) {
     const normalized = String(status || "").toLowerCase();
     if (normalized === "released") return "Estrenada";
@@ -1434,18 +1443,20 @@
     const countryLine = (movie.productionCountries || []).slice(0,3).join(" · ");
     const release = movie.releaseDate ? dateLabel(movie.releaseDate) : (movie.year || "Estreno no disponible");
     const stateButton = seen ?
-      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(dateLabel(latestRecordDate(rating || movie) || movie.releaseDate)) + '</small></button>' :
+      '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + escapeHTML(dateTimeLabel((state.watched || []).find(function (entry) { return titleKey(entry.title) === titleKey(movie.title); })?.watchedAt || (rating && (rating.watchedAt || rating.updatedAt)) || movie.releaseDate)) + '</small></button>' :
       (pending ?
         '<button class="btn btn-secondary detail-state-button" type="button" data-action="manage-pending"><span aria-hidden="true">✓</span> Añadido a pendientes</button><button class="btn btn-primary" type="button" data-action="mark-watched">Marcar como vista</button>' :
         '<button class="btn btn-primary" type="button" data-action="manage-history">Añadir al historial</button><button class="btn btn-secondary" type="button" data-action="manage-pending">＋ Pendientes</button>');
-    const publicScore = Number(movie.voteAverage) > 0 ? Number(movie.voteAverage).toFixed(1) : "—";
     const voteLink = movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movie.tmdbId) : "https://www.themoviedb.org/";
     const externalIds = data && data.externalIds ? data.externalIds : {};
     const imdbUrl = externalMovieUrl(movie,externalIds);
     const criticUrl = "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(movie.title);
     const metacriticUrl = "https://www.metacritic.com/search/" + encodeURIComponent(movie.title) + "/";
+    const communityMetric = Number(movie.voteAverage) > 0 ?
+      '<div class="detail-rating-card"><strong>' + Number(movie.voteAverage).toFixed(1) + '</strong><span>Comunidad</span><small>TMDB</small></div>' :
+      '<a class="detail-rating-card rating-external" href="' + escapeHTML(voteLink) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Comunidad</span><small>TMDB</small></a>';
     const ratingMetrics =
-      '<div class="detail-rating-card"><strong>' + publicScore + '</strong><span>Comunidad</span><small>TMDB</small></div>' +
+      communityMetric +
       '<a class="detail-rating-card rating-external" href="' + escapeHTML(imdbUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Base de cine</span><small>IMDb</small></a>' +
       '<a class="detail-rating-card rating-external" href="' + escapeHTML(criticUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Críticos</span><small>Rotten Tomatoes</small></a>' +
       '<a class="detail-rating-card rating-external" href="' + escapeHTML(metacriticUrl) + '" target="_blank" rel="noopener noreferrer"><strong>↗</strong><span>Audiencia / crítica</span><small>Metacritic</small></a>';
