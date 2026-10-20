@@ -758,3 +758,17 @@ footer {
   }
   .main-content > *, .movie-card { animation: none !important; }
 }
+
+
+/* Mobile composition polish: shorter hero and a single-row primary action. */
+@media (max-width: 760px) {
+  .hero { padding: 24px 21px 22px; }
+  .hero .eyebrow { font-size: 8px; letter-spacing: .1em; gap: 6px; }
+  .hero-title { font-size: clamp(34px, 8.7vw, 43px); line-height: 1.02; margin: 14px 0 13px; }
+  .hero .lead { line-height: 1.6; }
+  .hero .hero-actions { flex-wrap: nowrap; gap: 8px; margin-top: 18px; }
+  .hero .hero-actions .btn { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 9px 11px; font-size: 11px; white-space: nowrap; }
+}
+@media (max-width: 380px) {
+  .hero .hero-actions .btn { padding: 8px 7px; font-size: 10px; }
+}
