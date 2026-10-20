@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { createRecommendationEngine } from '../js/recommendations/engine.js';
 import { ratingValue } from '../js/core/movie-utils.js';
 const appSource = await readFile('app.js', 'utf8');
-const engineSource = await readFile('js/recommendations/engine.js', 'utf8');
+const [engineSource, rankingSource] = await Promise.all([
+  readFile('js/recommendations/engine.js', 'utf8'),
+  readFile('js/recommendations/ranking.js', 'utf8')
+]);
 const movieFeatures = movie => Array.isArray(movie && movie.features) ? movie.features : [];
 const engine = createRecommendationEngine({ getRatings: () => [], findMovie: () => null, movieFeatures, ratingValue });
 const predictRating = engine.predictRating;
@@ -49,5 +52,6 @@ assert.equal(upper.score, 10);
 assert.equal(lower.score, 1);
 assert.ok(engineSource.includes('item.weight * signalWeight'));
 assert.ok(engineSource.includes('matches.length >= 2 && coverage >= 0.6'));
-assert.ok(appSource.includes('predictRating(movie, profile)'));
+assert.ok(rankingSource.includes('ctx.predictRating(movie, profile)'));
+assert.ok(appSource.includes('createRecommendationRanking('));
 console.log('Pruebas de recomendación correctas: API modular, señales, cobertura, confianza, explicaciones y límites 1–10.');
