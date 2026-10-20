@@ -1,0 +1,39 @@
+# Integración opcional con TMDB
+
+## Requirements
+
+### Requirement: Credencial opcional configurada por el usuario
+
+Prisma DEBE poder funcionar sin credencial de TMDB. Cuando el usuario configura una, se guarda localmente y se usa para las solicitudes que requieren autenticación.
+
+#### Scenario: Uso sin credencial
+
+- DADO que no existe una credencial TMDB configurada
+- CUANDO se usa el catálogo local
+- ENTONCES las capacidades locales continúan disponibles sin afirmar que se han cargado resultados remotos
+
+### Requirement: Enriquecimiento de metadatos
+
+Prisma DEBE actualizar metadatos cinematográficos desde TMDB cuando la persona usuaria solicita una función de enriquecimiento disponible, sin convertir las puntuaciones públicas en valoraciones personales.
+
+#### Scenario: TMDB responde correctamente
+
+- DADO un registro con una identidad de TMDB disponible
+- CUANDO se recuperan los detalles
+- ENTONCES se actualizan metadatos del catálogo que la fuente proporciona
+
+#### Scenario: Credencial o límite inválido
+
+- DADO que TMDB responde con un error de autenticación, permiso o límite de solicitudes
+- CUANDO la aplicación recibe la respuesta
+- ENTONCES muestra un mensaje de error y no presenta el resultado como una consulta correcta
+
+### Requirement: Atribución y recursos externos
+
+La interfaz DEBE conservar la atribución requerida de TMDB en los contextos donde muestra sus datos y debe tratar las imágenes externas como recursos externos sujetos a disponibilidad.
+
+#### Scenario: Cartel externo no disponible
+
+- DADO que una ruta de imagen de TMDB no se puede cargar
+- CUANDO se representa la ficha o tarjeta
+- ENTONCES la interfaz ofrece el fallback visual disponible sin perder el título de la película
