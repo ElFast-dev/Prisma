@@ -19,3 +19,8 @@ El workflow Playwright usa un contexto de navegador nuevo en escritorio y móvil
 ## Riesgos
 
 La guía depende del recuento de valoraciones válidas, no de eventos o del historial; perfiles que solo importan vistas o pendientes seguirán viendo cómo empezar a aportar señales al recomendador. No se cambia ninguna regla de recomendaciones ni la persistencia.
+
+
+## Resultado de la revisión
+
+La revisión técnica confirmó que la visibilidad se deriva del número de valoraciones válidas y no necesita una nueva clave persistida. Playwright pasó en escritorio y móvil para la aparición, ambas rutas y la desaparición posterior a una valoración. La URL del CSS y el JavaScript y la caché PWA están sincronizadas.

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Preparado bajo SDD. Se implementará y cerrará cuando los recorridos de escritorio y móvil pasen y el estado de perfil con valoraciones se compruebe.
+Aceptado tras revisión técnica delegada el 2026-10-20 y archivado. La guía de primera visita y sus dos destinos se verificaron en escritorio y móvil; también se comprobó que desaparece después de guardar una valoración válida.
 
 ## Problema observado
 
