@@ -187,10 +187,16 @@ jobs:
                 const normalMainBackground = await testRowMain.evaluate(node => getComputedStyle(node).backgroundColor);
                 if (hoverSupported) {
                   await testRowMain.hover();
-                  const hoverStyles = await testRowMain.evaluate(node => ({
-                    background: getComputedStyle(node).backgroundColor,
-                    transform: getComputedStyle(node).transform
-                  }));
+                  const hoverStyles = await testRowMain.evaluate(node => {
+                    const row = node.closest(".collection-row");
+                    return {
+                      background: getComputedStyle(node).backgroundColor,
+                      transform: getComputedStyle(node).transform,
+                      mainHovered: node.matches(":hover"),
+                      rowHovered: Boolean(row && row.matches(":hover")),
+                      hoverMedia: matchMedia("(hover: hover) and (pointer: fine)").matches
+                    };
+                  });
                   if (!hoverStyles.background || hoverStyles.background === normalMainBackground) {
                     throw new Error(name + ": collection row action hover did not change its background: " + JSON.stringify(hoverStyles));
                   }
