@@ -1592,3 +1592,27 @@ h1,h2,h3 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMac
 @media (prefers-reduced-motion:reduce) {
   .recent-movie,.collection-row,.system-list-card,.top-icon-button { transition: none !important; }
 }
+
+
+/* Accessible row anatomy: the film opens in its own button and source links stay separate. */
+.collection-row { align-items: stretch; }
+.collection-row-main {
+  display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;
+  padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; text-align: left;
+}
+.collection-row-main:focus-visible { outline: 2px solid #8fc9ff; outline-offset: 3px; border-radius: 7px; }
+.collection-row-side { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; justify-content: center; gap: 10px; }
+.collection-row-side .collection-row-scores { flex-direction: column; align-items: flex-end; gap: 7px; margin: 0; }
+.collection-row-side .score-link { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; border: 1px solid rgba(113,183,255,.17); border-radius: 7px; }
+.collection-row-side .score-link:focus-visible { outline: 2px solid #8fc9ff; outline-offset: 2px; }
+@media (max-width:760px) {
+  .collection-row-main { gap: 10px; }
+  .collection-row-side { max-width: 110px; justify-content: center; }
+  .collection-row-side .collection-row-scores { align-items: flex-end; gap: 7px; }
+  .collection-row-state { white-space: nowrap; }
+}
+@media (max-width:390px) {
+  .collection-row-main { gap: 8px; }
+  .collection-row-side { max-width: 77px; }
+  .collection-row-side .collection-score { font-size: 8px; }
+}
