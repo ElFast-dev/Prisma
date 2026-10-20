@@ -144,6 +144,22 @@ p { color: var(--muted); line-height: 1.6; }
 .loading-state { padding: 90px 0; display: grid; place-items: center; color: var(--muted); }
 .spinner { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.poster-image { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.tmdb-browser { margin-top: 19px; padding: clamp(14px,2.5vw,22px); }
+.tmdb-browser .movie-grid { margin-top: 14px; }
+.tmdb-settings { border-color: rgba(1,180,228,.22); }
+.tmdb-attribution { display: flex; align-items: center; gap: 16px; margin: 25px 0 0; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.02); }
+.tmdb-attribution > a { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+.tmdb-attribution img { display: block; width: 54px; height: 54px; object-fit: contain; }
+.tmdb-attribution strong { display: block; font-size: 12px; }
+.tmdb-attribution p { font-size: 11px; margin: 5px 0; line-height: 1.5; }
+.tmdb-attribution a, .text-link { color: #64d6f0; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.tmdb-logo { display: block; width: 64px; height: 64px; object-fit: contain; margin-bottom: 14px; }
+.tmdb-credits { margin-top: 16px; }
+@media (max-width: 500px) {
+  .tmdb-attribution { align-items: flex-start; gap: 11px; padding: 13px; }
+  .tmdb-attribution img { width: 42px; height: 42px; }
+}
 footer { margin-top: 45px; padding: 20px 0; border-top: 1px solid var(--line); color: var(--subtle); font-size: 10px; line-height: 1.6; }
 @media (min-width: 760px) {
   .modal-backdrop { align-items: center; padding: 24px; }
