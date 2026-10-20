@@ -15,3 +15,8 @@ Conservar el SVG actual de 128 × 128 y su geometría; cambiar solo el degradado
 ## Pruebas
 
 Un test de Node lee HTML, manifest, service worker y SVG. Comprueba que las URL son idénticas, el manifest es JSON válido, el shell aumenta y el logo deja de incluir el azul anterior. Playwright valida que favicon y cabecera publican la nueva referencia. No se usan datos personales ni llamadas de red.
+
+
+## Verificación final
+
+La URL versionada `./assets/prisma.svg?v=brand-20261020-1` es compartida por favicon, logo del encabezado y manifest; `sw.js` cachea ese mismo recurso y `./manifest.webmanifest?v=ui-20261020-13`. El shell pasa de `prisma-shell-v47` a `prisma-shell-v48`. Las pruebas de recursos, la validación SDD, Validate Prisma, el despliegue de Pages y Playwright público finalizaron correctamente.

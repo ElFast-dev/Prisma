@@ -2,7 +2,7 @@
 
 ## Estado
 
-Propuesta definida antes de modificar los recursos de marca; implementación en curso en esta rama.
+Cerrada y archivada el 2026-10-20 tras la fusión del PR #14 y la verificación de la publicación en GitHub Pages.
 
 ## Motivación
 
@@ -31,3 +31,13 @@ La nueva interfaz ya emplea una paleta oscura con violeta suave y cian como deta
 5. Una prueba automatizada verifica colores, geometría y referencias exactas; CI la ejecuta.
 6. Playwright verifica las referencias publicadas al icono en escritorio y móvil.
 7. El expediente se mantiene activo hasta verificar CI, Pages y UI publicada.
+
+
+## Evidencia de cierre
+
+- PR fusionado: [#14 — alinear el isotipo con el sistema visual](https://github.com/ElFast-dev/Prisma/pull/14).
+- Commit publicado: [401a019](https://github.com/ElFast-dev/Prisma/commit/401a019219e0e1479b1ecc83fc3b4a7e8854a423).
+- SDD y calidad estática: [workflow 39517055755](https://github.com/ElFast-dev/Prisma/actions/runs/39517055755), correcto.
+- Validación de Prisma: [workflow 39517055850](https://github.com/ElFast-dev/Prisma/actions/runs/39517055850), correcto.
+- GitHub Pages: [workflow 39517055749](https://github.com/ElFast-dev/Prisma/actions/runs/39517055749), despliegue correcto.
+- Playwright contra la web publicada: [workflow 39517091542](https://github.com/ElFast-dev/Prisma/actions/runs/39517091542), correcto en escritorio y móvil con la referencia versionada del favicon y del logo del encabezado.
