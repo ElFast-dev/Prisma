@@ -849,7 +849,7 @@
     const text = (movie.genres || []).join(" ");
     let hash = 0;
     for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
-    return Math.abs(hash) % 360;
+    return 199 + Math.abs(hash) % 24;
   }
 
   function movieCard(movie, options) {
@@ -861,7 +861,7 @@
     const meta = [movie.year, (movie.genres || []).slice(0, 2).map(displayGenre).join(" · ")].filter(Boolean).join(" · ");
     const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + escapeHTML(movie.title) + '">' + actionLabel + '</button></div>';
     return '<article class="movie-card">' +
-      '<div class="poster-art" role="img" aria-label="Tarjeta de ' + escapeHTML(movie.title) + '" style="background:radial-gradient(circle at 75% 22%,hsla(' + hue + ',65%,65%,.35),transparent 42%),linear-gradient(145deg,hsl(' + hue + ',32%,25%),#13131d 66%,hsl(' + ((hue + 70) % 360) + ',28%,19%))">' +
+      '<div class="poster-art" role="img" aria-label="Tarjeta de ' + escapeHTML(movie.title) + '" style="background:radial-gradient(circle at 75% 22%,hsla(' + hue + ',65%,65%,.35),transparent 42%),linear-gradient(145deg,hsl(' + hue + ',32%,25%),#13131d 66%,hsl(' + ((hue + 14) % 360) + ',28%,19%))">' +
       (movie.posterUrl ? '<img class="poster-image" src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
       '<span class="poster-symbol">✦</span><strong class="poster-title">' + escapeHTML(movie.title) + '</strong><span class="poster-year">' + escapeHTML(movie.year || "Película") + '</span></div>' +
       '<div class="movie-copy"><h3 class="movie-title">' + escapeHTML(movie.title) + '</h3><div class="movie-meta">' + escapeHTML(meta || "Metadatos pendientes") + '</div>' + score + detail + '</div></article>';
