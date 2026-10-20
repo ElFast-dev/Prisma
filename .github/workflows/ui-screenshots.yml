@@ -187,6 +187,7 @@ jobs:
                 const normalMainBackground = await testRowMain.evaluate(node => getComputedStyle(node).backgroundColor);
                 if (hoverSupported) {
                   await testRowMain.hover();
+                  await page.waitForTimeout(220);
                   const hoverStyles = await testRowMain.evaluate(node => {
                     const row = node.closest(".collection-row");
                     return {
