@@ -861,28 +861,46 @@
     const features = movieFeatures(movie, null);
     const matches = features.map(function (feature) {
       const item = profile.features.get(feature);
-      return item ? { name: feature.replace(/^género: |^tema: /, ""), weight: item.weight, count: item.count, mean: item.mean, raw: feature } : null;
+      if (!item) return null;
+      const signalWeight = feature.indexOf("tema: ") === 0 ? 0.35 : 1;
+      return {
+        name: feature.replace(/^género: |^tema: /, ""),
+        weight: item.weight,
+        influence: item.weight * signalWeight,
+        signalWeight: signalWeight,
+        count: item.count,
+        mean: item.mean,
+        raw: feature
+      };
     }).filter(Boolean);
-    const weighted = matches.length ? matches.reduce(function (sum, item) { return sum + item.weight; }, 0) / matches.length : 0;
+    const coverage = features.length ? matches.length / features.length : 0;
+    const weighted = features.length
+      ? matches.reduce(function (sum, item) { return sum + item.influence; }, 0) / features.length
+      : 0;
     const freshFeatures = features.filter(function (feature) { return !profile.features.has(feature); }).length;
     const score = Math.max(1, Math.min(10, profile.average + weighted * 2.3));
-    const positive = matches.filter(function (item) { return item.weight > 0.08; }).sort(function (a, b) { return b.weight - a.weight; });
-    const negative = matches.filter(function (item) { return item.weight < -0.08; }).sort(function (a, b) { return a.weight - b.weight; });
-    const confidence = matches.length ? (profile.withMetadata < 8 ? "Inicial" : (matches.some(function (item) { return item.count >= 3; }) ? "Moderada" : "Limitada")) : "Muy baja";
+    const positive = matches.filter(function (item) { return item.influence > 0.08; }).sort(function (a, b) { return b.influence - a.influence; });
+    const negative = matches.filter(function (item) { return item.influence < -0.08; }).sort(function (a, b) { return a.influence - b.influence; });
+    const confidence = !matches.length ? "Muy baja" : (profile.withMetadata < 8 ? "Inicial" :
+      (matches.length >= 2 && coverage >= 0.6 && matches.some(function (item) { return item.count >= 3; }) ? "Moderada" : "Limitada"));
     let explanation;
     if (positive.length) {
       explanation = "Coincide con señales positivas de tu historial: " + positive.slice(0, 2).map(function (item) { return item.name; }).join(" y ") + ".";
+    } else if (negative.length) {
+      explanation = "Coincide con señales asociadas a notas más bajas en tu historial: " + negative.slice(0, 2).map(function (item) { return item.name; }).join(" y ") + ".";
     } else if (matches.length) {
       explanation = "Comparte características que aún no han mostrado una preferencia clara en tus notas.";
     } else {
       explanation = "Todavía no hay suficientes características enlazadas para explicar esta recomendación; se usa tu nota media como referencia.";
     }
-    if (negative.length && positive.length < 2) explanation += " Señal a vigilar: " + negative[0].name + ".";
+    if (negative.length && positive.length > 0 && positive.length < 2) explanation += " Señal a vigilar: " + negative[0].name + ".";
+    if (matches.length && coverage < 0.5) explanation += " La mayoría de las características aún no están respaldadas por tu historial.";
     return {
       score: score,
       matches: matches,
       explanation: explanation,
       confidence: confidence,
+      coverage: coverage,
       freshFeatures: freshFeatures,
       reasonFeatures: positive.slice(0, 3).map(function (item) { return item.name; })
     };
