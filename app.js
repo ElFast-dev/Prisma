@@ -40,6 +40,7 @@
   let tmdbError = "";
   let tmdbSearchTimer = null;
   let tmdbRequestSerial = 0;
+  let tmdbHistorySync = { running: false, total: 0, done: 0, updated: 0, failed: 0, current: "", finishedAt: null };
 
   function emptyState() {
     return { version: 1, rated: [], watchlist: [], events: [], updatedAt: null, importedAt: null };
@@ -430,6 +431,188 @@
     };
   }
 
+  function historyNeedsTMDB(entry) {
+    const fetchedAt = entry && entry.tmdbFetchedAt ? new Date(entry.tmdbFetchedAt).getTime() : 0;
+    const isFresh = entry && entry.metadataSource === "tmdb" &&
+      Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30 &&
+      Array.isArray(entry.genres) && entry.genres.length > 0 && Boolean(entry.overview);
+    if (isFresh) return false;
+    return Boolean(entry && entry.title);
+  }
+
+  function historyTMDBId(entry) {
+    const value = Number(entry && (entry.tmdbId || entry.tmId || entry.tmdb_id));
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+  }
+
+  function pendingHistoryTMDBCount() {
+    return state.rated.filter(historyNeedsTMDB).length;
+  }
+
+  async function findTMDBDetailsForRating(entry) {
+    const id = historyTMDBId(entry);
+    if (id) {
+      try {
+        return await tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "keywords" });
+      } catch (error) {
+        // Si el ID guardado ya no existe, busca el título por nombre y año.
+      }
+    }
+    const params = { query: entry.title, language: "es-ES", include_adult: false };
+    if (entry.year) params.year = entry.year;
+    const results = await tmdbRequest("/search/movie", params);
+    const candidates = results.results || [];
+    if (!candidates.length) return null;
+    const wanted = titleKey(entry.title);
+    let selected = candidates.find(function (candidate) {
+      return titleKey(candidate.title) === wanted || titleKey(candidate.original_title) === wanted;
+    });
+    if (!selected && entry.year) {
+      const sameYear = candidates.filter(function (candidate) {
+        return String(candidate.release_date || "").slice(0, 4) === String(entry.year);
+      });
+      if (sameYear.length === 1) selected = sameYear[0];
+    }
+    if (!selected && candidates.length === 1) selected = candidates[0];
+    if (!selected) return null;
+    return await tmdbRequest("/movie/" + encodeURIComponent(selected.id), { language: "es-ES", append_to_response: "keywords" });
+  }
+
+  function applyTMDBDetailsToRating(entry, enriched) {
+    entry.tmdbId = String(enriched.id || enriched.tmdbId || entry.tmdbId || entry.tmId || "");
+    entry.genres = uniqueStrings((enriched.genres || []).concat(entry.genres || []));
+    entry.tags = uniqueStrings((enriched.tags || []).concat(entry.tags || []));
+    entry.overview = enriched.overview || entry.overview || "";
+    entry.posterPath = enriched.posterPath || entry.posterPath || "";
+    entry.posterUrl = enriched.posterUrl || entry.posterUrl || "";
+    entry.voteAverage = enriched.voteAverage || entry.voteAverage || null;
+    entry.runtime = enriched.runtime || entry.runtime || null;
+    entry.tmdbFetchedAt = enriched.tmdbFetchedAt || new Date().toISOString();
+    entry.metadataSource = "tmdb";
+  }
+
+  function upsertTMDBCatalogEntry(rating, enriched) {
+    const stored = Object.assign({}, enriched, {
+      id: rating.id || enriched.id,
+      tmdbId: rating.tmdbId || enriched.tmdbId || enriched.id,
+      title: rating.title || enriched.title,
+      year: rating.year || enriched.year,
+      genres: uniqueStrings((rating.genres || []).concat(enriched.genres || [])),
+      tags: uniqueStrings((rating.tags || []).concat(enriched.tags || [])),
+      overview: rating.overview || enriched.overview || "",
+      posterPath: rating.posterPath || enriched.posterPath || "",
+      posterUrl: rating.posterUrl || enriched.posterUrl || "",
+      tmdbFetchedAt: rating.tmdbFetchedAt || enriched.tmdbFetchedAt || new Date().toISOString(),
+      metadataSource: "tmdb",
+      source: "tmdb"
+    });
+    const key = titleKey(stored.title);
+    const index = customCatalog.findIndex(function (movie) { return titleKey(movie.title) === key; });
+    if (index >= 0) {
+      customCatalog[index] = Object.assign({}, customCatalog[index], stored, {
+        title: customCatalog[index].title || stored.title,
+        genres: uniqueStrings((customCatalog[index].genres || []).concat(stored.genres || [])),
+        tags: uniqueStrings((customCatalog[index].tags || []).concat(stored.tags || [])),
+        overview: stored.overview || customCatalog[index].overview || "",
+        posterUrl: stored.posterUrl || customCatalog[index].posterUrl || ""
+      });
+    } else customCatalog.push(stored);
+  }
+
+  function renderTMDBHistoryPanel() {
+    const pending = pendingHistoryTMDBCount();
+    const connected = Boolean(tmdbCredential && tmdbCredential.value);
+    const status = tmdbHistorySync.running ?
+      "Procesando " + tmdbHistorySync.done + " de " + tmdbHistorySync.total + " películas. Actualizadas: " + tmdbHistorySync.updated + ". Errores o no encontradas: " + tmdbHistorySync.failed + "." :
+      (tmdbHistorySync.finishedAt ?
+        "Última pasada: " + tmdbHistorySync.updated + " actualizadas y " + tmdbHistorySync.failed + " con error/no encontradas." :
+        "Enlaza tus valoraciones con sus fichas de TMDB mediante el identificador TMDB del JSON. Las series están fuera de esta lista.");
+    const percent = tmdbHistorySync.total ? Math.round(tmdbHistorySync.done / tmdbHistorySync.total * 100) : 0;
+    const button = !connected ?
+      '<button class="btn btn-secondary" type="button" data-nav="data">Conectar TMDB en Datos</button>' :
+      '<button class="btn btn-primary" type="button" data-action="enrich-history" ' + (tmdbHistorySync.running || pending === 0 ? "disabled" : "") + '>' +
+      (tmdbHistorySync.running ? "Enriqueciendo…" : (pending === 0 ? "Historial actualizado" : "Enriquecer " + pending + " películas con TMDB")) + '</button>';
+    return '<section class="panel tmdb-history-panel" style="margin-top:17px"><div class="panel-head"><div><h3>Enlazar mi historial con TMDB</h3><p>Añade géneros, sinopsis, palabras clave y carteles para que el motor tenga señales reales sobre las películas que ya calificaste.</p></div><span class="badge ' + (connected ? "badge-mint" : "") + '">' + (connected ? "Conectado" : "Desconectado") + '</span></div>' +
+      '<div class="metrics-grid">' + metric("Por enriquecer", pending.toLocaleString("es-PA"), "Metadatos pendientes") + metric("Procesadas", tmdbHistorySync.done.toLocaleString("es-PA"), "En esta pasada") + metric("Actualizadas", tmdbHistorySync.updated.toLocaleString("es-PA"), "Con datos recuperados") + metric("Con error", tmdbHistorySync.failed.toLocaleString("es-PA"), "No encontradas o fallidas") + '</div>' +
+      (tmdbHistorySync.running ? '<progress class="tmdb-progress" max="100" value="' + percent + '">' + percent + '%</progress>' : "") +
+      '<p class="kicker" style="margin-top:12px">' + escapeHTML(status) + '</p><div class="hero-actions">' + button + '</div>' +
+      '<p class="kicker" style="margin-top:10px">Las notas y emociones no cambian. Los datos obtenidos de TMDB se refrescan pasado un tiempo; esta acción puede tardar porque consulta cada película por separado.</p></section>';
+  }
+
+  async function enrichRatedHistoryWithTMDB() {
+    if (!tmdbCredential || !tmdbCredential.value) {
+      toast("Primero conecta TMDB desde Datos.", true);
+      clickNav("data");
+      return;
+    }
+    if (tmdbHistorySync.running) {
+      toast("El enriquecimiento del historial ya está en marcha.");
+      return;
+    }
+    const targets = state.rated.filter(historyNeedsTMDB);
+    if (!targets.length) {
+      toast("Tu historial ya tiene metadatos recientes de TMDB.");
+      return;
+    }
+    tmdbHistorySync = { running: true, total: targets.length, done: 0, updated: 0, failed: 0, current: "", finishedAt: null };
+    renderApp();
+    let cursor = 0;
+    let lastPersisted = 0;
+    async function worker() {
+      while (true) {
+        const index = cursor++;
+        if (index >= targets.length) return;
+        const entry = targets[index];
+        tmdbHistorySync.current = entry.title;
+        try {
+          const raw = await findTMDBDetailsForRating(entry);
+          if (!raw) {
+            tmdbHistorySync.failed += 1;
+          } else {
+            const enriched = fromTMDB(raw);
+            if (!enriched || !enriched.title) {
+              tmdbHistorySync.failed += 1;
+            } else {
+              applyTMDBDetailsToRating(entry, enriched);
+              upsertTMDBCatalogEntry(entry, enriched);
+              tmdbHistorySync.updated += 1;
+            }
+          }
+        } catch (error) {
+          tmdbHistorySync.failed += 1;
+        } finally {
+          tmdbHistorySync.done += 1;
+          if (tmdbHistorySync.done - lastPersisted >= 5 || tmdbHistorySync.done === tmdbHistorySync.total) {
+            lastPersisted = tmdbHistorySync.done;
+            state.updatedAt = new Date().toISOString();
+            await persistState();
+            await dbSet(CATALOG_KEY, customCatalog);
+            combineMovies();
+            if (currentPage === "lab" || currentPage === "data") renderApp();
+          }
+        }
+        await new Promise(function (resolve) { window.setTimeout(resolve, 120); });
+      }
+    }
+    await Promise.all([worker(), worker(), worker()]);
+    tmdbHistorySync.running = false;
+    tmdbHistorySync.finishedAt = new Date().toISOString();
+    tmdbHistorySync.current = "";
+    state.events.unshift({
+      title: "Historial enriquecido con TMDB",
+      description: tmdbHistorySync.updated + " actualizadas; " + tmdbHistorySync.failed + " no encontradas o fallidas",
+      symbol: "✦",
+      at: tmdbHistorySync.finishedAt
+    });
+    state.events = state.events.slice(0, 80);
+    state.updatedAt = tmdbHistorySync.finishedAt;
+    await persistState();
+    await dbSet(CATALOG_KEY, customCatalog);
+    combineMovies();
+    renderApp();
+    toast("Terminado: " + tmdbHistorySync.updated + " películas actualizadas; " + tmdbHistorySync.failed + " con error o sin coincidencia.");
+  }
+
   function renderTMDBAttribution() {
     return '<section class="tmdb-attribution" aria-label="Atribución de TMDB"><a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="' + TMDB_LOGO_URL + '" alt="TMDB" loading="lazy"></a><div><strong>Datos e imágenes de The Movie Database (TMDB)</strong><p>Este producto utiliza TMDB y las API de TMDB, pero no está respaldado, certificado ni aprobado por TMDB.</p><a href="https://www.themoviedb.org/about/logos-attribution" target="_blank" rel="noopener noreferrer">Logos y atribución oficial ↗</a></div></section>';
   }
@@ -806,7 +989,7 @@
       '<div class="metric-value">—</div><div class="metric-note">Se necesitan al menos 5 películas calificadas con características enlazadas para estimar este error.</div>';
     return '<div class="eyebrow">Laboratorio personal</div><h1>¿Qué está aprendiendo Prisma?</h1><p class="lead">Observa qué información tiene el motor, qué preferencias aparecen en tus notas y si sus predicciones se acercan a tus puntuaciones reales.</p>' +
       '<div class="metrics-grid">' + metric("Versión", "0.1", "Motor de contenido explicable") + metric("Historial enlazado", profile.withMetadata + "/" + stats.total, "Películas con géneros o temas") + metric("Señales aprendidas", String(profile.features.size), "Géneros y etiquetas distintas") + metric("Nota base", overall.toFixed(2).replace(".", ","), "Promedio histórico personal") + '</div>' +
-      '<div style="margin-top:16px">' + learningNotice + '</div>' +
+      '<div style="margin-top:16px">' + learningNotice + '</div>' + renderTMDBHistoryPanel() +
       '<div class="two-col" style="margin-top:18px"><section class="panel"><div class="panel-head"><div><h3>Géneros con notas más altas</h3><p>Solo grupos con al menos dos películas.</p></div><span class="badge">Exploratorio</span></div>' +
       (top.length ? '<div class="bar-list">' + top.map(function (item) { return barRow(displayGenre(item.name), item.average, 10, item.average.toFixed(1).replace(".", ",") + " · n=" + item.count); }).join("") + '</div>' : '<p class="kicker">Todavía no hay suficientes datos de género. Amplía el catálogo y vuelve a calcular.</p>') +
       '</section><section class="panel"><div class="panel-head"><div><h3>Grupos con notas más bajas</h3><p>No significa que rechaces todo el género.</p></div></div>' +
@@ -1265,6 +1448,7 @@
       if (action === "remove-tmdb") { await removeTMDBCredential(); return; }
       if (action === "tmdb-retry") { await loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false); return; }
       if (action === "tmdb-more") { await loadTMDBPage(tmdbPage + 1, tmdbMode, true); return; }
+      if (action === "enrich-history") { await enrichRatedHistoryWithTMDB(); return; }
       if (action === "export-backup") { await exportBackup(); return; }
       if (action === "restore-backup") { $("#backupImportInput").click(); return; }
       if (action === "reset") { await resetAll(); return; }
