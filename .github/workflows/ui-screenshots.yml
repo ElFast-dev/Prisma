@@ -49,10 +49,10 @@ jobs:
                   waitUntil: "networkidle",
                   timeout: 60000
                 });
-                await page.locator(".hero-title").waitFor({ state: "visible", timeout: 15000 });
+                await page.locator("main h1").waitFor({ state: "visible", timeout: 15000 });
                 lastUI = await page.evaluate(() => {
                   const link = document.querySelector('link[rel="stylesheet"]');
-                  const heading = document.querySelector(".hero-title");
+                  const heading = document.querySelector("main h1");
                   const nav = document.querySelector(".bottom-nav");
                   const poster = document.querySelector(".poster-art");
                   return {
@@ -62,15 +62,18 @@ jobs:
                     navRadius: getComputedStyle(nav).borderRadius,
                     posterRadius: poster && getComputedStyle(poster).borderRadius,
                     movieCards: document.querySelectorAll(".movie-card").length,
+                    navItems: document.querySelectorAll(".bottom-nav .nav-item").length,
+                    topSearch: Boolean(document.querySelector("[data-global-search]")),
                     documentTitle: document.title
                   };
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-9") &&
+                  lastUI.cssHref.includes("v=ui-20261020-10") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
-                  lastUI.movieCards > 0
+                  lastUI.navItems === 3 &&
+                  lastUI.topSearch
                 ) {
                   console.log(name + " published UI verified:", JSON.stringify(lastUI));
                   return;
