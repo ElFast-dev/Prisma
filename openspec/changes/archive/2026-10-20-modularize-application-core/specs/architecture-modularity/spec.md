@@ -138,3 +138,14 @@ Las operaciones de importación, exportación, restauración y restablecimiento 
 - DADO un archivo de respaldo válido de Prisma
 - CUANDO el usuario confirma la restauración
 - ENTONCES el módulo de datos valida y normaliza el contenido, guarda el estado local y solicita la actualización de la interfaz mediante las dependencias recibidas.
+
+
+### Requirement: Registro de eventos aislado
+
+Los listeners globales y la delegación de interacciones DEBEN residir en un módulo propio que reciba mediante una interfaz explícita el estado y las acciones que invoca; la entrada debe limitarse a registrar ese módulo.
+
+#### Scenario: Se activa una acción desde la interfaz
+
+- DADO que el usuario activa un control de navegación, colección, puntuación o importación
+- CUANDO se procesa el evento delegado
+- ENTONCES el módulo de eventos dirige la acción adecuada mediante las dependencias recibidas sin mantener un segundo controlador monolítico en la entrada.

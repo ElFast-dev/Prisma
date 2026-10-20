@@ -17,6 +17,7 @@
 - [x] Actualizar `app.js` para importar módulos y conservar la composición y el comportamiento existentes.
 
 ## Calidad y publicación
+- [x] Extraer los listeners globales y delegación de acciones a un módulo de eventos con dependencias explícitas.
 - [x] Separar la orquestación de importación, exportación, restauración y restablecimiento del coordinador de la aplicación.
 - [x] Extraer las acciones de valoración y gestión de listas en un módulo con acceso explícito al estado.
 - [x] Extraer renderizadores de fichas, personas, puntuaciones y paneles auxiliares del controlador principal.

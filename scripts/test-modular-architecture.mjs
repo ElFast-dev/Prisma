@@ -21,6 +21,7 @@ const files = [
   'js/ui/modal-views.js',
   'js/app/movie-actions.js',
   'js/import-export/actions.js',
+  'js/app/event-handlers.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -68,6 +69,8 @@ assert.ok(app.includes('createMovieActions('));
 assert.ok(!app.includes('async function importPersonalJSON('));
 assert.ok(!app.includes('async function exportBackup('));
 assert.ok(app.includes('createImportExportActions('));
+assert.ok(!app.includes('document.addEventListener('));
+assert.ok(app.includes('registerAppEvents('));
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));

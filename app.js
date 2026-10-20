@@ -11,6 +11,7 @@ import { createPageViews } from "./js/ui/page-views.js?v=core-20261020-1";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261020-1";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
+import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -906,262 +907,95 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
-  const posterRefreshRequested = new Set();
-  document.addEventListener("error",function (event) {
-    const image = event.target;
-    if (!(image instanceof HTMLImageElement)) return;
-    const host = image.parentElement;
-    const failedId = image.dataset.tmdbId || "";
-    if (image.classList.contains("poster-image") || image.classList.contains("recent-poster-image")) {
-      image.remove();
-      if (failedId && !posterRefreshRequested.has(failedId)) {
-        posterRefreshRequested.add(failedId);
-        const invalidate = function (list) {
-          return (list || []).map(function (entry) {
-            if (movieTmdbId(entry) !== failedId) return entry;
-            return Object.assign({},entry,{posterUrl:"",posterPath:"",tmdbFetchedAt:null,metadataSource:null});
-          });
-        };
-        state.rated = invalidate(state.rated);
-        state.watched = invalidate(state.watched);
-        state.watchlist = invalidate(state.watchlist);
-        state.hidden = invalidate(state.hidden);
-        customCatalog = invalidate(customCatalog);
-        const catalogEntry = catalog.find(function (entry) { return movieTmdbId(entry) === failedId; });
-        if (catalogEntry) Object.assign(catalogEntry,{posterUrl:"",posterPath:"",tmdbFetchedAt:null,metadataSource:null});
-        persistState();
-        dbSet(CATALOG_KEY,customCatalog).catch(function () {});
-        if (tmdbCredential && tmdbCredential.value) {
-          if (tmdbHistorySync.running) tmdbEnrichRequested = true;
-          else window.setTimeout(function () { enrichRatedHistoryWithTMDB(); },300);
-        }
-      }
-      return;
-    }
-    if (!host || !host.matches(".collection-row-poster,.compact-poster,.cast-photo,.person-film-poster,.similar-poster,.saga-art,.provider-chip")) return;
-    image.remove();
-    if (host.querySelector(".poster-fallback,.image-fallback")) return;
-    const fallback = document.createElement("span");
-    fallback.className = host.matches(".provider-chip") ? "image-fallback" : "poster-fallback";
-    fallback.textContent = "▣";
-    host.appendChild(fallback);
-  },true);
-
-  document.addEventListener("click",async function (event) {
-    const nav = event.target.closest("[data-nav]");
-    if (nav) {
-      event.preventDefault();
-      clickNav(nav.dataset.nav);
-      return;
-    }
-    const button = event.target.closest("[data-action]");
-    if (!button) return;
-    const action = button.dataset.action;
-    try {
-      if (action === "import-json") { $("#jsonImportInput").click(); return; }
-      if (action === "import-catalog") { $("#catalogImportInput").click(); return; }
-      if (action === "save-tmdb") { await saveTMDBCredential(); return; }
-      if (action === "test-tmdb") { await testTMDBCredential(); return; }
-      if (action === "remove-tmdb") { await removeTMDBCredential(); return; }
-      if (action === "tmdb-retry") { await loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false); return; }
-      if (action === "tmdb-more") { await loadTMDBPage(tmdbPage + 1,tmdbMode,true); return; }
-      if (action === "enrich-history") { await enrichRatedHistoryWithTMDB(); return; }
-      if (action === "export-backup") { await exportBackup(); return; }
-      if (action === "restore-backup") { $("#backupImportInput").click(); return; }
-      if (action === "reset") { await resetAll(); return; }
-      if (action === "show-info") { openInfoSheet(button.dataset.info || "collection"); return; }
-      if (action === "genre") { activeGenre = button.dataset.genre || "Todos"; renderApp(); return; }
-      if (action === "details") {
-        const requestedId = button.dataset.tmdbId || "";
-        let movie = (requestedId ? tmdbResults.find(function (item) { return movieTmdbId(item) === requestedId; }) : null) ||
-          findMovie(button.dataset.title,requestedId) ||
-          getCollectionItems("history").concat(getCollectionItems("pending"),getCollectionItems("hidden")).find(function (item) {
-            return requestedId ? movieTmdbId(item) === requestedId : titleKey(item.title) === titleKey(button.dataset.title);
-          });
-        if (movie && requestedId && !movie.tmdbId) movie = Object.assign({},movie,{tmdbId:requestedId,source:"tmdb"});
-        if (!movie && button.dataset.title) movie = {title:button.dataset.title,id:requestedId || titleKey(button.dataset.title),tmdbId:requestedId || null,source:requestedId ? "tmdb" : "catalog"};
-        if (movie) openModal(movie,"details");
-        return;
-      }
-      if (action === "rate") {
-        const inDetail = Boolean(button.closest(".detail-sheet"));
-        const requestedId = button.dataset.tmdbId || (movieDetail && movieDetail.movie.tmdbId) || "";
-        const movie = (movieDetail && inDetail ? movieDetail.movie : null) ||
-          (requestedId ? tmdbResults.find(function (item) { return movieTmdbId(item) === requestedId; }) : null) ||
-          findMovie(button.dataset.title || (movieDetail && movieDetail.movie.title),requestedId) || (movieDetail && movieDetail.movie);
-        if (movie) openModal(movie,"rate");
-        return;
-      }
-      if (action === "rating-star") { updateRatingPreview(button.dataset.rating); return; }
-      if (action === "save-rating") { await saveRating(); return; }
-      if (action === "delete-rating") { await deleteRating(button.dataset.title,button.dataset.tmdbId); return; }
-      if (action === "emotion") {
-        if (!modalDraft) return;
-        const emotion = button.dataset.emotion, index = modalDraft.emotions.indexOf(emotion);
-        if (index >= 0) modalDraft.emotions.splice(index,1); else modalDraft.emotions.push(emotion);
-        renderModal();
-        return;
-      }
-      if (action === "close-modal") { closeModal(); return; }
-      if (action === "backdrop-close" && event.target === button) {
-        if (utilitySheet) { utilitySheet = null; renderModal(); }
-        else closeModal();
-        return;
-      }
-      if (action === "retry-movie-detail") { if (movieDetail) { movieDetailCache.delete(String(movieDetail.movie.tmdbId || "")); loadMovieDetail(movieDetail.movie); } return; }
-      if (action === "toggle-watchlist") { if (button.dataset.title) await toggleWatchlist(button.dataset.title,button.dataset.tmdbId); return; }
-      if (action === "manage-pending") {
-        const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await toggleWatchlist(title,movieDetail && movieDetail.movie.tmdbId);
-        if (utilitySheet) { utilitySheet = null; renderModal(); }
-        return;
-      }
-      if (action === "mark-watched" || action === "manage-history") {
-        const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await markWatched(title,movieDetail && movieDetail.movie.tmdbId);
-        if (utilitySheet) { utilitySheet = null; renderModal(); }
-        return;
-      }
-      if (action === "toggle-hidden" || action === "manage-hidden") {
-        const title = movieDetail ? movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await toggleHidden(title,movieDetail && movieDetail.movie.tmdbId);
-        if (utilitySheet) { utilitySheet = null; renderModal(); }
-        return;
-      }
-      if (action === "manage-lists") { openUtilitySheet("manage"); return; }
-      if (action === "open-sort") { openUtilitySheet("sort"); return; }
-      if (action === "open-genres") { openUtilitySheet("genres"); return; }
-      if (action === "choose-sort") {
-        if (!utilitySheet) return;
-        utilitySheet.sort = button.dataset.sort || "added";
-        utilitySheet.direction = utilitySheet.sort === "title" ? "asc" : "desc";
-        renderModal();
-        return;
-      }
-      if (action === "toggle-sort-direction") { if (utilitySheet) { utilitySheet.direction = utilitySheet.direction === "asc" ? "desc" : "asc"; renderModal(); } return; }
-      if (action === "accept-sort") {
-        if (utilitySheet) { collectionSort = utilitySheet.sort; collectionDirection = utilitySheet.direction; }
-        utilitySheet = null; renderApp(); renderModal(); return;
-      }
-      if (action === "toggle-sheet-genre") {
-        if (!utilitySheet) return;
-        const genre = button.dataset.genre || "";
-        const index = utilitySheet.genres.findIndex(function (value) { return titleKey(value) === titleKey(genre); });
-        if (index >= 0) utilitySheet.genres.splice(index,1); else utilitySheet.genres.push(genre);
-        renderModal(); return;
-      }
-      if (action === "clear-sheet-genres") { if (utilitySheet) utilitySheet.genres = []; renderModal(); return; }
-      if (action === "accept-genres") {
-        if (utilitySheet) collectionGenres = utilitySheet.genres.slice();
-        utilitySheet = null; renderApp(); renderModal(); return;
-      }
-      if (action === "toggle-layout") { collectionLayout = collectionLayout === "list" ? "compact" : "list"; renderApp(); return; }
-      if (action === "toggle-released") { onlyReleased = !onlyReleased; renderApp(); return; }
-      if (action === "toggle-collection-search") {
-        showCollectionSearch = !showCollectionSearch;
-        if (!showCollectionSearch) collectionQuery = "";
-        renderApp();
-        const search = $("[data-collection-search]");
-        if (search) search.focus();
-        return;
-      }
-      if (action === "collection-tab") { collectionTab = button.dataset.tab || "history"; collectionMode = "movies"; renderApp(); return; }
-      if (action === "collection-mode") { collectionMode = button.dataset.mode || "movies"; renderApp(); return; }
-      if (action === "collection-open-tab") { collectionTab = button.dataset.tab || "history"; collectionMode = "movies"; renderApp(); return; }
-      if (action === "person-details") { openPersonDetails(button.dataset.personId,button.dataset.personName,button.dataset.character); return; }
-      if (action === "person-back") { personDetail = null; renderModal(); return; }
-      if (action === "person-filter") { personListFilter = button.dataset.filter || "all"; renderPersonDetails(); return; }
-      if (action === "movie-from-person") {
-        const title = button.dataset.title;
-        const movie = findMovie(title,button.dataset.tmdbId) || {title:title,id:button.dataset.tmdbId || titleKey(title),tmdbId:button.dataset.tmdbId || null,source:"tmdb"};
-        personDetail = null; openModal(movie,"details"); return;
-      }
-      if (action === "open-trailer") {
-        const videos = movieDetail && movieDetail.data ? movieDetail.data.videos : [];
-        const trailer = (videos || []).find(function (video) { return video.site === "YouTube" && video.type === "Trailer"; }) ||
-          (videos || []).find(function (video) { return video.site === "YouTube"; });
-        const url = trailer ? "https://www.youtube.com/watch?v=" + encodeURIComponent(trailer.key) :
-          (movieDetail && movieDetail.movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movieDetail.movie.tmdbId) + "/videos" : "");
-        if (url) window.open(url,"_blank","noopener,noreferrer"); else toast("No hay enlace de tráiler disponible. Conecta TMDB para consultar los vídeos.",true);
-        return;
-      }
-      if (action === "open-reviews") {
-        if (movieDetail && movieDetail.movie.tmdbId) window.open("https://www.themoviedb.org/movie/" + encodeURIComponent(movieDetail.movie.tmdbId) + "/reviews","_blank","noopener,noreferrer");
-        else toast("Conecta TMDB para abrir los comentarios públicos de esta película.",true);
-        return;
-      }
-      if (action === "share-movie") {
-        const movie = movieDetail && movieDetail.movie;
-        if (!movie) return;
-        const url = movie.tmdbId ? "https://www.themoviedb.org/movie/" + encodeURIComponent(movie.tmdbId) : window.location.href;
-        const payload = {title:movie.title,text:"Mira " + movie.title + " en Prisma",url:url};
-        if (navigator.share) await navigator.share(payload);
-        else if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(url); toast("Enlace copiado."); }
-        else window.prompt("Copia el enlace de la película",url);
-        return;
-      }
-      if (action === "close-sheet") { utilitySheet = null; renderModal(); return; }
-    } catch (error) {
-      toast(error && error.message ? error.message : "No se pudo completar la acción.",true);
-    }
-  });
-
-  document.addEventListener("input",function (event) {
-    if (event.target.matches("[data-global-search]")) {
-      catalogQuery = event.target.value;
-      activeGenre = "Todos";
-      if (currentPage !== "catalog") { currentPage = "catalog"; renderApp(); }
-      else {
-        renderCatalogResults();
-        const caption = $("#catalogSearchTitle");
-        if (caption) caption.textContent = catalogQuery.trim() ? "Resultados para «" + catalogQuery.trim() + "»" : "Catálogo local";
-      }
-      if (tmdbSearchTimer) window.clearTimeout(tmdbSearchTimer);
-      tmdbSearchTimer = window.setTimeout(function () {
-        if (currentPage === "catalog" && tmdbCredential && tmdbCredential.value) {
-          loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false);
-        }
-      },450);
-      return;
-    }
-    if (event.target.matches("[data-catalog-search]")) {
-      catalogQuery = event.target.value;
-      renderCatalogResults();
-      if (tmdbSearchTimer) window.clearTimeout(tmdbSearchTimer);
-      tmdbSearchTimer = window.setTimeout(function () {
-        if (currentPage === "catalog" && tmdbCredential && tmdbCredential.value) {
-          loadTMDBPage(1,catalogQuery.trim().length >= 2 ? "search" : "popular",false);
-        }
-      },450);
-      return;
-    }
-    if (event.target.matches("[data-collection-search]")) {
-      collectionQuery = event.target.value;
-      refreshCollectionContent();
-    }
-  });
-
-
-  $("#jsonImportInput").addEventListener("change", async function (event) {
-    const file = event.target.files && event.target.files[0];
-    event.target.value = "";
-    if (!file) return;
-    try { await importPersonalJSON(file); }
-    catch (error) { toast(error.message || "No pude leer ese JSON.", true); }
-  });
-  $("#catalogImportInput").addEventListener("change", async function (event) {
-    const file = event.target.files && event.target.files[0];
-    event.target.value = "";
-    if (!file) return;
-    try { await importCatalogCSV(file); }
-    catch (error) { toast(error.message || "No pude leer ese CSV.", true); }
-  });
-  $("#backupImportInput").addEventListener("change", async function (event) {
-    const file = event.target.files && event.target.files[0];
-    event.target.value = "";
-    if (!file) return;
-    try { await restoreBackup(file); }
-    catch (error) { toast(error.message || "No pude restaurar la copia.", true); }
+  registerAppEvents({
+    get $() { return $; },
+    get document() { return document; },
+    get HTMLImageElement() { return HTMLImageElement; },
+    get window() { return window; },
+    get navigator() { return navigator; },
+    get state() { return state; },
+    get customCatalog() { return customCatalog; },
+    set customCatalog(value) { customCatalog = value; },
+    get catalog() { return catalog; },
+    get CATALOG_KEY() { return CATALOG_KEY; },
+    get tmdbCredential() { return tmdbCredential; },
+    get tmdbHistorySync() { return tmdbHistorySync; },
+    get tmdbEnrichRequested() { return tmdbEnrichRequested; },
+    set tmdbEnrichRequested(value) { tmdbEnrichRequested = value; },
+    get tmdbPage() { return tmdbPage; },
+    get tmdbMode() { return tmdbMode; },
+    get tmdbResults() { return tmdbResults; },
+    get catalogQuery() { return catalogQuery; },
+    set catalogQuery(value) { catalogQuery = value; },
+    get currentPage() { return currentPage; },
+    set currentPage(value) { currentPage = value; },
+    get activeGenre() { return activeGenre; },
+    set activeGenre(value) { activeGenre = value; },
+    get utilitySheet() { return utilitySheet; },
+    set utilitySheet(value) { utilitySheet = value; },
+    get movieDetail() { return movieDetail; },
+    get personDetail() { return personDetail; },
+    set personDetail(value) { personDetail = value; },
+    get personListFilter() { return personListFilter; },
+    set personListFilter(value) { personListFilter = value; },
+    get collectionSort() { return collectionSort; },
+    set collectionSort(value) { collectionSort = value; },
+    get collectionDirection() { return collectionDirection; },
+    get collectionGenres() { return collectionGenres; },
+    set collectionGenres(value) { collectionGenres = value; },
+    get collectionLayout() { return collectionLayout; },
+    set collectionLayout(value) { collectionLayout = value; },
+    get onlyReleased() { return onlyReleased; },
+    set onlyReleased(value) { onlyReleased = value; },
+    get showCollectionSearch() { return showCollectionSearch; },
+    set showCollectionSearch(value) { showCollectionSearch = value; },
+    get collectionQuery() { return collectionQuery; },
+    set collectionQuery(value) { collectionQuery = value; },
+    get collectionTab() { return collectionTab; },
+    set collectionTab(value) { collectionTab = value; },
+    get collectionMode() { return collectionMode; },
+    set collectionMode(value) { collectionMode = value; },
+    get tmdbSearchTimer() { return tmdbSearchTimer; },
+    set tmdbSearchTimer(value) { tmdbSearchTimer = value; },
+    get movieDetailCache() { return movieDetailCache; },
+    get movieTmdbId() { return movieTmdbId; },
+    get persistState() { return persistState; },
+    get dbSet() { return dbSet; },
+    get enrichRatedHistoryWithTMDB() { return enrichRatedHistoryWithTMDB; },
+    get clickNav() { return clickNav; },
+    get saveTMDBCredential() { return saveTMDBCredential; },
+    get testTMDBCredential() { return testTMDBCredential; },
+    get removeTMDBCredential() { return removeTMDBCredential; },
+    get loadTMDBPage() { return loadTMDBPage; },
+    get exportBackup() { return exportBackup; },
+    get restoreBackup() { return restoreBackup; },
+    get resetAll() { return resetAll; },
+    get openInfoSheet() { return openInfoSheet; },
+    get renderApp() { return renderApp; },
+    get findMovie() { return findMovie; },
+    get getCollectionItems() { return getCollectionItems; },
+    get titleKey() { return titleKey; },
+    get openModal() { return openModal; },
+    get renderModal() { return renderModal; },
+    get updateRatingPreview() { return updateRatingPreview; },
+    get saveRating() { return saveRating; },
+    get deleteRating() { return deleteRating; },
+    get closeModal() { return closeModal; },
+    get loadMovieDetail() { return loadMovieDetail; },
+    get isInWatchlist() { return isInWatchlist; },
+    get toggleWatchlist() { return toggleWatchlist; },
+    get markWatched() { return markWatched; },
+    get toggleHidden() { return toggleHidden; },
+    get isHidden() { return isHidden; },
+    get isInHistory() { return isInHistory; },
+    get openUtilitySheet() { return openUtilitySheet; },
+    get renderPersonDetails() { return renderPersonDetails; },
+    get openPersonDetails() { return openPersonDetails; },
+    get refreshCollectionContent() { return refreshCollectionContent; },
+    get renderCatalogResults() { return renderCatalogResults; },
+    get importPersonalJSON() { return importPersonalJSON; },
+    get importCatalogCSV() { return importCatalogCSV; },
+    get toast() { return toast; }
   });
 
   async function init() {
