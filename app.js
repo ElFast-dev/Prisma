@@ -2124,7 +2124,7 @@
       const cleanTitle = title.replace(/\s*\(((?:19|20)\d{2})\)\s*$/, "");
       const rawTmdbId = tmdbIdIndex >= 0 ? String(values[tmdbIdIndex] || "").trim() : "";
       const numericTmdbId = Number(rawTmdbId);
-      const tmdbId = Number.isSafeInteger(numericTmdbId) && numericTmdbId > 0 ? String(numericTmdbId) : null;
+      const tmdbId = /^\\d+$/.test(rawTmdbId) && Number.isSafeInteger(numericTmdbId) && numericTmdbId > 0 ? String(numericTmdbId) : null;
       const normalizedTitle = titleKey(cleanTitle);
       const key = tmdbId ? "tmdb:" + tmdbId : "title:" + normalizedTitle;
       if (!normalizedTitle || seen.has(key)) continue;
