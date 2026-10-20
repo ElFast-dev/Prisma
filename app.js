@@ -874,6 +874,7 @@
       note: existing && existing.note ? existing.note : ""
     };
     renderModal();
+    if (tmdbCredential && tmdbCredential.value && (movie.tmdbId || movie.source === "tmdb")) enrichTMDBMovie(movie);
   }
 
   function renderModal() {
@@ -1269,7 +1270,7 @@
       if (action === "reset") { await resetAll(); return; }
       if (action === "genre") { activeGenre = button.dataset.genre || "Todos"; renderApp(); return; }
       if (action === "details" || action === "rate") {
-        const movie = findMovie(button.dataset.title) || tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); });
+        const movie = tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); }) || findMovie(button.dataset.title);
         if (movie) openModal(movie, action);
         return;
       }
