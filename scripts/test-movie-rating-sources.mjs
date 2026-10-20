@@ -2,16 +2,17 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createPresentationUtils } from '../js/ui/presentation-utils.js';
 
-const [appSource, domainSource, tmdbSource, catalogSource, collectionSource, pageViewsSource, movieActionsSource] = await Promise.all([
+const [appSource, domainSource, tmdbSource, catalogSource, collectionSource, pageViewsSource, movieActionsSource, historySyncSource] = await Promise.all([
   readFile('app.js', 'utf8'),
   readFile('js/core/movie-utils.js', 'utf8'),
   readFile('js/tmdb/client.js', 'utf8'),
   readFile('js/catalog/catalog-model.js', 'utf8'),
   readFile('js/collection/collection-model.js', 'utf8'),
   readFile('js/ui/page-views.js', 'utf8'),
-  readFile('js/app/movie-actions.js', 'utf8')
+  readFile('js/app/movie-actions.js', 'utf8'),
+  readFile('js/tmdb/history-sync.js', 'utf8')
 ]);
-const source = appSource + '\\n' + domainSource + '\\n' + tmdbSource + '\\n' + catalogSource + '\\n' + collectionSource + '\\n' + pageViewsSource + '\\n' + movieActionsSource;
+const source = appSource + '\\n' + domainSource + '\\n' + tmdbSource + '\\n' + catalogSource + '\\n' + collectionSource + '\\n' + pageViewsSource + '\\n' + movieActionsSource + '\\n' + historySyncSource;
 function escapeHTML(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

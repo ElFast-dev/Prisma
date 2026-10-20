@@ -24,6 +24,8 @@ const files = [
   'js/app/event-handlers.js',
   'js/tmdb/settings-actions.js',
   'js/ui/tmdb-views.js',
+  'js/tmdb/history-sync.js',
+  'js/tmdb/browser-actions.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -77,6 +79,10 @@ assert.ok(!app.includes('async function saveTMDBCredential('));
 assert.ok(app.includes('createTMDBSettingsActions('));
 assert.ok(!app.includes('function renderTMDBResults('));
 assert.ok(app.includes('createTMDBViews('));
+assert.ok(!app.includes('async function enrichRatedHistoryWithTMDB('));
+assert.ok(!app.includes('async function loadTMDBPage('));
+assert.ok(app.includes('createTMDBHistorySync('));
+assert.ok(app.includes('createTMDBBrowserActions('));
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));

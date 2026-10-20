@@ -17,6 +17,8 @@
 - [x] Actualizar `app.js` para importar módulos y conservar la composición y el comportamiento existentes.
 
 ## Calidad y publicación
+- [x] Separar la limpieza de caché y sincronización de metadatos del historial a un módulo de integración.
+- [x] Separar las búsquedas remotas y la carga diferida de metadatos TMDB en otro módulo.
 - [x] Separar las vistas de búsqueda, atribución y sincronización de TMDB del controlador principal.
 - [x] Aislar el guardado, prueba y retirada de la credencial TMDB en su propio módulo de acciones.
 - [x] Extraer los listeners globales y delegación de acciones a un módulo de eventos con dependencias explícitas.

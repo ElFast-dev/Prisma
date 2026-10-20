@@ -14,6 +14,8 @@ import { createImportExportActions } from "./js/import-export/actions.js?v=core-
 import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261020-1";
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-1";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
+import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
+import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -267,6 +269,62 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   });
   const { saveTMDBCredential, testTMDBCredential, removeTMDBCredential } = tmdbSettingsActions;
 
+  const tmdbHistorySyncModule = createTMDBHistorySync({
+    get state() { return state; },
+    get customCatalog() { return customCatalog; },
+    set customCatalog(value) { customCatalog = value; },
+    get catalog() { return catalog; },
+    get tmdbCredential() { return tmdbCredential; },
+    get dbSet() { return dbSet; },
+    get CATALOG_KEY() { return CATALOG_KEY; },
+    get persistState() { return persistState; },
+    get tmdbRequest() { return tmdbRequest; },
+    get titleKey() { return titleKey; },
+    get uniqueStrings() { return uniqueStrings; },
+    get movieTmdbId() { return movieTmdbId; },
+    get sameMovieRecord() { return sameMovieRecord; },
+    get tmdbHistorySync() { return tmdbHistorySync; },
+    set tmdbHistorySync(value) { tmdbHistorySync = value; },
+    get tmdbEnrichRequested() { return tmdbEnrichRequested; },
+    set tmdbEnrichRequested(value) { tmdbEnrichRequested = value; },
+    get fromTMDB() { return fromTMDB; },
+    get renderApp() { return renderApp; },
+    get toast() { return toast; },
+    get clickNav() { return clickNav; },
+    get currentPage() { return currentPage; },
+    get refreshCollectionContent() { return refreshCollectionContent; },
+    get combineMovies() { return combineMovies; },
+    get window() { return window; }
+  });
+  const { pruneTMDBCache, historyNeedsTMDB, historyTMDBId, pendingHistoryTMDBCount, findTMDBDetailsForRating, applyTMDBDetailsToRating, applyTMDBDetailsToLocalCollection, upsertTMDBCatalogEntry, enrichRatedHistoryWithTMDB } = tmdbHistorySyncModule;
+
+  const tmdbBrowserActions = createTMDBBrowserActions({
+    get tmdbCredential() { return tmdbCredential; },
+    get catalogQuery() { return catalogQuery; },
+    get tmdbRequestSerial() { return tmdbRequestSerial; },
+    set tmdbRequestSerial(value) { tmdbRequestSerial = value; },
+    get tmdbMode() { return tmdbMode; },
+    set tmdbMode(value) { tmdbMode = value; },
+    get tmdbLoading() { return tmdbLoading; },
+    set tmdbLoading(value) { tmdbLoading = value; },
+    get tmdbError() { return tmdbError; },
+    set tmdbError(value) { tmdbError = value; },
+    get tmdbResults() { return tmdbResults; },
+    set tmdbResults(value) { tmdbResults = value; },
+    get tmdbPage() { return tmdbPage; },
+    set tmdbPage(value) { tmdbPage = value; },
+    get tmdbTotalPages() { return tmdbTotalPages; },
+    set tmdbTotalPages(value) { tmdbTotalPages = value; },
+    get renderTMDBResults() { return renderTMDBResults; },
+    get ensureTMDBGenres() { return ensureTMDBGenres; },
+    get tmdbRequest() { return tmdbRequest; },
+    get fromTMDB() { return fromTMDB; },
+    get modalDraft() { return modalDraft; },
+    get titleKey() { return titleKey; },
+    get renderModal() { return renderModal; }
+  });
+  const { loadTMDBPage, enrichTMDBMovie } = tmdbBrowserActions;
+
   const tmdbViews = createTMDBViews({
     get $() { return $; },
     get pendingHistoryTMDBCount() { return pendingHistoryTMDBCount; },
@@ -289,286 +347,7 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   });
   const { renderTMDBHistoryPanel, renderTMDBAttribution, renderTMDBResults } = tmdbViews;
 
-     function pruneTMDBCache() {
-    const limit = 1000 * 60 * 60 * 24 * 179;
-    const now = Date.now();
-    function isExpired(entry) {
-      if (!entry || !entry.tmdbFetchedAt) return false;
-      const fetchedAt = new Date(entry.tmdbFetchedAt).getTime();
-      return Number.isFinite(fetchedAt) && now - fetchedAt > limit;
-    }
-    function strip(entry) {
-      ["genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (key) { delete entry[key]; });
-      return entry;
-    }
-    let changed = false;
-    function pruneList(list) {
-      return (list || []).map(function (entry) {
-        if (entry && entry.metadataSource === "tmdb" && isExpired(entry)) {
-          changed = true;
-          return strip(Object.assign({},entry));
-        }
-        return entry;
-      });
-    }
-    customCatalog = pruneList(customCatalog);
-    state.rated = pruneList(state.rated);
-    state.watched = pruneList(state.watched);
-    state.watchlist = pruneList(state.watchlist);
-    state.hidden = pruneList(state.hidden);
-    if (changed) {
-      dbSet(CATALOG_KEY,customCatalog).catch(function () {});
-      persistState();
-    }
-  }
-
-
-  function historyNeedsTMDB(entry) {
-    const fetchedAt = entry && entry.tmdbFetchedAt ? new Date(entry.tmdbFetchedAt).getTime() : 0;
-    const isFresh = entry && entry.metadataSource === "tmdb" &&
-      Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 179;
-    if (isFresh && (entry.posterUrl || entry.posterPath)) return false;
-    return Boolean(entry && entry.title);
-  }
-
-  function historyTMDBId(entry) {
-    const value = Number(entry && (entry.tmdbId || entry.tmId || entry.tmdb_id));
-    return Number.isSafeInteger(value) && value > 0 ? value : null;
-  }
-
-  function pendingHistoryTMDBCount() {
-    return catalog.filter(historyNeedsTMDB).length;
-  }
-
-  async function findTMDBDetailsForRating(entry) {
-    const id = historyTMDBId(entry);
-    if (id) {
-      try {
-        return await tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "keywords" });
-      } catch (error) {
-        // Si el ID guardado ya no existe, busca el título por nombre y año.
-      }
-    }
-    const params = { query: entry.title, language: "es-ES", include_adult: false };
-    if (entry.year) params.year = entry.year;
-    const results = await tmdbRequest("/search/movie", params);
-    const candidates = results.results || [];
-    if (!candidates.length) return null;
-    const wanted = titleKey(entry.title);
-    let selected = candidates.find(function (candidate) {
-      return titleKey(candidate.title) === wanted || titleKey(candidate.original_title) === wanted;
-    });
-    if (!selected && entry.year) {
-      const sameYear = candidates.filter(function (candidate) {
-        return String(candidate.release_date || "").slice(0, 4) === String(entry.year);
-      });
-      if (sameYear.length === 1) selected = sameYear[0];
-    }
-    if (!selected && candidates.length === 1) selected = candidates[0];
-    if (!selected) return null;
-    return await tmdbRequest("/movie/" + encodeURIComponent(selected.id), { language: "es-ES", append_to_response: "keywords" });
-  }
-
-  function applyTMDBDetailsToRating(entry, enriched) {
-    entry.tmdbId = String(enriched.id || enriched.tmdbId || entry.tmdbId || entry.tmId || "");
-    entry.genres = uniqueStrings((enriched.genres || []).concat(entry.genres || []));
-    entry.tags = uniqueStrings((enriched.tags || []).concat(entry.tags || []));
-    entry.overview = enriched.overview || entry.overview || "";
-    entry.posterPath = enriched.posterPath || entry.posterPath || "";
-    entry.posterUrl = enriched.posterUrl || entry.posterUrl || "";
-    entry.voteAverage = enriched.voteAverage || entry.voteAverage || null;
-    entry.voteCount = enriched.voteCount || entry.voteCount || null;
-    entry.runtime = enriched.runtime || entry.runtime || null;
-    entry.releaseDate = enriched.releaseDate || entry.releaseDate || null;
-    entry.backdropPath = enriched.backdropPath || entry.backdropPath || "";
-    entry.backdropUrl = enriched.backdropUrl || entry.backdropUrl || "";
-    entry.tagline = enriched.tagline || entry.tagline || "";
-    entry.status = enriched.status || entry.status || "";
-    entry.productionCountries = (enriched.productionCountries && enriched.productionCountries.length) ? enriched.productionCountries : (entry.productionCountries || []);
-    entry.imdbId = enriched.imdbId || entry.imdbId || "";
-    entry.tmdbFetchedAt = enriched.tmdbFetchedAt || new Date().toISOString();
-    entry.metadataSource = "tmdb";
-  }
-
-  function applyTMDBDetailsToLocalCollection(entry, enriched) {
-    ["rated","watched","watchlist","hidden"].forEach(function (listName) {
-      state[listName] = (state[listName] || []).map(function (current) {
-        if (!sameMovieRecord(current,entry)) return current;
-        const updated = Object.assign({},current);
-        applyTMDBDetailsToRating(updated,enriched);
-        return updated;
-      });
-    });
-  }
-
-
-  function upsertTMDBCatalogEntry(rating, enriched) {
-    const stored = Object.assign({}, enriched, {
-      id: rating.id || enriched.id,
-      tmdbId: rating.tmdbId || enriched.tmdbId || enriched.id,
-      title: rating.title || enriched.title,
-      year: rating.year || enriched.year,
-      genres: uniqueStrings((rating.genres || []).concat(enriched.genres || [])),
-      tags: uniqueStrings((rating.tags || []).concat(enriched.tags || [])),
-      overview: rating.overview || enriched.overview || "",
-      posterPath: rating.posterPath || enriched.posterPath || "",
-      posterUrl: rating.posterUrl || enriched.posterUrl || "",
-      tmdbFetchedAt: rating.tmdbFetchedAt || enriched.tmdbFetchedAt || new Date().toISOString(),
-      metadataSource: "tmdb",
-      source: "tmdb"
-    });
-    const key = titleKey(stored.title);
-    const index = customCatalog.findIndex(function (movie) {
-      const existingId = movieTmdbId(movie), incomingId = movieTmdbId(stored);
-      if (existingId && incomingId) return existingId === incomingId;
-      return titleKey(movie.title) === key && !existingId && !incomingId;
-    });
-    if (index >= 0) {
-      customCatalog[index] = Object.assign({}, customCatalog[index], stored, {
-        title: customCatalog[index].title || stored.title,
-        genres: uniqueStrings((customCatalog[index].genres || []).concat(stored.genres || [])),
-        tags: uniqueStrings((customCatalog[index].tags || []).concat(stored.tags || [])),
-        overview: stored.overview || customCatalog[index].overview || "",
-        posterUrl: stored.posterUrl || customCatalog[index].posterUrl || ""
-      });
-    } else customCatalog.push(stored);
-  }
-
-  async function enrichRatedHistoryWithTMDB() {
-    if (!tmdbCredential || !tmdbCredential.value) {
-      toast("Conecta TMDB en Ajustes para cargar las carátulas y completar los datos.",true);
-      clickNav("data");
-      return;
-    }
-    if (tmdbHistorySync.running) {
-      tmdbEnrichRequested = true;
-      toast("Los títulos nuevos se añadirán a la cola actual.");
-      return;
-    }
-    const targets = catalog.filter(historyNeedsTMDB);
-    if (!targets.length) {
-      toast("Las carátulas y los datos del catálogo están actualizados.");
-      return;
-    }
-    tmdbHistorySync = {running:true,total:targets.length,done:0,updated:0,failed:0,current:"",finishedAt:null};
-    renderApp();
-    let cursor = 0;
-    let lastPersisted = 0;
-    async function worker() {
-      while (true) {
-        const index = cursor++;
-        if (index >= targets.length) return;
-        const entry = targets[index];
-        tmdbHistorySync.current = entry.title;
-        try {
-          const raw = await findTMDBDetailsForRating(entry);
-          if (!raw) {
-            tmdbHistorySync.failed += 1;
-          } else {
-            const enriched = fromTMDB(raw);
-            if (!enriched || !enriched.title) {
-              tmdbHistorySync.failed += 1;
-            } else {
-              applyTMDBDetailsToRating(entry,enriched);
-              applyTMDBDetailsToLocalCollection(entry,enriched);
-              upsertTMDBCatalogEntry(entry,enriched);
-              tmdbHistorySync.updated += 1;
-            }
-          }
-        } catch (_) {
-          tmdbHistorySync.failed += 1;
-        } finally {
-          tmdbHistorySync.done += 1;
-          if (tmdbHistorySync.done - lastPersisted >= 5 || tmdbHistorySync.done === tmdbHistorySync.total) {
-            lastPersisted = tmdbHistorySync.done;
-            state.updatedAt = new Date().toISOString();
-            await persistState();
-            await dbSet(CATALOG_KEY,customCatalog);
-            combineMovies();
-            if (currentPage === "library") refreshCollectionContent();
-            else renderApp();
-          }
-        }
-        await new Promise(function (resolve) { window.setTimeout(resolve,120); });
-      }
-    }
-    await Promise.all([worker(),worker(),worker()]);
-    tmdbHistorySync.running = false;
-    tmdbHistorySync.finishedAt = new Date().toISOString();
-    tmdbHistorySync.current = "";
-    state.events.unshift({title:"Carátulas y datos actualizados",description:tmdbHistorySync.updated + " actualizadas; " + tmdbHistorySync.failed + " sin coincidencia",symbol:"✦",at:tmdbHistorySync.finishedAt});
-    state.events = state.events.slice(0,80);
-    state.updatedAt = tmdbHistorySync.finishedAt;
-    await persistState();
-    await dbSet(CATALOG_KEY,customCatalog);
-    combineMovies();
-    renderApp();
-    toast("Completado: " + tmdbHistorySync.updated.toLocaleString("es-PA") + " títulos actualizados; " + tmdbHistorySync.failed.toLocaleString("es-PA") + " sin coincidencia.");
-    if (tmdbEnrichRequested) {
-      tmdbEnrichRequested = false;
-      window.setTimeout(function () { enrichRatedHistoryWithTMDB(); },250);
-    }
-  }
-
-
-  async function loadTMDBPage(page, mode, append) {
-    if (!tmdbCredential || !tmdbCredential.value) {
-      renderTMDBResults();
-      return;
-    }
-    const safeMode = mode === "search" && catalogQuery.trim().length >= 2 ? "search" : "popular";
-    const query = catalogQuery.trim();
-    const requestId = ++tmdbRequestSerial;
-    tmdbMode = safeMode;
-    tmdbLoading = true;
-    tmdbError = "";
-    if (!append) tmdbResults = [];
-    renderTMDBResults();
-    try {
-      try { await ensureTMDBGenres(); } catch (_) {
-        // La búsqueda sigue siendo útil aunque no se pueda cargar el listado de géneros.
-      }
-      const params = { language: "es-ES", page: page, include_adult: false };
-      const endpoint = safeMode === "search" ? "/search/movie" : "/movie/popular";
-      if (safeMode === "search") params.query = query;
-      const data = await tmdbRequest(endpoint, params);
-      if (requestId !== tmdbRequestSerial) return;
-      const mapped = (data.results || []).map(fromTMDB).filter(function (movie) { return Boolean(movie.title); });
-      tmdbResults = append ? tmdbResults.concat(mapped) : mapped;
-      tmdbPage = Number(data.page) || page;
-      tmdbTotalPages = Math.min(Number(data.total_pages) || 1, 500);
-      tmdbError = "";
-    } catch (error) {
-      if (requestId !== tmdbRequestSerial) return;
-      tmdbError = error && error.message ? error.message : "Error al consultar TMDB.";
-    } finally {
-      if (requestId === tmdbRequestSerial) {
-        tmdbLoading = false;
-        renderTMDBResults();
-      }
-    }
-  }
-
-  async function enrichTMDBMovie(movie) {
-    if (!movie || !tmdbCredential || !tmdbCredential.value) return;
-    const id = movie.tmdbId || (movie.source === "tmdb" ? movie.id : null);
-    if (!id) return;
-    const fetchedAt = movie.tmdbFetchedAt ? new Date(movie.tmdbFetchedAt).getTime() : 0;
-    const cacheFresh = fetchedAt && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30;
-    if (cacheFresh && movie.tags && movie.tags.length) return;
-    try {
-      const details = await tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "keywords" });
-      const enriched = fromTMDB(details);
-      if (modalDraft && titleKey(modalDraft.movie.title) === titleKey(movie.title)) {
-        modalDraft.movie = Object.assign({}, modalDraft.movie, enriched, { key: titleKey(enriched.title) });
-        renderModal();
-      }
-    } catch (error) {
-      console.warn("Prisma: no se pudieron cargar los detalles de TMDB.", error && error.message ? error.message : "");
-    }
-  }
-
-  const { buildProfile, predictRating, evaluateModel } = createRecommendationEngine({
+     const { buildProfile, predictRating, evaluateModel } = createRecommendationEngine({
     getRatings: function () { return state.rated; },
     findMovie: findMovie,
     movieFeatures: movieFeatures,

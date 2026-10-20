@@ -171,3 +171,25 @@ La presentación de resultados, atribución y estado de sincronización de TMDB 
 - DADO que hay resultados, carga, error o ausencia de credenciales para TMDB
 - CUANDO se actualiza el navegador de películas
 - ENTONCES el módulo de vistas representa el estado correcto sin poseer la lógica de consulta remota.
+
+
+### Requirement: Sincronización de metadatos aislada
+
+La limpieza de la caché de metadatos y la sincronización progresiva de TMDB con historial y colecciones DEBE residir en un módulo de integración que use la persistencia y el modelo de catálogo mediante dependencias explícitas.
+
+#### Scenario: Se completa el historial con metadatos externos
+
+- DADO que hay películas del historial que carecen de metadatos TMDB recientes
+- CUANDO el usuario inicia la sincronización
+- ENTONCES el módulo de sincronización actualiza lotes, persiste el progreso y mantiene disponible la interfaz durante el proceso.
+
+
+### Requirement: Navegación remota de películas aislada
+
+Las consultas de búsqueda/paginación a TMDB y la carga diferida de metadatos DEBEN estar separadas de la presentación y del coordinador, usando el cliente TMDB compartido y estado de petición explícito.
+
+#### Scenario: Una búsqueda remota cambia mientras carga
+
+- DADO que una petición anterior sigue en curso cuando cambia la búsqueda
+- CUANDO llega la respuesta antigua
+- ENTONCES esa respuesta no sobrescribe el resultado de la petición más reciente.
