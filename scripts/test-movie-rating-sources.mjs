@@ -10,7 +10,7 @@ const [appSource, domainSource, tmdbSource, catalogSource, collectionSource, pag
   readFile('js/collection/collection-model.js', 'utf8'),
   readFile('js/ui/page-views.js', 'utf8')
 ]);
-const source = appSource + '\n' + domainSource + '\n' + tmdbSource + '\n' + catalogSource + '\n' + collectionSource;
+const source = appSource + '\\n' + domainSource + '\\n' + tmdbSource + '\\n' + catalogSource + '\\n' + collectionSource + '\\n' + pageViewsSource;
 function escapeHTML(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
