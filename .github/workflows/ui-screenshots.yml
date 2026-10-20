@@ -87,7 +87,7 @@ jobs:
               await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: true, animations: "disabled" });
 
               if (pageName === "catalog") {
-                await page.locator('[data-nav="catalog"]').click();
+                await page.locator('.bottom-nav [data-nav="catalog"]').click();
                 await page.locator(".tmdb-browser").waitFor({ state: "visible" });
                 await page.waitForTimeout(250);
                 await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: true, animations: "disabled" });
