@@ -184,28 +184,24 @@ jobs:
                 const testRow = page.locator(".collection-row:has(.collection-row-main[data-title='Prisma Test Seen'])");
                 const testRowMain = testRow.locator(".collection-row-main");
                 const hoverSupported = await page.evaluate(() => matchMedia("(hover: hover) and (pointer: fine)").matches);
-                const normalRowBackground = await testRow.evaluate(node => getComputedStyle(node).backgroundColor);
+                const normalMainBackground = await testRowMain.evaluate(node => getComputedStyle(node).backgroundColor);
                 if (hoverSupported) {
                   await testRowMain.hover();
-                  const hoverStyles = await page.evaluate(() => {
-                    const row = document.querySelector(".collection-row:has(.collection-row-main[data-title='Prisma Test Seen'])");
-                    const main = row && row.querySelector(".collection-row-main");
-                    return {
-                      background: row && getComputedStyle(row).backgroundColor,
-                      transform: main && getComputedStyle(main).transform
-                    };
-                  });
-                  if (!hoverStyles.background || hoverStyles.background === normalRowBackground) {
-                    throw new Error(name + ": collection row hover did not change the row background");
+                  const hoverStyles = await testRowMain.evaluate(node => ({
+                    background: getComputedStyle(node).backgroundColor,
+                    transform: getComputedStyle(node).transform
+                  }));
+                  if (!hoverStyles.background || hoverStyles.background === normalMainBackground) {
+                    throw new Error(name + ": collection row action hover did not change its background: " + JSON.stringify(hoverStyles));
                   }
                   if (hoverStyles.transform !== "none") {
                     throw new Error(name + ": collection row's main action moved during hover: " + hoverStyles.transform);
                   }
                   await page.mouse.move(0, 0);
                   await page.waitForTimeout(220);
-                  const restoredBackground = await testRow.evaluate(node => getComputedStyle(node).backgroundColor);
-                  if (restoredBackground !== normalRowBackground) {
-                    throw new Error(name + ": collection row did not restore its background after hover");
+                  const restoredBackground = await testRowMain.evaluate(node => getComputedStyle(node).backgroundColor);
+                  if (restoredBackground !== normalMainBackground) {
+                    throw new Error(name + ": collection row action did not restore its background after hover");
                   }
                 }
                 await page.emulateMedia({ reducedMotion: "reduce" });
