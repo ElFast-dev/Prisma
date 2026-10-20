@@ -1,5 +1,3 @@
-## ADDED Requirements
-
 ### Requirement: Ficha desplazable con sinopsis completa
 
 La ficha de película DEBE permitir desplazarse dentro del modal hasta el final de la sinopsis y las secciones posteriores, en móvil y escritorio. El contenido DEBE permanecer accesible aunque la sinopsis sea larga.
