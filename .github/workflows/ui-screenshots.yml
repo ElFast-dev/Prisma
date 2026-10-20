@@ -67,8 +67,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-6") &&
-                  lastUI.rootBg === "#090a0f" &&
+                  lastUI.cssHref.includes("v=ui-20261020-7") &&
+                  lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("ui-serif") &&
                   lastUI.movieCards > 0
                 ) {
