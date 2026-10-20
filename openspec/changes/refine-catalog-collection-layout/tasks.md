@@ -2,10 +2,10 @@
 
 - [x] Inspeccionar los renderizadores actuales de tarjetas, Colección, sheets y ficha.
 - [x] Registrar la jerarquía propuesta, los límites de datos y escenarios observables bajo SDD.
-- [ ] Crear la variante de tarjeta solo-póster accesible para todos los resultados de Descubrir.
-- [ ] Reorganizar selector, pestañas y herramientas de Colección sin cambiar su comportamiento.
-- [ ] Aplicar la cuadrícula reciente 2×2 y pulir estados visuales responsive.
-- [ ] Añadir y ejecutar comprobaciones Playwright para cuadrículas, ficha, controles de Colección y móvil.
+- [x] Crear la variante de tarjeta solo-póster accesible para todos los resultados de Descubrir.
+- [x] Reorganizar selector, pestañas y herramientas de Colección sin cambiar su comportamiento.
+- [x] Aplicar la cuadrícula reciente 2×2 y pulir estados visuales responsive.
+- [x] Añadir comprobaciones Playwright para cuadrículas, ficha, controles de Colección y móvil; pendiente de ejecución final.
 - [ ] Actualizar la especificación vigente tras pasar las pruebas.
 - [ ] Ejecutar y revisar todos los workflows en el commit final.
 - [ ] Aceptar mediante revisión técnica delegada y archivar el expediente después de pasar todos los checks.
