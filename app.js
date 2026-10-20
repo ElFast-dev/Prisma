@@ -1142,7 +1142,7 @@
       let result = 0;
       if (collectionSort === "title") result = String(a.title || "").localeCompare(String(b.title || ""),"es");
       else if (collectionSort === "rating") result = (ratingValue(a) || 0) - (ratingValue(b) || 0);
-      else if (collectionSort === "public") result = (Number(a.voteAverage) || 0) - (Number(b.voteAverage) || 0);
+      else if (collectionSort === "public") result = (hasTrustedTMDBScore(a) ? Number(a.voteAverage) : 0) - (hasTrustedTMDBScore(b) ? Number(b.voteAverage) : 0);
       else if (collectionSort === "runtime") result = (Number(a.runtime) || 0) - (Number(b.runtime) || 0);
       else if (collectionSort === "release") result = dateScore(a.releaseDate) - dateScore(b.releaseDate) || (Number(a.year) || 0) - (Number(b.year) || 0);
       else result = dateScore(latestRecordDate(a)) - dateScore(latestRecordDate(b));
@@ -1180,7 +1180,7 @@
 
   function collectionRow(item, tab) {
     const rating = ratingValue(item);
-    const publicRating = Number(item.voteAverage) > 0 ?
+    const publicRating = hasTrustedTMDBScore(item) ?
       '<span class="collection-score public-score" title="Valoración pública de TMDB"><span aria-hidden="true">★</span> ' + Number(item.voteAverage).toFixed(1) + '</span>' :
       (item.tmdbId ? '<a class="collection-score score-link" href="https://www.themoviedb.org/movie/' + encodeURIComponent(item.tmdbId) + '" target="_blank" rel="noopener noreferrer" aria-label="Consultar puntuación pública de TMDB">↗</a>' : '<span class="collection-score score-muted">—</span>');
     const personalRating = tab === "pending" ? "" :
@@ -1551,6 +1551,13 @@
     return path ? "https://image.tmdb.org/t/p/w185" + path : "";
   }
 
+  function hasTrustedTMDBScore(movie) {
+    const film = movie || {};
+    const average = Number(film.voteAverage);
+    const trustedSource = film.metadataSource === "tmdb" || film.source === "tmdb";
+    return trustedSource && Number.isFinite(average) && average > 0 && average <= 10;
+  }
+
   function formatVoteCount(value) {
     const count = Number(value);
     if (!Number.isSafeInteger(count) || count < 1) return "";
@@ -1571,8 +1578,7 @@
     const criticUrl = "https://www.rottentomatoes.com/search?search=" + encodeURIComponent(title);
     const metacriticUrl = "https://www.metacritic.com/search/" + encodeURIComponent(title) + "/";
     const average = Number(film.voteAverage);
-    const trustedSource = film.metadataSource === "tmdb" || film.source === "tmdb";
-    const hasScore = trustedSource && Number.isFinite(average) && average > 0 && average <= 10;
+    const hasScore = hasTrustedTMDBScore(film);
     const votes = hasScore ? formatVoteCount(film.voteCount) : "";
     const communityMetric = hasScore
       ? '<a class="detail-rating-card" href="' + escapeHTML(tmdbUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Ver la puntuación de la comunidad de ' + escapeHTML(title) + ' en TMDB" title="Puntuación pública de TMDB"><strong>' + average.toFixed(1) + '</strong><span>Nota media</span><small>TMDB' + (votes ? ' · ' + escapeHTML(votes) : '') + '</small></a>'
