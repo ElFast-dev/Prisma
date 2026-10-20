@@ -85,8 +85,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-15") &&
-                  lastUI.appSrc.includes("v=ui-20261020-16") &&
+                  lastUI.cssHref.includes("v=ui-20261020-16") &&
+                  lastUI.appSrc.includes("v=ui-20261020-17") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&

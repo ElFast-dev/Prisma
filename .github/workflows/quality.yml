@@ -34,3 +34,6 @@ jobs:
 
       - name: Test CSV import identity
         run: node scripts/test-catalog-import.mjs
+
+      - name: Test rating-source transparency
+        run: node scripts/test-movie-rating-sources.mjs
