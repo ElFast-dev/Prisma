@@ -27,6 +27,7 @@ const requiredFiles = [
   'scripts/test-movie-rating-sources.mjs',
   'scripts/test-discovery-detail-polish.mjs',
   'scripts/test-model-evaluation.mjs',
+  'scripts/test-cache-versioning.mjs',
   'openspec/changes/archive/2026-10-20-improve-model-validation/proposal.md',
   'openspec/changes/archive/2026-10-20-improve-model-validation/design.md',
   'openspec/changes/archive/2026-10-20-improve-model-validation/tasks.md',

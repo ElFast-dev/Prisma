@@ -33,7 +33,7 @@ Los registros pasan por una normalización común. El motor usa las señales de 
 
 ## Despliegue y caché
 
-El workflow de Pages se activa al hacer push a main o manualmente y publica el contenido estático del repositorio. El service worker mantiene una caché versionada y proporciona una copia del documento para navegación offline cuando existe. Las modificaciones a rutas o nombres de activos deben revisar también el manifiesto, el service worker y las referencias desde HTML.
+El workflow de Pages se activa al hacer push a main o manualmente y publica el contenido estático del repositorio. El service worker mantiene una caché versionada y proporciona una copia del documento para navegación offline cuando existe. Las modificaciones a rutas o nombres de activos deben revisar también el manifiesto, el service worker y las referencias desde HTML. Cuando cambia el JavaScript, se debe incrementar su query string de versión y el nombre de caché del shell; `index.html`, `APP_ASSETS` y las comprobaciones de la interfaz deben declarar el mismo URL para evitar reutilizar código anterior.
 
 ## Restricciones de evolución
 
