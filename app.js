@@ -855,8 +855,11 @@
     if (!root) return;
     $$(".nav-item").forEach(function (button) { button.classList.toggle("active", button.dataset.nav === currentPage); });
     const views = { home: renderHome, catalog: renderCatalog, library: renderLibrary, lab: renderLab, data: renderData };
-    root.innerHTML = (views[currentPage] || renderHome)();
-    if (currentPage === "catalog") renderCatalogResults();
+    root.innerHTML = (views[currentPage] || renderHome)() + renderTMDBAttribution();
+    if (currentPage === "catalog") {
+      renderCatalogResults();
+      renderTMDBResults();
+    }
   }
 
   function openModal(movie, mode) {
@@ -1237,6 +1240,9 @@
     if (["home", "catalog", "library", "lab", "data"].indexOf(page) < 0) return;
     currentPage = page;
     renderApp();
+    if (page === "catalog" && tmdbCredential && tmdbCredential.value) {
+      loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1253,12 +1259,17 @@
     try {
       if (action === "import-json") { $("#jsonImportInput").click(); return; }
       if (action === "import-catalog") { $("#catalogImportInput").click(); return; }
+      if (action === "save-tmdb") { await saveTMDBCredential(); return; }
+      if (action === "test-tmdb") { await testTMDBCredential(); return; }
+      if (action === "remove-tmdb") { await removeTMDBCredential(); return; }
+      if (action === "tmdb-retry") { await loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false); return; }
+      if (action === "tmdb-more") { await loadTMDBPage(tmdbPage + 1, tmdbMode, true); return; }
       if (action === "export-backup") { await exportBackup(); return; }
       if (action === "restore-backup") { $("#backupImportInput").click(); return; }
       if (action === "reset") { await resetAll(); return; }
       if (action === "genre") { activeGenre = button.dataset.genre || "Todos"; renderApp(); return; }
       if (action === "details" || action === "rate") {
-        const movie = findMovie(button.dataset.title);
+        const movie = findMovie(button.dataset.title) || tmdbResults.find(function (item) { return titleKey(item.title) === titleKey(button.dataset.title); });
         if (movie) openModal(movie, action);
         return;
       }
@@ -1285,6 +1296,12 @@
     if (event.target.matches("[data-catalog-search]")) {
       catalogQuery = event.target.value;
       renderCatalogResults();
+      if (tmdbSearchTimer) window.clearTimeout(tmdbSearchTimer);
+      tmdbSearchTimer = window.setTimeout(function () {
+        if (currentPage === "catalog" && tmdbCredential && tmdbCredential.value) {
+          loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
+        }
+      }, 450);
     }
   });
 
@@ -1318,11 +1335,14 @@
           return response.json();
         }),
         dbGet(STATE_KEY),
-        dbGet(CATALOG_KEY)
+        dbGet(CATALOG_KEY),
+        dbGet(TMDB_CREDENTIAL_KEY)
       ]);
       seedCatalog = Array.isArray(results[0]) ? results[0].map(normalizeMovie).filter(Boolean) : [];
       state = ensureState(results[1]);
       customCatalog = Array.isArray(results[2]) ? results[2].map(normalizeMovie).filter(Boolean) : [];
+      tmdbCredential = results[3] && results[3].value ? results[3] : null;
+      pruneTMDBCache();
       combineMovies();
       renderApp();
       if ("serviceWorker" in navigator && window.isSecureContext) {
