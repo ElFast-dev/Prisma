@@ -282,6 +282,10 @@ jobs:
                 await page.locator("#localCatalogResults .movie-card [data-action='details'][data-tmdb-id='990001']").click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".detail-state-actions [data-action='toggle-hidden']").click();
+                await page.waitForFunction(() => {
+                  const button = document.querySelector(".detail-state-actions [data-action='toggle-hidden']");
+                  return button && button.innerText.trim() === "Mostrar en Prisma";
+                }, null, { timeout: 10000 });
                 const hiddenActionLabel = (await page.locator(".detail-state-actions [data-action='toggle-hidden']").innerText()).trim();
                 if (hiddenActionLabel !== "Mostrar en Prisma") {
                   throw new Error(name + ": the selected remake was not marked hidden");
