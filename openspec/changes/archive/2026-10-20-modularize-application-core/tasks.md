@@ -17,6 +17,7 @@
 - [x] Actualizar `app.js` para importar módulos y conservar la composición y el comportamiento existentes.
 
 ## Calidad y publicación
+- [x] Separar las vistas de búsqueda, atribución y sincronización de TMDB del controlador principal.
 - [x] Aislar el guardado, prueba y retirada de la credencial TMDB en su propio módulo de acciones.
 - [x] Extraer los listeners globales y delegación de acciones a un módulo de eventos con dependencias explícitas.
 - [x] Separar la orquestación de importación, exportación, restauración y restablecimiento del coordinador de la aplicación.

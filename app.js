@@ -13,6 +13,7 @@ import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1"
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
 import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261020-1";
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-1";
+import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -266,6 +267,28 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   });
   const { saveTMDBCredential, testTMDBCredential, removeTMDBCredential } = tmdbSettingsActions;
 
+  const tmdbViews = createTMDBViews({
+    get $() { return $; },
+    get pendingHistoryTMDBCount() { return pendingHistoryTMDBCount; },
+    get tmdbCredential() { return tmdbCredential; },
+    get tmdbHistorySync() { return tmdbHistorySync; },
+    get infoButton() { return infoButton; },
+    get escapeHTML() { return escapeHTML; },
+    get TMDB_LOGO_URL() { return TMDB_LOGO_URL; },
+    get tmdbMode() { return tmdbMode; },
+    get catalogQuery() { return catalogQuery; },
+    get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
+    get isInHistory() { return isInHistory; },
+    get isHidden() { return isHidden; },
+    get tmdbLoading() { return tmdbLoading; },
+    get tmdbError() { return tmdbError; },
+    get tmdbResults() { return tmdbResults; },
+    get movieGrid() { return movieGrid; },
+    get tmdbPage() { return tmdbPage; },
+    get tmdbTotalPages() { return tmdbTotalPages; }
+  });
+  const { renderTMDBHistoryPanel, renderTMDBAttribution, renderTMDBResults } = tmdbViews;
+
      function pruneTMDBCache() {
     const limit = 1000 * 60 * 60 * 24 * 179;
     const now = Date.now();
@@ -411,24 +434,6 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     } else customCatalog.push(stored);
   }
 
-  function renderTMDBHistoryPanel() {
-    const pending = pendingHistoryTMDBCount();
-    const connected = Boolean(tmdbCredential && tmdbCredential.value);
-    const status = tmdbHistorySync.running ?
-      "Completando " + tmdbHistorySync.done.toLocaleString("es-PA") + " de " + tmdbHistorySync.total.toLocaleString("es-PA") :
-      (tmdbHistorySync.finishedAt ? tmdbHistorySync.updated.toLocaleString("es-PA") + " actualizadas · " + tmdbHistorySync.failed.toLocaleString("es-PA") + " sin coincidencia" : "");
-    const percent = tmdbHistorySync.total ? Math.round(tmdbHistorySync.done / tmdbHistorySync.total * 100) : 0;
-    const button = !connected ?
-      '<button class="btn btn-secondary" type="button" data-nav="data">Conectar TMDB</button>' :
-      '<button class="btn btn-primary" type="button" data-action="enrich-history" ' + (tmdbHistorySync.running || pending === 0 ? "disabled" : "") + '>' +
-      (tmdbHistorySync.running ? "Completando…" : (pending === 0 ? "Todo actualizado" : "Completar " + pending.toLocaleString("es-PA") + " títulos")) + '</button>';
-    return '<section class="panel tmdb-history-panel"><div class="panel-head"><div class="panel-title-row"><h3>Carátulas y datos</h3>' + infoButton("metadata","Información sobre carátulas y datos") + '</div><span class="badge ' + (connected ? "badge-mint" : "") + '">' + (connected ? "TMDB conectado" : "TMDB desconectado") + '</span></div>' +
-      '<div class="metadata-action-row"><span>' + pending.toLocaleString("es-PA") + ' por completar</span><div class="hero-actions">' + button + '</div></div>' +
-      (tmdbHistorySync.running ? '<progress class="tmdb-progress" max="100" value="' + percent + '">' + percent + '%</progress><p class="metadata-progress-label">' + escapeHTML(status) + ' · ' + percent + '%</p>' : (status ? '<p class="metadata-progress-label">' + escapeHTML(status) + '</p>' : "")) +
-      '</section>';
-  }
-
-
   async function enrichRatedHistoryWithTMDB() {
     if (!tmdbCredential || !tmdbCredential.value) {
       toast("Conecta TMDB en Ajustes para cargar las carátulas y completar los datos.",true);
@@ -505,44 +510,6 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     }
   }
 
-
-  function renderTMDBAttribution() {
-    return '<section class="tmdb-attribution" aria-label="Atribución de TMDB"><a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="' + TMDB_LOGO_URL + '" alt="TMDB" loading="lazy"></a><div><strong>Datos e imágenes de The Movie Database (TMDB)</strong><p>Este producto utiliza TMDB y las API de TMDB, pero no está respaldado, certificado ni aprobado por TMDB.</p><a href="https://www.themoviedb.org/about/logos-attribution" target="_blank" rel="noopener noreferrer">Logos y atribución oficial ↗</a></div></section>';
-  }
-
-  function renderTMDBResults() {
-    const status = $("#tmdbStatus");
-    const target = $("#tmdbResults");
-    if (!status || !target) return;
-    if (!tmdbCredential || !tmdbCredential.value) {
-      status.innerHTML = '<button class="btn btn-secondary btn-small" type="button" data-nav="data">Conectar con TMDB</button>';
-      target.innerHTML = '';
-      return;
-    }
-    const label = tmdbMode === "search" ? "Resultados para «" + catalogQuery.trim() + "»" : "Películas populares en TMDB";
-    const visibleResults = uniqueDiscoveryMovies(tmdbResults).filter(function (movie) {
-      return !isInHistory(movie.title,movie.tmdbId) && !isHidden(movie.title,movie.tmdbId);
-    });
-    status.textContent = (tmdbLoading ? "Consultando TMDB…" : (tmdbError ? "No se pudo completar la consulta." : label)) +
-      (tmdbResults.length && !tmdbLoading && !tmdbError ? " · " + visibleResults.length + " disponibles" : "");
-    if (tmdbLoading && !tmdbResults.length) {
-      target.innerHTML = '<div class="loading-state"><span class="spinner"></span><p>Buscando películas…</p></div>';
-      return;
-    }
-    if (tmdbError) {
-      target.innerHTML = '<div class="notice"><strong>Error de TMDB.</strong> ' + escapeHTML(tmdbError) + '<div style="margin-top:10px"><button class="btn btn-secondary btn-small" type="button" data-action="tmdb-retry">Volver a intentar</button></div></div>';
-      return;
-    }
-    if (!tmdbResults.length) {
-      target.innerHTML = '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No hay resultados</h3><p>Prueba otra búsqueda.</p></div>';
-      return;
-    }
-    const resultsMarkup = visibleResults.length
-      ? movieGrid(visibleResults)
-      : '<div class="empty-inline discovery-filtered-empty"><strong>No hay películas nuevas en estos resultados.</strong><span>Los títulos vistos y ocultos se omiten de Descubrir.</span></div>';
-    target.innerHTML = resultsMarkup +
-      (tmdbPage < tmdbTotalPages ? '<div class="load-more-wrap"><button class="btn btn-secondary" type="button" data-action="tmdb-more">' + (tmdbLoading ? "Cargando…" : "Cargar más") + '</button></div>' : "");
-  }
 
   async function loadTMDBPage(page, mode, append) {
     if (!tmdbCredential || !tmdbCredential.value) {

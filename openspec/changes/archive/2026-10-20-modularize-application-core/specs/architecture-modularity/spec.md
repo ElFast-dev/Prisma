@@ -160,3 +160,14 @@ El almacenamiento, prueba y retirada de la credencial TMDB DEBEN vivir en un mó
 - DADO que el usuario introduce una credencial para TMDB
 - CUANDO comprueba la conexión
 - ENTONCES la acción utiliza el cliente TMDB compartido y muestra el resultado mediante las dependencias de interfaz recibidas.
+
+
+### Requirement: Vistas de TMDB aisladas
+
+La presentación de resultados, atribución y estado de sincronización de TMDB DEBE residir en un módulo de vistas y recibir mediante dependencias explícitas el estado remoto y las utilidades visuales.
+
+#### Scenario: Se muestran resultados de TMDB
+
+- DADO que hay resultados, carga, error o ausencia de credenciales para TMDB
+- CUANDO se actualiza el navegador de películas
+- ENTONCES el módulo de vistas representa el estado correcto sin poseer la lógica de consulta remota.

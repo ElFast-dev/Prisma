@@ -33,6 +33,7 @@ const requiredFiles = [
   'js/import-export/actions.js',
   'js/app/event-handlers.js',
   'js/tmdb/settings-actions.js',
+  'js/ui/tmdb-views.js',
   'js/tmdb/client.js',
   'scripts/test-modular-architecture.mjs',
   'scripts/test-tmdb-client.mjs',
