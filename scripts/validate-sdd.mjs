@@ -18,7 +18,11 @@ const requiredFiles = [
   'openspec/changes/adopt-sdd-workflow/proposal.md',
   'openspec/changes/adopt-sdd-workflow/design.md',
   'openspec/changes/adopt-sdd-workflow/tasks.md',
-  'openspec/changes/adopt-sdd-workflow/specs/development-workflow/spec.md'
+  'openspec/changes/adopt-sdd-workflow/specs/development-workflow/spec.md',
+  'openspec/changes/fix-tmdb-csv-identity/proposal.md',
+  'openspec/changes/fix-tmdb-csv-identity/design.md',
+  'openspec/changes/fix-tmdb-csv-identity/tasks.md',
+  'openspec/changes/fix-tmdb-csv-identity/specs/catalog/spec.md'
 ];
 
 const errors = [];
