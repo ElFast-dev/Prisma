@@ -621,7 +621,7 @@
     const target = $("#tmdbResults");
     if (!status || !target) return;
     if (!tmdbCredential || !tmdbCredential.value) {
-      status.innerHTML = 'Para explorar el catálogo completo, configura tus credenciales desde <button class="btn btn-secondary btn-small" type="button" data-nav="data">Datos → Conectar con TMDB</button>.';
+      status.innerHTML = '<p class="kicker" style="margin:0">Para explorar el catálogo completo, conecta tus credenciales personales de TMDB.</p><div style="margin-top:10px"><button class="btn btn-secondary btn-small" type="button" data-nav="data">Conectar con TMDB</button></div>';
       target.innerHTML = '<div class="empty-state"><div class="empty-icon">⌕</div><h3>Busca entre películas de TMDB</h3><p>Conectar la API permite buscar títulos, sinopsis, géneros y carteles en línea. Tu historial personal seguirá local.</p></div>';
       return;
     }
