@@ -2,7 +2,7 @@
 
 ## Estado
 
-En implementación bajo SDD. Se cerrará cuando los checks de CI pasen y la especificación principal refleje el comportamiento aceptado.
+Implementado y verificado automáticamente. Pendiente de revisión de la PR; no se archivará antes de su aceptación.
 
 ## Problema observado
 
