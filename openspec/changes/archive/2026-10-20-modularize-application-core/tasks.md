@@ -39,5 +39,6 @@
 - [x] Eliminar las implementaciones duplicadas del controlador modal y validar que la navegación/puntuación usen la API extraída.
 - [x] Enlazar `fetch` al contexto del navegador al inyectarlo en el ciclo de vida.
 - [x] Probar la construcción de los factories extraídos de TMDB para detectar exports que dependen de funciones locales.
-- [ ] Ejecutar todos los checks de CI y verificar la web publicada en escritorio y móvil.
+- [x] Ejecutar la validación SDD, las pruebas funcionales y la verificación Playwright de escritorio/móvil sobre la vista previa del PR.
+- [ ] Tras la fusión, verificar GitHub Pages publicado en escritorio y móvil y registrar el resultado final.
 - [ ] Archivar el expediente al cumplir los criterios de aceptación.

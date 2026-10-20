@@ -9,7 +9,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | Ruta | Responsabilidad |
 | --- | --- |
 | `index.html` | Documento, navegación, puntos de montaje y entrada ES module versionada. |
-| `app.js` | Composición de la app, estado de interfaz, controladores de vista y coordinación de acciones aún en migración. No debe volver a absorber lógica de dominio extraída. |
+| `app.js` | Punto de entrada y composición: mantiene el estado global de interfaz e inyecta dependencias entre los módulos. Los renderizadores, acciones de dominio, ciclo de vida y servicios principales viven en módulos dedicados. |
 | `js/core/movie-utils.js` | Identidad y normalización de películas, listas, validación de notas y escape de texto. |
 | `js/core/state-model.js` | Estado inicial y normalización del estado persistido/importado. |
 | `js/core/storage.js` | IndexedDB y fallback a localStorage. |
@@ -54,7 +54,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 
 El código nuevo debe residir en un módulo con una responsabilidad concreta. El motor, los analizadores y las utilidades puras no deben consultar el DOM, escribir almacenamiento ni depender de estado de interfaz. Las dependencias cambiantes se inyectan como funciones. La capa de aplicación coordina efectos secundarios y conecta los módulos.
 
-La modularización es progresiva para reducir el riesgo de regresiones: ya están extraídas las utilidades de dominio, la persistencia, el modelo del estado, el motor y los analizadores; las vistas, eventos y la integración TMDB siguen siendo áreas de migración. No se debe añadir otra funcionalidad de producto hasta completar esa migración por responsabilidades y añadir pruebas de los límites.
+La extracción de responsabilidades de este expediente está completa: dominio, persistencia, modelos de catálogo y colección, recomendador, vistas de página y modales, eventos, acciones de usuario, importación/exportación, runtime, ciclo de vida e integración TMDB tienen módulos definidos e interfaces explícitas. `app.js` queda como raíz de composición y mantiene el estado compartido necesario para conectar esas piezas. Las pruebas deben seguir protegiendo esos límites; la funcionalidad nueva debe colocarse en el módulo que corresponda, no volver a concentrarse en la entrada.
 
 ## Estado y privacidad
 
