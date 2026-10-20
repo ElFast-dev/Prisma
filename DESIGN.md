@@ -10,7 +10,7 @@ Tres destinos en la barra principal: **Progreso**, **Descubrir** y **Colección*
 Muestra el número real de películas vistas, valoradas y pendientes, además de la media personal. Le siguen tendencias de género a partir de las valoraciones registradas y actividad reciente. Los indicadores describen los datos locales: no se muestran valores de ejemplo como si fueran del usuario.
 
 ## Descubrir
-Primero aparecen las recomendaciones personales y luego el buscador remoto de TMDB y el catálogo local. Las sugerencias se calculan con el motor explicable actual y se identifican como estimaciones. Los títulos ocultos, vistos o pendientes se excluyen de la selección de recomendaciones. Una búsqueda global cambia a Descubrir y aplica el término tanto al catálogo local como, cuando TMDB está conectado, a la consulta remota.
+Primero aparecen las recomendaciones personales y luego el buscador remoto de TMDB y el catálogo local. Las sugerencias se calculan con el motor explicable actual y se identifican como estimaciones. Los géneros tienen más influencia directa que etiquetas aisladas; metadatos desconocidos acercan la nota a la media del perfil y la confianza depende de la cobertura real de señales. Los títulos ocultos, vistos o pendientes se excluyen de la selección de recomendaciones. Una búsqueda global cambia a Descubrir y aplica el término tanto al catálogo local como, cuando TMDB está conectado, a la consulta remota.
 
 ## Colección
 La pantalla ofrece los modos **Películas** y **Listas**. Películas contiene **Historial**, **Pendientes** y **Ocultos**. La lupa busca exclusivamente en la colección; el control de orden, la selección múltiple de géneros y la alternancia entre vista de lista/compacta son controles independientes.

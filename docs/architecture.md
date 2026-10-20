@@ -29,7 +29,7 @@ TMDB es opcional y se consulta desde el navegador después de configurar una cre
 
 ## Catálogo y recomendador
 
-Los registros pasan por una normalización común. El motor usa las señales de géneros y etiquetas disponibles en los registros personales o en el catálogo para construir un perfil, producir predicciones acotadas entre 1 y 10 y redactar una explicación. La información insuficiente debe seguir siendo visible como limitación, no disimularse. El laboratorio realiza validación leave-one-out sobre valoraciones con metadatos enlazados, respeta los IDs TMDB de cada película retenida y compara el MAE con una referencia basada en la media del pliegue de entrenamiento. Esta medida es experimental y no sustituye una evaluación externa.
+Los registros pasan por una normalización común. El motor usa las señales de géneros y etiquetas disponibles en los registros personales o en el catálogo para construir un perfil, producir predicciones acotadas entre 1 y 10 y redactar una explicación. La información insuficiente debe seguir siendo visible como limitación, no disimularse. Las predicciones combinan géneros con mayor influencia que etiquetas dispersas y amortiguan el ajuste hacia la media del perfil cuando la candidata tiene características desconocidas. El nivel de confianza depende de la cobertura y el soporte de las señales. El laboratorio realiza validación leave-one-out sobre valoraciones con metadatos enlazados, respeta los IDs TMDB de cada película retenida y compara el MAE con una referencia basada en la media del pliegue de entrenamiento. Esta medida es experimental y no sustituye una evaluación externa.
 
 ## Despliegue y caché
 
