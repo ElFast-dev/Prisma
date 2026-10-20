@@ -866,7 +866,7 @@
       return {
         name: feature.replace(/^género: |^tema: /, ""),
         weight: item.weight,
-        influence: item.weight * signalWeight,
+        influence: item.weight * signalWeight / Math.max(1, features.length),
         signalWeight: signalWeight,
         count: item.count,
         mean: item.mean,
@@ -875,7 +875,7 @@
     }).filter(Boolean);
     const coverage = features.length ? matches.length / features.length : 0;
     const weighted = features.length
-      ? matches.reduce(function (sum, item) { return sum + item.influence; }, 0) / features.length
+      ? matches.reduce(function (sum, item) { return sum + item.influence; }, 0)
       : 0;
     const freshFeatures = features.filter(function (feature) { return !profile.features.has(feature); }).length;
     const score = Math.max(1, Math.min(10, profile.average + weighted * 2.3));
