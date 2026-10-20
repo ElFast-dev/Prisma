@@ -23,7 +23,7 @@ const hrefs = matches.map(match => match[1]);
 for (let index = 0; index < paths.length; index += 1) {
   const expectedPath = './' + paths[index];
   const url = new URL(hrefs[index], 'https://prisma.invalid/');
-  assert.equal(url.pathname, expectedPath, 'Orden de estilos incorrecto en la posición ' + (index + 1));
+  assert.equal(url.pathname, expectedPath.slice(1), 'Orden de estilos incorrecto en la posición ' + (index + 1));
   assert.equal(url.searchParams.get('v'), 'ui-20261020-18', paths[index] + ' necesita versión compartida');
   assert.ok(shell.has(expectedPath + '?v=ui-20261020-18'), paths[index] + ' debe estar cacheada con la URL exacta');
   const source = await readFile(paths[index], 'utf8');
