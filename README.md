@@ -36,7 +36,7 @@ Los archivos y rutas son relativos para funcionar en `https://elfast-dev.github.
 Tras importar el JSON y conectar TMDB, abre **Laboratorio → Enlazar mi historial con TMDB** y pulsa el botón de enriquecimiento. Prisma usa el `tmId` del JSON para solicitar los detalles de cada película; para IDs no válidos intenta una búsqueda exacta por título y año. Las series viven en otra sección del archivo y no se importan como películas. Las notas y emociones no se alteran. El proceso se muestra con progreso y guarda resultados en el navegador cada cinco películas para reducir pérdidas si se cierra la pestaña.
 
 ## Ampliar el catálogo
-Puedes importar un CSV con columnas como `title`, `year`, `genres`, `tags` y `overview`, o el formato MovieLens `movieId,title,genres`. Para MovieLens, el archivo pequeño `movies.csv` es suficiente para aportar títulos y géneros; no es necesario importar su archivo de valoraciones. Comprueba y respeta las condiciones de licencia del conjunto de datos que elijas. En este proyecto la importación ocurre en tu navegador.
+Puedes importar un CSV con columnas como `title`, `year`, `genres`, `tags`, `overview` y, cuando la fuente lo proporcione, `tmdb_id` o `tmdbid` para preservar la identidad TMDB. Las columnas genéricas `id`, `movieId` y `movie_id` se conservan como identificadores de origen; no se interpretan como IDs TMDB. Si la fuente no incluye un ID TMDB válido, los títulos repetidos pueden deduplicarse por título normalizado. Para MovieLens, el archivo pequeño `movies.csv` es suficiente para aportar títulos y géneros; no es necesario importar su archivo de valoraciones. Comprueba y respeta las condiciones de licencia del conjunto de datos que elijas. En este proyecto la importación ocurre en tu navegador.
 
 ## Privacidad y límites
 - Las valoraciones y emociones se guardan en el almacenamiento local de tu navegador (IndexedDB/localStorage de respaldo).
@@ -46,3 +46,20 @@ Puedes importar un CSV con columnas como `title`, `year`, `genres`, `tags` y `ov
 
 ## Desarrollo
 No hay dependencias npm. Es HTML, CSS y JavaScript nativo, por lo que puedes editarlo desde un navegador/entorno de desarrollo en Android y publicarlo como archivos estáticos.
+
+## Desarrollo guiado por especificaciones (SDD)
+
+Prisma mantiene sus reglas de producto y arquitectura en `docs/`, las especificaciones de comportamiento en `openspec/specs/` y cada cambio pendiente en `openspec/changes/<slug>/`.
+
+Antes de modificar una funcionalidad, crea un expediente con propuesta, escenarios de aceptación, diseño y tareas. Implementa únicamente el alcance descrito, ejecuta la verificación apropiada, actualiza las especificaciones vigentes y archiva el expediente solo cuando se haya comprobado su convergencia. El procedimiento completo está en `openspec/project.md`.
+
+### Checks automáticos
+
+El workflow `.github/workflows/quality.yml` ejecuta:
+
+- `node --check app.js` y `node --check sw.js`, para detectar errores de sintaxis JavaScript.
+- `node scripts/validate-sdd.mjs`, para validar los artefactos SDD, sus requisitos y sus escenarios.
+- `node scripts/test-catalog-import.mjs`, para probar la identidad TMDB y la deduplicación del importador CSV con datos sintéticos.
+
+Estos checks no sustituyen pruebas de comportamiento, regresión ni comprobaciones visuales del navegador. Los cambios funcionales deben añadir la cobertura necesaria para sus riesgos. No subas historiales personales, archivos de copia de seguridad ni credenciales a GitHub.
+

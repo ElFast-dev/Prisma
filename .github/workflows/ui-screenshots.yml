@@ -84,7 +84,7 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-12") &&
+                  lastUI.cssHref.includes("v=ui-20261020-13") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
@@ -180,10 +180,120 @@ jobs:
                 await page.locator(".collection-mode-switch [data-mode='movies']").click();
                 await page.locator(".collection-tabs [data-tab='history']").click();
                 await page.locator(".collection-row-main[data-title='Prisma Test Seen']").waitFor({ state: "visible", timeout: 10000 });
+
+                const testRow = page.locator(".collection-row:has(.collection-row-main[data-title='Prisma Test Seen'])");
+                const testRowMain = testRow.locator(".collection-row-main");
+                const hoverSupported = await page.evaluate(() => matchMedia("(hover: hover) and (pointer: fine)").matches);
+                const normalMainBackground = await testRowMain.evaluate(node => getComputedStyle(node).backgroundColor);
+                if (hoverSupported) {
+                  await testRowMain.hover();
+                  await page.waitForTimeout(220);
+                  const hoverStyles = await testRowMain.evaluate(node => {
+                    const row = node.closest(".collection-row");
+                    return {
+                      background: getComputedStyle(node).backgroundColor,
+                      transform: getComputedStyle(node).transform,
+                      mainHovered: node.matches(":hover"),
+                      rowHovered: Boolean(row && row.matches(":hover")),
+                      hoverMedia: matchMedia("(hover: hover) and (pointer: fine)").matches
+                    };
+                  });
+                  if (!hoverStyles.background || hoverStyles.background === normalMainBackground) {
+                    throw new Error(name + ": collection row action hover did not change its background: " + JSON.stringify(hoverStyles));
+                  }
+                  if (hoverStyles.transform !== "none") {
+                    throw new Error(name + ": collection row's main action moved during hover: " + hoverStyles.transform);
+                  }
+                  await page.mouse.move(0, 0);
+                  await page.waitForTimeout(220);
+                  const restoredBackground = await testRowMain.evaluate(node => getComputedStyle(node).backgroundColor);
+                  if (restoredBackground !== normalMainBackground) {
+                    throw new Error(name + ": collection row action did not restore its background after hover");
+                  }
+                }
+                await page.emulateMedia({ reducedMotion: "reduce" });
+                const reducedMotionStyles = await testRow.evaluate(node => {
+                  const style = getComputedStyle(node);
+                  return { duration: style.transitionDuration, property: style.transitionProperty };
+                });
+                if (reducedMotionStyles.duration !== "0s" && reducedMotionStyles.property !== "none") {
+                  throw new Error(name + ": collection row still animates with reduced motion: " + JSON.stringify(reducedMotionStyles));
+                }
+                await page.emulateMedia({ reducedMotion: "no-preference" });
+
                 await page.locator(".collection-tabs [data-tab='pending']").click();
                 await page.locator(".collection-row-main[data-title='Prisma Test Pending']").waitFor({ state: "visible", timeout: 10000 });
                 if ((await page.locator(".collection-page").innerText()).includes("Prisma Series Must Not Import")) {
                   throw new Error(name + ": a series was included in the movie import");
+                }
+
+                await page.locator(".topbar [data-nav='data']").click();
+                await page.locator("#catalogImportInput").setInputFiles({
+                  name: "prisma-remake-test.csv",
+                  mimeType: "text/csv",
+                  buffer: Buffer.from(
+                    "movieId,title,year,tmdb_id,genres\n" +
+                    "50001,Prisma CSV Remake Fixture,1998,990001,Drama\n" +
+                    "50002,Prisma CSV Remake Fixture,2024,990002,Action\n" +
+                    "60001,Prisma MovieLens Namespace Fixture (2001),2001,,Drama"
+                  )
+                });
+                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 3 títulos importados."));
+
+                async function readCustomCatalogFixture() {
+                  return page.evaluate(() => new Promise((resolve, reject) => {
+                    const open = indexedDB.open("prisma-local-v1", 1);
+                    open.onerror = () => reject(open.error || new Error("Could not open Prisma database"));
+                    open.onsuccess = () => {
+                      const db = open.result;
+                      const request = db.transaction("kv", "readonly").objectStore("kv").get("catalogCustom");
+                      request.onerror = () => reject(request.error || new Error("Could not read the custom catalog"));
+                      request.onsuccess = () => {
+                        resolve((request.result && Array.isArray(request.result.value) ? request.result.value : [])
+                          .filter(movie => /Prisma (CSV Remake|MovieLens Namespace) Fixture/.test(movie.title))
+                          .map(movie => ({ title: movie.title, tmdbId: movie.tmdbId || null, id: movie.id, year: movie.year, genres: movie.genres || [] }))
+                        );
+                        db.close();
+                      };
+                    };
+                  }));
+                }
+
+                const importedFixture = await readCustomCatalogFixture();
+                const remakes = importedFixture.filter(movie => movie.title === "Prisma CSV Remake Fixture");
+                const tmdbIds = remakes.map(movie => movie.tmdbId).sort();
+                if (remakes.length !== 2 || JSON.stringify(tmdbIds) !== JSON.stringify(["990001", "990002"])) {
+                  throw new Error(name + ": CSV import collapsed remakes with distinct TMDB IDs: " + JSON.stringify(importedFixture));
+                }
+                const movieLensRow = importedFixture.find(movie => movie.title === "Prisma MovieLens Namespace Fixture");
+                if (!movieLensRow || movieLensRow.tmdbId || String(movieLensRow.id) !== "60001") {
+                  throw new Error(name + ": a generic source ID was incorrectly treated as a TMDB ID: " + JSON.stringify(movieLensRow));
+                }
+
+                await page.locator("[data-global-search]").fill("Prisma CSV Remake Fixture");
+                await page.waitForFunction(() => document.querySelectorAll("#localCatalogResults .movie-card").length === 2);
+                const displayedRemakeIds = await page.locator("#localCatalogResults .movie-card [data-action='details']")
+                  .evaluateAll(nodes => nodes.map(node => node.getAttribute("data-tmdb-id")).sort());
+                if (JSON.stringify(displayedRemakeIds) !== JSON.stringify(["990001", "990002"])) {
+                  throw new Error(name + ": the combined catalog did not display both distinct TMDB identities: " + JSON.stringify(displayedRemakeIds));
+                }
+
+                await page.locator(".topbar [data-nav='data']").click();
+                await page.locator("#catalogImportInput").setInputFiles({
+                  name: "prisma-remake-reimport-test.csv",
+                  mimeType: "text/csv",
+                  buffer: Buffer.from("movieId,title,year,tmdb_id,genres\n50001,Prisma CSV Remake Fixture,1998,990001,Comedy")
+                });
+                await page.waitForFunction(() => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 1 títulos importados."));
+                const reimportedFixture = await readCustomCatalogFixture();
+                const reimportedRemakes = reimportedFixture.filter(movie => movie.title === "Prisma CSV Remake Fixture");
+                const reimportedIds = reimportedRemakes.map(movie => movie.tmdbId).sort();
+                const sameIdentity = reimportedRemakes.find(movie => movie.tmdbId === "990001");
+                if (reimportedRemakes.length !== 2 || JSON.stringify(reimportedIds) !== JSON.stringify(["990001", "990002"])) {
+                  throw new Error(name + ": reimport created or removed a remake identity: " + JSON.stringify(reimportedFixture));
+                }
+                if (!sameIdentity || !sameIdentity.genres.includes("Drama") || !sameIdentity.genres.includes("Comedia")) {
+                  throw new Error(name + ": reimport did not merge metadata into TMDB identity 990001: " + JSON.stringify(sameIdentity));
                 }
               } finally {
                 await context.close();

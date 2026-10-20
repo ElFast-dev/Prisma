@@ -1,0 +1,36 @@
+name: SDD and static quality
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate SDD and JavaScript syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: node --check app.js
+
+      - name: Check service worker syntax
+        run: node --check sw.js
+
+      - name: Validate SDD documents
+        run: node scripts/validate-sdd.mjs
+
+      - name: Test CSV import identity
+        run: node scripts/test-catalog-import.mjs

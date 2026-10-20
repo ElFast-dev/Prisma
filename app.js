@@ -2110,22 +2110,29 @@
     const genreIndex = column(["genres", "genre"]);
     const tagsIndex = column(["tags", "keywords", "labels"]);
     const overviewIndex = column(["overview", "plot", "description", "synopsis"]);
-    const idIndex = column(["movieid", "movie_id", "id", "tmdbid", "tmdb_id"]);
+    const idIndex = column(["movieid", "movie_id", "id"]);
+    const tmdbIdIndex = column(["tmdbid", "tmdb_id"]);
     const catalogRows = [];
     const seen = new Set();
     for (let i = 1; i < lines.length; i += 1) {
       const values = parseCSVLine(lines[i], delimiter);
       const title = values[titleIndex] ? values[titleIndex].trim() : "";
       if (!title) continue;
-      const key = titleKey(title);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
       let year = yearIndex >= 0 ? Number(values[yearIndex]) || null : null;
       const match = title.match(/\(((?:19|20)\d{2})\)\s*$/);
       if (!year && match) year = Number(match[1]);
+      const cleanTitle = title.replace(/\s*\(((?:19|20)\d{2})\)\s*$/, "");
+      const rawTmdbId = tmdbIdIndex >= 0 ? String(values[tmdbIdIndex] || "").trim() : "";
+      const numericTmdbId = Number(rawTmdbId);
+      const tmdbId = /^\d+$/.test(rawTmdbId) && Number.isSafeInteger(numericTmdbId) && numericTmdbId > 0 ? String(numericTmdbId) : null;
+      const normalizedTitle = titleKey(cleanTitle);
+      const key = tmdbId ? "tmdb:" + tmdbId : "title:" + normalizedTitle;
+      if (!normalizedTitle || seen.has(key)) continue;
+      seen.add(key);
       catalogRows.push({
-        id: idIndex >= 0 && values[idIndex] ? String(values[idIndex]) : key,
-        title: title.replace(/\s*\(((?:19|20)\d{2})\)\s*$/, ""),
+        id: idIndex >= 0 && values[idIndex] ? String(values[idIndex]) : (tmdbId || normalizedTitle),
+        tmdbId: tmdbId,
+        title: cleanTitle,
         year: year,
         genres: genreIndex >= 0 ? splitList(values[genreIndex]).filter(function (genre) { return genre.toLowerCase() !== "(no genres listed)"; }).map(displayGenre) : [],
         tags: tagsIndex >= 0 ? splitList(values[tagsIndex]) : [],
@@ -2140,15 +2147,19 @@
 
   async function importCatalogCSV(file) {
     const parsed = parseCatalogCSV(await file.text());
-    const map = new Map(customCatalog.map(function (movie) { return [titleKey(movie.title), movie]; }));
+    const map = new Map(customCatalog.map(function (movie) { return [movieIdentityKey(movie), movie]; }));
     parsed.forEach(function (movie) {
-      const key = titleKey(movie.title);
+      const key = movieIdentityKey(movie);
       const old = map.get(key);
       map.set(key, old ? {
-        id: old.id || movie.id, title: old.title, year: old.year || movie.year,
+        id: old.id || movie.id,
+        tmdbId: movieTmdbId(old) || movieTmdbId(movie) || null,
+        title: old.title,
+        year: old.year || movie.year,
         genres: uniqueStrings((old.genres || []).concat(movie.genres || [])),
         tags: uniqueStrings((old.tags || []).concat(movie.tags || [])),
-        overview: old.overview || movie.overview, source: "csv"
+        overview: old.overview || movie.overview,
+        source: "csv"
       } : movie);
     });
     customCatalog = Array.from(map.values());
