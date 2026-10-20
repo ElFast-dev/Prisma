@@ -45,6 +45,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `styles/catalog.css` | Tarjetas poster-first de Descubrir. |
 | `styles/collection-content.css` | Jerarquía del contenido de colección. |
 | `styles/movie-details.css` | Ajustes de ficha y puntuaciones externas. |
+| `styles/prisma-design-system.css` | Tokens visuales finales, estados de marca y respeto global del movimiento reducido. |
 | `data/catalog.json` | Catálogo de muestra. |
 | `assets/prisma.svg` | Identidad gráfica. |
 | `manifest.webmanifest` | Metadatos PWA. |
