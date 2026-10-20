@@ -23,6 +23,7 @@ const requiredFiles = [
   'js/recommendations/engine.js',
   'js/catalog/csv-parser.js',
   'js/import-export/personal-data.js',
+  'js/tmdb/client.js',
   'scripts/test-modular-architecture.mjs',
   'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/proposal.md',
   'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/design.md',

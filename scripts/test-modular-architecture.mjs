@@ -10,7 +10,8 @@ const files = [
   'js/recommendations/features.js',
   'js/recommendations/engine.js',
   'js/catalog/csv-parser.js',
-  'js/import-export/personal-data.js'
+  'js/import-export/personal-data.js',
+  'js/tmdb/client.js'
 ];
 const app = await readFile(resolve(root, 'app.js'), 'utf8');
 for (const file of files) {
@@ -29,6 +30,9 @@ for (const file of files) {
 assert.ok(!app.includes('function parseCatalogCSV('));
 assert.ok(!app.includes('function movieMetadataFromJSON('));
 assert.ok(!app.includes('function predictRating('));
+assert.ok(!app.includes('async function tmdbRequest('));
+assert.ok(!app.includes('function fromTMDB('));
+assert.ok(app.includes('createTMDBClient('));
 assert.ok(app.includes('createRecommendationEngine('));
 assert.ok(app.startsWith('import '));
 console.log('Arquitectura modular correcta: ' + files.length + ' módulos presentes, dependencias explícitas y lógica de dominio separada del DOM.');

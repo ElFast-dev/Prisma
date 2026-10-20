@@ -12,6 +12,16 @@ El código de cliente DEBE organizar las responsabilidades de dominio, persisten
 - CUANDO se implementa el cambio
 - ENTONCES la lógica pertinente se modifica en el módulo de dominio y se prueba sin necesitar el DOM ni el estado visual.
 
+### Requirement: Integraciones externas aisladas
+
+Las integraciones externas DEBEN residir en módulos propios que gestionen protocolo, autenticación y transformación de respuestas; la interfaz DEBE consumir una API explícita y conservar la responsabilidad de coordinar acciones y estado visual.
+
+#### Scenario: Error del servicio externo
+
+- DADO que TMDB devuelve un error HTTP o la credencial es inválida
+- CUANDO la aplicación solicita datos mediante el cliente modular
+- ENTONCES el módulo convierte la respuesta en un error comprensible y la capa de aplicación decide cómo comunicarlo sin que vistas y componentes deban construir peticiones HTTP.
+
 ### Requirement: Pruebas por API pública de módulo
 
 Las pruebas automatizadas DEBEN invocar las funciones exportadas y dependencias inyectadas de los módulos, no depender de extraer fragmentos de `app.js` mediante marcadores textuales.

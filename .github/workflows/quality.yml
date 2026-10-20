@@ -36,6 +36,7 @@ jobs:
           node --check js/recommendations/engine.js
           node --check js/catalog/csv-parser.js
           node --check js/import-export/personal-data.js
+          node --check js/tmdb/client.js
 
       - name: Check service worker syntax
         run: node --check sw.js

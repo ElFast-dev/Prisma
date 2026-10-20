@@ -17,6 +17,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/recommendations/engine.js` | Perfil de preferencias, predicción y evaluación leave-one-out con dependencias explícitas. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/import-export/personal-data.js` | Reconocimiento de exportaciones personales, normalización y combinación de registros. |
+| `js/tmdb/client.js` | Credenciales, peticiones HTTP, errores, caché de géneros y conversión de respuestas TMDB. |
 | `styles.css` | Sistema visual, composición responsive, componentes y animaciones. |
 | `data/catalog.json` | Catálogo de muestra. |
 | `assets/prisma.svg` | Identidad gráfica. |
