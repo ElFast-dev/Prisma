@@ -62,7 +62,17 @@ jobs:
                   waitUntil: "networkidle",
                   timeout: 60000
                 });
-                await page.locator("main h1").waitFor({ state: "visible", timeout: 15000 });
+                try {
+                  await page.locator("main h1").waitFor({ state: "visible", timeout: 15000 });
+                } catch (error) {
+                  const diagnostics = await page.evaluate(() => ({
+                    pageText: document.body.innerText.slice(0, 1800),
+                    appRootText: document.querySelector("#appRoot")?.innerText.slice(0, 1200) || "",
+                    moduleScripts: Array.from(document.scripts).map(script => script.src || "inline"),
+                    appRootHtml: document.querySelector("#appRoot")?.innerHTML.slice(0, 1800) || ""
+                  }));
+                  throw new Error(name + ": app did not render the first page. " + JSON.stringify(diagnostics) + " Cause: " + error.message);
+                }
                 lastUI = await page.evaluate(() => {
                   const link = document.querySelector('link[rel="stylesheet"]');
                   const heading = document.querySelector("main h1");
@@ -111,7 +121,17 @@ jobs:
                 serviceWorkers: "block"
               });
               const page = await context.newPage();
-              page.on("pageerror", error => failures.push(name + " pageerror: " + error.message));
+              page.on("pageerror", error => {
+                const detail = name + " pageerror: " + (error.stack || error.message);
+                failures.push(detail);
+                console.log("BROWSER_PAGEERROR:", detail);
+              });
+              page.on("console", message => {
+                if (message.type() === "error") console.log("BROWSER_CONSOLE_ERROR:", message.text());
+              });
+              page.on("requestfailed", request => {
+                console.log("BROWSER_REQUEST_FAILED:", request.url(), request.failure()?.errorText || "");
+              });
 
               try {
                 await openFreshPage(page, name + "-home");
