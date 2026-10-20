@@ -10,7 +10,7 @@ Prisma es una aplicación web estática, mobile-first y en español, pensada par
 - Recomendador de contenido explicable que aprovecha géneros y etiquetas disponibles.
 - Perfil, métricas y evaluación experimental del modelo.
 - Importación local de CSV de catálogo (incluido el formato `movies.csv` de MovieLens), exportación de copia de seguridad y PWA básica.
-- Sin claves de API ni servicios de pago.
+- Catálogo local sin servidor; integración opcional con TMDB configurada desde la aplicación.
 
 > El catálogo incluido en el repositorio es una muestra inicial, no todas las películas existentes. Para ampliarlo, importa un catálogo que tengas derecho a usar. El motor solo puede aprender características que existan en los metadatos; una valoración sin géneros/etiquetas enlazados no revela por sí sola qué te gustó de la película.
 
