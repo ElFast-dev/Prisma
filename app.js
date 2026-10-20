@@ -12,6 +12,7 @@ import { createModalViews } from "./js/ui/modal-views.js?v=core-20261020-1";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
 import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261020-1";
+import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -252,59 +253,20 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
   });
   const { importPersonalJSON, importCatalogCSV, exportBackup, restoreBackup, resetAll } = importExportActions;
 
-     async function saveTMDBCredential() {
-    const input = $("#tmdbCredentialInput");
-    const kindControl = $("#tmdbAuthType");
-    const typed = input ? input.value.trim() : "";
-    if (!typed && !tmdbCredential) {
-      toast("Pega tu token de lectura o clave API v3 primero.", true);
-      return;
-    }
-    if (typed) {
-      tmdbCredential = normalizeCredential(typed, kindControl ? kindControl.value : "readToken");
-      await dbSet(TMDB_CREDENTIAL_KEY, tmdbCredential);
-    } else if (kindControl && tmdbCredential.kind !== kindControl.value) {
-      toast("Para cambiar el tipo de credencial, vuelve a pegarla antes de guardar.", true);
-      return;
-    }
-    if (input) input.value = "";
-    renderApp();
-    toast("Credencial guardada solo en este navegador. No se incluirá en respaldos ni en GitHub.");
-  }
+  const tmdbSettingsActions = createTMDBSettingsActions({
+    get $() { return $; },
+    get tmdbCredential() { return tmdbCredential; },
+    set tmdbCredential(value) { tmdbCredential = value; },
+    get normalizeCredential() { return normalizeCredential; },
+    get dbSet() { return dbSet; },
+    get TMDB_CREDENTIAL_KEY() { return TMDB_CREDENTIAL_KEY; },
+    get renderApp() { return renderApp; },
+    get toast() { return toast; },
+    get tmdbRequest() { return tmdbRequest; }
+  });
+  const { saveTMDBCredential, testTMDBCredential, removeTMDBCredential } = tmdbSettingsActions;
 
-  async function testTMDBCredential() {
-    const input = $("#tmdbCredentialInput");
-    const kindControl = $("#tmdbAuthType");
-    const candidate = normalizeCredential(input && input.value.trim(), kindControl ? kindControl.value : "readToken") || tmdbCredential;
-    if (!candidate || !candidate.value) {
-      toast("Pega tu credencial o guárdala en este navegador primero.", true);
-      return;
-    }
-    toast("Probando conexión con TMDB…");
-    try {
-      await tmdbRequest("/configuration", {}, candidate);
-      tmdbCredential = candidate;
-      await dbSet(TMDB_CREDENTIAL_KEY, tmdbCredential);
-      if (input) input.value = "";
-      renderApp();
-      toast("Conexión con TMDB correcta. Ya puedes buscar películas.");
-      if (currentPage === "catalog") loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
-    } catch (error) {
-      toast(error.message || "No se pudo conectar con TMDB.", true);
-    }
-  }
-
-  async function removeTMDBCredential() {
-    if (!window.confirm("¿Eliminar la credencial de TMDB guardada en este navegador?")) return;
-    tmdbCredential = null;
-    await dbSet(TMDB_CREDENTIAL_KEY, null);
-    tmdbResults = [];
-    tmdbClient.resetGenres();
-    renderApp();
-    toast("Credencial eliminada de este navegador.");
-  }
-
-  function pruneTMDBCache() {
+     function pruneTMDBCache() {
     const limit = 1000 * 60 * 60 * 24 * 179;
     const now = Date.now();
     function isExpired(entry) {

@@ -43,6 +43,7 @@ jobs:
           node --check js/app/movie-actions.js
           node --check js/import-export/actions.js
           node --check js/app/event-handlers.js
+          node --check js/tmdb/settings-actions.js
           node --check js/import-export/personal-data.js
           node --check js/tmdb/client.js
           node scripts/test-style-modularity.mjs

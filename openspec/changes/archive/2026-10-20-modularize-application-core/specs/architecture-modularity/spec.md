@@ -149,3 +149,14 @@ Los listeners globales y la delegación de interacciones DEBEN residir en un mó
 - DADO que el usuario activa un control de navegación, colección, puntuación o importación
 - CUANDO se procesa el evento delegado
 - ENTONCES el módulo de eventos dirige la acción adecuada mediante las dependencias recibidas sin mantener un segundo controlador monolítico en la entrada.
+
+
+### Requirement: Acciones de configuración TMDB aisladas
+
+El almacenamiento, prueba y retirada de la credencial TMDB DEBEN vivir en un módulo de integración separado, usando la persistencia y las peticiones compartidas mediante dependencias explícitas.
+
+#### Scenario: El usuario prueba una credencial
+
+- DADO que el usuario introduce una credencial para TMDB
+- CUANDO comprueba la conexión
+- ENTONCES la acción utiliza el cliente TMDB compartido y muestra el resultado mediante las dependencias de interfaz recibidas.

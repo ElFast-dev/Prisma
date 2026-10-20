@@ -22,6 +22,7 @@ const files = [
   'js/app/movie-actions.js',
   'js/import-export/actions.js',
   'js/app/event-handlers.js',
+  'js/tmdb/settings-actions.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -71,6 +72,8 @@ assert.ok(!app.includes('async function exportBackup('));
 assert.ok(app.includes('createImportExportActions('));
 assert.ok(!app.includes('document.addEventListener('));
 assert.ok(app.includes('registerAppEvents('));
+assert.ok(!app.includes('async function saveTMDBCredential('));
+assert.ok(app.includes('createTMDBSettingsActions('));
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));
