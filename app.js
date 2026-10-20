@@ -264,6 +264,262 @@
     };
   }
 
+  function normalizeCredential(raw, kind) {
+    const value = String(raw || "").trim();
+    if (!value) return null;
+    return { kind: kind === "apiKey" ? "apiKey" : "readToken", value: value };
+  }
+
+  async function tmdbRequest(path, params, credentialOverride) {
+    const credential = credentialOverride || tmdbCredential;
+    if (!credential || !credential.value) throw new Error("Conecta tu credencial de TMDB desde Datos.");
+    const url = new URL(TMDB_API_BASE + path);
+    Object.keys(params || {}).forEach(function (key) {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
+        url.searchParams.set(key, String(params[key]));
+      }
+    });
+    const headers = { accept: "application/json" };
+    if (credential.kind === "apiKey") url.searchParams.set("api_key", credential.value);
+    else headers.Authorization = "Bearer " + credential.value;
+    const response = await fetch(url.toString(), { method: "GET", headers: headers });
+    let data = {};
+    try { data = await response.json(); } catch (_) {}
+    if (!response.ok) {
+      if (response.status === 401) throw new Error("TMDB rechazó la credencial (401). Verifica que el token de lectura o la clave API v3 estén completos.");
+      if (response.status === 403) throw new Error("TMDB denegó el acceso (403). Revisa las credenciales y los permisos de tu cuenta.");
+      if (response.status === 429) throw new Error("TMDB limitó temporalmente las solicitudes. Espera un momento y vuelve a probar.");
+      throw new Error((data && data.status_message) || ("TMDB respondió con HTTP " + response.status + "."));
+    }
+    return data;
+  }
+
+  async function saveTMDBCredential() {
+    const input = $("#tmdbCredentialInput");
+    const kindControl = $("#tmdbAuthType");
+    const typed = input ? input.value.trim() : "";
+    if (!typed && !tmdbCredential) {
+      toast("Pega tu token de lectura o clave API v3 primero.", true);
+      return;
+    }
+    if (typed) {
+      tmdbCredential = normalizeCredential(typed, kindControl ? kindControl.value : "readToken");
+      await dbSet(TMDB_CREDENTIAL_KEY, tmdbCredential);
+    } else if (kindControl && tmdbCredential.kind !== kindControl.value) {
+      toast("Para cambiar el tipo de credencial, vuelve a pegarla antes de guardar.", true);
+      return;
+    }
+    if (input) input.value = "";
+    renderApp();
+    toast("Credencial guardada solo en este navegador. No se incluirá en respaldos ni en GitHub.");
+  }
+
+  async function testTMDBCredential() {
+    const input = $("#tmdbCredentialInput");
+    const kindControl = $("#tmdbAuthType");
+    const candidate = normalizeCredential(input && input.value.trim(), kindControl ? kindControl.value : "readToken") || tmdbCredential;
+    if (!candidate || !candidate.value) {
+      toast("Pega tu credencial o guárdala en este navegador primero.", true);
+      return;
+    }
+    toast("Probando conexión con TMDB…");
+    try {
+      await tmdbRequest("/configuration", {}, candidate);
+      tmdbCredential = candidate;
+      await dbSet(TMDB_CREDENTIAL_KEY, tmdbCredential);
+      if (input) input.value = "";
+      renderApp();
+      toast("Conexión con TMDB correcta. Ya puedes buscar películas.");
+      if (currentPage === "catalog") loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
+    } catch (error) {
+      toast(error.message || "No se pudo conectar con TMDB.", true);
+    }
+  }
+
+  async function removeTMDBCredential() {
+    if (!window.confirm("¿Eliminar la credencial de TMDB guardada en este navegador?")) return;
+    tmdbCredential = null;
+    await dbSet(TMDB_CREDENTIAL_KEY, null);
+    tmdbResults = [];
+    tmdbGenres = new Map();
+    renderApp();
+    toast("Credencial eliminada de este navegador.");
+  }
+
+  function pruneTMDBCache() {
+    const limit = 1000 * 60 * 60 * 24 * 30;
+    const now = Date.now();
+    function isExpired(entry) {
+      if (!entry || !entry.tmdbFetchedAt) return false;
+      const fetchedAt = new Date(entry.tmdbFetchedAt).getTime();
+      return Number.isFinite(fetchedAt) && now - fetchedAt > limit;
+    }
+    function strip(entry) {
+      delete entry.genres;
+      delete entry.tags;
+      delete entry.overview;
+      delete entry.posterPath;
+      delete entry.posterUrl;
+      delete entry.voteAverage;
+      delete entry.runtime;
+      delete entry.tmdbFetchedAt;
+      delete entry.metadataSource;
+      return entry;
+    }
+    let changed = false;
+    customCatalog = customCatalog.map(function (entry) {
+      if (entry.metadataSource === "tmdb" && isExpired(entry)) {
+        changed = true;
+        return strip(Object.assign({}, entry, { genres: [], tags: [], overview: "", posterPath: "", posterUrl: "" }));
+      }
+      return entry;
+    });
+    state.rated = state.rated.map(function (entry) {
+      if (entry.metadataSource === "tmdb" && isExpired(entry)) {
+        changed = true;
+        const copy = Object.assign({}, entry);
+        strip(copy);
+        return copy;
+      }
+      return entry;
+    });
+    state.watchlist = state.watchlist.map(function (entry) {
+      if (entry.metadataSource === "tmdb" && isExpired(entry)) {
+        changed = true;
+        return strip(Object.assign({}, entry));
+      }
+      return entry;
+    });
+    if (changed) {
+      dbSet(CATALOG_KEY, customCatalog).catch(function () {});
+      persistState();
+    }
+  }
+
+  async function ensureTMDBGenres() {
+    if (tmdbGenres.size) return;
+    const data = await tmdbRequest("/genre/movie/list", { language: "es-ES" });
+    tmdbGenres = new Map((data.genres || []).map(function (genre) { return [Number(genre.id), genre.name]; }));
+  }
+
+  function fromTMDB(raw) {
+    const releaseDate = String(raw.release_date || "");
+    const year = releaseDate.length >= 4 ? Number(releaseDate.slice(0, 4)) : null;
+    const genres = Array.isArray(raw.genres) && raw.genres.length ?
+      raw.genres.map(function (item) { return item.name; }) :
+      (raw.genre_ids || []).map(function (id) { return tmdbGenres.get(Number(id)); }).filter(Boolean);
+    const keywordObject = raw.keywords || {};
+    const keywords = keywordObject.keywords || keywordObject.results || [];
+    const posterPath = raw.poster_path || "";
+    return {
+      id: String(raw.id),
+      tmdbId: String(raw.id),
+      title: raw.title || raw.original_title || "",
+      year: year,
+      genres: genres.map(displayGenre),
+      tags: uniqueStrings(keywords.map(function (item) { return item.name; })),
+      overview: raw.overview || "",
+      posterPath: posterPath,
+      posterUrl: posterPath ? "https://image.tmdb.org/t/p/w500" + posterPath : "",
+      voteAverage: Number(raw.vote_average) || null,
+      runtime: Number(raw.runtime) || null,
+      popularity: Number(raw.popularity) || null,
+      tmdbFetchedAt: new Date().toISOString(),
+      metadataSource: "tmdb",
+      source: "tmdb"
+    };
+  }
+
+  function renderTMDBAttribution() {
+    return '<section class="tmdb-attribution" aria-label="Atribución de TMDB"><a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="' + TMDB_LOGO_URL + '" alt="TMDB" loading="lazy"></a><div><strong>Datos e imágenes de The Movie Database (TMDB)</strong><p>Este producto utiliza TMDB y las API de TMDB, pero no está respaldado, certificado ni aprobado por TMDB.</p><a href="https://www.themoviedb.org/about/logos-attribution" target="_blank" rel="noopener noreferrer">Logos y atribución oficial ↗</a></div></section>';
+  }
+
+  function renderTMDBResults() {
+    const status = $("#tmdbStatus");
+    const target = $("#tmdbResults");
+    if (!status || !target) return;
+    if (!tmdbCredential || !tmdbCredential.value) {
+      status.innerHTML = 'Para explorar el catálogo completo, configura tus credenciales desde <button class="btn btn-secondary btn-small" type="button" data-nav="data">Datos → Conectar con TMDB</button>.';
+      target.innerHTML = '<div class="empty-state"><div class="empty-icon">⌕</div><h3>Busca entre películas de TMDB</h3><p>Conectar la API permite buscar títulos, sinopsis, géneros y carteles en línea. Tu historial personal seguirá local.</p></div>';
+      return;
+    }
+    const label = tmdbMode === "search" ? "Resultados para «" + catalogQuery.trim() + "»" : "Películas populares en TMDB";
+    status.textContent = (tmdbLoading ? "Consultando TMDB…" : (tmdbError ? "No se pudo completar la consulta." : label)) +
+      (tmdbResults.length && !tmdbLoading && !tmdbError ? " · " + tmdbResults.length + " resultados cargados" : "");
+    if (tmdbLoading && !tmdbResults.length) {
+      target.innerHTML = '<div class="loading-state"><span class="spinner"></span><p>Buscando películas…</p></div>';
+      return;
+    }
+    if (tmdbError) {
+      target.innerHTML = '<div class="notice"><strong>Error de TMDB.</strong> ' + escapeHTML(tmdbError) + '<div style="margin-top:10px"><button class="btn btn-secondary btn-small" type="button" data-action="tmdb-retry">Volver a intentar</button></div></div>';
+      return;
+    }
+    if (!tmdbResults.length) {
+      target.innerHTML = '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No hay resultados</h3><p>Prueba otra búsqueda.</p></div>';
+      return;
+    }
+    target.innerHTML = movieGrid(tmdbResults) +
+      (tmdbPage < tmdbTotalPages ? '<div style="display:flex;justify-content:center;margin-top:17px"><button class="btn btn-secondary" type="button" data-action="tmdb-more">' + (tmdbLoading ? "Cargando…" : "Cargar más películas") + '</button></div>' : "") +
+      '<p class="kicker" style="margin-top:12px">Las películas y los carteles proceden de TMDB. La nota estimada por Prisma es distinta de la valoración pública de TMDB.</p>';
+  }
+
+  async function loadTMDBPage(page, mode, append) {
+    if (!tmdbCredential || !tmdbCredential.value) {
+      renderTMDBResults();
+      return;
+    }
+    const safeMode = mode === "search" && catalogQuery.trim().length >= 2 ? "search" : "popular";
+    const query = catalogQuery.trim();
+    const requestId = ++tmdbRequestSerial;
+    tmdbMode = safeMode;
+    tmdbLoading = true;
+    tmdbError = "";
+    if (!append) tmdbResults = [];
+    renderTMDBResults();
+    try {
+      try { await ensureTMDBGenres(); } catch (_) {
+        // La búsqueda sigue siendo útil aunque no se pueda cargar el listado de géneros.
+      }
+      const params = { language: "es-ES", page: page, include_adult: false };
+      const endpoint = safeMode === "search" ? "/search/movie" : "/movie/popular";
+      if (safeMode === "search") params.query = query;
+      const data = await tmdbRequest(endpoint, params);
+      if (requestId !== tmdbRequestSerial) return;
+      const mapped = (data.results || []).map(fromTMDB).filter(function (movie) { return Boolean(movie.title); });
+      tmdbResults = append ? tmdbResults.concat(mapped) : mapped;
+      tmdbPage = Number(data.page) || page;
+      tmdbTotalPages = Math.min(Number(data.total_pages) || 1, 500);
+      tmdbError = "";
+    } catch (error) {
+      if (requestId !== tmdbRequestSerial) return;
+      tmdbError = error && error.message ? error.message : "Error al consultar TMDB.";
+    } finally {
+      if (requestId === tmdbRequestSerial) {
+        tmdbLoading = false;
+        renderTMDBResults();
+      }
+    }
+  }
+
+  async function enrichTMDBMovie(movie) {
+    if (!movie || !tmdbCredential || !tmdbCredential.value) return;
+    const id = movie.tmdbId || (movie.source === "tmdb" ? movie.id : null);
+    if (!id) return;
+    const fetchedAt = movie.tmdbFetchedAt ? new Date(movie.tmdbFetchedAt).getTime() : 0;
+    const cacheFresh = fetchedAt && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30;
+    if (cacheFresh && movie.tags && movie.tags.length) return;
+    try {
+      const details = await tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "keywords" });
+      const enriched = fromTMDB(details);
+      if (modalDraft && titleKey(modalDraft.movie.title) === titleKey(movie.title)) {
+        modalDraft.movie = Object.assign({}, modalDraft.movie, enriched, { key: titleKey(enriched.title) });
+        renderModal();
+      }
+    } catch (error) {
+      console.warn("Prisma: no se pudieron cargar los detalles de TMDB.", error && error.message ? error.message : "");
+    }
+  }
+
   function buildProfile(trainingRatings) {
     const ratings = trainingRatings || state.rated;
     const valid = ratings.filter(function (entry) { return ratingValue(entry) != null; });
