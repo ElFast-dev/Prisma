@@ -129,6 +129,25 @@
       .toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
   }
 
+  function movieTmdbId(entry) {
+    const raw = entry && (entry.tmdbId || entry.tmId || entry.tmdb_id);
+    const numeric = Number(raw);
+    return Number.isSafeInteger(numeric) && numeric > 0 ? String(numeric) : "";
+  }
+
+  function movieIdentityKey(entry) {
+    const id = movieTmdbId(entry);
+    return id ? "tmdb:" + id : "title:" + titleKey(entry && entry.title);
+  }
+
+  function sameMovieRecord(left, right) {
+    if (!left || !right) return false;
+    const leftId = movieTmdbId(left);
+    const rightId = movieTmdbId(right);
+    if (leftId && rightId) return leftId === rightId;
+    return titleKey(left.title) === titleKey(right.title);
+  }
+
   function splitList(value) {
     if (Array.isArray(value)) return value.map(function (v) { return String(v).trim(); }).filter(Boolean);
     return String(value || "").split(/[|;,]/).map(function (v) { return v.trim(); }).filter(Boolean);
@@ -155,7 +174,7 @@
     const tmdbId = movie.tmdbId || movie.tmId || movie.tmdb_id || (movie.source === "tmdb" ? movie.id : null);
     return {
       id: String(movie.id || movie.tmdbId || movie.tmId || movie.tmdb_id || movie.movieId || titleKey(cleanTitle)),
-      tmdbId: tmdbId ? String(tmdbId) : null,
+      tmdbId: tmdbId && Number(tmdbId) > 0 ? String(tmdbId) : null,
       title: cleanTitle,
       year: year,
       genres: genres.map(displayGenre),
@@ -188,81 +207,113 @@
     });
   }
 
-  function combineMovies() {
-    const map = new Map();
-    seedCatalog.concat(customCatalog, state.watched || [], state.watchlist || [], state.hidden || []).forEach(function (raw) {
-      const movie = normalizeMovie(raw);
-      if (!movie) return;
-      const key = titleKey(movie.title);
-      const previous = map.get(key);
-      if (!previous) {
-        movie.key = key;
-        map.set(key, movie);
-      } else {
-        previous.genres = uniqueStrings(previous.genres.concat(movie.genres));
-        previous.tags = uniqueStrings(previous.tags.concat(movie.tags));
-        previous.year = previous.year || movie.year;
-        previous.overview = previous.overview || movie.overview;
-        previous.id = previous.id || movie.id;
-        previous.tmdbId = previous.tmdbId || movie.tmdbId;
-        previous.posterPath = previous.posterPath || movie.posterPath;
-        previous.posterUrl = previous.posterUrl || movie.posterUrl;
-        previous.voteAverage = previous.voteAverage || movie.voteAverage;
-        previous.runtime = previous.runtime || movie.runtime;
-        previous.releaseDate = previous.releaseDate || movie.releaseDate;
-        previous.backdropUrl = previous.backdropUrl || movie.backdropUrl;
-        previous.status = previous.status || movie.status;
-        if ((!previous.productionCountries || !previous.productionCountries.length) && movie.productionCountries && movie.productionCountries.length) previous.productionCountries = movie.productionCountries;
-        previous.imdbId = previous.imdbId || movie.imdbId;
-        previous.tmdbFetchedAt = previous.tmdbFetchedAt || movie.tmdbFetchedAt;
-        previous.metadataSource = previous.metadataSource || movie.metadataSource;
-      }
+  function mergeCatalogFields(target, source) {
+    target.genres = uniqueStrings((target.genres || []).concat(source.genres || []));
+    target.tags = uniqueStrings((target.tags || []).concat(source.tags || []));
+    ["year","overview","posterPath","posterUrl","voteAverage","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
+      const current = target[field];
+      const empty = current == null || current === "" || (Array.isArray(current) && current.length === 0);
+      const incoming = source[field];
+      const incomingEmpty = incoming == null || incoming === "" || (Array.isArray(incoming) && incoming.length === 0);
+      if (empty && !incomingEmpty) target[field] = incoming;
     });
-    state.rated.forEach(function (rating) {
-      if (!rating.title) return;
-      const key = titleKey(rating.title);
-      const historyMovie = normalizeMovie(rating);
-      if (!historyMovie) return;
-      if (!map.has(key)) {
-        historyMovie.key = key;
-        historyMovie.source = "history";
-        map.set(key, historyMovie);
-      } else {
-        const existing = map.get(key);
-        existing.genres = uniqueStrings(existing.genres.concat(historyMovie.genres));
-        existing.tags = uniqueStrings(existing.tags.concat(historyMovie.tags));
-        existing.overview = existing.overview || historyMovie.overview;
-        existing.posterPath = existing.posterPath || historyMovie.posterPath;
-        existing.posterUrl = existing.posterUrl || historyMovie.posterUrl;
-        existing.tmdbId = existing.tmdbId || historyMovie.tmdbId;
-        existing.voteAverage = existing.voteAverage || historyMovie.voteAverage;
-        existing.runtime = existing.runtime || historyMovie.runtime;
-        existing.releaseDate = existing.releaseDate || historyMovie.releaseDate;
-        existing.backdropUrl = existing.backdropUrl || historyMovie.backdropUrl;
-        existing.status = existing.status || historyMovie.status;
-        if ((!existing.productionCountries || !existing.productionCountries.length) && historyMovie.productionCountries && historyMovie.productionCountries.length) existing.productionCountries = historyMovie.productionCountries;
-        existing.imdbId = existing.imdbId || historyMovie.imdbId;
-        existing.tmdbFetchedAt = existing.tmdbFetchedAt || historyMovie.tmdbFetchedAt;
-        existing.metadataSource = existing.metadataSource || historyMovie.metadataSource;
-      }
-    });
-    catalog = Array.from(map.values()).sort(function (a, b) { return a.title.localeCompare(b.title, "es"); });
-    catalogByTitle = map;
+    if (!target.tmdbId && source.tmdbId) target.tmdbId = source.tmdbId;
+    if (!target.id && source.id) target.id = source.id;
+    return target;
   }
 
-  function findMovie(title) {
+  function combineMovies() {
+    const grouped = new Map();
+    const baseRecords = seedCatalog.concat(customCatalog, state.watched || [], state.watchlist || [], state.hidden || []);
+    const baseIdentities = new Set();
+    function collect(raw, isBase) {
+      const movie = normalizeMovie(raw);
+      if (!movie) return;
+      const title = titleKey(movie.title);
+      if (!title) return;
+      if (!grouped.has(title)) grouped.set(title, []);
+      grouped.get(title).push({movie:movie,isBase:Boolean(isBase)});
+      if (isBase) baseIdentities.add(movieIdentityKey(movie));
+    }
+    baseRecords.forEach(function (movie) { collect(movie,true); });
+    (state.rated || []).forEach(function (movie) { collect(movie,false); });
+
+    const combined = [];
+    grouped.forEach(function (items) {
+      const byTmdb = new Map();
+      let noId = null;
+      let noIdHasBase = false;
+      items.forEach(function (record) {
+        const movie = record.movie;
+        const tmdbId = movieTmdbId(movie);
+        if (!tmdbId) {
+          noId = noId ? mergeCatalogFields(noId,movie) : Object.assign({},movie);
+          noIdHasBase = noIdHasBase || record.isBase;
+          return;
+        }
+        if (byTmdb.has(tmdbId)) {
+          const prior = byTmdb.get(tmdbId);
+          mergeCatalogFields(prior.movie,movie);
+          prior.isBase = prior.isBase || record.isBase;
+        } else {
+          byTmdb.set(tmdbId,{movie:Object.assign({},movie),isBase:record.isBase});
+        }
+      });
+
+      if (!byTmdb.size) {
+        if (noId) {
+          noId.key = movieIdentityKey(noId);
+          if (!noIdHasBase) noId.source = "history";
+          combined.push(noId);
+        }
+        return;
+      }
+      if (byTmdb.size === 1 && noId) {
+        const only = Array.from(byTmdb.values())[0];
+        mergeCatalogFields(only.movie,noId);
+        only.isBase = only.isBase || noIdHasBase;
+      }
+      byTmdb.forEach(function (record) {
+        const movie = record.movie;
+        movie.key = movieIdentityKey(movie);
+        if (!record.isBase && !baseIdentities.has(movie.key)) movie.source = "history";
+        combined.push(movie);
+      });
+    });
+    catalog = combined.sort(function (a,b) {
+      return a.title.localeCompare(b.title,"es") ||
+        (Number(a.year) || 0) - (Number(b.year) || 0) ||
+        String(movieTmdbId(a)).localeCompare(String(movieTmdbId(b)));
+    });
+    catalogByTitle = new Map();
+    catalog.forEach(function (movie) {
+      const title = titleKey(movie.title);
+      if (!catalogByTitle.has(title)) catalogByTitle.set(title,movie);
+    });
+  }
+
+  function findMovie(title, tmdbId) {
+    const id = movieTmdbId({tmdbId:tmdbId});
+    if (id) {
+      const exactMatch = catalog.find(function (movie) { return movieTmdbId(movie) === id; });
+      if (exactMatch) return exactMatch;
+    }
     return catalogByTitle.get(titleKey(title)) || null;
   }
 
-  function ratingFor(title) {
+  function ratingFor(title, tmdbId) {
+    const id = movieTmdbId({tmdbId:tmdbId});
     const key = titleKey(title);
+    if (id) {
+      const exactMatch = state.rated.find(function (entry) { return movieTmdbId(entry) === id; });
+      if (exactMatch) return exactMatch;
+      const noIdMatch = state.rated.find(function (entry) { return titleKey(entry.title) === key && !movieTmdbId(entry); });
+      if (noIdMatch) return noIdMatch;
+      return null;
+    }
     return state.rated.find(function (entry) { return titleKey(entry.title) === key; }) || null;
   }
 
-  function isInWatchlist(title) {
-    const key = titleKey(title);
-    return state.watchlist.some(function (entry) { return titleKey(entry.title) === key; });
-  }
 
   function allGenres() {
     return uniqueStrings(catalog.reduce(function (all, movie) { return all.concat(movie.genres || []); }, []))
@@ -1856,15 +1907,29 @@
   function mergeMovieListByTitle(existing, incoming) {
     const map = new Map();
     (existing || []).forEach(function (entry) {
-      if (entry && entry.title) map.set(titleKey(entry.title), entry);
+      if (entry && entry.title) map.set(movieIdentityKey(entry),entry);
     });
     (incoming || []).forEach(function (entry) {
       if (!entry || !entry.title) return;
-      const key = titleKey(entry.title);
-      map.set(key, mergeMovieEntries(map.get(key), entry));
+      let key = movieIdentityKey(entry);
+      let previous = map.get(key);
+      if (!previous) {
+        const sameTitleWithoutIdentity = Array.from(map.entries()).filter(function (pair) {
+          return titleKey(pair[1].title) === titleKey(entry.title) &&
+            (!movieTmdbId(pair[1]) || !movieTmdbId(entry));
+        });
+        if (sameTitleWithoutIdentity.length === 1) {
+          const pair = sameTitleWithoutIdentity[0];
+          map.delete(pair[0]);
+          key = movieTmdbId(entry) ? movieIdentityKey(entry) : pair[0];
+          previous = pair[1];
+        }
+      }
+      map.set(key,mergeMovieEntries(previous,entry));
     });
     return Array.from(map.values());
   }
+
 
   function findRatingArrays(scope) {
     const arrays = Object.entries(scope || {}).filter(function (entry) {
@@ -1894,8 +1959,8 @@
       const meta = info.metaById.get(id) || info.metaByTmdb.get(tmId);
       const title = raw.t || raw.title || raw.name || (meta && meta.title);
       if (!title) return;
-      const key = titleKey(title);
-      if (!key || seen.has(key)) return;
+      const key = tmId && Number(tmId) > 0 ? "tmdb:" + tmId : "title:" + titleKey(title);
+      if (!titleKey(title) || seen.has(key)) return;
       seen.add(key);
       imported.push({
         id: raw.id || (meta && meta.id) || key,
@@ -1942,9 +2007,9 @@
       throw new Error("No encontré películas vistas, pendientes ni valoraciones reconocibles. Comprueba que el JSON contenga movies.cH, movies.cW o movies.rM.");
     }
 
-    const ratingMap = new Map(state.rated.map(function (entry) { return [titleKey(entry.title), entry]; }));
+    const ratingMap = new Map(state.rated.map(function (entry) { return [movieIdentityKey(entry), entry]; }));
     result.ratings.forEach(function (entry) {
-      const key = titleKey(entry.title);
+      const key = movieIdentityKey(entry);
       const old = ratingMap.get(key);
       if (old && old.source === "manual") return;
       const merged = mergeMovieEntries(old, entry);
