@@ -434,8 +434,7 @@
   function historyNeedsTMDB(entry) {
     const fetchedAt = entry && entry.tmdbFetchedAt ? new Date(entry.tmdbFetchedAt).getTime() : 0;
     const isFresh = entry && entry.metadataSource === "tmdb" &&
-      Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30 &&
-      Array.isArray(entry.genres) && entry.genres.length > 0 && Boolean(entry.overview);
+      Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30;
     if (isFresh) return false;
     return Boolean(entry && entry.title);
   }
