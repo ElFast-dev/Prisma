@@ -721,7 +721,7 @@ footer {
     gap: 1px;
     padding: 5px;
     border-radius: 18px;
-    background: rgba(17,18,28,.91);
+    background: rgba(17,18,28,.985);
   }
   .nav-item {
     min-width: 0;
