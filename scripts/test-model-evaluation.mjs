@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRecommendationEngine } from '../js/recommendations/engine.js';
 import { ratingValue } from '../js/core/movie-utils.js';
-const appSource = await readFile('app.js', 'utf8');
+const [appSource, pageViewsSource] = await Promise.all([
+  readFile('app.js', 'utf8'),
+  readFile('js/ui/page-views.js', 'utf8')
+]);
+const uiSource = appSource + '\\n' + pageViewsSource;
 const engineSource = await readFile('js/recommendations/engine.js', 'utf8');
 function runEvaluation(entries, movieRecords) {
   const calls = [];
@@ -61,6 +65,6 @@ assert.equal(zeroBaseline.mae, 0);
 assert.equal(zeroBaseline.baselineMae, 0);
 assert.equal(zeroBaseline.improvementPct, null);
 assert.ok(engineSource.includes('predictRating(movie || heldOut, profile).score'));
-assert.ok(appSource.includes('Referencia (media de entrenamiento): '));
-assert.ok(appSource.includes('Datos insuficientes: se necesitan al menos 5 películas valoradas con características'));
+assert.ok(uiSource.includes('Referencia (media de entrenamiento): '));
+assert.ok(uiSource.includes('Datos insuficientes: se necesitan al menos 5 películas valoradas con características'));
 console.log('Pruebas de evaluación correctas: API modular, identidad TMDB, mejora frente a la media, muestra insuficiente y referencia perfecta.');
