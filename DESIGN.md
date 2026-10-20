@@ -1,71 +1,54 @@
-# Prisma — guía UI/UX v2
-
-## Objetivo del producto
-
-Prisma es un recomendador de cine personal, no un clon de una plataforma de streaming. La pantalla principal debe resolver primero la pregunta «¿qué película podría gustarme hoy?»; las métricas, el mantenimiento y las credenciales son tareas secundarias.
+# Prisma — guía de producto y UI/UX
 
 ## Dirección visual
+Prisma utiliza carbón azulado, azul medianoche, superficies pizarra y un azul frío como acento. El color más llamativo debe venir de los carteles; botones, estados activos y enlaces reciben el azul solo cuando comunican interacción. La interfaz evita el morado, los brillos decorativos constantes y los paneles innecesarios.
 
-- **Paleta:** carbón con matiz azul, fondos azul-negro, superficies pizarra y un único acento azul frío. Sin morado/lavanda. Verde menta solo para confirmaciones y conexión; dorado reservado a puntuaciones.
-- **Carteles protagonistas:** que la imagen de la película aporte el color; evitar que brillos, bordes y chips compitan con ella.
-- **Tipografía:** sans-serif de sistema, clara y actual, con tamaños y pesos diferenciados. Evitar titulares gigantes que empujen la utilidad por debajo del primer pliegue.
-- **Superficies:** pocos paneles, bordes finos, contraste por agrupación y espacio, no una tarjeta por cada dato.
-- **Privacidad visible, sin decoración excesiva:** indicar que el perfil se guarda en el dispositivo sin convertirlo en un gran banner.
-- **Accesibilidad:** texto normal con contraste objetivo mínimo 4.5:1 (WCAG AA), estados de foco visibles, controles cómodos para pantalla táctil y respeto de `prefers-reduced-motion`.
+## Navegación primaria
+Tres destinos en la barra principal: **Progreso**, **Descubrir** y **Colección**. En la cabecera persistente, una búsqueda global dirige a Descubrir, el icono de barras abre el análisis del motor y el icono de ajustes abre Datos. En escritorio la barra principal es horizontal y compacta; en Android queda fija abajo y tiene tres áreas táctiles amplias.
 
-## Arquitectura y orden de pantallas
+## Progreso
+Muestra el número real de películas vistas, valoradas y pendientes, además de la media personal. Le siguen tendencias de género a partir de las valoraciones registradas y actividad reciente. Los indicadores describen los datos locales: no se muestran valores de ejemplo como si fueran del usuario.
 
-### 1. Para ti
-1. Titular breve y acción principal para descubrir películas; para perfiles vacíos, importar el historial.
-2. Resumen personal compacto a un lado en escritorio y debajo de la acción en móvil: valoraciones y cobertura de metadatos.
-3. Cuatro recomendaciones visibles, con acceso al catálogo completo.
-4. Estadísticas de resumen al final; no antes del contenido recomendado.
-5. Avisos de datos insuficientes solo cuando sean pertinentes.
+## Descubrir
+Primero aparecen las recomendaciones personales y luego el buscador remoto de TMDB y el catálogo local. Las sugerencias se calculan con el motor explicable actual y se identifican como estimaciones. Los títulos ocultos, vistos o pendientes se excluyen de la selección de recomendaciones. Una búsqueda global cambia a Descubrir y aplica el término tanto al catálogo local como, cuando TMDB está conectado, a la consulta remota.
 
-### 2. Explorar
-1. Búsqueda como control dominante.
-2. Exploración de TMDB y resultados remotos.
-3. Catálogo local, filtros por género y estado de resultados.
-4. Importación del catálogo como acción secundaria.
+## Colección
+La pantalla ofrece los modos **Películas** y **Listas**. Películas contiene **Historial**, **Pendientes** y **Ocultos**. La lupa busca exclusivamente en la colección; el control de orden, la selección múltiple de géneros y la alternancia entre vista de lista/compacta son controles independientes.
 
-### 3. Mi lista
-1. Películas pendientes primero.
-2. Historial de valoraciones después.
-3. Métricas del perfil como contexto, no como protagonista.
+- **Historial:** cuatro películas recientes en tarjetas horizontales y después la lista completa con fecha de estreno, título, sinopsis resumida, nota personal y puntuación pública de TMDB cuando existe.
+- **Pendientes:** lista equivalente, sin nota personal y con el filtro **Estrenada**.
+- **Ocultos:** títulos excluidos de las sugerencias. Ocultar una película no elimina sus notas ni datos.
 
-### 4. Laboratorio
-- Separar observaciones, hipótesis del motor y evaluación experimental.
-- Dar más protagonismo al progreso de metadatos y explicar limitaciones de muestra.
-- Mantener el enriquecimiento de historial TMDB aquí, no en la navegación principal.
+Los contadores se calculan de las entradas locales reales; no se codifican cantidades fijas.
 
-### 5. Datos
-- Ajustes de TMDB, importación, ampliación del catálogo, copia de seguridad y acciones destructivas.
-- Agrupar operaciones avanzadas en paneles sencillos y describir claramente el efecto de cada una.
+## Hoja de película
+La ficha combina fondo visual, título, fecha/país de estreno, duración, estado y géneros. Las acciones permiten marcar como vista sin calificar, guardar como pendiente, quitar de pendientes, gestionar listas u ocultar.
 
-## Navegación adaptativa
+Cuando hay una credencial TMDB disponible, la ficha puede consultar reparto/equipo, vídeos, proveedores de streaming por región, recomendaciones similares y pertenencia a una saga. Los datos recuperados se conservan en el catálogo local de este navegador. Los comentarios públicos, enlaces de tráiler y páginas externas abren su fuente correspondiente.
 
-- **Android / pantallas estrechas:** cinco destinos visibles en barra inferior fija, iconos de línea y etiquetas breves.
-- **Escritorio:** barra horizontal compacta bajo la cabecera que permanece visible al desplazarse.
-- No esconder destinos principales detrás de un menú hamburguesa cuando caben cinco.
+La puntuación de la comunidad de TMDB se muestra como cifra solo cuando está disponible. Las páginas IMDb, Rotten Tomatoes y Metacritic se enlazan sin inventar notas o porcentajes que no proporciona la API usada.
 
-## Movimiento y estados
+## Hoja de persona
+La ficha obtiene foto, nombre, biografía, nacimiento y créditos de películas de TMDB. Muestra el personaje cuando se abre desde una película, prioriza en producción/TBA y luego años de más reciente a más antiguo. El filtro **Colección** muestra créditos cuyos títulos están guardados localmente.
 
-- Entradas de vista breves; hover solo en dispositivos con puntero.
-- Animar principalmente opacidad y transformaciones pequeñas, nunca el contenido esencial ni acciones que obliguen a esperar.
-- Respetar `prefers-reduced-motion`.
-- Todos los resultados deben comunicar carga, estado vacío y error cuando corresponda.
-- No tratar predicciones de aprendizaje automático como certezas.
+## Hojas inferiores
+- **Ordenar por:** título, mejor valoración pública, nota personal, duración, estreno reciente, incorporación reciente y orden aleatorio; cada opción admite dirección ascendente/descendente.
+- **Géneros:** selección múltiple de géneros con coincidencia tipo OR y botones Limpiar/Aceptar.
+- **Calificar:** nota del 1 al 10 mediante diez estrellas tocables. Las emociones y notas anteriores se conservan en una sección opcional; Eliminar y Calificar son acciones separadas.
+
+## Datos y compatibilidad
+- Los datos existentes continúan en IndexedDB/localStorage con las mismas claves. El esquema local se amplía de manera compatible con arrays de historial separado y ocultos.
+- Las películas importadas con nota continúan en el historial. Marcar vista no exige puntuar.
+- TMDB es fuente de información de catálogo; las puntuaciones de crítica no disponibles se presentan como enlaces, no como cifras fabricadas.
+- Los datos personales permanecen en el navegador. Exporta respaldos antes de limpiar datos del sitio o cambiar de dispositivo.
 
 ## Investigación de referencia
+- Android Developers, patrones de navegación adaptativa: https://developer.android.com/design/ui/mobile/guides/layout-and-content/layout-and-nav-patterns
+- TMDB, búsqueda y consulta de detalles: https://developer.themoviedb.org/docs/search-and-query-for-details
+- TMDB, descubrimiento de películas: https://developer.themoviedb.org/reference/discover-movie
+- Nielsen Norman Group, revelación progresiva: https://www.nngroup.com/articles/progressive-disclosure/
+- W3C WCAG 2.2, contraste mínimo: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+- MDN, prefers-reduced-motion: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
 
-- Apple Human Interface Guidelines, principios: propósito, simplicidad, jerarquía y adaptación al contexto. https://developer.apple.com/design/human-interface-guidelines/design-principles
-- Apple Human Interface Guidelines, movimiento: animación con propósito, breve y opcional. https://developer.apple.com/design/human-interface-guidelines/motion
-- Android Developers, navegación adaptable: de tres a cinco destinos principales y adaptación a ventanas grandes. https://developer.android.com/design/ui/mobile/guides/layout-and-content/layout-and-nav-patterns
-- Nielsen Norman Group, modo oscuro: cuidar grosor tipográfico, contraste y uso del color; el modo oscuro no soluciona por sí solo la usabilidad. https://www.nngroup.com/articles/dark-mode-users-issues/
-- Nielsen Norman Group, jerarquía visual: usar contraste, escala y agrupación para guiar la atención. https://www.nngroup.com/articles/visual-hierarchy-ux-definition/
-- W3C WCAG 2.2, contraste mínimo: 4.5:1 para texto normal y 3:1 para texto grande. https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
-- MDN, `prefers-reduced-motion`: respetar la preferencia del sistema por reducir animaciones no esenciales. https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion
-
-## Alcance de la iteración v2
-
-Actualiza la paleta, la jerarquía de Inicio y la navegación adaptativa sin cambiar el formato de las valoraciones, la lógica del recomendador, los respaldos ni el almacenamiento personal. La prueba automatizada de GitHub Actions verifica que la versión CSS esperada se cargue desde GitHub Pages y toma capturas reales de escritorio y móvil.
+## Validación
+El flujo de captura de GitHub Actions prueba la web publicada en escritorio y móvil. Verifica la versión del CSS, la paleta y los tres destinos de navegación antes de guardar las capturas.

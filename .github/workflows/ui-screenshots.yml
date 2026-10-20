@@ -6,13 +6,15 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   screenshots:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -29,9 +31,20 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
-      - name: Capture the published GitHub Pages site and verify its CSS
+      - name: Serve the pull request build for browser tests
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 -m http.server 8765 --directory . > /tmp/prisma-preview.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8765/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/prisma-preview.log
+          exit 1
+
+      - name: Capture the site and verify UI flows
         env:
-          PRISMA_URL: https://elfast-dev.github.io/Prisma/
+          PRISMA_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8765/' || 'https://elfast-dev.github.io/Prisma/' }}
         run: |
           mkdir -p artifacts
           node <<'NODE'
@@ -49,10 +62,10 @@ jobs:
                   waitUntil: "networkidle",
                   timeout: 60000
                 });
-                await page.locator(".hero-title").waitFor({ state: "visible", timeout: 15000 });
+                await page.locator("main h1").waitFor({ state: "visible", timeout: 15000 });
                 lastUI = await page.evaluate(() => {
                   const link = document.querySelector('link[rel="stylesheet"]');
-                  const heading = document.querySelector(".hero-title");
+                  const heading = document.querySelector("main h1");
                   const nav = document.querySelector(".bottom-nav");
                   const poster = document.querySelector(".poster-art");
                   return {
@@ -62,15 +75,18 @@ jobs:
                     navRadius: getComputedStyle(nav).borderRadius,
                     posterRadius: poster && getComputedStyle(poster).borderRadius,
                     movieCards: document.querySelectorAll(".movie-card").length,
+                    navItems: document.querySelectorAll(".bottom-nav .nav-item").length,
+                    topSearch: Boolean(document.querySelector("[data-global-search]")),
                     documentTitle: document.title
                   };
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-9") &&
+                  lastUI.cssHref.includes("v=ui-20261020-10") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
-                  lastUI.movieCards > 0
+                  lastUI.navItems === 3 &&
+                  lastUI.topSearch
                 ) {
                   console.log(name + " published UI verified:", JSON.stringify(lastUI));
                   return;
@@ -98,6 +114,30 @@ jobs:
                 await page.locator(".tmdb-browser").waitFor({ state: "visible", timeout: 10000 });
                 await page.waitForTimeout(250);
                 await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: false, animations: "disabled" });
+                await page.locator(".bottom-nav [data-nav='library']").click();
+                await page.locator(".collection-page").waitFor({ state: "visible", timeout: 10000 });
+                await page.screenshot({ path: "artifacts/" + name + "-collection.png", fullPage: false, animations: "disabled" });
+                await page.locator(".collection-tool[data-action='open-sort']").click();
+                await page.locator(".utility-sheet .sheet-option").first().waitFor({ state: "visible", timeout: 10000 });
+                const sortCount = await page.locator(".utility-sheet .sheet-option").count();
+                if (sortCount !== 7) throw new Error(name + ": expected seven sort options, found " + sortCount);
+                await page.screenshot({ path: "artifacts/" + name + "-sort-sheet.png", fullPage: false, animations: "disabled" });
+                await page.locator("[data-action='close-sheet']").click();
+                await page.locator(".collection-mode-switch [data-mode='lists']").click();
+                await page.locator(".system-lists-grid").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".bottom-nav [data-nav='catalog']").click();
+                await page.locator(".local-catalog-section .movie-card [data-action='details']").first().click();
+                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+                await page.screenshot({ path: "artifacts/" + name + "-film-detail.png", fullPage: false, animations: "disabled" });
+                await page.locator(".detail-action-strip [data-action='rate']").click();
+                await page.locator(".rating-sheet .rating-star").last().waitFor({ state: "visible", timeout: 10000 });
+                const ratingStars = await page.locator(".rating-sheet .rating-star").count();
+                if (ratingStars !== 10) throw new Error(name + ": expected ten tappable rating stars, found " + ratingStars);
+                await page.screenshot({ path: "artifacts/" + name + "-rating-sheet.png", fullPage: false, animations: "disabled" });
+                await page.locator(".rating-sheet .rating-star[data-rating='8']").click();
+                await page.locator(".rating-sheet [data-action='save-rating']").click();
+                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+                if (!(await page.locator(".detail-action-strip").innerText()).includes("8/10")) throw new Error(name + ": the saved rating did not return to the film detail.");
               } finally {
                 await context.close();
               }
