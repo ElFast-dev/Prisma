@@ -961,7 +961,7 @@
     const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '">' + actionLabel + '</button></div>';
     return '<article class="movie-card">' +
       '<div class="poster-art" role="img" aria-label="Tarjeta de ' + escapeHTML(movie.title) + '" style="background:radial-gradient(circle at 75% 22%,hsla(' + hue + ',65%,65%,.35),transparent 42%),linear-gradient(145deg,hsl(' + hue + ',32%,25%),#13131d 66%,hsl(' + ((hue + 14) % 360) + ',28%,19%))">' +
-      (movie.posterUrl ? '<img class="poster-image" src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+      (movie.posterUrl ? '<img class="poster-image" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '" src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
       '<span class="poster-symbol">✦</span><strong class="poster-title">' + escapeHTML(movie.title) + '</strong><span class="poster-year">' + escapeHTML(movie.year || "Película") + '</span></div>' +
       '<div class="movie-copy"><h3 class="movie-title">' + escapeHTML(movie.title) + '</h3><div class="movie-meta">' + escapeHTML(meta || "Metadatos pendientes") + '</div>' + score + detail + '</div></article>';
   }
@@ -1157,8 +1157,9 @@
 
 
   function recentPoster(item) {
-    const background = item.posterUrl ? 'background-image:linear-gradient(180deg,rgba(4,9,15,.03),rgba(4,9,15,.84)),url(&quot;' + escapeHTML(item.posterUrl) + '&quot;)' : "";
-    return '<button class="recent-movie" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '" style="' + background + '"><span class="recent-movie-meta">' + escapeHTML(item.year || "Película") + '</span><strong>' + escapeHTML(item.title) + '</strong></button>';
+    return '<button class="recent-movie" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' +
+      (item.posterUrl ? '<img class="recent-poster-image" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '" src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+      '<span class="recent-movie-meta">' + escapeHTML(item.year || "Película") + '</span><strong>' + escapeHTML(item.title) + '</strong></button>';
   }
 
   function collectionRow(item, tab) {
@@ -1174,7 +1175,7 @@
       (tab === "pending" ? '<span class="collection-row-state pending-state">Pendiente</span>' : "");
     return '<div class="collection-row">' +
       '<button class="collection-row-main" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' +
-      '<span class="collection-row-poster">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + '</span>' +
+      '<span class="collection-row-poster">' + (item.posterUrl ? '<img data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '" src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<span class="poster-fallback">▣</span>') + '</span>' +
       '<span class="collection-row-copy"><span class="collection-release">' + escapeHTML(release) + '</span><strong>' + escapeHTML(item.title) + '</strong><span class="collection-synopsis">' + synopsis + '</span></span>' +
       '</button><span class="collection-row-side"><span class="collection-row-scores">' + personalRating + publicRating + '</span>' + stateLabel + '</span></div>';
   }
@@ -1183,7 +1184,7 @@
     const rating = ratingValue(item);
     const seenMarker = isInHistory(item.title,item.tmdbId) ? "seen" : (isInWatchlist(item.title,item.tmdbId) ? "pending" : "hidden");
     return '<button class="collection-compact-card" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' +
-      '<span class="compact-poster">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + '<i class="collection-marker ' + seenMarker + '"></i></span>' +
+      '<span class="compact-poster">' + (item.posterUrl ? '<img data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '" src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<span class="poster-fallback">▣</span>') + '<i class="collection-marker ' + seenMarker + '"></i></span>' +
       '<strong>' + escapeHTML(item.title) + '</strong><small>' + escapeHTML(item.year || "") + (rating ? " · ★ " + rating + "/10" : "") + '</small></button>';
   }
 
@@ -2235,12 +2236,36 @@
     window.scrollTo({top:0,behavior:"smooth"});
   }
 
+  const posterRefreshRequested = new Set();
   document.addEventListener("error",function (event) {
     const image = event.target;
     if (!(image instanceof HTMLImageElement)) return;
     const host = image.parentElement;
-    if (image.classList.contains("poster-image")) {
+    const failedId = image.dataset.tmdbId || "";
+    if (image.classList.contains("poster-image") || image.classList.contains("recent-poster-image")) {
       image.remove();
+      if (failedId && !posterRefreshRequested.has(failedId)) {
+        posterRefreshRequested.add(failedId);
+        const invalidate = function (list) {
+          return (list || []).map(function (entry) {
+            if (movieTmdbId(entry) !== failedId) return entry;
+            return Object.assign({},entry,{posterUrl:"",posterPath:"",tmdbFetchedAt:null,metadataSource:null});
+          });
+        };
+        state.rated = invalidate(state.rated);
+        state.watched = invalidate(state.watched);
+        state.watchlist = invalidate(state.watchlist);
+        state.hidden = invalidate(state.hidden);
+        customCatalog = invalidate(customCatalog);
+        const catalogEntry = catalog.find(function (entry) { return movieTmdbId(entry) === failedId; });
+        if (catalogEntry) Object.assign(catalogEntry,{posterUrl:"",posterPath:"",tmdbFetchedAt:null,metadataSource:null});
+        persistState();
+        dbSet(CATALOG_KEY,customCatalog).catch(function () {});
+        if (tmdbCredential && tmdbCredential.value) {
+          if (tmdbHistorySync.running) tmdbEnrichRequested = true;
+          else window.setTimeout(function () { enrichRatedHistoryWithTMDB(); },300);
+        }
+      }
       return;
     }
     if (!host || !host.matches(".collection-row-poster,.compact-poster,.cast-photo,.person-film-poster,.similar-poster,.saga-art,.provider-chip")) return;
