@@ -756,11 +756,11 @@
     const genreChips = genres.map(function (genre) {
       return '<button class="chip ' + (activeGenre === genre ? "active" : "") + '" type="button" data-action="genre" data-genre="' + escapeHTML(genre) + '">' + escapeHTML(displayGenre(genre)) + '</button>';
     }).join("");
-    return '<div class="eyebrow">Explora</div><h1>Tu próximo descubrimiento</h1><p class="lead">Busca por título o filtra por género. Las películas que califiques ayudarán a ajustar las próximas recomendaciones.</p>' +
-      '<div class="toolbar"><label class="search-wrap"><span>⌕</span><input class="field" type="search" data-catalog-search value="' + escapeHTML(catalogQuery) + '" placeholder="Buscar una película, un género o un año…" aria-label="Buscar en el catálogo"></label><button class="btn btn-secondary" type="button" data-action="import-catalog">＋ Ampliar catálogo CSV</button></div>' +
-      '<div class="chip-row">' + genreChips + '</div>' +
-      '<div class="section-head"><div><h2>Catálogo</h2><p id="catalogCount">Cargando resultados…</p></div></div><div id="catalogResults"></div>' +
-      '<footer>El catálogo que viene con Prisma es solo una muestra. Puedes importar localmente un archivo CSV compatible para ampliarlo.</footer>';
+    return '<div class="eyebrow">Explora</div><h1>Tu próximo descubrimiento</h1><p class="lead">Busca entre películas de TMDB o filtra tu catálogo local. Prisma guarda tus valoraciones en este dispositivo.</p>' +
+      '<div class="toolbar"><label class="search-wrap"><span>⌕</span><input class="field" type="search" data-catalog-search value="' + escapeHTML(catalogQuery) + '" placeholder="Buscar una película por título…" aria-label="Buscar películas en TMDB y tu catálogo"></label><button class="btn btn-secondary" type="button" data-action="import-catalog">＋ Importar CSV</button></div>' +
+      '<section class="panel tmdb-browser"><div class="panel-head"><div><h3>Explorar TMDB</h3><p>Busca en su catálogo en línea o explora películas populares.</p></div><span class="badge badge-mint">API</span></div><div id="tmdbStatus" class="kicker">Conecta tus credenciales desde Datos para activar la búsqueda global.</div><div id="tmdbResults" style="margin-top:14px"></div></section>' +
+      '<div class="section-head"><div><h2>Catálogo local</h2><p id="catalogCount">Cargando resultados…</p></div><div class="chip-row">' + genreChips + '</div></div><div id="localCatalogResults"></div>' +
+      '<footer>El catálogo remoto se consulta por páginas, no se descarga entero. Puedes calificar resultados de TMDB para ampliar tu perfil personal.</footer>';
   }
 
   function renderLibrary() {
