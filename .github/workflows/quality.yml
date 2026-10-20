@@ -83,6 +83,9 @@ jobs:
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs
 
+      - name: Test brand icon and PWA asset versions
+        run: node scripts/test-brand-assets.mjs
+
       - name: Test coordinated PWA cache versions
         run: node scripts/test-cache-versioning.mjs
 
