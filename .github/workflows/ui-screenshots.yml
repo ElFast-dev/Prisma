@@ -77,16 +77,20 @@ jobs:
                     movieCards: document.querySelectorAll(".movie-card").length,
                     navItems: document.querySelectorAll(".bottom-nav .nav-item").length,
                     topSearch: Boolean(document.querySelector("[data-global-search]")),
+                    hasInfoButton: document.querySelectorAll("[data-action='show-info']").length > 0,
+                    busyCopy: /TU ESPACIO PERSONAL|TU CINE, A TU MANERA|Una mirada a tu historia/.test(document.body.innerText),
                     documentTitle: document.title
                   };
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-10") &&
+                  lastUI.cssHref.includes("v=ui-20261020-11") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
-                  lastUI.topSearch
+                  lastUI.topSearch &&
+                  lastUI.hasInfoButton &&
+                  !lastUI.busyCopy
                 ) {
                   console.log(name + " published UI verified:", JSON.stringify(lastUI));
                   return;
@@ -114,6 +118,19 @@ jobs:
                 await page.locator(".tmdb-browser").waitFor({ state: "visible", timeout: 10000 });
                 await page.waitForTimeout(250);
                 await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: false, animations: "disabled" });
+                await page.evaluate(() => {
+                  const art = document.querySelector(".poster-art");
+                  if (!art) throw new Error("No poster placeholder was rendered");
+                  const broken = document.createElement("img");
+                  broken.className = "poster-image";
+                  broken.alt = "";
+                  broken.src = new URL("__prisma-broken-poster-test__.jpg", location.href).href;
+                  art.prepend(broken);
+                });
+                await page.waitForFunction(() => !document.querySelector(".poster-art .poster-image"), null, { timeout: 10000 });
+                if (!(await page.locator(".poster-art .poster-title").first().isVisible())) {
+                  throw new Error(name + ": poster title fallback stayed hidden after an image error");
+                }
                 await page.locator(".bottom-nav [data-nav='library']").click();
                 await page.locator(".collection-page").waitFor({ state: "visible", timeout: 10000 });
                 await page.screenshot({ path: "artifacts/" + name + "-collection.png", fullPage: false, animations: "disabled" });
@@ -122,6 +139,10 @@ jobs:
                 const sortCount = await page.locator(".utility-sheet .sheet-option").count();
                 if (sortCount !== 7) throw new Error(name + ": expected seven sort options, found " + sortCount);
                 await page.screenshot({ path: "artifacts/" + name + "-sort-sheet.png", fullPage: false, animations: "disabled" });
+                await page.locator("[data-action='close-sheet']").click();
+                await page.locator("[data-action='show-info'][data-info='collection']").click();
+                await page.locator(".info-sheet").waitFor({ state: "visible", timeout: 10000 });
+                await page.screenshot({ path: "artifacts/" + name + "-info-sheet.png", fullPage: false, animations: "disabled" });
                 await page.locator("[data-action='close-sheet']").click();
                 await page.locator(".collection-mode-switch [data-mode='lists']").click();
                 await page.locator(".system-lists-grid").waitFor({ state: "visible", timeout: 10000 });
@@ -138,6 +159,30 @@ jobs:
                 await page.locator(".rating-sheet [data-action='save-rating']").click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 if (!(await page.locator(".detail-action-strip").innerText()).includes("8/10")) throw new Error(name + ": the saved rating did not return to the film detail.");
+                await page.locator(".bottom-nav [data-nav='data']").click();
+                await page.locator("#jsonImportInput").setInputFiles({
+                  name: "prisma-import-test.json",
+                  mimeType: "application/json",
+                  buffer: Buffer.from(JSON.stringify({
+                    movies: {
+                      cH: [{ id: 91001, tmId: 10101, t: "Prisma Test Seen", a: "2024-01-01T00:00:00.000Z" }],
+                      cW: [{ id: 91002, tmId: 10102, t: "Prisma Test Pending", a: "2024-01-02T00:00:00.000Z" }],
+                      rM: [{ id: 91001, tmId: 10101, r: 8, rA: "2024-01-01T00:00:00.000Z" }]
+                    },
+                    shows: {
+                      cW: [{ id: 92001, tmId: 20202, t: "Prisma Series Must Not Import", a: "2024-01-03T00:00:00.000Z" }]
+                    }
+                  }))
+                });
+                await page.locator(".bottom-nav [data-nav='library']").click();
+                await page.locator(".collection-page").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".collection-tabs [data-tab='history']").click();
+                await page.locator(".collection-row-main[data-title='Prisma Test Seen']").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".collection-tabs [data-tab='pending']").click();
+                await page.locator(".collection-row-main[data-title='Prisma Test Pending']").waitFor({ state: "visible", timeout: 10000 });
+                if ((await page.locator(".collection-page").innerText()).includes("Prisma Series Must Not Import")) {
+                  throw new Error(name + ": a series was included in the movie import");
+                }
               } finally {
                 await context.close();
               }
