@@ -1757,17 +1757,95 @@
     return { scope: scope, metaById: metaById, metaByTmdb: metaByTmdb };
   }
 
+  function extractPersonalCollections(root) {
+    const scope = root && root.movies && typeof root.movies === "object" ? root.movies : root;
+    const info = movieMetadataFromJSON(root);
+    function findArray(names) {
+      for (let i = 0; i < names.length; i += 1) {
+        const key = Object.keys(scope || {}).find(function (candidate) { return candidate.toLowerCase() === names[i].toLowerCase(); });
+        if (key && Array.isArray(scope[key])) return scope[key];
+      }
+      return [];
+    }
+    function convert(raw, type) {
+      if (!raw || typeof raw !== "object") return null;
+      const rawTmdb = raw.tmId != null ? raw.tmId : (raw.tmdbId != null ? raw.tmdbId : raw.tmdb_id);
+      const numericId = Number(rawTmdb);
+      const tmdbId = Number.isSafeInteger(numericId) && numericId > 0 ? String(numericId) : null;
+      const localId = raw.id != null ? String(raw.id) : "";
+      const matched = (tmdbId && info.metaByTmdb.get(tmdbId)) || info.metaById.get(localId) || null;
+      const title = raw.t || raw.title || raw.name || (matched && matched.title);
+      if (!title) return null;
+      const forNormalization = Object.assign({}, matched || {}, raw, {
+        id: localId || (matched && matched.id) || tmdbId || titleKey(title),
+        title: String(title),
+        tmId: tmdbId,
+        tmdbId: tmdbId,
+        year: (matched && matched.year) || raw.year || null,
+        source: "imported-json"
+      });
+      const movie = normalizeMovie(forNormalization);
+      if (!movie) return null;
+      if (!tmdbId) movie.tmdbId = null;
+      movie.source = "imported-json";
+      movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
+      if (type === "watched") movie.watchedAt = raw.a || raw.watchedAt || raw.watched_at || null;
+      if (type === "pending") movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
+      if (type === "hidden") movie.hiddenAt = raw.a || raw.hiddenAt || null;
+      return movie;
+    }
+    const watchedRaw = findArray(["cH","watched","history","watched_movies","watchedmovies"]);
+    const pendingRaw = findArray(["cW","watchlist","pending","watch_later","watchlater"]);
+    const hiddenRaw = findArray(["cHid","hidden","hidden_movies","hiddenmovies"]);
+    const watched = watchedRaw.map(function (raw) { return convert(raw, "watched"); }).filter(Boolean);
+    const watchlist = pendingRaw.map(function (raw) { return convert(raw, "pending"); }).filter(Boolean);
+    const hidden = hiddenRaw.map(function (raw) { return convert(raw, "hidden"); }).filter(Boolean);
+    const records = mergeMovieListByTitle([], watched.concat(watchlist, hidden));
+    return { watched:watched, watchlist:watchlist, hidden:hidden, records:records };
+  }
+
+  function hasImportedCollection(collection) {
+    return Boolean(collection && ((collection.watched && collection.watched.length) || (collection.watchlist && collection.watchlist.length) || (collection.hidden && collection.hidden.length)));
+  }
+
+  function isEmptyMovieValue(value) {
+    return value == null || value === "" || (Array.isArray(value) && value.length === 0);
+  }
+
+  function mergeMovieEntries(existing, incoming) {
+    const old = existing || {};
+    const fresh = incoming || {};
+    const merged = Object.assign({}, fresh, old);
+    Object.keys(fresh).forEach(function (key) {
+      if (isEmptyMovieValue(merged[key]) && !isEmptyMovieValue(fresh[key])) merged[key] = fresh[key];
+    });
+    merged.genres = uniqueStrings((old.genres || []).concat(fresh.genres || []));
+    merged.tags = uniqueStrings((old.tags || []).concat(fresh.tags || []));
+    return merged;
+  }
+
+  function mergeMovieListByTitle(existing, incoming) {
+    const map = new Map();
+    (existing || []).forEach(function (entry) {
+      if (entry && entry.title) map.set(titleKey(entry.title), entry);
+    });
+    (incoming || []).forEach(function (entry) {
+      if (!entry || !entry.title) return;
+      const key = titleKey(entry.title);
+      map.set(key, mergeMovieEntries(map.get(key), entry));
+    });
+    return Array.from(map.values());
+  }
+
   function findRatingArrays(scope) {
     const arrays = Object.entries(scope || {}).filter(function (entry) {
       return Array.isArray(entry[1]) && /^(rm|ratings|ratedmovies|rated_movies|valoraciones|calificaciones|ratingsmovies)$/i.test(entry[0]);
     });
-    const preferred = arrays.sort(function (a, b) {
-      const ap = /^rm$/i.test(a[0]) ? 0 : 1;
-      const bp = /^rm$/i.test(b[0]) ? 0 : 1;
-      return ap - bp;
+    return arrays.sort(function (a, b) {
+      return (/^rm$/i.test(a[0]) ? 0 : 1) - (/^rm$/i.test(b[0]) ? 0 : 1);
     });
-    return preferred;
   }
+
 
   function extractPersonalRatings(root) {
     const info = movieMetadataFromJSON(root);
@@ -1811,7 +1889,7 @@
         if (rating != null && (raw.title || raw.name)) imported.push(Object.assign({}, normalizeMovie(raw), { rating: rating, emotions: raw.emotions || [], note: raw.note || "", updatedAt: raw.updatedAt || null, source: "imported" }));
       });
     }
-    return { ratings: imported, metadataRecords: info.metaById.size, ratingArrays: arrays.map(function (item) { return item[0]; }) };
+    return { ratings: imported, metadataRecords: info.metaById.size, ratingArrays: arrays.map(function (item) { return item[0]; }), rawRatingCount: rawRatings.length, skippedRatings: Math.max(0, rawRatings.length - imported.length) };
   }
 
   async function importPersonalJSON(file) {
@@ -1830,27 +1908,49 @@
       return;
     }
     const result = extractPersonalRatings(parsed);
-    if (!result.ratings.length) {
-      throw new Error("No encontré valoraciones de películas con nota del 1 al 10. Comprueba que el archivo tenga una sección movies con rM/ratings y títulos identificables.");
+    const collection = extractPersonalCollections(parsed);
+    if (!result.ratings.length && !hasImportedCollection(collection)) {
+      throw new Error("No encontré películas vistas, pendientes ni valoraciones reconocibles. Comprueba que el JSON contenga movies.cH, movies.cW o movies.rM.");
     }
-    const prior = new Map(state.rated.map(function (entry) { return [titleKey(entry.title), entry]; }));
+
+    const ratingMap = new Map(state.rated.map(function (entry) { return [titleKey(entry.title), entry]; }));
     result.ratings.forEach(function (entry) {
       const key = titleKey(entry.title);
-      const old = prior.get(key);
+      const old = ratingMap.get(key);
       if (old && old.source === "manual") return;
-      prior.set(key, Object.assign({}, old || {}, entry));
+      const merged = mergeMovieEntries(old, entry);
+      merged.rating = ratingValue(entry);
+      merged.source = "imported";
+      merged.updatedAt = entry.updatedAt || old && old.updatedAt || null;
+      ratingMap.set(key, merged);
     });
-    state.rated = Array.from(prior.values());
+    state.rated = Array.from(ratingMap.values()).filter(function (entry) { return ratingValue(entry) != null; });
+    state.watched = mergeMovieListByTitle(state.watched, collection.watched);
+    state.watchlist = mergeMovieListByTitle(state.watchlist, collection.watchlist);
+    state.hidden = mergeMovieListByTitle(state.hidden, collection.hidden);
+
+    const catalogIncoming = collection.records.concat(result.ratings).map(normalizeMovie).filter(Boolean);
+    customCatalog = mergeMovieListByTitle(customCatalog, catalogIncoming);
     state.importedAt = new Date().toISOString();
-    state.events.unshift({ title: "Historial importado", description: result.ratings.length + " valoraciones leídas; " + result.metadataRecords + " registros de catálogo encontrados", symbol: "⇧", at: new Date().toISOString() });
+    const importDescription = result.ratings.length.toLocaleString("es-PA") + " notas · " +
+      collection.watched.length.toLocaleString("es-PA") + " vistas · " +
+      collection.watchlist.length.toLocaleString("es-PA") + " pendientes";
+    state.events.unshift({ title:"Colección importada", description:importDescription, symbol:"⇧", at:new Date().toISOString() });
     state.events = state.events.slice(0, 80);
     state.updatedAt = new Date().toISOString();
     await persistState();
+    await dbSet(CATALOG_KEY, customCatalog);
     combineMovies();
     renderApp();
-    const linked = ratedMetadataCount();
-    toast("Importadas " + result.ratings.length + " valoraciones. " + linked + " tienen características para el motor.");
+    const skippedText = result.skippedRatings ? " · " + result.skippedRatings + " nota sin título" : "";
+    toast("Importadas " + result.ratings.length + " notas, " + collection.watched.length + " vistas y " + collection.watchlist.length + " pendientes" + skippedText + ".");
+    if (tmdbCredential && tmdbCredential.value) {
+      window.setTimeout(function () { enrichRatedHistoryWithTMDB(); }, 250);
+    } else {
+      toast("Conecta TMDB en Ajustes para recuperar las carátulas y las sinopsis.");
+    }
   }
+
 
   function parseCSVLine(line, delimiter) {
     const result = [];
