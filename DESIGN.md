@@ -1,48 +1,71 @@
-# Prisma — guía UI/UX
+# Prisma — guía UI/UX v2
 
-## Objetivo
+## Objetivo del producto
 
-Prisma no debe parecer otro clon de una plataforma de streaming. Es una herramienta personal de descubrimiento y de investigación del gusto cinematográfico. El diseño debe priorizar tres tareas: encontrar una película, entender por qué el motor la recomienda y registrar una experiencia sin interrumpir el reto diario.
+Prisma es un recomendador de cine personal, no un clon de una plataforma de streaming. La pantalla principal debe resolver primero la pregunta «¿qué película podría gustarme hoy?»; las métricas, el mantenimiento y las credenciales son tareas secundarias.
 
-## Decisiones visuales de esta iteración
+## Dirección visual
 
-- **Oscuro cinematográfico, no negro puro:** superficies carbón ligeramente azuladas para separar niveles sin llenar todo de tarjetas.
-- **Acento lavanda + menta:** lavanda para navegación y acciones; menta solo para estados positivos o conexión. Dorado suave para puntuaciones, no como acento general.
-- **Tipografía editorial:** serif para titulares narrativos y sans-serif para controles, metadatos y lectura funcional.
-- **Imágenes con protagonismo:** el cartel es la mayor señal visual de cada película; reducir el número de chips/bordes que compiten con él.
-- **Jerarquía y espacio:** portada clara, catálogo visible y controles secundarios agrupados en Datos o en la ficha. Mantener métricas útiles sin convertir cada dato en un bloque llamativo.
-- **Diseño móvil primero:** objetivos táctiles cómodos, navegación fija compacta, rejilla de dos columnas en teléfonos y más columnas en pantallas grandes.
-- **Interacciones con propósito:** entrada suave de la vista, aparición escalonada de tarjetas, elevación sutil de carteles en escritorio, transiciones de filtros y ficha modal. No usar animación decorativa continua.
-- **Accesibilidad del movimiento:** respetar `prefers-reduced-motion: reduce`; el contenido y las acciones no dependen de las animaciones.
-- **Foco y contraste:** foco visible en controles y texto secundario legible sobre fondos oscuros. Objetivo para texto normal: relación de contraste WCAG AA de al menos 4.5:1.
-- **Rendimiento:** animar principalmente `transform` y `opacity`, cargar carteles de forma diferida y no añadir librerías grandes para microinteracciones.
+- **Paleta:** carbón con matiz azul, fondos azul-negro, superficies pizarra y un único acento azul frío. Sin morado/lavanda. Verde menta solo para confirmaciones y conexión; dorado reservado a puntuaciones.
+- **Carteles protagonistas:** que la imagen de la película aporte el color; evitar que brillos, bordes y chips compitan con ella.
+- **Tipografía:** sans-serif de sistema, clara y actual, con tamaños y pesos diferenciados. Evitar titulares gigantes que empujen la utilidad por debajo del primer pliegue.
+- **Superficies:** pocos paneles, bordes finos, contraste por agrupación y espacio, no una tarjeta por cada dato.
+- **Privacidad visible, sin decoración excesiva:** indicar que el perfil se guarda en el dispositivo sin convertirlo en un gran banner.
+- **Accesibilidad:** texto normal con contraste objetivo mínimo 4.5:1 (WCAG AA), estados de foco visibles, controles cómodos para pantalla táctil y respeto de `prefers-reduced-motion`.
 
-## Reglas de movimiento
+## Arquitectura y orden de pantallas
 
-- Controles y chips: aproximadamente 180–220 ms.
-- Carteles al entrar o reaccionar: 300–450 ms, con desplazamiento muy pequeño.
-- Fichas modales: alrededor de 300–350 ms, con una entrada vertical breve y fondo atenuado.
-- Sin escalados grandes, parpadeos, loops ambientales ni animaciones obligatorias.
-- Con `prefers-reduced-motion`, suprimir las animaciones no esenciales.
+### 1. Para ti
+1. Titular breve y acción principal para descubrir películas; para perfiles vacíos, importar el historial.
+2. Resumen personal compacto a un lado en escritorio y debajo de la acción en móvil: valoraciones y cobertura de metadatos.
+3. Cuatro recomendaciones visibles, con acceso al catálogo completo.
+4. Estadísticas de resumen al final; no antes del contenido recomendado.
+5. Avisos de datos insuficientes solo cuando sean pertinentes.
 
-## Decisiones UX
+### 2. Explorar
+1. Búsqueda como control dominante.
+2. Exploración de TMDB y resultados remotos.
+3. Catálogo local, filtros por género y estado de resultados.
+4. Importación del catálogo como acción secundaria.
 
-1. Mostrar primero las tareas frecuentes; reservar la importación, credenciales y mantenimiento para Datos.
-2. Explicar las recomendaciones con lenguaje normal y diferenciar una predicción experimental de la nota real del usuario.
-3. No obligar a añadir emociones después de ver una película. Debe ser opcional y rápido.
-4. Mostrar estado de carga, vacío y error en búsqueda; no ocultar fallos de TMDB.
-5. Conservar acciones importantes accesibles en móvil y teclado.
-6. Nunca usar estadísticas o gráficas como decoración: deben responder a una pregunta concreta del usuario.
+### 3. Mi lista
+1. Películas pendientes primero.
+2. Historial de valoraciones después.
+3. Métricas del perfil como contexto, no como protagonista.
 
-## Investigación y referencias
+### 4. Laboratorio
+- Separar observaciones, hipótesis del motor y evaluación experimental.
+- Dar más protagonismo al progreso de metadatos y explicar limitaciones de muestra.
+- Mantener el enriquecimiento de historial TMDB aquí, no en la navegación principal.
 
-- Apple Human Interface Guidelines, Motion: movimiento con propósito, opcional y no excesivo. https://developer.apple.com/design/human-interface-guidelines/motion
-- Material Design, Duration & easing: transiciones breves, consistentes y ajustadas a la distancia/función. https://m1.material.io/motion/duration-easing.html
-- Nielsen Norman Group, Aesthetic and Minimalist Design: cada elemento debe aportar valor y no competir con la información importante. https://www.nngroup.com/articles/aesthetic-minimalist-design/
-- Nielsen Norman Group, Progressive Disclosure: mostrar primero las opciones necesarias y revelar las avanzadas cuando se soliciten. https://www.nngroup.com/articles/progressive-disclosure/
-- W3C, WCAG 2.2 contrast minimum: 4.5:1 para texto normal y 3:1 para texto grande. https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
-- MDN, prefers-reduced-motion: respetar las preferencias del sistema para reducir movimiento. https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+### 5. Datos
+- Ajustes de TMDB, importación, ampliación del catálogo, copia de seguridad y acciones destructivas.
+- Agrupar operaciones avanzadas en paneles sencillos y describir claramente el efecto de cada una.
 
-## Alcance de esta entrega
+## Navegación adaptativa
 
-Se ha actualizado el sistema visual de CSS sin cambiar el motor de recomendaciones, las valoraciones ni el formato de los respaldos. Falta hacer pruebas visuales en el Android real, incluyendo búsqueda TMDB, modal de calificación, catálogo grande y ajuste de texto en pantallas estrechas.
+- **Android / pantallas estrechas:** cinco destinos visibles en barra inferior fija, iconos de línea y etiquetas breves.
+- **Escritorio:** barra horizontal compacta bajo la cabecera que permanece visible al desplazarse.
+- No esconder destinos principales detrás de un menú hamburguesa cuando caben cinco.
+
+## Movimiento y estados
+
+- Entradas de vista breves; hover solo en dispositivos con puntero.
+- Animar principalmente opacidad y transformaciones pequeñas, nunca el contenido esencial ni acciones que obliguen a esperar.
+- Respetar `prefers-reduced-motion`.
+- Todos los resultados deben comunicar carga, estado vacío y error cuando corresponda.
+- No tratar predicciones de aprendizaje automático como certezas.
+
+## Investigación de referencia
+
+- Apple Human Interface Guidelines, principios: propósito, simplicidad, jerarquía y adaptación al contexto. https://developer.apple.com/design/human-interface-guidelines/design-principles
+- Apple Human Interface Guidelines, movimiento: animación con propósito, breve y opcional. https://developer.apple.com/design/human-interface-guidelines/motion
+- Android Developers, navegación adaptable: de tres a cinco destinos principales y adaptación a ventanas grandes. https://developer.android.com/design/ui/mobile/guides/layout-and-content/layout-and-nav-patterns
+- Nielsen Norman Group, modo oscuro: cuidar grosor tipográfico, contraste y uso del color; el modo oscuro no soluciona por sí solo la usabilidad. https://www.nngroup.com/articles/dark-mode-users-issues/
+- Nielsen Norman Group, jerarquía visual: usar contraste, escala y agrupación para guiar la atención. https://www.nngroup.com/articles/visual-hierarchy-ux-definition/
+- W3C WCAG 2.2, contraste mínimo: 4.5:1 para texto normal y 3:1 para texto grande. https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+- MDN, `prefers-reduced-motion`: respetar la preferencia del sistema por reducir animaciones no esenciales. https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion
+
+## Alcance de la iteración v2
+
+Actualiza la paleta, la jerarquía de Inicio y la navegación adaptativa sin cambiar el formato de las valoraciones, la lógica del recomendador, los respaldos ni el almacenamiento personal. La prueba automatizada de GitHub Actions verifica que la versión CSS esperada se cargue desde GitHub Pages y toma capturas reales de escritorio y móvil.
