@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { posix } from 'node:path';
 
 const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, personalData, tmdbClient] = await Promise.all([
   readFile('index.html', 'utf8'),
@@ -48,7 +49,8 @@ const modules = [
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {
-    assert.ok(cached.has(match[1]), filename + ': falta en APP_ASSETS el módulo importado ' + match[1]);
+    const resolvedPath = './' + posix.normalize(posix.join(posix.dirname(filename), match[1])).replace(/^\.\//, '');
+    assert.ok(cached.has(resolvedPath), filename + ': falta en APP_ASSETS el módulo importado ' + resolvedPath);
   }
 }
 for (const [filename] of modules.slice(1)) {
