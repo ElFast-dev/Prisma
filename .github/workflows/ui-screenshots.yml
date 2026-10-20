@@ -229,6 +229,15 @@ jobs:
                   throw new Error(name + ": a generic source ID was incorrectly treated as a TMDB ID: " + JSON.stringify(movieLensRow));
                 }
 
+                await page.locator("[data-global-search]").fill("Prisma CSV Remake Fixture");
+                await page.waitForFunction(() => document.querySelectorAll("#localCatalogResults .movie-card").length === 2);
+                const displayedRemakeIds = await page.locator("#localCatalogResults .movie-card [data-action='details']")
+                  .evaluateAll(nodes => nodes.map(node => node.getAttribute("data-tmdb-id")).sort());
+                if (JSON.stringify(displayedRemakeIds) !== JSON.stringify(["990001", "990002"])) {
+                  throw new Error(name + ": the combined catalog did not display both distinct TMDB identities: " + JSON.stringify(displayedRemakeIds));
+                }
+
+                await page.locator(".topbar [data-nav='data']").click();
                 await page.locator("#catalogImportInput").setInputFiles({
                   name: "prisma-remake-reimport-test.csv",
                   mimeType: "text/csv",
