@@ -16,10 +16,12 @@ Prisma es una aplicación web estática, mobile-first y en español, pensada par
 
 ## Publicar gratis en GitHub Pages
 1. Abre **Settings → Pages** en este repositorio.
-2. En **Build and deployment**, selecciona **Deploy from a branch**.
-3. Selecciona `main` y la carpeta `/(root)`; pulsa **Save**.
-4. Cuando termine el despliegue, abre la URL que GitHub Pages muestre en esa pantalla.
-5. En Android, abre la web con Chrome y elige **Añadir a pantalla de inicio** si la opción está disponible.
+2. En **Build and deployment**, cambia **Source** a **GitHub Actions** y guarda si aparece un botón para hacerlo.
+3. Abre la pestaña **Actions** y entra en **Deploy Prisma to GitHub Pages**. Espera a que el trabajo termine con una marca verde.
+4. En **Settings → Pages**, abre la URL que GitHub muestra para el sitio. La URL esperada para este repositorio es `https://elfast-dev.github.io/Prisma/`.
+5. En Android, abre la página con Chrome y elige **Añadir a pantalla de inicio** si está disponible.
+
+El flujo de despliegue se encuentra en `.github/workflows/deploy-pages.yml`. Usa GitHub Actions para publicar la raíz del repositorio; por eso, la fuente de Pages debe estar seleccionada como **GitHub Actions**, no como una rama.
 
 Los archivos y rutas son relativos para funcionar en `https://elfast-dev.github.io/Prisma/`.
 
