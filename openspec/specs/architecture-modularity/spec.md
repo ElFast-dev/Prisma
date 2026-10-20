@@ -94,3 +94,14 @@ Los formateadores, enlaces externos y fragmentos visuales reutilizables DEBEN re
 - DADO que se modifica un formateador o la construcción de enlaces de puntuaciones
 - CUANDO se ejecutan pruebas automatizadas
 - ENTONCES el comportamiento se prueba directamente a través de la API del módulo, sin extraer código por texto del controlador.
+
+
+### Requirement: Vistas de página separadas del coordinador
+
+Los renderizadores de las páginas y componentes visuales principales DEBEN vivir en un módulo de vistas, recibir estado y dependencias mediante un contexto explícito y devolver marcado sin apropiarse del ciclo de vida global de la aplicación.
+
+#### Scenario: Se cambia una vista de página
+
+- DADO que se modifica la presentación de Progreso, Descubrir, Colección, Laboratorio o Ajustes
+- CUANDO se ejecuta la aplicación
+- ENTONCES la implementación reside en el módulo de vistas y la entrada solo conecta sus dependencias y selecciona la vista.

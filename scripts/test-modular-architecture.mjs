@@ -17,6 +17,7 @@ const files = [
   'js/catalog/catalog-model.js',
   'js/collection/collection-model.js',
   'js/ui/presentation-utils.js',
+  'js/ui/page-views.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -50,6 +51,10 @@ assert.ok(!app.includes('function parseCatalogCSV('));
 assert.ok(!app.includes('function combineMovies('));
 assert.ok(!app.includes('function getCollectionItems('));
 assert.ok(!app.includes('function buildRatingMetrics('));
+assert.ok(!app.includes('function renderHome('));
+assert.ok(!app.includes('function renderLibrary('));
+assert.ok(!app.includes('function renderApp('));
+assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));
 assert.ok(app.includes('createCatalogModel('));
