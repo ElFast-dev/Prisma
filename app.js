@@ -294,10 +294,7 @@
 
   function findMovie(title, tmdbId) {
     const id = movieTmdbId({tmdbId:tmdbId});
-    if (id) {
-      const exactMatch = catalog.find(function (movie) { return movieTmdbId(movie) === id; });
-      if (exactMatch) return exactMatch;
-    }
+    if (id) return catalog.find(function (movie) { return movieTmdbId(movie) === id; }) || null;
     return catalogByTitle.get(titleKey(title)) || null;
   }
 
@@ -307,9 +304,9 @@
     if (id) {
       const exactMatch = state.rated.find(function (entry) { return movieTmdbId(entry) === id; });
       if (exactMatch) return exactMatch;
-      const noIdMatch = state.rated.find(function (entry) { return titleKey(entry.title) === key && !movieTmdbId(entry); });
-      if (noIdMatch) return noIdMatch;
-      return null;
+      const sameTitle = state.rated.filter(function (entry) { return titleKey(entry.title) === key; });
+      const noIdMatches = sameTitle.filter(function (entry) { return !movieTmdbId(entry); });
+      return sameTitle.length === 1 && noIdMatches.length === 1 ? noIdMatches[0] : null;
     }
     return state.rated.find(function (entry) { return titleKey(entry.title) === key; }) || null;
   }
@@ -512,7 +509,7 @@
     const fetchedAt = entry && entry.tmdbFetchedAt ? new Date(entry.tmdbFetchedAt).getTime() : 0;
     const isFresh = entry && entry.metadataSource === "tmdb" &&
       Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 179;
-    if (isFresh) return false;
+    if (isFresh && (entry.posterUrl || entry.posterPath)) return false;
     return Boolean(entry && entry.title);
   }
 
@@ -574,12 +571,11 @@
     entry.metadataSource = "tmdb";
   }
 
-  function applyTMDBDetailsToLocalCollection(title, enriched) {
-    const key = titleKey(title);
+  function applyTMDBDetailsToLocalCollection(entry, enriched) {
     ["rated","watched","watchlist","hidden"].forEach(function (listName) {
-      state[listName] = (state[listName] || []).map(function (entry) {
-        if (titleKey(entry.title) !== key) return entry;
-        const updated = Object.assign({},entry);
+      state[listName] = (state[listName] || []).map(function (current) {
+        if (!sameMovieRecord(current,entry)) return current;
+        const updated = Object.assign({},current);
         applyTMDBDetailsToRating(updated,enriched);
         return updated;
       });
@@ -673,7 +669,7 @@
               tmdbHistorySync.failed += 1;
             } else {
               applyTMDBDetailsToRating(entry,enriched);
-              applyTMDBDetailsToLocalCollection(entry.title,enriched);
+              applyTMDBDetailsToLocalCollection(entry,enriched);
               upsertTMDBCatalogEntry(entry,enriched);
               tmdbHistorySync.updated += 1;
             }
