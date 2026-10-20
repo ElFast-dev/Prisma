@@ -898,7 +898,7 @@
       '<div class="empty-state"><div class="empty-icon">⌕</div><h3>Necesitamos más películas para recomendarte</h3><p>Explora el catálogo y califica algunas películas para que Prisma empiece a reconocer tus gustos.</p><button type="button" class="btn btn-secondary" data-nav="catalog">Explorar catálogo</button></div>';
     return '<section class="hero hero-v2">' +
       '<div class="hero-content hero-main"><div class="eyebrow"><span class="hero-eyebrow-mark"></span> DESCUBRIMIENTO PERSONAL</div>' +
-      '<h1 class="hero-title">Tu próxima película.<br><span class="gradient-text">Mejor elegida.</span></h1>' +
+      '<h1 class="hero-title">Cine que encaja<br><span class="gradient-text">contigo.</span></h1>' +
       '<p class="lead">Recomendaciones que aprenden de tus valoraciones y de lo que una película te hizo sentir.</p>' +
       '<div class="hero-actions">' + primaryAction + secondaryAction + '</div>' +
       '<div class="hero-privacy"><span class="status-dot"></span> Tus valoraciones permanecen en este dispositivo</div></div>' +
@@ -954,7 +954,7 @@
     const genreChips = genres.map(function (genre) {
       return '<button class="chip ' + (activeGenre === genre ? "active" : "") + '" type="button" data-action="genre" data-genre="' + escapeHTML(genre) + '">' + escapeHTML(displayGenre(genre)) + '</button>';
     }).join("");
-    return '<div class="eyebrow">Explora</div><h1>Tu próximo descubrimiento</h1><p class="lead">Busca entre películas de TMDB o filtra tu catálogo local. Prisma guarda tus valoraciones en este dispositivo.</p>' +
+    return '<div class="eyebrow">Explora</div><h1>Tu próximo descubrimiento</h1><p class="lead">Busca títulos en TMDB o filtra tu catálogo local.</p>' +
       '<div class="toolbar"><label class="search-wrap"><span>⌕</span><input class="field" type="search" data-catalog-search value="' + escapeHTML(catalogQuery) + '" placeholder="Buscar una película por título…" aria-label="Buscar películas en TMDB y tu catálogo"></label><button class="btn btn-secondary" type="button" data-action="import-catalog">＋ Importar CSV</button></div>' +
       '<section class="panel tmdb-browser"><div class="panel-head"><div><h3>Explorar TMDB</h3><p>Busca en su catálogo en línea o explora películas populares.</p></div><span class="badge badge-mint">API</span></div><div id="tmdbStatus" class="kicker">Conecta tus credenciales desde Datos para activar la búsqueda global.</div><div id="tmdbResults" style="margin-top:14px"></div></section>' +
       '<div class="section-head"><div><h2>Catálogo local</h2><p id="catalogCount">Cargando resultados…</p></div><div class="chip-row">' + genreChips + '</div></div><div id="localCatalogResults"></div>' +
