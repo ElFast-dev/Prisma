@@ -2,7 +2,7 @@
 
 ## Estado
 
-Preparado bajo SDD. El cambio debe pasar las pruebas de navegador en escritorio y móvil y la revisión de los flujos existentes antes de integrarse.
+Aceptado tras revisión técnica delegada el 2026-10-20 y archivado. Los flujos de póster, ficha, colección, hojas inferiores, filtro de estreno y reciente 2×2 se verificaron con Playwright en escritorio y móvil.
 
 ## Problema observado
 

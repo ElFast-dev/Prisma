@@ -26,3 +26,8 @@
 ## Datos y limitaciones
 
 No se cambia el modelo local ni se calculan nuevos datos. Las puntuaciones de IMDb/Rotten Tomatoes/Metacritic que no formen parte de la respuesta disponible se siguen representando como enlaces externos, no como valores inventados.
+
+
+## Resultado de la revisión
+
+La prueba de navegador pasó en escritorio y móvil. Se confirma que Descubrir usa botones de póster accesibles sin copia de metadatos duplicada, que Colección mantiene sus acciones y que siguen funcionando las hojas de ordenar y géneros, el filtro «Estrenada», el cambio de vista, el historial reciente 2×2 y el flujo de identidad TMDB. No se cambió el motor de recomendaciones ni los datos guardados.
