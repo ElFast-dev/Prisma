@@ -7,30 +7,37 @@
   <meta name="description" content="Prisma: tu laboratorio personal de recomendaciones cinematográficas.">
   <title>Prisma — Cine a tu medida</title>
   <link rel="icon" href="./assets/prisma.svg" type="image/svg+xml">
-  <link rel="manifest" href="./manifest.webmanifest?v=ui-20261020-8">
-  <link rel="stylesheet" href="./styles.css?v=ui-20261020-9">
-  <script defer src="./app.js?v=ui-20261020-9"></script>
+  <link rel="manifest" href="./manifest.webmanifest?v=ui-20261020-10">
+  <link rel="stylesheet" href="./styles.css?v=ui-20261020-10">
+  <script defer src="./app.js?v=ui-20261020-10"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <a href="./" class="brand" aria-label="Prisma, inicio" data-nav="home">
-        <img src="./assets/prisma.svg" alt="" width="38" height="38">
-        <span class="brand-copy"><strong>prisma</strong><small>tu universo de cine</small></span>
+        <img src="./assets/prisma.svg" alt="" width="36" height="36">
+        <span class="brand-copy"><strong>prisma</strong><small>cine a tu manera</small></span>
       </a>
-      <div class="topbar-right">
-        <span class="privacy-pill"><span class="status-dot"></span> Perfil privado</span>
-        <button class="avatar-button" type="button" data-nav="data" aria-label="Abrir datos y ajustes">P</button>
+      <div class="topbar-actions">
+        <label class="top-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+          <input type="search" data-global-search placeholder="Buscar" aria-label="Buscar películas">
+        </label>
+        <button class="top-icon-button" type="button" data-nav="lab" aria-label="Estadísticas" title="Estadísticas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12M10 20V5M16 20v-9M22 20V8"/></svg>
+        </button>
+        <button class="top-icon-button" type="button" data-nav="data" aria-label="Ajustes" title="Ajustes">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.2 13.6a7.7 7.7 0 0 0 0-3.2l1.5-1.1-1.5-2.6-1.8.7a7.5 7.5 0 0 0-2.7-1.6L14.4 4h-3l-.4 1.8a7.5 7.5 0 0 0-2.7 1.6l-1.8-.7L5 9.3l1.5 1.1a7.7 7.7 0 0 0 0 3.2L5 14.7l1.5 2.6 1.8-.7a7.5 7.5 0 0 0 2.7 1.6l.4 1.8h3l.4-1.8a7.5 7.5 0 0 0 2.7-1.6l1.8.7 1.5-2.6Z"/></svg>
+        </button>
       </div>
     </header>
 
     <nav class="bottom-nav" aria-label="Navegación principal">
-      <button class="nav-item active" type="button" data-nav="home"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M6.5 9.5v10h11v-10"/><path d="M10 19.5v-6h4v6"/></svg></span><span>Para ti</span></button>
-      <button class="nav-item" type="button" data-nav="catalog"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/><path d="M8 10.8h5.5M10.8 8v5.5"/></svg></span><span>Explorar</span></button>
-      <button class="nav-item" type="button" data-nav="library"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4.5h12a1.5 1.5 0 0 1 1.5 1.5v14L12 16l-7.5 4V6A1.5 1.5 0 0 1 6 4.5Z"/></svg></span><span>Mi lista</span></button>
-      <button class="nav-item" type="button" data-nav="lab"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19.5V12M10 19.5V5M16 19.5v-9M22 19.5V8"/></svg></span><span>Laboratorio</span></button>
-      <button class="nav-item" type="button" data-nav="data"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.3 1-.9 1.6-1.6-.6a8 8 0 0 1-1.6.9l-.3 1.7h-2l-.4-1.7a8 8 0 0 1-1.6-.9l-1.6.6-.9-1.6 1.3-1a7 7 0 0 1 0-1.9l-1.3-1 .9-1.6 1.6.6a8 8 0 0 1 1.6-.9l.4-1.7h2l.3 1.7a8 8 0 0 1 1.6.9l1.6-.6.9 1.6-1.3 1a7 7 0 0 1-.1 1.8Z" transform="translate(-1 -1) scale(1.08)"/></svg></span><span>Datos</span></button>
+      <button class="nav-item active" type="button" data-nav="home"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h17"/><path d="m7 15 4-4 3 2 6-7"/></svg></span><span>Progreso</span></button>
+      <button class="nav-item" type="button" data-nav="catalog"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span><span>Descubrir</span></button>
+      <button class="nav-item" type="button" data-nav="library"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4.5h12a1.5 1.5 0 0 1 1.5 1.5v14L12 16l-7.5 4V6A1.5 1.5 0 0 1 6 4.5Z"/></svg></span><span>Colección</span></button>
     </nav>
+
 
     <main id="appRoot" class="main-content">
       <div class="loading-state"><span class="spinner"></span><p>Preparando tu universo cinematográfico…</p></div>
