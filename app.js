@@ -603,7 +603,11 @@
       source: "tmdb"
     });
     const key = titleKey(stored.title);
-    const index = customCatalog.findIndex(function (movie) { return titleKey(movie.title) === key; });
+    const index = customCatalog.findIndex(function (movie) {
+      const existingId = movieTmdbId(movie), incomingId = movieTmdbId(stored);
+      if (existingId && incomingId) return existingId === incomingId;
+      return titleKey(movie.title) === key && !existingId && !incomingId;
+    });
     if (index >= 0) {
       customCatalog[index] = Object.assign({}, customCatalog[index], stored, {
         title: customCatalog[index].title || stored.title,
@@ -1063,8 +1067,8 @@
   function enrichCollectionMovie(entry) {
     const stored = entry || {};
     const known = findMovie(stored.title,stored.tmdbId || stored.tmId) || {};
-    const result = Object.assign({}, known, stored);
-    ["posterUrl", "posterPath", "overview", "releaseDate", "backdropUrl", "runtime", "voteAverage", "tmdbId", "status", "imdbId"].forEach(function (key) {
+    const result = Object.assign({},known,stored);
+    ["posterUrl","posterPath","overview","releaseDate","backdropUrl","runtime","voteAverage","tmdbId","status","imdbId"].forEach(function (key) {
       if (!result[key]) result[key] = known[key] || (key === "posterUrl" ? "" : null);
     });
     if (!Array.isArray(result.genres) || !result.genres.length) result.genres = known.genres || [];
@@ -1075,28 +1079,35 @@
 
   function getCollectionItems(tab) {
     const key = tab || collectionTab;
-    const hiddenKeys = new Set((state.hidden || []).map(function (entry) { return titleKey(entry.title); }));
     let items = [];
     if (key === "history") {
       const map = new Map();
       (state.watched || []).forEach(function (entry) {
-        if (entry && entry.title) map.set(titleKey(entry.title), enrichCollectionMovie(entry));
+        if (entry && entry.title) map.set(movieIdentityKey(entry),enrichCollectionMovie(entry));
       });
       state.rated.forEach(function (entry) {
-        const id = titleKey(entry.title);
-        const prior = map.get(id) || {};
-        map.set(id, enrichCollectionMovie(Object.assign({}, prior, entry, { rating: ratingValue(entry), watchedAt: prior.watchedAt || latestRecordDate(entry) })));
+        if (!entry || !entry.title) return;
+        const identity = movieIdentityKey(entry);
+        const prior = map.get(identity) || {};
+        map.set(identity,enrichCollectionMovie(Object.assign({},prior,entry,{
+          rating:ratingValue(entry),
+          watchedAt:prior.watchedAt || latestRecordDate(entry)
+        })));
       });
-      items = Array.from(map.values()).filter(function (item) { return !hiddenKeys.has(titleKey(item.title)); });
+      items = Array.from(map.values()).filter(function (item) {
+        return !(state.hidden || []).some(function (hidden) { return sameMovieRecord(hidden,item); });
+      });
     } else if (key === "pending") {
-      items = state.watchlist.map(enrichCollectionMovie).filter(function (item) { return !hiddenKeys.has(titleKey(item.title)); });
+      items = (state.watchlist || []).map(enrichCollectionMovie).filter(function (item) {
+        return !(state.hidden || []).some(function (hidden) { return sameMovieRecord(hidden,item); });
+      });
     } else {
       items = (state.hidden || []).map(enrichCollectionMovie);
     }
     const query = titleKey(collectionQuery);
     if (query) {
       items = items.filter(function (item) {
-        return titleKey([item.title, item.year, item.overview, (item.genres || []).join(" ")].join(" ")).indexOf(query) >= 0;
+        return titleKey([item.title,item.year,item.overview,(item.genres || []).join(" ")].join(" ")).indexOf(query) >= 0;
       });
     }
     if (collectionGenres.length) {
@@ -1107,7 +1118,7 @@
     }
     if (key === "pending" && onlyReleased) {
       const now = new Date();
-      const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+      const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
       items = items.filter(function (item) {
         if (item.releaseDate) return item.releaseDate <= today;
         return item.year && Number(item.year) <= now.getFullYear();
@@ -1115,33 +1126,39 @@
     }
     const multiplier = collectionDirection === "asc" ? 1 : -1;
     if (collectionSort === "random") items.sort(function () { return Math.random() - .5; });
-    else items.sort(function (a, b) {
+    else items.sort(function (a,b) {
       let result = 0;
-      if (collectionSort === "title") result = String(a.title || "").localeCompare(String(b.title || ""), "es");
+      if (collectionSort === "title") result = String(a.title || "").localeCompare(String(b.title || ""),"es");
       else if (collectionSort === "rating") result = (ratingValue(a) || 0) - (ratingValue(b) || 0);
       else if (collectionSort === "public") result = (Number(a.voteAverage) || 0) - (Number(b.voteAverage) || 0);
       else if (collectionSort === "runtime") result = (Number(a.runtime) || 0) - (Number(b.runtime) || 0);
       else if (collectionSort === "release") result = dateScore(a.releaseDate) - dateScore(b.releaseDate) || (Number(a.year) || 0) - (Number(b.year) || 0);
       else result = dateScore(latestRecordDate(a)) - dateScore(latestRecordDate(b));
-      return result * multiplier || String(a.title || "").localeCompare(String(b.title || ""), "es");
+      return result * multiplier || String(a.title || "").localeCompare(String(b.title || ""),"es") || String(movieTmdbId(a)).localeCompare(String(movieTmdbId(b)));
     });
     return items;
   }
 
-  function isInHistory(title) {
-    const key = titleKey(title);
-    return state.rated.some(function (entry) { return titleKey(entry.title) === key; }) ||
-      (state.watched || []).some(function (entry) { return titleKey(entry.title) === key; });
+  function isInHistory(title, tmdbId) {
+    const target = {title:title,tmdbId:tmdbId};
+    return state.rated.some(function (entry) { return sameMovieRecord(entry,target); }) ||
+      (state.watched || []).some(function (entry) { return sameMovieRecord(entry,target); });
   }
 
-  function isHidden(title) {
-    const key = titleKey(title);
-    return (state.hidden || []).some(function (entry) { return titleKey(entry.title) === key; });
+  function isHidden(title, tmdbId) {
+    const target = {title:title,tmdbId:tmdbId};
+    return (state.hidden || []).some(function (entry) { return sameMovieRecord(entry,target); });
   }
 
-  function isMovieInCollection(title) {
-    return isInHistory(title) || isInWatchlist(title) || isHidden(title);
+  function isInWatchlist(title, tmdbId) {
+    const target = {title:title,tmdbId:tmdbId};
+    return (state.watchlist || []).some(function (entry) { return sameMovieRecord(entry,target); });
   }
+
+  function isMovieInCollection(title, tmdbId) {
+    return isInHistory(title,tmdbId) || isInWatchlist(title,tmdbId) || isHidden(title,tmdbId);
+  }
+
 
   function recentPoster(item) {
     const background = item.posterUrl ? 'background-image:linear-gradient(180deg,rgba(4,9,15,.03),rgba(4,9,15,.84)),url(&quot;' + escapeHTML(item.posterUrl) + '&quot;)' : "";
@@ -1168,7 +1185,7 @@
 
   function collectionCompactCard(item) {
     const rating = ratingValue(item);
-    const seenMarker = isInHistory(item.title) ? "seen" : (isInWatchlist(item.title) ? "pending" : "hidden");
+    const seenMarker = isInHistory(item.title,item.tmdbId) ? "seen" : (isInWatchlist(item.title,item.tmdbId) ? "pending" : "hidden");
     return '<button class="collection-compact-card" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' +
       '<span class="compact-poster">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + '<i class="collection-marker ' + seenMarker + '"></i></span>' +
       '<strong>' + escapeHTML(item.title) + '</strong><small>' + escapeHTML(item.year || "") + (rating ? " · ★ " + rating + "/10" : "") + '</small></button>';
@@ -1567,7 +1584,7 @@
     const collectionMarkup = collection ? '<a class="saga-card" href="https://www.themoviedb.org/collection/' + encodeURIComponent(collection.id) + '" target="_blank" rel="noopener noreferrer"><span class="saga-art">' + (collection.poster_path ? '<img src="https://image.tmdb.org/t/p/w185' + escapeHTML(collection.poster_path) + '" alt="" loading="lazy">' : "▣") + '</span><span><small>PERTENECE A LA COLECCIÓN</small><strong>' + escapeHTML(collection.name) + '</strong></span><span aria-hidden="true">↗</span></a>' : "";
     const recs = data && data.recommendations ? data.recommendations.slice(0,12) : [];
     const similarMarkup = recs.length ? '<div class="similar-carousel">' + recs.map(function (item) {
-      const marker = isInHistory(item.title) ? "seen" : (isInWatchlist(item.title) ? "pending" : "");
+      const marker = isInHistory(item.title,item.tmdbId) ? "seen" : (isInWatchlist(item.title,item.tmdbId) ? "pending" : "");
       return '<button class="similar-poster" type="button" data-action="details" data-title="' + escapeHTML(item.title) + '" data-tmdb-id="' + escapeHTML(item.tmdbId || "") + '">' + (item.posterUrl ? '<img src="' + escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + (marker ? '<i class="collection-marker ' + marker + '"></i>' : "") + '<strong>' + escapeHTML(item.title) + '</strong></button>';
     }).join("") + '</div>' : "";
     const videos = data && data.videos ? data.videos : [];
@@ -1649,7 +1666,7 @@
     const films = credits.map(function (item) {
       const movie = fromTMDB(item), year = item.release_date ? String(item.release_date).slice(0,4) : "TBA";
       const role = item.character || item.job || "";
-      const marker = isMovieInCollection(movie.title) ? '<span class="collection-marker ' + (isInHistory(movie.title) ? "seen" : (isInWatchlist(movie.title) ? "pending" : "hidden")) + '"></span>' : "";
+      const marker = isMovieInCollection(movie.title,movie.tmdbId) ? '<span class="collection-marker ' + (isInHistory(movie.title,movie.tmdbId) ? "seen" : (isInWatchlist(movie.title,movie.tmdbId) ? "pending" : "hidden")) + '"></span>' : "";
       return '<button class="person-film-row" type="button" data-action="movie-from-person" data-title="' + escapeHTML(movie.title) + '" data-tmdb-id="' + escapeHTML(movie.tmdbId || "") + '"><span class="person-film-poster">' + (movie.posterUrl ? '<img src="' + escapeHTML(movie.posterUrl) + '" alt="" loading="lazy">' : '<span>▣</span>') + '</span><span class="person-film-copy"><span class="collection-release">' + year + '</span><strong>' + escapeHTML(movie.title) + '</strong><small>' + escapeHTML(role) + '</small><span>' + escapeHTML(item.overview || "Sin sinopsis disponible.") + '</span></span>' + marker + '<span class="film-clapper" aria-hidden="true">▣</span></button>';
     }).join("");
     root.innerHTML = '<div class="modal-backdrop detail-backdrop" data-action="backdrop-close"><section class="modal person-sheet" role="dialog" aria-modal="true" aria-labelledby="personTitle" data-modal-panel><div class="person-header"><button class="detail-back" type="button" data-action="person-back">‹ <span>Volver a la película</span></button><div class="person-header-content">' + (person.profile_path ? '<img src="https://image.tmdb.org/t/p/w342' + escapeHTML(person.profile_path) + '" alt="" class="person-portrait">' : '<div class="person-portrait person-portrait-empty">●</div>') + '<div><h2 id="personTitle">' + escapeHTML(person.name || personDetail.name) + '</h2>' + roles + '<p>' + escapeHTML(personAge(person.birthday,person.deathday)) + (person.birthday ? " · " + escapeHTML(dateLabel(person.birthday)) : "") + '</p><p>' + escapeHTML(person.place_of_birth || "Lugar de nacimiento desconocido") + '</p><a href="https://www.themoviedb.org/person/' + encodeURIComponent(personDetail.id) + '" target="_blank" rel="noopener noreferrer">Ver ficha en TMDB ↗</a></div></div></div><div class="person-body"><section class="detail-section"><div class="detail-section-heading"><h3>Biografía</h3></div><p>' + escapeHTML(biography || (personDetail.loading ? "Cargando biografía…" : "Sin biografía.")) + '</p></section><section class="detail-section"><div class="detail-section-heading"><h3>Filmografía</h3><span>' + credits.length + ' títulos</span></div><div class="person-filter-tabs"><button class="' + (personListFilter === "all" ? "active" : "") + '" type="button" data-action="person-filter" data-filter="all">Películas</button><button class="' + (personListFilter === "collection" ? "active" : "") + '" type="button" data-action="person-filter" data-filter="collection">Colección</button></div>' + (films ? '<div class="person-film-list">' + films + '</div>' : '<div class="empty-inline"><strong>Sin películas en esta vista</strong></div>') + '</section>' + (personDetail.error ? '<div class="notice">' + escapeHTML(personDetail.error) + '</div>' : "") + '</div></section></div>';
