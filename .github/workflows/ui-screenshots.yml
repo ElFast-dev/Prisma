@@ -84,7 +84,7 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-12") &&
+                  lastUI.cssHref.includes("v=ui-20261020-13") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
@@ -180,6 +180,44 @@ jobs:
                 await page.locator(".collection-mode-switch [data-mode='movies']").click();
                 await page.locator(".collection-tabs [data-tab='history']").click();
                 await page.locator(".collection-row-main[data-title='Prisma Test Seen']").waitFor({ state: "visible", timeout: 10000 });
+
+                const testRow = page.locator(".collection-row:has(.collection-row-main[data-title='Prisma Test Seen'])");
+                const testRowMain = testRow.locator(".collection-row-main");
+                const hoverSupported = await page.evaluate(() => matchMedia("(hover: hover) and (pointer: fine)").matches);
+                const normalRowBackground = await testRow.evaluate(node => getComputedStyle(node).backgroundColor);
+                if (hoverSupported) {
+                  await testRowMain.hover();
+                  const hoverStyles = await page.evaluate(() => {
+                    const row = document.querySelector(".collection-row:has(.collection-row-main[data-title='Prisma Test Seen'])");
+                    const main = row && row.querySelector(".collection-row-main");
+                    return {
+                      background: row && getComputedStyle(row).backgroundColor,
+                      transform: main && getComputedStyle(main).transform
+                    };
+                  });
+                  if (!hoverStyles.background || hoverStyles.background === normalRowBackground) {
+                    throw new Error(name + ": collection row hover did not change the row background");
+                  }
+                  if (hoverStyles.transform !== "none") {
+                    throw new Error(name + ": collection row's main action moved during hover: " + hoverStyles.transform);
+                  }
+                  await page.mouse.move(0, 0);
+                  await page.waitForTimeout(220);
+                  const restoredBackground = await testRow.evaluate(node => getComputedStyle(node).backgroundColor);
+                  if (restoredBackground !== normalRowBackground) {
+                    throw new Error(name + ": collection row did not restore its background after hover");
+                  }
+                }
+                await page.emulateMedia({ reducedMotion: "reduce" });
+                const reducedMotionStyles = await testRow.evaluate(node => {
+                  const style = getComputedStyle(node);
+                  return { duration: style.transitionDuration, property: style.transitionProperty };
+                });
+                if (reducedMotionStyles.duration !== "0s" && reducedMotionStyles.property !== "none") {
+                  throw new Error(name + ": collection row still animates with reduced motion: " + JSON.stringify(reducedMotionStyles));
+                }
+                await page.emulateMedia({ reducedMotion: "no-preference" });
+
                 await page.locator(".collection-tabs [data-tab='pending']").click();
                 await page.locator(".collection-row-main[data-title='Prisma Test Pending']").waitFor({ state: "visible", timeout: 10000 });
                 if ((await page.locator(".collection-page").innerText()).includes("Prisma Series Must Not Import")) {
