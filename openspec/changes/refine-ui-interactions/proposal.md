@@ -2,7 +2,7 @@
 
 ## Estado
 
-En implementación bajo SDD. Se cerrará cuando las comprobaciones y el flujo de navegador pasen en la revisión actual.
+Implementado y verificado por los workflows de calidad y navegador. Pendiente de revisión y aceptación de la PR; no se archiva todavía.
 
 ## Motivación
 
