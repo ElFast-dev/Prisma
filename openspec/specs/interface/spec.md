@@ -196,3 +196,21 @@ La sección Puntuaciones DEBE usar tarjetas de tamaño compacto, cuya altura est
 - DADO que se abre la ficha de una película
 - CUANDO se muestran los enlaces e indicadores de puntuación
 - ENTONCES las tarjetas son compactas y no ocupan altura excesiva respecto a sus textos
+
+
+
+### Requirement: Sistema visual cinematográfico
+
+Prisma DEBE definir tokens visuales compartidos y usarlos en la navegación, los botones principales, los filtros seleccionados, los campos enfocados y los controles de película. El acento de marca DEBE ser violeta suave sobre una base oscura; los colores semánticos de puntuación, éxito y error DEBEN conservar su significado. Los estados principales NO DEBEN depender de hover.
+
+#### Scenario: La interfaz muestra estados de marca
+
+- DADO que el usuario navega por Progreso, Descubrir o Colección
+- CUANDO existe una acción primaria o un destino de navegación activo
+- ENTONCES el componente usa el acento compartido, mantiene un contraste perceptible y deja que los pósteres sigan siendo el foco visual.
+
+#### Scenario: El usuario utiliza controles con teclado
+
+- DADO que el usuario enfoca un botón, filtro, campo o póster mediante teclado
+- CUANDO el control recibe foco visible
+- ENTONCES el indicador usa el acento del sistema visual, sin desplazar el contenido ni ocultar el límite del control.
