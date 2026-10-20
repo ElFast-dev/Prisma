@@ -1,9 +1,9 @@
-const CACHE_NAME = "prisma-shell-v17";
+const CACHE_NAME = "prisma-shell-v18";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css?v=ui-20261020-13",
-  "./app.js?v=ui-20261020-12",
+  "./app.js?v=ui-20261020-14",
   "./manifest.webmanifest?v=ui-20261020-12",
   "./data/catalog.json",
   "./assets/prisma.svg"
