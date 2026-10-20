@@ -20,6 +20,7 @@ const files = [
   'js/ui/page-views.js',
   'js/ui/modal-views.js',
   'js/app/movie-actions.js',
+  'js/import-export/actions.js',
   'js/import-export/personal-data.js',
   'js/tmdb/client.js'
 ];
@@ -64,6 +65,9 @@ assert.ok(app.includes('createModalViews('));
 assert.ok(!app.includes('async function saveRating('));
 assert.ok(!app.includes('async function toggleWatchlist('));
 assert.ok(app.includes('createMovieActions('));
+assert.ok(!app.includes('async function importPersonalJSON('));
+assert.ok(!app.includes('async function exportBackup('));
+assert.ok(app.includes('createImportExportActions('));
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));

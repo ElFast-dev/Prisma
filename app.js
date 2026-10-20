@@ -10,6 +10,7 @@ import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20
 import { createPageViews } from "./js/ui/page-views.js?v=core-20261020-1";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261020-1";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
+import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
@@ -218,6 +219,36 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     get ratingValue() { return ratingValue; }
   });
   const { saveRating, deleteRating, resolveMovieForAction, toggleWatchlist, markWatched, toggleHidden } = movieActions;
+
+  const importExportActions = createImportExportActions({
+    get state() { return state; },
+    set state(value) { state = value; },
+    get customCatalog() { return customCatalog; },
+    set customCatalog(value) { customCatalog = value; },
+    get tmdbCredential() { return tmdbCredential; },
+    get STATE_KEY() { return STATE_KEY; },
+    get CATALOG_KEY() { return CATALOG_KEY; },
+    get dbSet() { return dbSet; },
+    get persistState() { return persistState; },
+    get combineMovies() { return combineMovies; },
+    get renderApp() { return renderApp; },
+    get toast() { return toast; },
+    get extractPersonalRatings() { return extractPersonalRatings; },
+    get extractPersonalCollections() { return extractPersonalCollections; },
+    get hasImportedCollection() { return hasImportedCollection; },
+    get movieIdentityKey() { return movieIdentityKey; },
+    get mergeMovieEntries() { return mergeMovieEntries; },
+    get mergeMovieListByTitle() { return mergeMovieListByTitle; },
+    get normalizeMovie() { return normalizeMovie; },
+    get ratingValue() { return ratingValue; },
+    get parseCatalogCSV() { return parseCatalogCSV; },
+    get movieTmdbId() { return movieTmdbId; },
+    get uniqueStrings() { return uniqueStrings; },
+    get logEvent() { return logEvent; },
+    get enrichRatedHistoryWithTMDB() { return enrichRatedHistoryWithTMDB; },
+    get ensureState() { return ensureState; }
+  });
+  const { importPersonalJSON, importCatalogCSV, exportBackup, restoreBackup, resetAll } = importExportActions;
 
      async function saveTMDBCredential() {
     const input = $("#tmdbCredentialInput");
@@ -858,134 +889,6 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     if (root) root.innerHTML = "";
   }
 
-
-  async function importPersonalJSON(file) {
-    const text = await file.text();
-    const parsed = JSON.parse(text);
-    if (parsed && parsed.format === "prisma-backup" && parsed.state) {
-      state = ensureState(parsed.state);
-      if (Array.isArray(parsed.catalogCustom)) {
-        customCatalog = parsed.catalogCustom.map(normalizeMovie).filter(Boolean);
-        await dbSet(CATALOG_KEY, customCatalog);
-      }
-      await persistState();
-      combineMovies();
-      renderApp();
-      toast("Copia de Prisma restaurada.");
-      return;
-    }
-    const result = extractPersonalRatings(parsed);
-    const collection = extractPersonalCollections(parsed);
-    if (!result.ratings.length && !hasImportedCollection(collection)) {
-      throw new Error("No encontré películas vistas, pendientes ni valoraciones reconocibles. Comprueba que el JSON contenga movies.cH, movies.cW o movies.rM.");
-    }
-
-    const ratingMap = new Map(state.rated.map(function (entry) { return [movieIdentityKey(entry), entry]; }));
-    result.ratings.forEach(function (entry) {
-      const key = movieIdentityKey(entry);
-      const old = ratingMap.get(key);
-      if (old && old.source === "manual") return;
-      const merged = mergeMovieEntries(old, entry);
-      merged.rating = ratingValue(entry);
-      merged.source = "imported";
-      merged.updatedAt = entry.updatedAt || old && old.updatedAt || null;
-      ratingMap.set(key, merged);
-    });
-    state.rated = Array.from(ratingMap.values()).filter(function (entry) { return ratingValue(entry) != null; });
-    state.watched = mergeMovieListByTitle(state.watched, collection.watched);
-    state.watchlist = mergeMovieListByTitle(state.watchlist, collection.watchlist);
-    state.hidden = mergeMovieListByTitle(state.hidden, collection.hidden);
-
-    const catalogIncoming = collection.records.concat(result.ratings).map(normalizeMovie).filter(Boolean);
-    customCatalog = mergeMovieListByTitle(customCatalog, catalogIncoming);
-    state.importedAt = new Date().toISOString();
-    const importDescription = result.ratings.length.toLocaleString("es-PA") + " notas · " +
-      collection.watched.length.toLocaleString("es-PA") + " vistas · " +
-      collection.watchlist.length.toLocaleString("es-PA") + " pendientes";
-    state.events.unshift({ title:"Colección importada", description:importDescription, symbol:"⇧", at:new Date().toISOString() });
-    state.events = state.events.slice(0, 80);
-    state.updatedAt = new Date().toISOString();
-    await persistState();
-    await dbSet(CATALOG_KEY, customCatalog);
-    combineMovies();
-    renderApp();
-    const skippedText = result.skippedRatings ? " · " + result.skippedRatings + " nota sin título" : "";
-    toast("Importadas " + result.ratings.length + " notas, " + collection.watched.length + " vistas y " + collection.watchlist.length + " pendientes" + skippedText + ".");
-    if (tmdbCredential && tmdbCredential.value) {
-      window.setTimeout(function () { enrichRatedHistoryWithTMDB(); }, 250);
-    } else {
-      toast("Conecta TMDB en Ajustes para recuperar las carátulas y las sinopsis.");
-    }
-  }
-
-
-   async function importCatalogCSV(file) {
-    const parsed = parseCatalogCSV(await file.text());
-    const map = new Map(customCatalog.map(function (movie) { return [movieIdentityKey(movie), movie]; }));
-    parsed.forEach(function (movie) {
-      const key = movieIdentityKey(movie);
-      const old = map.get(key);
-      map.set(key, old ? {
-        id: old.id || movie.id,
-        tmdbId: movieTmdbId(old) || movieTmdbId(movie) || null,
-        title: old.title,
-        year: old.year || movie.year,
-        genres: uniqueStrings((old.genres || []).concat(movie.genres || [])),
-        tags: uniqueStrings((old.tags || []).concat(movie.tags || [])),
-        overview: old.overview || movie.overview,
-        source: "csv"
-      } : movie);
-    });
-    customCatalog = Array.from(map.values());
-    await dbSet(CATALOG_KEY, customCatalog);
-    logEvent("Catálogo ampliado", parsed.length.toLocaleString("es-PA") + " títulos leídos de " + file.name, "▦");
-    combineMovies();
-    renderApp();
-    toast("Catálogo ampliado: " + parsed.length.toLocaleString("es-PA") + " títulos importados. Se guardan solo en tu navegador.");
-  }
-
-   async function exportBackup() {
-    const backup = {
-      format: "prisma-backup",
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      state: state,
-      catalogCustom: customCatalog
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "prisma-copia-" + new Date().toISOString().slice(0, 10) + ".json";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    toast("Copia de seguridad preparada.");
-  }
-
-  async function restoreBackup(file) {
-    const parsed = JSON.parse(await file.text());
-    if (!parsed || parsed.format !== "prisma-backup" || !parsed.state) throw new Error("Ese archivo no parece una copia de seguridad de Prisma.");
-    state = ensureState(parsed.state);
-    customCatalog = Array.isArray(parsed.catalogCustom) ? parsed.catalogCustom.map(normalizeMovie).filter(Boolean) : [];
-    await dbSet(STATE_KEY, state);
-    await dbSet(CATALOG_KEY, customCatalog);
-    combineMovies();
-    renderApp();
-    toast("Copia restaurada correctamente.");
-  }
-
-  async function resetAll() {
-    if (!window.confirm("¿Borrar tus valoraciones, historial, pendientes, películas ocultas y emociones guardadas en este navegador? Esta acción no se puede deshacer sin una copia de seguridad.")) return;
-    state = emptyState();
-    customCatalog = [];
-    await dbSet(STATE_KEY, state);
-    await dbSet(CATALOG_KEY, customCatalog);
-    combineMovies();
-    renderApp();
-    toast("Perfil local restablecido. El catálogo de muestra permanece disponible.");
-  }
 
   function clickNav(page) {
     if (["home","catalog","library","lab","data"].indexOf(page) < 0) return;

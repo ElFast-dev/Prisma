@@ -127,3 +127,14 @@ Las operaciones que modifican valoraciones, historial, pendientes u ocultos DEBE
 - DADO que el usuario confirma una nota entre 1 y 10
 - CUANDO se procesa la acción
 - ENTONCES el módulo de acciones actualiza los datos personales y coordina su persistencia mediante las dependencias recibidas sin duplicar la lógica dentro del coordinador.
+
+
+### Requirement: Orquestación de datos separada
+
+Las operaciones de importación, exportación, restauración y restablecimiento DEBEN vivir en un módulo de aplicación que use los analizadores de datos y la persistencia compartidos, sin duplicar esos flujos en la entrada.
+
+#### Scenario: Se restaura una copia de seguridad
+
+- DADO un archivo de respaldo válido de Prisma
+- CUANDO el usuario confirma la restauración
+- ENTONCES el módulo de datos valida y normaliza el contenido, guarda el estado local y solicita la actualización de la interfaz mediante las dependencias recibidas.

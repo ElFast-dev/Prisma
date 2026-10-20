@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, personalData, tmdbClient] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, personalData, tmdbClient] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -19,6 +19,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, feature
   readFile('js/ui/page-views.js', 'utf8'),
   readFile('js/ui/modal-views.js', 'utf8'),
   readFile('js/app/movie-actions.js', 'utf8'),
+  readFile('js/import-export/actions.js', 'utf8'),
   readFile('js/import-export/personal-data.js', 'utf8'),
   readFile('js/tmdb/client.js', 'utf8')
 ]);
@@ -55,6 +56,7 @@ const modules = [
   ['js/ui/page-views.js', pageViews],
   ['js/ui/modal-views.js', modalViews],
   ['js/app/movie-actions.js', movieActions],
+  ['js/import-export/actions.js', importExportActions],
   ['js/import-export/personal-data.js', personalData],
   ['js/tmdb/client.js', tmdbClient]
 ];

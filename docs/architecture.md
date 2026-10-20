@@ -22,6 +22,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/page-views.js` | Renderizadores de Progreso, Descubrir, Colección, Laboratorio, Ajustes y componentes de catálogo. |
 | `js/ui/modal-views.js` | Renderizadores de fichas de película/persona, diálogo de puntuación y paneles auxiliares. |
 | `js/app/movie-actions.js` | Acciones de dominio para valorar, borrar notas, marcar vistas, gestionar pendientes y ocultar películas. |
+| `js/import-export/actions.js` | Orquestación de las importaciones JSON/CSV, copias de seguridad, restauración y restablecimiento local. |
 | `js/import-export/personal-data.js` | Reconocimiento de exportaciones personales, normalización y combinación de registros. |
 | `js/tmdb/client.js` | Credenciales, peticiones HTTP, errores, caché de géneros y conversión de respuestas TMDB. |
 | `styles.css` | Tokens, base y estructura general. |
