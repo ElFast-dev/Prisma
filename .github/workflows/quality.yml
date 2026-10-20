@@ -28,3 +28,6 @@ jobs:
 
       - name: Validate SDD documents
         run: node scripts/validate-sdd.mjs
+
+      - name: Test CSV import identity
+        run: node scripts/test-catalog-import.mjs
