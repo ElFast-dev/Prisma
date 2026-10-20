@@ -6,8 +6,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0b0b11",
-  "theme_color": "#101018",
+  "background_color": "#090a0f",
+  "theme_color": "#090a0f",
   "icons": [
     {
       "src": "./assets/prisma.svg",
