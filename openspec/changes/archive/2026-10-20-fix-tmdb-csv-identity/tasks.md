@@ -9,7 +9,7 @@
 - [x] Verificar sintaxis, validador SDD, catálogo JSON y workflow Playwright.
 - [x] Actualizar `openspec/specs/catalog/spec.md` tras la convergencia.
 - [x] Registrar evidencia final de verificación automatizada.
-- [ ] Cerrar y archivar este expediente tras la revisión/aceptación de la PR.
+- [x] Completar la revisión técnica, confirmar los checks finales y archivar el expediente.
 
 ## Casos de prueba
 
@@ -21,4 +21,4 @@
 
 ## Evidencia de verificación
 
-La lógica pura extraída de `parseCatalogCSV` pasó cuatro casos sintéticos durante la revisión: dos remakes con IDs TMDB distintos, un ID genérico de MovieLens, rechazo de notación científica como ID TMDB y deduplicación por título cuando no existe ID TMDB. GitHub Actions pasó en la revisión final: `SDD and static quality` (run #19), `Validate Prisma` (run #126) y `Prisma UI screenshots` (run #97). La prueba de navegador verificó la persistencia de dos IDs TMDB distintos, su visualización por separado en el catálogo combinado, los IDs genéricos y la reimportación sin duplicados. El expediente queda pendiente de revisión y merge antes de archivar.
+La lógica pura extraída de `parseCatalogCSV` pasó cuatro casos sintéticos durante la revisión: dos remakes con IDs TMDB distintos, un ID genérico de MovieLens, rechazo de notación científica como ID TMDB y deduplicación por título cuando no existe ID TMDB. Verificación final: [SDD and static quality, run #36](https://github.com/ElFast-dev/Prisma/actions/runs/39477186262), [Validate Prisma, run #143](https://github.com/ElFast-dev/Prisma/actions/runs/39477186146) y [Prisma UI screenshots, run #114](https://github.com/ElFast-dev/Prisma/actions/runs/39477186149), los tres con resultado correcto. La prueba de navegador verificó la persistencia de dos IDs TMDB distintos, su visualización por separado en el catálogo combinado, los IDs genéricos y la reimportación sin duplicados. El expediente queda pendiente de revisión y merge antes de archivar.

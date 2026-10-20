@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado y verificado por los workflows de calidad y navegador. Pendiente de revisión y aceptación de la PR; no se archiva todavía.
+Aceptado tras revisión técnica el 2026-10-20 y archivado. La microinteracción se verificó en navegador, incluido el retorno del hover, el diseño sin desplazamiento y la preferencia de movimiento reducido.
 
 ## Motivación
 

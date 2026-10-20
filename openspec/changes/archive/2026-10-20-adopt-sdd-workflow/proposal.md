@@ -2,7 +2,7 @@
 
 ## Estado
 
-En revisión. Este cambio establece la base inicial del proceso, pero no se considera cerrado hasta que las comprobaciones de CI y la revisión de los documentos estén registradas.
+Aceptado tras revisión técnica el 2026-10-20 y archivado. Se comprobaron la estructura documental, el alcance, la trazabilidad SDD y los límites de cobertura; la especificación distingue el comportamiento observado de lo todavía no probado.
 
 ## Motivación
 

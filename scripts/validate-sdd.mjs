@@ -15,19 +15,19 @@ const requiredFiles = [
   'openspec/specs/tmdb/spec.md',
   'openspec/specs/pwa-deployment/spec.md',
   'openspec/specs/interface/spec.md',
-  'openspec/changes/adopt-sdd-workflow/proposal.md',
-  'openspec/changes/adopt-sdd-workflow/design.md',
-  'openspec/changes/adopt-sdd-workflow/tasks.md',
-  'openspec/changes/adopt-sdd-workflow/specs/development-workflow/spec.md',
-  'openspec/changes/fix-tmdb-csv-identity/proposal.md',
-  'openspec/changes/fix-tmdb-csv-identity/design.md',
-  'openspec/changes/fix-tmdb-csv-identity/tasks.md',
-  'openspec/changes/fix-tmdb-csv-identity/specs/catalog/spec.md',
+  'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/proposal.md',
+  'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/design.md',
+  'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/tasks.md',
+  'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/specs/development-workflow/spec.md',
+  'openspec/changes/archive/2026-10-20-fix-tmdb-csv-identity/proposal.md',
+  'openspec/changes/archive/2026-10-20-fix-tmdb-csv-identity/design.md',
+  'openspec/changes/archive/2026-10-20-fix-tmdb-csv-identity/tasks.md',
+  'openspec/changes/archive/2026-10-20-fix-tmdb-csv-identity/specs/catalog/spec.md',
   'scripts/test-catalog-import.mjs',
-  'openspec/changes/refine-ui-interactions/proposal.md',
-  'openspec/changes/refine-ui-interactions/design.md',
-  'openspec/changes/refine-ui-interactions/tasks.md',
-  'openspec/changes/refine-ui-interactions/specs/interface/spec.md'
+  'openspec/changes/archive/2026-10-20-refine-ui-interactions/proposal.md',
+  'openspec/changes/archive/2026-10-20-refine-ui-interactions/design.md',
+  'openspec/changes/archive/2026-10-20-refine-ui-interactions/tasks.md',
+  'openspec/changes/archive/2026-10-20-refine-ui-interactions/specs/interface/spec.md'
 ];
 
 const errors = [];
@@ -95,9 +95,9 @@ for (const file of specFiles) {
 }
 
 for (const file of [
-  'openspec/changes/adopt-sdd-workflow/proposal.md',
-  'openspec/changes/adopt-sdd-workflow/design.md',
-  'openspec/changes/adopt-sdd-workflow/tasks.md'
+  'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/proposal.md',
+  'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/design.md',
+  'openspec/changes/archive/2026-10-20-adopt-sdd-workflow/tasks.md'
 ]) {
   try {
     const content = await readFile(file, 'utf8');

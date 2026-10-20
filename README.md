@@ -57,8 +57,9 @@ Antes de modificar una funcionalidad, crea un expediente con propuesta, escenari
 
 El workflow `.github/workflows/quality.yml` ejecuta:
 
-- `node --check app.js`, para detectar errores de sintaxis JavaScript.
+- `node --check app.js` y `node --check sw.js`, para detectar errores de sintaxis JavaScript.
 - `node scripts/validate-sdd.mjs`, para validar los artefactos SDD, sus requisitos y sus escenarios.
+- `node scripts/test-catalog-import.mjs`, para probar la identidad TMDB y la deduplicación del importador CSV con datos sintéticos.
 
 Estos checks no sustituyen pruebas de comportamiento, regresión ni comprobaciones visuales del navegador. Los cambios funcionales deben añadir la cobertura necesaria para sus riesgos. No subas historiales personales, archivos de copia de seguridad ni credenciales a GitHub.
 

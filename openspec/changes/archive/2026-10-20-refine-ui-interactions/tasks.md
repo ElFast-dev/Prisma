@@ -8,15 +8,15 @@
 - [x] Añadir aserciones de estilos computados a la prueba de navegador.
 - [x] Validar sintaxis, SDD, catálogo y flujos UI en GitHub Actions.
 - [x] Registrar evidencia y actualizar la especificación principal de interfaz.
-- [ ] Cerrar/archivar este expediente después de revisar y aceptar la PR.
+- [x] Revisar técnicamente, registrar los checks finales y archivar el expediente.
 
 ## Evidencia de verificación
 
-- GitHub Actions `SDD and static quality`, run #34: sintaxis de `app.js` y `sw.js`, validador SDD y tests sintéticos CSV, todos correctos.
-- GitHub Actions `Validate Prisma`, run #141: sintaxis JavaScript y JSON de catálogo, correctos.
-- GitHub Actions `Prisma UI screenshots`, run #112: flujo de navegador y captura de pantallas en escritorio y móvil, correctos; se comprobó hover, retorno al estado base, ausencia de movimiento vertical y movimiento reducido.
+- [SDD and static quality, run #36](https://github.com/ElFast-dev/Prisma/actions/runs/39477186262): sintaxis de `app.js` y `sw.js`, validador SDD y pruebas CSV sintéticas correctas.
+- [Validate Prisma, run #143](https://github.com/ElFast-dev/Prisma/actions/runs/39477186146): sintaxis y catálogo JSON correctos.
+- [Prisma UI screenshots, run #114](https://github.com/ElFast-dev/Prisma/actions/runs/39477186149): flujos de navegador y capturas de escritorio y viewport móvil correctos; se comprobó hover, retorno al estado base, ausencia de movimiento vertical y movimiento reducido.
 
-La ejecución incluye los cambios funcionales y la especificación principal de interfaz. Se archivará el expediente cuando la PR sea revisada y aceptada.
+La revisión técnica no detectó regresiones dentro del alcance acotado. El expediente se archiva por convergencia entre especificación, implementación y evidencia automatizada.
 
 ## Restricciones de prueba
 

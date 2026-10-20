@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado y verificado automáticamente. Pendiente de revisión de la PR; no se archivará antes de su aceptación.
+Aceptado tras revisión técnica el 2026-10-20 y archivado. La lógica, las pruebas sintéticas y los flujos del navegador comprueban la identidad TMDB sin credenciales ni datos personales.
 
 ## Problema observado
 
