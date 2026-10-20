@@ -23,7 +23,11 @@ const requiredFiles = [
   'openspec/changes/fix-tmdb-csv-identity/design.md',
   'openspec/changes/fix-tmdb-csv-identity/tasks.md',
   'openspec/changes/fix-tmdb-csv-identity/specs/catalog/spec.md',
-  'scripts/test-catalog-import.mjs'
+  'scripts/test-catalog-import.mjs',
+  'openspec/changes/refine-ui-interactions/proposal.md',
+  'openspec/changes/refine-ui-interactions/design.md',
+  'openspec/changes/refine-ui-interactions/tasks.md',
+  'openspec/changes/refine-ui-interactions/specs/interface/spec.md'
 ];
 
 const errors = [];
