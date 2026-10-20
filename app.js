@@ -421,6 +421,18 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     ratingValue: ratingValue
   });
 
+  const recommendationRanking = createRecommendationRanking({
+    get state() { return state; },
+    get catalog() { return catalog; },
+    get buildProfile() { return buildProfile; },
+    get predictRating() { return predictRating; },
+    get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
+    get isMovieInCollection() { return isMovieInCollection; },
+    get findMovie() { return findMovie; },
+    get ratingValue() { return ratingValue; }
+  });
+  const { getRecommendations, genreStats } = recommendationRanking;
+
   function updateRatingPreview(value) {
     if (!modalDraft) return;
     modalDraft.rating = Number(value);
