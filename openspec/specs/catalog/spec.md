@@ -34,14 +34,26 @@ Prisma DEBE poder combinar el catálogo incluido, el catálogo personalizado imp
 
 ### Requirement: Identidad de películas con ID TMDB disponible
 
-Cuando dos registros normalizados tienen IDs TMDB positivos diferentes, Prisma DEBE tratarlos como películas distintas y no fusionarlos solo porque compartan un título normalizado.
+Cuando dos registros normalizados tienen IDs TMDB positivos diferentes, Prisma DEBE tratarlos como películas distintas y no fusionarlos solo porque compartan un título normalizado. La importación CSV DEBE conservar los IDs TMDB de los encabezados explícitos `tmdb_id` y `tmdbid` y usarlos como identidad al deduplicar e integrar los registros.
 
-#### Scenario: Remakes con identificadores diferentes
+#### Scenario: Remakes con identificadores TMDB diferentes en un CSV
 
-- DADO que dos registros llegan a la capa de catálogo con IDs TMDB distintos
-- CUANDO se combinan los registros
-- ENTONCES cada ID conserva una identidad independiente
+- DADO un CSV con dos filas del mismo título y dos IDs TMDB positivos diferentes
+- CUANDO se importa el catálogo y se renderizan los resultados locales
+- ENTONCES las dos identidades permanecen guardadas y se muestran como películas separadas
+
+#### Scenario: Reimportación de una identidad TMDB existente
+
+- DADO un catálogo personalizado que contiene el ID TMDB 990001
+- CUANDO se importa otra fila con ese mismo ID y metadatos adicionales
+- ENTONCES se actualiza esa identidad sin crear otra entrada para el mismo ID
+
+#### Scenario: Identificador genérico de una fuente externa
+
+- DADO un CSV con `id`, `movieId` o `movie_id` pero sin un encabezado TMDB explícito y un valor válido
+- CUANDO se importa el catálogo
+- ENTONCES el identificador se conserva como ID de origen y no se interpreta como `tmdbId`
 
 ## Limitaciones conocidas
 
-Algunas rutas de importación deduplican por título normalizado y no todas las columnas genéricas de ID se convierten en un ID TMDB. La cobertura de remakes y homónimos por cada formato de importación debe mejorarse con casos sintéticos antes de prometer la misma garantía en todos los formatos.
+Las filas CSV sin un ID TMDB explícito y válido continúan usando el título normalizado como fallback de deduplicación. Por ello, no se garantiza distinguir todos los remakes u homónimos cuando la fuente no proporciona una identidad TMDB fiable. Los IDs genéricos de origen no deben interpretarse como IDs TMDB.
