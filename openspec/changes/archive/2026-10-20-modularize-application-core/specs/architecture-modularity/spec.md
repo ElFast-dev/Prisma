@@ -83,3 +83,14 @@ La lógica de consulta, enriquecimiento, filtrado y clasificación de los regist
 - DADO que el usuario elige historial, pendientes u ocultos y ajusta búsqueda, géneros u orden
 - CUANDO se solicitan los elementos de la colección
 - ENTONCES el módulo de colección devuelve los registros filtrados sin acceder al DOM ni renderizar HTML.
+
+
+### Requirement: Utilidades de presentación separadas
+
+Los formateadores, enlaces externos y fragmentos visuales reutilizables DEBEN residir en un módulo de presentación con dependencias explícitas, sin duplicar sus implementaciones en el controlador principal.
+
+#### Scenario: Cambia el formato de una fecha o puntuación pública
+
+- DADO que se modifica un formateador o la construcción de enlaces de puntuaciones
+- CUANDO se ejecutan pruebas automatizadas
+- ENTONCES el comportamiento se prueba directamente a través de la API del módulo, sin extraer código por texto del controlador.

@@ -5,6 +5,7 @@
 - [x] Añadir el requisito permanente de modularidad y validación automatizada de los límites.
 
 ## Extracción de núcleo
+- [x] Aislar los formateadores y fragmentos de presentación reutilizables del controlador principal.
 - [x] Extraer derivación, identidad y filtrado de colecciones a un módulo con dependencias explícitas.
 - [x] Separar la combinación del catálogo, identidad y estadísticas en un módulo con acceso al estado por dependencias.
 - [x] Extraer utilidades puras de película e identidad.

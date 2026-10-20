@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { sameDiscoveryMovie, uniqueDiscoveryMovies } from '../js/core/movie-utils.js';
+import { createPresentationUtils } from '../js/ui/presentation-utils.js';
 
-const source = await readFile('app.js', 'utf8');
+const [source, collectionSource] = await Promise.all([readFile('app.js', 'utf8'), readFile('js/collection/collection-model.js', 'utf8')]);
 
 function section(startMarker, endMarker) {
   const start = source.indexOf(startMarker);
