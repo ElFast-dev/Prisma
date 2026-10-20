@@ -1621,3 +1621,102 @@ h1,h2,h3 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMac
 /* Películas and Listas sit at opposite ends of the collection section switch. */
 .collection-mode-switch { justify-content: space-between; }
 .collection-mode-switch button { min-width: 72px; }
+
+
+/* Compact surfaces and contextual help: explanations live behind the ! control. */
+.info-button {
+  display: inline-grid; place-items: center; flex: 0 0 22px; width: 22px; height: 22px;
+  padding: 0; border: 1px solid rgba(143,201,255,.34); border-radius: 50%;
+  background: rgba(57,141,255,.08); color: #9bcfff; font-size: 12px; font-weight: 750;
+  line-height: 1; cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.info-button:focus-visible { outline: 2px solid #b7deff; outline-offset: 3px; }
+.info-button:active { transform: scale(.93); }
+.page-heading,.collection-title-row,.panel-title-row {
+  display: flex; align-items: center; gap: 9px; min-width: 0;
+}
+.page-heading { margin: 5px 0 18px; }
+.page-heading h1,.collection-title-row h1 { margin: 0; }
+.page-heading-action { margin-left: auto; }
+.collection-header { margin-bottom: 12px; }
+.collection-title-row { gap: 8px; }
+.panel-title-row h3 { margin: 0; }
+.panel-head:has(.info-button) { align-items: center; }
+.panel-head .info-button { margin-left: auto; }
+.progress-metrics .metric-note:empty { display: none; }
+.progress-columns { margin-top: 15px; }
+.progress-columns > .panel { min-width: 0; }
+.discover-heading { margin-bottom: 15px; }
+.discover-heading .discover-count { margin-left: auto; }
+.discover-recommendations { margin-bottom: 20px; }
+.discover-recommendations .section-head { display: flex; align-items: center; justify-content: flex-start; gap: 9px; margin: 0 0 11px; }
+.discover-recommendations .section-head h2 { margin: 0; }
+.discover-recommendations .section-head .info-button { margin-left: 0; }
+.discover-tmdb .panel-head { justify-content: flex-start; gap: 9px; }
+.discover-tmdb .panel-head .info-button { margin-left: 0; }
+.discover-tmdb .panel-head h3 { margin: 0; }
+.local-catalog-section { margin-top: 20px; }
+.local-catalog-section .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.local-catalog-section .section-head h2 { margin: 0; }
+.local-catalog-section .section-head > span { color: var(--subtle); font-size: 10px; }
+.local-catalog-section .section-head > button { margin-left: auto; }
+.catalog-genre-chips { gap: 6px; }
+.collection-list-heading { align-items: center; margin-bottom: 9px; }
+.collection-list-heading h2 { margin: 0; }
+.collection-list-heading .sort-summary { display: none; }
+.system-list-card { min-height: 72px; }
+.system-list-copy small:empty { display: none; }
+.tmdb-history-panel { margin-top: 14px; }
+.tmdb-history-panel .panel-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.tmdb-history-panel .panel-head h3 { margin: 0; }
+.metadata-action-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.metadata-action-row > span { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.metadata-action-row .hero-actions { margin: 0; }
+.tmdb-progress { width: 100%; height: 4px; margin-top: 13px; accent-color: var(--accent-strong); }
+.metadata-progress-label { margin: 7px 0 0; color: var(--subtle); font-size: 10px; }
+.settings-grid-clean { margin-top: 14px !important; gap: 12px; }
+.settings-grid-clean > .panel { min-width: 0; }
+.settings-grid-clean .panel-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+.settings-grid-clean .panel-head h3 { margin: 0; }
+.settings-grid-clean .hero-actions { gap: 7px; }
+.data-metadata-host { margin: 12px 0; }
+.info-sheet { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+.info-sheet .sheet-heading { margin-bottom: 11px; }
+.info-sheet .sheet-heading h2 { margin: 0; }
+.info-sheet-copy { margin: 4px 0 15px; color: #b2c2d5; font-size: 12px; line-height: 1.7; }
+.detail-section-heading { justify-content: flex-start; gap: 8px; }
+.detail-section-heading .info-button { margin-left: 0; }
+.rating-disclaimer { display: none; }
+.load-more-wrap { display: flex; justify-content: center; margin-top: 17px; }
+.lab-charts,.lab-bottom { margin-top: 14px; }
+.lab-metadata-host .tmdb-history-panel { margin-top: 0; }
+.tmdb-attribution { margin-top: 22px; }
+@media (hover:hover) and (pointer:fine) {
+  .info-button:hover { background: rgba(57,141,255,.2); border-color: rgba(143,201,255,.65); }
+}
+@media (max-width:760px) {
+  .page-heading { margin: 4px 0 14px; gap: 8px; }
+  .page-heading h1,.collection-title-row h1 { font-size: 29px; }
+  .page-heading-action { font-size: 10px; padding: 8px 9px; }
+  .progress-columns { gap: 10px; }
+  .discover-heading { gap: 8px; }
+  .discover-heading .discover-count { max-width: 92px; font-size: 9px; }
+  .discover-recommendations .section-head h2 { font-size: 15px; }
+  .local-catalog-section .section-head { flex-wrap: wrap; }
+  .local-catalog-section .section-head h2 { font-size: 15px; }
+  .local-catalog-section .section-head > span { margin-left: auto; }
+  .local-catalog-section .section-head > button { margin-left: 0; }
+  .collection-header { margin-bottom: 10px; }
+  .collection-list-heading { margin-top: 4px; }
+  .collection-list-heading h2 { font-size: 15px; }
+  .metadata-action-row { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .metadata-action-row .hero-actions { width: 100%; }
+  .metadata-action-row .btn { width: 100%; }
+  .settings-grid-clean { grid-template-columns: minmax(0,1fr); }
+  .settings-grid-clean > .panel { padding: 14px; }
+  .info-button { width: 23px; height: 23px; flex-basis: 23px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .info-button { transition: none; }
+}
