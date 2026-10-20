@@ -107,6 +107,8 @@ body {
 .collection-row-side .score-link { border-color: rgba(196,181,253,.2); }
 .movie-card-poster-only .movie-poster-trigger { border-color: rgba(196,181,253,.13); }
 @media (hover: hover) and (pointer: fine) {
+  .collection-row:hover,
+  .collection-row-main:hover { background-color: rgba(167,139,250,.075); }
   .nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); }
   .nav-item.active:hover { background: rgba(167,139,250,.19); }
   .btn-primary:hover {

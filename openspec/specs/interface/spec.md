@@ -30,7 +30,7 @@ Prisma DEBE comunicar de manera consistente los estados hover, activo y foco de 
 
 - DADO una fila de película en la colección y un dispositivo con puntero preciso
 - CUANDO se pasa el puntero sobre su área principal
-- ENTONCES la fila muestra un fondo azul sutil, sin desplazarse verticalmente el botón principal
+- ENTONCES la fila muestra un fondo violeta sutil, sin desplazarse verticalmente el botón principal
 
 #### Scenario: Retirar el puntero
 
