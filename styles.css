@@ -1720,3 +1720,20 @@ h1,h2,h3 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMac
 @media (prefers-reduced-motion: reduce) {
   .info-button { transition: none; }
 }
+
+
+/* Final mobile rhythm: keep the recommendation help icon beside its heading. */
+.progress-empty { display: flex; align-items: center; justify-content: flex-start; min-height: 66px; }
+.discover-recommendations .section-head { flex-wrap: nowrap; justify-content: flex-start; }
+.discover-recommendations .section-head h2 {
+  width: auto; flex: 0 1 auto; margin: 0; text-align: left; white-space: nowrap;
+}
+.discover-recommendations .section-head .info-button { flex: 0 0 23px; margin: 0; }
+@media (max-width:390px) {
+  .collection-tools { flex-wrap: nowrap; }
+  .collection-tools-left { width: auto; flex-wrap: nowrap; }
+  .collection-tool,.collection-view-toggle { white-space: nowrap; }
+  .collection-tools-left { gap: 5px; }
+  .collection-tool,.collection-view-toggle { padding-left: 7px; padding-right: 7px; }
+  .discover-recommendations .section-head h2 { font-size: 14px; }
+}
