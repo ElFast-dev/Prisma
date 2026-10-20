@@ -12,4 +12,4 @@
 
 ## Evidencia y límites
 
-El código base se inspeccionó mediante los archivos versionados. La adopción del flujo SDD no alteró la lógica de ejecución; un cambio piloto acotado añadió la preservación de IDs TMDB en CSV. GitHub Actions pasó SDD and static quality (run #15), Validate Prisma (run #122) y Prisma UI screenshots (run #95). La CI verifica sintaxis, estructura documental, parser CSV y un flujo de navegador; no acredita automáticamente todos los casos de la aplicación. La PR permanece en borrador y el expediente de adopción no se archiva hasta la revisión y aceptación.
+El código base se inspeccionó mediante los archivos versionados. La adopción del flujo SDD no alteró la lógica de ejecución; un cambio piloto acotado añadió la preservación de IDs TMDB en CSV. GitHub Actions pasó SDD and static quality (run #19), Validate Prisma (run #126) y Prisma UI screenshots (run #97). La CI verifica sintaxis, estructura documental, parser CSV y un flujo de navegador; no acredita automáticamente todos los casos de la aplicación. La PR permanece en borrador y el expediente de adopción no se archiva hasta la revisión y aceptación.
