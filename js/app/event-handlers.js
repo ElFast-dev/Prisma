@@ -51,6 +51,11 @@ export function registerAppEvents(ctx) {
     if (!button) return;
     const action = button.dataset.action;
     try {
+      if (action === "set-theme") {
+        ctx.setTheme(button.dataset.theme);
+        ctx.renderApp();
+        return;
+      }
       if (action === "import-json") { ctx.$("#jsonImportInput").click(); return; }
       if (action === "import-catalog") { ctx.$("#catalogImportInput").click(); return; }
       if (action === "save-tmdb") { await ctx.saveTMDBCredential(); return; }
