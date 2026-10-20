@@ -1,0 +1,120 @@
+name: Prisma UI screenshots
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Start static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/prisma-http.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/prisma-http.log
+          exit 1
+
+      - name: Capture desktop and mobile UI and verify new CSS
+        run: |
+          mkdir -p artifacts
+          node <<'NODE'
+          const { chromium } = require("playwright");
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const failures = [];
+
+            async function capture(name, viewport, isMobile, pageName) {
+              const context = await browser.newContext({
+                viewport,
+                isMobile,
+                deviceScaleFactor: isMobile ? 2 : 1,
+                serviceWorkers: "block"
+              });
+              const page = await context.newPage();
+              page.on("pageerror", error => failures.push(name + " pageerror: " + error.message));
+              page.on("console", message => {
+                if (message.type() === "error") failures.push(name + " console: " + message.text());
+              });
+              const response = await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
+              if (!response || !response.ok()) throw new Error(name + ": no se pudo cargar index.html");
+              await page.locator(".hero-title").waitFor({ state: "visible", timeout: 10000 });
+              await page.waitForTimeout(500);
+
+              const ui = await page.evaluate(() => {
+                const link = document.querySelector('link[rel="stylesheet"]');
+                const heading = document.querySelector(".hero-title");
+                const nav = document.querySelector(".bottom-nav");
+                const poster = document.querySelector(".poster-art");
+                return {
+                  cssHref: link && link.href,
+                  cssLoaded: Boolean(link && [...document.styleSheets].some(sheet => sheet.href === link.href)),
+                  rootBg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
+                  headlineFont: getComputedStyle(heading).fontFamily,
+                  navRadius: getComputedStyle(nav).borderRadius,
+                  cardRadius: poster && getComputedStyle(poster).borderRadius,
+                  cards: document.querySelectorAll(".movie-card").length,
+                  title: document.title
+                };
+              });
+
+              if (!ui.cssHref || !ui.cssHref.includes("v=ui-20261020-2")) throw new Error(name + ": falta el versionado anti-caché: " + ui.cssHref);
+              if (ui.rootBg !== "#090a0f") throw new Error(name + ": los estilos nuevos no están activos: " + JSON.stringify(ui));
+              if (!ui.headlineFont.includes("ui-serif")) throw new Error(name + ": la tipografía editorial no se aplicó.");
+              if (ui.cards < 1) throw new Error(name + ": no se renderizaron tarjetas.");
+              await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: true, animations: "disabled" });
+
+              if (pageName === "catalog") {
+                await page.locator('[data-nav="catalog"]').click();
+                await page.locator(".tmdb-browser").waitFor({ state: "visible" });
+                await page.waitForTimeout(250);
+                await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: true, animations: "disabled" });
+              }
+
+              console.log(name + " UI:", JSON.stringify(ui));
+              await context.close();
+            }
+
+            try {
+              await capture("desktop", { width: 1440, height: 1050 }, false, "catalog");
+              await capture("mobile", { width: 390, height: 844 }, true, "catalog");
+              if (failures.length) throw new Error(failures.join("\n"));
+            } finally {
+              await browser.close();
+            }
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-ui-screenshots
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
