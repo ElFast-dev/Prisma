@@ -1,17 +1,18 @@
-const CACHE_NAME = "prisma-shell-v46"
+const CACHE_NAME = "prisma-shell-v47"
 const APP_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=ui-20261020-18",
-  "./styles/movie-cards.css?v=ui-20261020-18",
-  "./styles/dialogs-feedback.css?v=ui-20261020-18",
-  "./styles/responsive.css?v=ui-20261020-18",
-  "./styles/visual-refinements.css?v=ui-20261020-18",
-  "./styles/collection.css?v=ui-20261020-18",
-  "./styles/accessibility.css?v=ui-20261020-18",
-  "./styles/catalog.css?v=ui-20261020-18",
-  "./styles/collection-content.css?v=ui-20261020-18",
-  "./styles/movie-details.css?v=ui-20261020-18",
+  "./styles.css?v=ui-20261020-19",
+  "./styles/movie-cards.css?v=ui-20261020-19",
+  "./styles/dialogs-feedback.css?v=ui-20261020-19",
+  "./styles/responsive.css?v=ui-20261020-19",
+  "./styles/visual-refinements.css?v=ui-20261020-19",
+  "./styles/collection.css?v=ui-20261020-19",
+  "./styles/accessibility.css?v=ui-20261020-19",
+  "./styles/catalog.css?v=ui-20261020-19",
+  "./styles/collection-content.css?v=ui-20261020-19",
+  "./styles/movie-details.css?v=ui-20261020-19",
+  "./styles/brand-system.css?v=ui-20261020-19",
 
   "./app.js?v=ui-20261020-41",
   "./js/tmdb/client.js",
@@ -39,9 +40,9 @@ const APP_ASSETS = [
   "./js/app/runtime.js?v=core-20261020-1",
   "./js/app/lifecycle.js?v=core-20261020-1",
   "./js/import-export/personal-data.js",
-  "./manifest.webmanifest?v=ui-20261020-12",
+  "./manifest.webmanifest?v=ui-20261020-13",
   "./data/catalog.json",
-  "./assets/prisma.svg"
+  "./assets/prisma.svg?v=brand-20261020-1"
 ];
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE_NAME).then(function (cache) {

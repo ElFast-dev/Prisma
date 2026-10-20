@@ -21,3 +21,14 @@ CI DEBE verificar la existencia, el orden de carga, el versionado y la inclusió
 - DADO que un archivo de estilos existe pero se omite de HTML o de APP_ASSETS
 - CUANDO se ejecuta la validación de arquitectura
 - ENTONCES CI falla e identifica la hoja de estilos omitida.
+
+
+### Requirement: Sistema de marca y tokens visuales centralizados
+
+Los tokens globales de color y las adaptaciones finales de marca DEBEN residir en `styles/brand-system.css`, cargada al final del orden de hojas CSS. La hoja DEBE tener una URL versionada y estar incluida con la misma URL en la caché de shell del service worker.
+
+#### Scenario: Cambio de la identidad de Prisma
+
+- DADO que se ajusta la paleta o un estado visual de uso general
+- CUANDO se prepara la publicación
+- ENTONCES el ajuste se realiza en la capa de marca, sin propagar nuevas definiciones globales duplicadas entre módulos de páginas
