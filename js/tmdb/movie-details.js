@@ -110,5 +110,5 @@ export function createTMDBMovieDetails(ctx) {
     });
   }
 
-  return { softTMDBRequest, loadMovieDetail, persistMovieMetadata, mergeMatching, openPersonDetails };
+  return { softTMDBRequest, loadMovieDetail, persistMovieMetadata, openPersonDetails };
 }

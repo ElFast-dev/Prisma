@@ -353,7 +353,7 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     set personListFilter(value) { personListFilter = value; },
     get personDetailCache() { return personDetailCache; }
   });
-  const { softTMDBRequest, loadMovieDetail, persistMovieMetadata, mergeMatching, openPersonDetails } = tmdbMovieDetails;
+  const { softTMDBRequest, loadMovieDetail, persistMovieMetadata, openPersonDetails } = tmdbMovieDetails;
 
   const modalController = createModalController({
     get $() { return $; },
