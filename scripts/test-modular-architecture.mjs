@@ -27,15 +27,16 @@ for (const relative of files) {
     assert.ok(!/document\.(?:querySelector|querySelectorAll|addEventListener)/.test(source),
       relative + ' no debe acoplar la lógica de dominio al DOM');
   }
-  for (const match of source.matchAll(/from\s+["'](\.\.?\/[^"']+)["']/g)) {
-    const specifier = match[1];
+  for (const match of source.matchAll(/import\\s+\\{([^}]+)\\}\\s+from\\s+["'](\\.\\.?\\/[^"']+)["']/g)) {
+    const namesSource = match[1];
+    const specifier = match[2];
     const targetUrl = new URL(specifier, pathToFileURL(absolute));
     const target = fileURLToPath(targetUrl);
     assert.ok(await access(target).then(() => true).catch(() => false),
       relative + ': no existe el módulo importado ' + specifier);
     const namespace = await import(targetUrl.href);
-    const names = match[0].slice(match[0].indexOf('{') + 1, match[0].indexOf('}'))
-      .split(',').map(item => item.trim()).filter(Boolean).map(item => item.split(/\s+as\s+/)[0]);
+    const names = namesSource
+      .split(',').map(item => item.trim()).filter(Boolean).map(item => item.split(/\\s+as\\s+/)[0]);
     for (const name of names) {
       assert.ok(Object.prototype.hasOwnProperty.call(namespace, name),
         relative + ': ' + specifier + ' no exporta ' + name);
