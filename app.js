@@ -918,16 +918,23 @@
       const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
       return ratingValue(entry) != null && movieFeatures(movie, entry).length > 0;
     });
-    if (mapped.length < 5) return { available: false, count: mapped.length, mae: null };
-    let errors = [];
+    if (mapped.length < 5) {
+      return { available: false, count: mapped.length, mae: null, baselineMae: null, improvementPct: null };
+    }
+    const errors = [];
+    const baselineErrors = [];
     mapped.forEach(function (heldOut, index) {
       const training = mapped.filter(function (_, i) { return i !== index; });
       const profile = buildProfile(training);
-      const movie = findMovie(heldOut.title);
+      const movie = findMovie(heldOut.title,heldOut.tmdbId || heldOut.tmId);
       const predicted = predictRating(movie || heldOut, profile).score;
       errors.push(Math.abs(predicted - ratingValue(heldOut)));
+      baselineErrors.push(Math.abs(profile.average - ratingValue(heldOut)));
     });
-    return { available: true, count: errors.length, mae: errors.reduce(function (sum, e) { return sum + e; }, 0) / errors.length };
+    const mae = errors.reduce(function (sum, error) { return sum + error; }, 0) / errors.length;
+    const baselineMae = baselineErrors.reduce(function (sum, error) { return sum + error; }, 0) / baselineErrors.length;
+    const improvementPct = baselineMae > 0 ? ((baselineMae - mae) / baselineMae) * 100 : null;
+    return { available: true, count: errors.length, mae: mae, baselineMae: baselineMae, improvementPct: improvementPct };
   }
 
   function genreStats() {
@@ -1293,9 +1300,17 @@
     const events = state.events.slice(0,8).map(function (event) {
       return '<div class="event-item"><div class="event-mark">' + escapeHTML(event.symbol || "✦") + '</div><div class="event-copy"><strong>' + escapeHTML(event.title) + '</strong><small>' + escapeHTML(event.description) + ' · ' + escapeHTML(formatDate(event.at)) + '</small></div></div>';
     }).join("");
+    const evaluationComparison = evaluation.improvementPct == null
+      ? '<div class="metric-note">La referencia tiene MAE cero; no se puede calcular una mejora porcentual.</div>'
+      : (Math.abs(evaluation.improvementPct) < 0.05
+        ? '<div class="metric-note">Rendimiento igual a la referencia.</div>'
+        : '<div class="metric-note">' + (evaluation.improvementPct > 0 ? 'Mejora relativa del ' : 'Error relativo mayor en ') + Math.abs(evaluation.improvementPct).toFixed(1).replace(".",",") + '% respecto a la referencia.</div>');
     const evaluationMarkup = evaluation.available ?
-      '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".",",") + '</div><div class="metric-note">n=' + evaluation.count + '</div>' :
-      '<div class="metric-value">—</div>';
+      '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".",",") + '</div>' +
+      '<div class="metric-note">MAE del modelo · n=' + evaluation.count + '</div>' +
+      '<div class="metric-note">Referencia (media de entrenamiento): ' + evaluation.baselineMae.toFixed(2).replace(".",",") + '</div>' +
+      evaluationComparison :
+      '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>';
     return '<section class="page-heading"><h1>Laboratorio</h1>' + infoButton("lab","Información sobre el Laboratorio") + '</section>' +
       '<div class="metrics-grid">' + metric("Historial enlazado",profile.withMetadata + "/" + stats.total,"") + metric("Señales",String(profile.features.size),"") + metric("Nota media",overall.toFixed(1).replace(".",","),"") + '</div>' +
       '<div class="lab-metadata-host">' + renderTMDBHistoryPanel() + '</div>' +
