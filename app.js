@@ -914,46 +914,27 @@
 
   function renderHome() {
     const stats = summaryStats();
-    const recs = getRecommendations(6);
-    const profile = buildProfile();
-    const coverage = stats.total ? Math.round(profile.withMetadata / stats.total * 100) : 0;
-    const isNew = stats.total === 0;
-    const warning = stats.total && profile.withMetadata < 8 ?
-      '<div class="notice home-notice"><strong>Prisma todavía está aprendiendo.</strong> Hay ' + profile.withMetadata + ' películas conectadas a géneros o temas. Enlaza más metadatos desde Laboratorio para afinar las recomendaciones.</div>' : "";
-    const primaryAction = isNew ?
-      '<button class="btn btn-primary" type="button" data-action="import-json">Importar mi historial</button>' :
-      '<button class="btn btn-primary" type="button" data-nav="catalog">Descubrir películas <span aria-hidden="true">↗</span></button>';
-    const secondaryAction = isNew ?
-      '<button class="btn btn-secondary" type="button" data-nav="catalog">Explorar catálogo</button>' :
-      '<button class="btn btn-secondary" type="button" data-nav="lab">Ver cómo aprende</button>';
-    const recSection = recs.length ?
-      recs.slice(0, 4).map(function (movie) { return movieCard(movie); }).join("") :
-      '<div class="empty-state"><div class="empty-icon">⌕</div><h3>Necesitamos más películas para recomendarte</h3><p>Explora el catálogo y califica algunas películas para que Prisma empiece a reconocer tus gustos.</p><button type="button" class="btn btn-secondary" data-nav="catalog">Explorar catálogo</button></div>';
-    return '<section class="hero hero-v2">' +
-      '<div class="hero-content hero-main"><div class="eyebrow"><span class="hero-eyebrow-mark"></span> DESCUBRIMIENTO PERSONAL</div>' +
-      '<h1 class="hero-title">Cine que encaja<br><span class="gradient-text">contigo.</span></h1>' +
-      '<p class="lead">Recomendaciones que aprenden de tus valoraciones y de lo que una película te hizo sentir.</p>' +
-      '<div class="hero-actions">' + primaryAction + secondaryAction + '</div>' +
-      '<div class="hero-privacy"><span class="status-dot"></span> Tus valoraciones permanecen en este dispositivo</div></div>' +
-      '<aside class="hero-profile-card" aria-label="Resumen de tu perfil personal">' +
-      '<div class="profile-topline"><span class="profile-status-dot"></span><span>TU PERFIL</span><span class="profile-private">PRIVADO</span></div>' +
-      '<div class="profile-main-number"><strong>' + stats.total.toLocaleString("es-PA") + '</strong><span>películas<br>calificadas</span></div>' +
-      '<div class="profile-divider"></div>' +
-      '<div class="profile-meta-row"><span>Películas con datos útiles</span><strong>' + profile.withMetadata.toLocaleString("es-PA") + ' / ' + stats.total.toLocaleString("es-PA") + '</strong></div>' +
-      '<div class="profile-progress" role="img" aria-label="' + coverage + '% de tu historial tiene metadatos"><span style="width:' + coverage + '%"></span></div>' +
-      '<p class="profile-note">' + (isNew ? 'Importa tus valoraciones para que el motor encuentre patrones en tus gustos.' : 'Cuantos más títulos tengan géneros o temas, mejor puede explicar sus sugerencias.') + '</p>' +
-      (isNew ? '<button class="profile-import-link" type="button" data-action="import-json">Importar mis notas <span aria-hidden="true">↗</span></button>' : '') +
-      '</aside></section>' +
-      (warning ? warning : '') +
-      sectionHead("Una selección para ti", "Películas que el motor considera buenas candidatas según tu perfil.", '<button class="btn btn-quiet btn-small" type="button" data-nav="catalog">Ver catálogo completo <span aria-hidden="true">↗</span></button>') +
-      '<div class="movie-grid home-recommendations">' + recSection + '</div>' +
-      '<section class="home-stat-strip" aria-label="Resumen de tu historial">' +
-      '<div><strong>' + (stats.average == null ? "—" : stats.average.toFixed(1).replace(".", ",")) + '</strong><span>nota media / 10</span></div>' +
-      '<div><strong>' + (stats.total ? Math.round(stats.high / stats.total * 100) + "%" : "—") + '</strong><span>notas de 8 a 10</span></div>' +
-      '<div><strong>' + stats.catalog.toLocaleString("es-PA") + '</strong><span>películas en catálogo local</span></div>' +
-      '</section>' +
-      '<footer>Prisma aprende de tus valoraciones personales. Las puntuaciones estimadas son hipótesis del motor, no garantías de que una película te vaya a gustar.</footer>';
+    const history = getCollectionItems("history").sort(function (a, b) { return dateScore(b.watchedAt) - dateScore(a.watchedAt); });
+    const genres = genreStats().slice().sort(function (a, b) { return b.average - a.average; }).slice(0, 6);
+    const events = state.events.slice(0, 5).map(function (event) {
+      return '<div class="event-item"><div class="event-mark">' + escapeHTML(event.symbol || "•") + '</div><div class="event-copy"><strong>' + escapeHTML(event.title) + '</strong><small>' + escapeHTML(event.description) + ' · ' + escapeHTML(formatDate(event.at)) + '</small></div></div>';
+    }).join("");
+    return '<section class="progress-heading"><div><div class="eyebrow">TU ESPACIO PERSONAL</div><h1>Progreso</h1><p class="lead">Una mirada a tu historia, tus gustos y cómo va aprendiendo Prisma.</p></div><button class="btn btn-secondary" type="button" data-nav="lab">Análisis del motor ↗</button></section>' +
+      '<div class="metrics-grid progress-metrics">' +
+      metric("En tu historial", String(history.length), "Películas que ya viste") +
+      metric("Valoradas", String(stats.total), "Notas del 1 al 10") +
+      metric("Pendientes", String(state.watchlist.length), "Por ver cuando quieras") +
+      metric("Nota media", stats.average == null ? "—" : stats.average.toFixed(1).replace(".", ","), "Tu escala personal") +
+      '</div>' +
+      '<div class="progress-columns"><section class="panel"><div class="panel-head"><div><h3>Qué te suele gustar</h3><p>Promedio de tus notas por género, con al menos dos películas.</p></div><span class="badge">Tu perfil</span></div>' +
+      (genres.length ? '<div class="bar-list">' + genres.map(function (item) { return barRow(displayGenre(item.name), item.average, 10, item.average.toFixed(1).replace(".", ",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Aún faltan señales</strong><p>Cuando más películas tengan géneros enlazados, Prisma podrá mostrar patrones de tus valoraciones.</p></div>') +
+      '</section><section class="panel"><div class="panel-head"><div><h3>Actividad reciente</h3><p>Las últimas acciones guardadas en este dispositivo.</p></div></div>' +
+      (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Tu historia empieza aquí</strong><p>Cuando califiques una película, la actividad aparecerá en esta sección.</p><button class="btn btn-secondary" type="button" data-nav="catalog">Descubrir películas</button></div>') +
+      '</section></div>' +
+      '<section class="progress-next"><div><div class="eyebrow">SIGUIENTE PASO</div><h2>Encuentra tu próxima película</h2><p>Explora el catálogo y guarda lo que te llame la atención. Tu historial ayuda a Prisma a ordenar las sugerencias.</p></div><button class="btn btn-primary" type="button" data-nav="catalog">Ir a Descubrir ↗</button></section>' +
+      '<footer>Las estadísticas describen tus datos guardados. Las predicciones del recomendador son experimentales y no garantizan que una película te vaya a gustar.</footer>';
   }
+
 
   function movieGrid(movies) {
     return '<div class="movie-grid">' + movies.map(function (movie) { return movieCard(movie); }).join("") + '</div>';
