@@ -5,10 +5,10 @@
 - [x] Definir el requisito para que favicon, logo del encabezado y icono del manifest compartan una identidad visual coherente.
 
 ## Implementación
-- [ ] Actualizar la paleta del SVG sin alterar su geometría.
-- [ ] Versionar favicon, logo y recurso del manifest con una URL idéntica.
-- [ ] Incrementar la versión del manifest y del shell de la PWA.
-- [ ] Añadir una prueba estática de paleta y referencias y conectarla a CI.
+- [x] Actualizar la paleta del SVG sin alterar su geometría.
+- [x] Versionar favicon, logo y recurso del manifest con una URL idéntica.
+- [x] Incrementar la versión del manifest y del shell de la PWA.
+- [x] Añadir una prueba estática de paleta y referencias y conectarla a CI.
 
 ## Validación y cierre
 - [ ] Ejecutar checks SDD, sintaxis y pruebas estáticas en CI.
