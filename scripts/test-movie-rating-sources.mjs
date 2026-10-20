@@ -52,7 +52,7 @@ const unverifiedScore = helpers.buildRatingMetrics({
 }, {});
 assert.ok(!unverifiedScore.includes('<strong>9.9</strong>'));
 assert.ok(!unverifiedScore.includes('876 votos'));
-assert.ok(source.includes('const publicRating = hasTrustedTMDBScore(item) ?'));
+assert.ok(source.includes('const publicRating = ctx.hasTrustedTMDBScore(item) ?'));
 assert.ok(source.includes('(hasTrustedTMDBScore(a) ? Number(a.voteAverage) : 0) - (hasTrustedTMDBScore(b) ? Number(b.voteAverage) : 0)'));
 assert.ok(source.includes('voteCount: Number(movie.voteCount || movie.vote_count || 0) || null'));
 assert.ok(source.includes('voteCount: Number(raw.vote_count) || null'));
