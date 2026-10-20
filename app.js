@@ -892,7 +892,7 @@
       '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No hay recomendaciones disponibles todavía</h3><p>Amplía el catálogo o revisa tus pendientes para darle más opciones a Prisma.</p><button type="button" class="btn btn-secondary" data-nav="catalog">Explorar catálogo</button></div>';
     return '<section class="hero"><div class="hero-content"><div class="eyebrow">Tu laboratorio cinematográfico · V 0.1</div>' +
       '<h1 class="hero-title">No busques cualquier película.<br><span class="gradient-text">Encuentra la que te haga sentir.</span></h1>' +
-      '<p class="lead">Prisma aprende de tus valoraciones, busca señales en las historias y te explica por qué podría gustarte cada película. Tu perfil se queda en este dispositivo.</p>' +
+      '<p class="lead">Prisma aprende de tus notas para recomendarte películas. Tu perfil se queda en este dispositivo.</p>' +
       '<div class="hero-actions"><button class="btn btn-primary" type="button" data-nav="catalog">✦ Buscar películas</button><button class="btn btn-secondary" type="button" data-nav="lab">Cómo aprende ↗</button></div></div></section>' +
       '<div class="metrics-grid">' +
       metric("Películas calificadas", String(stats.total), "Tu historial personal") +
