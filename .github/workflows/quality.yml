@@ -40,3 +40,6 @@ jobs:
 
       - name: Test discovery and film detail UX
         run: node scripts/test-discovery-detail-polish.mjs
+
+      - name: Test model evaluation identity and baseline
+        run: node scripts/test-model-evaluation.mjs
