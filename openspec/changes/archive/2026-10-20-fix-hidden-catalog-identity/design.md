@@ -17,3 +17,8 @@ Reutilizar `isHidden(title, tmdbId)` dentro de `filterCatalog` en lugar de const
 - Los registros sin ID TMDB se siguen comparando por título mediante la función común ya usada por Colección.
 - No se transforman ni eliminan registros guardados; solo cambia cómo el catálogo determina la visibilidad de cada identidad.
 - La prueba usa IndexedDB aislada de Playwright y nombres sintéticos; no toca el almacenamiento del dispositivo del usuario ni llama a TMDB.
+
+
+## Resultado de la revisión
+
+La implementación reutiliza `isHidden(title, tmdbId)` y no altera el almacenamiento. La prueba de navegador pasó en los contextos de escritorio y móvil tras esperar explícitamente a que el estado persistido se refleje en la ficha.

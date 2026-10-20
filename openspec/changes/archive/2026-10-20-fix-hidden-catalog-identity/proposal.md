@@ -2,7 +2,7 @@
 
 ## Estado
 
-En preparación bajo SDD. La implementación y el cierre dependen de que la prueba de navegador reproduzca el caso de dos películas homónimas con IDs TMDB diferentes.
+Aceptado tras revisión técnica delegada el 2026-10-20 y archivado. La corrección se verificó con una prueba de navegador que oculta una identidad TMDB y confirma que otra homónima sigue visible.
 
 ## Problema observado
 
