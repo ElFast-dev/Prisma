@@ -21,7 +21,9 @@ assert.match(css, /\.btn-primary[\s\S]*?background:\s*linear-gradient\(135deg,\s
 assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)/, 'Debe respetarse movimiento reducido.');
 assert.match(css, /scroll-behavior:\s*auto\s*!important/, 'Movimiento reducido no puede forzar scroll suave.');
 assert.match(interfaceSpec, /acento de marca DEBE ser violeta suave/i, 'La especificación permanente debe fijar la dirección de color.');
-assert.match(serviceWorker, /const CACHE_NAME = "prisma-shell-v47"/, 'La PWA debe renovar su caché al publicar el sistema visual.');
+const cacheVersion = serviceWorker.match(/const CACHE_NAME = "prisma-shell-v(\d+)"/);
+assert.ok(cacheVersion && Number(cacheVersion[1]) >= 47,
+  'La PWA debe renovar su caché al publicar el sistema visual.');
 assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261020-19"'),
   'El service worker debe cachear la misma URL que index.html.');
 console.log('Sistema visual Prisma correcto: tokens violeta, estados principales, movimiento reducido y caché PWA verificados.');

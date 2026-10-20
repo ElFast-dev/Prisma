@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v47"
+const CACHE_NAME = "prisma-shell-v48"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -40,9 +40,9 @@ const APP_ASSETS = [
   "./js/app/runtime.js?v=core-20261020-1",
   "./js/app/lifecycle.js?v=core-20261020-1",
   "./js/import-export/personal-data.js",
-  "./manifest.webmanifest?v=ui-20261020-12",
+  "./manifest.webmanifest?v=ui-20261020-13",
   "./data/catalog.json",
-  "./assets/prisma.svg"
+  "./assets/prisma.svg?v=brand-20261020-1"
 ];
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(CACHE_NAME).then(function (cache) {

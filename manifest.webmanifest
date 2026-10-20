@@ -10,7 +10,7 @@
   "theme_color": "#080c12",
   "icons": [
     {
-      "src": "./assets/prisma.svg",
+      "src": "./assets/prisma.svg?v=brand-20261020-1",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

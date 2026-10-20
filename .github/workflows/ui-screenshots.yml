@@ -84,6 +84,8 @@ jobs:
                     rootBg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
                     rootAccent: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().toLowerCase(),
                     headlineFont: getComputedStyle(heading).fontFamily,
+                    brandFavicon: (document.querySelector('link[rel="icon"]') || {}).href || "",
+                    brandLogo: (document.querySelector(".brand img") || {}).src || "",
                     navRadius: getComputedStyle(nav).borderRadius,
                     posterRadius: poster && getComputedStyle(poster).borderRadius,
                     movieCards: document.querySelectorAll(".movie-card").length,
@@ -100,6 +102,8 @@ jobs:
                   lastUI.appSrc.includes("v=ui-20261020-41") &&
                   lastUI.rootBg === "#080c12" &&
                   lastUI.rootAccent === "#c4b5fd" &&
+                  lastUI.brandFavicon.includes("brand-20261020-1") &&
+                  lastUI.brandLogo.includes("brand-20261020-1") &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
                   lastUI.topSearch &&
