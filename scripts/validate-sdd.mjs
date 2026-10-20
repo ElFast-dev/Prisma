@@ -59,7 +59,7 @@ if (specFiles.length === 0) {
 
 for (const file of specFiles) {
   const content = await readFile(file, 'utf8');
-  if (!/^## Requirements\s*$/m.test(content)) {
+  if (!/^## (?:Requirements|ADDED Requirements|MODIFIED Requirements|REMOVED Requirements)\s*$/m.test(content)) {
     errors.push(file + ': falta el encabezado "## Requirements"');
   }
 
