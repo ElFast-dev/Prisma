@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { sameDiscoveryMovie, uniqueDiscoveryMovies } from '../js/core/movie-utils.js';
 
 const source = await readFile('app.js', 'utf8');
 
