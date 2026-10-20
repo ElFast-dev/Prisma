@@ -948,7 +948,7 @@
       metric("Nota media",stats.average == null ? "—" : stats.average.toFixed(1).replace(".",","),"") +
       '</div>' +
       '<div class="progress-columns"><section class="panel"><div class="panel-head"><h3>Géneros mejor valorados</h3>' + infoButton("genres","Información sobre las tendencias por género") + '</div>' +
-      (genres.length ? '<div class="bar-list">' + genres.map(function (item) { return barRow(displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Sin datos de género</strong><button class="btn btn-secondary btn-small" type="button" data-nav="lab">Completar datos</button></div>') +
+      (genres.length ? '<div class="bar-list">' + genres.map(function (item) { return barRow(displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline progress-empty"><button class="btn btn-secondary btn-small" type="button" data-nav="lab">Completar datos</button></div>') +
       '</section><section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' +
       (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') +
       '</section></div>';
