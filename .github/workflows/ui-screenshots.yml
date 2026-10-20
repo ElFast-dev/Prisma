@@ -69,7 +69,7 @@ jobs:
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261020-7") &&
                   lastUI.rootBg === "#080c12" &&
-                  lastUI.headlineFont.includes("ui-serif") &&
+                  lastUI.headlineFont.includes("Inter") &&
                   lastUI.movieCards > 0
                 ) {
                   console.log(name + " published UI verified:", JSON.stringify(lastUI));
