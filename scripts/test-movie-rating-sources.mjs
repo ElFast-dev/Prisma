@@ -55,7 +55,7 @@ assert.ok(!unverifiedScore.includes('876 votos'));
 
 assert.ok(source.includes('voteCount: Number(movie.voteCount || movie.vote_count || 0) || null'));
 assert.ok(source.includes('voteCount: Number(raw.vote_count) || null'));
-assert.ok(source.includes('voteCount: enriched.voteCount || entry.voteCount || null'));
+assert.ok(source.includes('entry.voteCount = enriched.voteCount || entry.voteCount || null'));
 assert.ok(source.includes('voteCount:movie.voteCount || old.voteCount || null'));
 assert.ok(source.includes('"posterUrl","voteAverage","voteCount","runtime"'));
 assert.ok(source.includes('"posterUrl","voteAverage","voteCount","runtime","releaseDate"'));
