@@ -19,6 +19,6 @@
 - Fila sin valor TMDB válido: no inventar un ID.
 
 
-## Evidencia local previa a CI
+## Evidencia de verificación
 
-La lógica pura extraída de `parseCatalogCSV` pasó cuatro casos sintéticos durante la revisión: dos remakes con IDs TMDB distintos, un ID genérico de MovieLens, rechazo de notación científica como ID TMDB y deduplicación por título cuando no existe ID TMDB. Además, GitHub Actions pasó `SDD and static quality` (run #15), `Validate Prisma` (run #122) y `Prisma UI screenshots` (run #95). La prueba de navegador verificó la persistencia de dos IDs TMDB distintos, su visualización por separado en el catálogo combinado, los IDs genéricos y la reimportación sin duplicados. El expediente queda pendiente de revisión y merge antes de archivar.
+La lógica pura extraída de `parseCatalogCSV` pasó cuatro casos sintéticos durante la revisión: dos remakes con IDs TMDB distintos, un ID genérico de MovieLens, rechazo de notación científica como ID TMDB y deduplicación por título cuando no existe ID TMDB. GitHub Actions pasó en la revisión final: `SDD and static quality` (run #19), `Validate Prisma` (run #126) y `Prisma UI screenshots` (run #97). La prueba de navegador verificó la persistencia de dos IDs TMDB distintos, su visualización por separado en el catálogo combinado, los IDs genéricos y la reimportación sin duplicados. El expediente queda pendiente de revisión y merge antes de archivar.
