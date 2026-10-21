@@ -24,7 +24,7 @@ const APP_ASSETS = [
   "./js/recommendations/engine.js",
   "./js/recommendations/ridge-evaluation.js?v=core-20261021-4",
   "./js/recommendations/evaluation.js",
-  "./js/diagnostics/recommendation-report.js?v=core-20261021-2?v=core-20261021-1",
+  "./js/diagnostics/recommendation-report.js?v=core-20261021-2",
   "./js/catalog/csv-parser.js",
   "./js/catalog/catalog-model.js?v=core-20261021-1",
   "./js/collection/collection-model.js?v=core-20261020-1",
