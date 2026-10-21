@@ -29,9 +29,12 @@ export function createMovieActions(ctx) {
     const watchedIndex = (ctx.state.watched || []).findIndex(function (entry) { return ctx.sameMovieRecord(entry,movie); });
     const oldWatched = watchedIndex >= 0 ? ctx.state.watched[watchedIndex] : null;
     const watchedRecord = Object.assign({},oldWatched || {},newEntry);
-    const explicitDate = [oldWatched, old].find(function (entry) {
-      return entry && entry.watchedAt &&
-        (entry.watchedAtSource === "imported-explicit" || entry.watchedAtSource === "user-confirmed") &&
+    const dateRecords = [oldWatched, old];
+    const explicitDate = dateRecords.find(function (entry) {
+      return entry && entry.watchedAt && entry.watchedAtSource === "user-confirmed" &&
+        Number.isFinite(Date.parse(entry.watchedAt));
+    }) || dateRecords.find(function (entry) {
+      return entry && entry.watchedAt && entry.watchedAtSource === "imported-explicit" &&
         Number.isFinite(Date.parse(entry.watchedAt));
     });
     const existingDate = [oldWatched, old].find(function (entry) {
