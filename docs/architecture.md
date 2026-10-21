@@ -16,11 +16,11 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/core/storage-protection.js` | Consulta persistencia/cuota del almacenamiento y solicita persistencia solo tras una acción explícita. |
 | `js/recommendations/features.js` | Extracción de géneros, etiquetas y década de estreno si existe un año válido. |
 | `js/recommendations/engine.js` | Perfil de preferencias, predicción, evaluación leave-one-out con ablación de década y experimento diagnóstico opcional de regularización de temas poco respaldados; la variante experimental no altera las recomendaciones activas. |
-| `js/recommendations/ridge-evaluation.js` | Experimento local y bajo demanda de Ridge: conserva la validación histórica de cinco pliegues, añade tres repeticiones de cinco pliegues y una evaluación walk-forward temporal en cinco ventanas futuras con selección interna de alpha; solo métricas agregadas, sin fechas ni filas individuales, y sin alterar las recomendaciones activas. |
+| `js/recommendations/ridge-evaluation.js` | Experimento local y bajo demanda de Ridge: conserva validación de cinco pliegues y tres repeticiones, y añade walk-forward temporal en cinco ventanas futuras con selección interna de alpha y recuentos de procedencia de fechas; etiqueta como exploratorios los timestamps no verificables y no altera las recomendaciones activas. |
 | `js/recommendations/repeated-validation-summary.js` | Resumen puro de dirección y rango mínimo–máximo de las métricas agregadas por repetición; no produce intervalos de confianza ni modifica el modelo. |
 | `js/recommendations/evaluation.js` | Evaluación offline de nDCG@5 por modo sobre pliegues y candidatas comunes, además de diversidad de géneros en las listas actuales; no ajusta automáticamente el recomendador. |
 | `js/recommendations/ranking.js` | Puntúa y diversifica candidatas de catálogo local y el pool efímero de películas populares ya consultadas en TMDB; excluye la colección y no persiste candidatas remotas. |
-| `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v5 del Laboratorio, con métricas de validación Ridge repetida y temporal walk-forward; sanea el resultado y no serializa fechas exactas, registros individuales ni accede al DOM, almacenamiento o red. |
+| `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v6 del Laboratorio, con métricas de validación Ridge repetida y temporal walk-forward y recuentos de procedencia de fechas; no serializa fechas exactas, registros individuales ni accede al DOM, almacenamiento o red. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
@@ -41,7 +41,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/app/runtime.js` | Eventos de actividad, persistencia principal y notificaciones breves. |
 | `js/app/lifecycle.js` | Navegación, inicialización del perfil local y coordinación del registro del service worker. |
 | `js/app/pwa-update.js` | Detección de cambios de controlador PWA y aviso accesible para recargar sin interrumpir ni borrar datos personales. |
-| `js/import-export/personal-data.js` | Reconocimiento de exportaciones personales, normalización y combinación de registros. |
+| `js/import-export/personal-data.js` | Reconocimiento y combinación de exportaciones personales; separa `addedAt` de `watchedAt` y marca la procedencia de fechas importadas explícitamente. |
 | `js/tmdb/client.js` | Credenciales, peticiones HTTP, errores, caché de géneros y conversión de respuestas TMDB. |
 | `styles.css` | Tokens, base y estructura general. |
 | `styles/movie-cards.css` | Tarjetas y composición de películas. |
