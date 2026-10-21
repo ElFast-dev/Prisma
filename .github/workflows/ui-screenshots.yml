@@ -252,6 +252,14 @@ jobs:
                   throw new Error(name + ": TMDB connection success was replaced by an application error: " + tmdbConnectionToast);
                 }
 
+                // Keep the following catalogue/import checks isolated from this synthetic credential.
+                page.once("dialog", dialog => dialog.accept());
+                await page.locator('[data-action="remove-tmdb"]').click();
+                await page.waitForFunction(() => {
+                  const badge = document.querySelector(".tmdb-settings .badge");
+                  return badge && badge.innerText.trim() === "Sin conectar";
+                }, null, { timeout: 10000 });
+
                 await page.locator(".bottom-nav [data-nav='home']").click();
                 await page.locator(".progress-onboarding").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
