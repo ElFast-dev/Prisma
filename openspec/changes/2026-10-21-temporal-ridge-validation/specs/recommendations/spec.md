@@ -28,6 +28,12 @@ Prisma DEBE ofrecer un experimento temporal, local y bajo demanda que entrene co
 - CUANDO el usuario activa la acción explícita «marcar como vista»
 - ENTONCES Prisma registra el momento de esa acción como `watchedAt`
 
+#### Scenario: Procedencia incierta de fechas históricas
+
+- DADO que una entrada antigua ya contiene `watchedAt` pero proviene de una versión que pudo copiar `updatedAt`
+- CUANDO se muestra la evaluación temporal
+- ENTONCES Prisma advierte que no puede certificar la procedencia de todas las fechas antiguas y no presenta esos resultados como evidencia concluyente
+
 #### Scenario: Datos temporales insuficientes
 
 - DADO que hay menos de 100 valoraciones únicas fechadas con características o menos de 12 días válidos distintos
