@@ -3,6 +3,7 @@ import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine } from "./js/recommendations/engine.js";
+import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
@@ -171,7 +172,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get renderTMDBHistoryPanel() { return renderTMDBHistoryPanel; },
     get renderTMDBAttribution() { return renderTMDBAttribution; },
     get renderTMDBResults() { return renderTMDBResults; },
-    get evaluateModel() { return evaluateModel; }
+    get evaluateModel() { return evaluateModel; },
+    get evaluateRecommendationQuality() { return evaluateRecommendationQuality; }
   });
   const { movieCard, ratedMetadataCount, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp } = pageViews;
   const modalViews = createModalViews({
@@ -446,6 +448,19 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get ratingValue() { return ratingValue; }
   });
   const { getRecommendations, genreStats } = recommendationRanking;
+
+  const recommendationEvaluation = createRecommendationEvaluation({
+    getRatings: function () { return state.rated; },
+    findMovie: findMovie,
+    movieFeatures: movieFeatures,
+    ratingValue: ratingValue,
+    buildProfile: buildProfile,
+    predictRating: predictRating,
+    getRecommendations: getRecommendations,
+    movieTmdbId: movieTmdbId,
+    titleKey: titleKey
+  });
+  const { evaluateRecommendationQuality } = recommendationEvaluation;
 
   const appLifecycle = createAppLifecycle({
     get state() { return state; },

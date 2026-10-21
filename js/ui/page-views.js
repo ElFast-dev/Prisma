@@ -211,6 +211,7 @@ export function createPageViews(ctx) {
     const stats = ctx.summaryStats();
     const profile = ctx.buildProfile();
     const evaluation = ctx.evaluateModel();
+    const recommendationQuality = ctx.evaluateRecommendationQuality();
     const genres = ctx.genreStats();
     const overall = stats.average || 6.5;
     const top = genres.slice().sort(function (a,b) { return b.average-a.average; }).slice(0,7);
@@ -245,7 +246,25 @@ export function createPageViews(ctx) {
       '</section><section class="panel"><div class="panel-head"><h3>Géneros con notas más bajas</h3></div>' +
       (bottom.length ? '<div class="bar-list">' + bottom.map(function (item) { return ctx.barRow(ctx.displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Datos insuficientes</strong></div>') +
       '</section></div>' +
-      '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación del modelo</h3>' + ctx.infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
+      '<section class="panel lab-ranking-diagnostics"><div class="panel-head"><div><h3>Calidad del ranking</h3><p class="metric-note">Diagnóstico offline, no una garantía de gusto futuro.</p></div>' + ctx.infoButton("lab","Información sobre la calidad del ranking y la diversidad") + '</div>' +
+      '<div class="metrics-grid">' +
+      ctx.metric("nDCG@5", recommendationQuality.ranking.available ? recommendationQuality.ranking.ndcgAt5.toFixed(2).replace(".",",") : "—", "") +
+      ctx.metric("Películas evaluables", String(recommendationQuality.ranking.count), "Con características enlazadas") +
+      ctx.metric("Notas relevantes", String(recommendationQuality.ranking.relevantCount), "Puntuación personal de 7 a 10") +
+      '</div>' +
+      '<div class="metric-note">' + ctx.escapeHTML(recommendationQuality.ranking.available
+        ? "Validación cruzada de 5 pliegues. Ganancia: nota − 6 para notas de 7 a 10; las notas de 1 a 6 no se cuentan como relevantes. Pliegues con señal relevante: " + recommendationQuality.ranking.foldsEvaluated + "/5."
+        : recommendationQuality.ranking.reason) + '</div>' +
+      '<div class="panel-head"><h4>Diversidad de géneros · primeras cinco películas</h4></div>' +
+      '<div class="event-list">' + recommendationQuality.diversity.map(function (item) {
+        const label = {balanced:"Equilibrado",affinity:"Más afines",variety:"Más variedad"}[item.mode] || item.mode;
+        const summary = item.score == null
+          ? "Sin suficientes géneros comparables · " + item.titles + " películas"
+          : "Disimilitud " + item.score.toFixed(2).replace(".",",") + " · " + item.uniqueGenres + " géneros distintos · " + item.titles + " películas · " + item.pairs + " pares";
+        return '<div class="event-item"><div class="event-mark" aria-hidden="true">✦</div><div class="event-copy"><strong>' + label + '</strong><small>' + ctx.escapeHTML(summary) + '</small></div></div>';
+      }).join("") + '</div>' +
+      '<div class="metric-note">La disimilitud de géneros se calcula con Jaccard entre pares que tienen metadatos. No mide serendipia ni satisfacción.</div></section>' +
+      '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación de notas</h3>' + ctx.infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
       '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>';
   }
 
