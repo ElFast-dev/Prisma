@@ -30,7 +30,8 @@ function harness(records, allMovies, watchedRecords, temporalAudit) {
   const latestDayByProfile = new WeakMap();
   const watchedSource = watchedRecords || records;
   const watched = watchedSource.map(record => ({
-    title: record.title, tmdbId: record.tmdbId, year: record.year, watchedAt: record.watchedAt
+    title: record.title, tmdbId: record.tmdbId, year: record.year,
+    watchedAt: record.watchedAt, watchedAtSource: record.watchedAtSource
   }));
   const productionRanking = createRecommendationRanking({});
   const engine = createRecommendationEngine({
@@ -304,7 +305,8 @@ assert.match(viewsSource, /summary\.ties/);
 const temporalAudit = { violations: 0, predictions: 0 };
 const temporalRecords = fixtures(120).map(function (record, index) {
   return Object.assign({}, record, {
-    watchedAt: new Date(Date.UTC(2020, 0, 1 + Math.floor(index / 10))).toISOString()
+    watchedAt: new Date(Date.UTC(2020, 0, 1 + Math.floor(index / 10))).toISOString(),
+    watchedAtSource: "imported-explicit"
   });
 });
 const temporalExperiment = harness(temporalRecords, temporalRecords, null, temporalAudit);
@@ -313,6 +315,9 @@ const temporalResult = await temporalExperiment.evaluateTemporalAsync(progress =
 assert.equal(temporalResult.available, true, "Una muestra sintética fechada y suficiente debe habilitar walk-forward.");
 assert.equal(temporalResult.sampleCount, 120);
 assert.equal(temporalResult.timestampedFeatureCount, 120);
+assert.equal(temporalResult.explicitDateCount, 120);
+assert.equal(temporalResult.unverifiedDateCount, 0);
+assert.equal(temporalResult.dateProvenanceStatus, "verified");
 assert.equal(temporalResult.missingDateCount, 0);
 assert.equal(temporalResult.distinctDayCount, 12,
   "Los registros del mismo día deben agruparse como una única unidad temporal.");
@@ -354,6 +359,7 @@ assert.match(temporalCancelled.unavailableReason, /canceló/);
 const undatedRecords = temporalRecords.map(function (record) {
   const copy = Object.assign({}, record, { updatedAt: record.watchedAt });
   delete copy.watchedAt;
+  delete copy.watchedAtSource;
   return copy;
 });
 const joinedDatesExperiment = harness(undatedRecords, temporalRecords, temporalRecords);
@@ -361,6 +367,18 @@ const joinedDates = await joinedDatesExperiment.evaluateTemporalAsync();
 assert.equal(joinedDates.available, true,
   "La fecha puede resolverse por identidad desde el historial de vistas aunque falte en la valoración.");
 assert.equal(joinedDates.timestampedFeatureCount, 120);
+assert.equal(joinedDates.explicitDateCount, 120,
+  "Una fecha explícita del historial debe prevalecer sobre un watchedAt heredado de la valoración.");
+const legacyDatedRecords = temporalRecords.map(function (record) {
+  const copy = Object.assign({}, record, { watchedAtSource: "action-time" });
+  return copy;
+});
+const legacyDated = await harness(legacyDatedRecords, legacyDatedRecords).evaluateTemporalAsync();
+assert.equal(legacyDated.available, true);
+assert.equal(legacyDated.explicitDateCount, 0);
+assert.equal(legacyDated.unverifiedDateCount, 120);
+assert.equal(legacyDated.dateProvenanceStatus, "exploratory",
+  "Una marca de tiempo de acción debe distinguirse de una fecha de visionado explícita.");
 const noDates = await harness(undatedRecords, undatedRecords).evaluateTemporalAsync();
 assert.equal(noDates.available, false);
 assert.equal(noDates.timestampedFeatureCount, 0);
