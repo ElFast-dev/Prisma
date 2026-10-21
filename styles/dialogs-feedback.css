@@ -116,3 +116,18 @@ footer {
   font-size: 10px;
   line-height: 1.7;
 }
+
+/* El aviso de actualización incluye una acción que debe seguir siendo pulsable dentro del toast-root. */
+.pwa-update-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+.pwa-update-toast .btn { flex-shrink: 0; }
+@media (max-width: 380px) {
+  .pwa-update-toast { align-items: stretch; }
+  .pwa-update-toast .btn { width: 100%; }
+}
