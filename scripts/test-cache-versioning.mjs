@@ -115,4 +115,8 @@ for (const [filename] of modules.slice(1)) {
   assert.ok([...cached].some(asset => asset.split('?')[0] === './' + filename),
     'El service worker debe incluir ' + filename + ' aunque use una URL versionada');
 }
-console.log('Versionado PWA y módulos coherentes: ' + scriptUrl + ' · caché ' + cacheName + ' · ' + modules.length + ' módulos verificados.');
+assert.match(ridgeEvaluation, /evaluateTemporalAsync/,
+  "El experimento Ridge debe exportar la evaluación temporal bajo demanda.");
+assert.match(app, /runTemporalRidgeExperiment/);
+assert.match(diagnosticReport, /temporalRidgeExperiment/);
+console.log('Versionado PWA, módulos y experimento temporal coherentes: ' + scriptUrl + ' · caché ' + cacheName + ' · ' + modules.length + ' módulos verificados.');
