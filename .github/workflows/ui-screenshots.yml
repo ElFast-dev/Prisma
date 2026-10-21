@@ -49,7 +49,7 @@ jobs:
           TESTED_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
         run: |
           mkdir -p artifacts
-          printf '%s\\n' "$TESTED_SOURCE_SHA" > artifacts/tested-sha.txt
+          echo "$TESTED_SOURCE_SHA" > artifacts/tested-sha.txt
 
       - name: Capture the site and verify UI flows
         env:
@@ -820,5 +820,5 @@ jobs:
         with:
           name: prisma-published-ui-screenshots
           path: artifacts/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
