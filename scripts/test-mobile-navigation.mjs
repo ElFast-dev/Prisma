@@ -35,7 +35,7 @@ assert.match(product, /combinar en una experiencia personal de cine/,
   "La misión elegida debe documentarse en la hoja de ruta.");
 assert.match(product, /Privacidad local primero[\s\S]*?exportación\/importación/,
   "La hoja de ruta debe preservar almacenamiento local y copias de seguridad.");
-assert.match(html, /app\.js\?v=ui-20261021-71/,
+assert.match(html, /app\.js\?v=ui-20261021-72/,
   "index.html debe apuntar a la versión actualizada de la aplicación.");
 assert.match(app, /page-views\.js\?v=core-20261021-13/,
   "La aplicación debe cargar el módulo de vistas versionado.");
