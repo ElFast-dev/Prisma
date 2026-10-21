@@ -5,12 +5,13 @@
 - [x] Definir escenarios de tema oscuro predeterminado, cambio a claro y restauración tras recarga.
 
 ## Implementación
-- [ ] Añadir el controlador modular de preferencia y persistencia de tema.
-- [ ] Actualizar tokens del sistema visual a negro y azul apagado.
-- [ ] Incorporar overrides legibles para el modo claro en vistas, paneles, tarjetas, ficha y formularios.
-- [ ] Añadir selector Oscuro/Claro accesible en Ajustes.
-- [ ] Versionar entrada JavaScript, CSS y caché PWA.
-- [ ] Extender pruebas estáticas y de modularidad para los dos temas.
+- [x] Alinear el isotipo con la paleta azul y versionar favicon, cabecera y manifest.
+- [x] Añadir el controlador modular de preferencia y persistencia de tema.
+- [x] Actualizar tokens del sistema visual a negro y azul apagado.
+- [x] Incorporar overrides legibles para el modo claro en vistas, paneles, tarjetas, ficha y formularios.
+- [x] Añadir selector Oscuro/Claro accesible en Ajustes.
+- [x] Versionar entrada JavaScript, CSS y caché PWA.
+- [x] Extender pruebas estáticas y de modularidad para los dos temas.
 
 ## Validación y cierre
 - [ ] Validar SDD, sintaxis y todas las pruebas estáticas en CI.
