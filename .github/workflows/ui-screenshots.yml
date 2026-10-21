@@ -44,6 +44,13 @@ jobs:
           cat /tmp/prisma-preview.log
           exit 1
 
+      - name: Record the exact source SHA under test
+        env:
+          TESTED_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p artifacts
+          printf '%s\\n' "$TESTED_SOURCE_SHA" > artifacts/tested-sha.txt
+
       - name: Capture the site and verify UI flows
         env:
           PRISMA_URL: ${{ github.event_name != 'workflow_dispatch' && 'http://127.0.0.1:8765/' || 'https://elfast-dev.github.io/Prisma/' }}
