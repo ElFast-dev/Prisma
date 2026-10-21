@@ -13,8 +13,8 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/core/movie-utils.js` | Identidad y normalización de películas, listas, validación de notas y escape de texto. |
 | `js/core/state-model.js` | Estado inicial y normalización del estado persistido/importado. |
 | `js/core/storage.js` | IndexedDB y fallback a localStorage. |
-| `js/recommendations/features.js` | Extracción de características de una película. |
-| `js/recommendations/engine.js` | Perfil de preferencias, predicción y evaluación leave-one-out con dependencias explícitas. |
+| `js/recommendations/features.js` | Extracción de géneros, etiquetas y década de estreno si existe un año válido. |
+| `js/recommendations/engine.js` | Perfil de preferencias, predicción y evaluación leave-one-out con una ablación de la señal de década, mediante dependencias explícitas. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |

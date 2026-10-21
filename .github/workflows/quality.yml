@@ -107,6 +107,9 @@ jobs:
       - name: Test coordinated PWA cache versions
         run: node scripts/test-cache-versioning.mjs
 
+      - name: Test recommendation feature extraction
+        run: node scripts/test-recommendation-features.mjs
+
       - name: Test recommendation signal weighting
         run: node scripts/test-recommendation-signal-weighting.mjs
 

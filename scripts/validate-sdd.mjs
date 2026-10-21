@@ -110,6 +110,7 @@ const requiredFiles = [
   'scripts/test-mobile-navigation.mjs',
   'scripts/test-model-evaluation.mjs',
   'scripts/test-cache-versioning.mjs',
+  'scripts/test-recommendation-features.mjs',
   'scripts/test-recommendation-signal-weighting.mjs',
   'scripts/test-recommendation-modes.mjs',
   'openspec/changes/archive/2026-10-20-modularize-application-core/proposal.md',
