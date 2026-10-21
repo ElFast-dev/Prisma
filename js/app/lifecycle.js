@@ -1,4 +1,11 @@
+import { createPWAUpdateController } from "./pwa-update.js?v=core-20261021-1";
+
 export function createAppLifecycle(ctx) {
+  const pwaUpdateController = createPWAUpdateController({
+    getServiceWorker: function () { return ctx.navigator && ctx.navigator.serviceWorker; },
+    getWindow: function () { return ctx.window; },
+    getToastRoot: function () { return ctx.$("#toastRoot"); }
+  });
   function clickNav(page) {
     if (["home","catalog","library","lab","data"].indexOf(page) < 0) return;
     if (page !== ctx.currentPage) {
@@ -28,11 +35,7 @@ export function createAppLifecycle(ctx) {
       ctx.combineMovies();
       ctx.renderApp();
       if (ctx.tmdbCredential && ctx.tmdbCredential.value) ctx.window.setTimeout(function () { ctx.enrichRatedHistoryWithTMDB(); },350);
-      if ("serviceWorker" in ctx.navigator && ctx.window.isSecureContext) {
-        ctx.navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(function () {
-          // La app sigue funcionando si el navegador no permite service workers.
-        });
-      }
+      pwaUpdateController.register();
     } catch (error) {
       ctx.$("#appRoot").innerHTML = '<div class="empty-state"><div class="empty-icon">!</div><h2>No se pudo iniciar Prisma</h2><p>' + ctx.escapeHTML(error.message || "Error al cargar los archivos") + '</p><button type="button" class="btn btn-primary" onclick="location.reload()">Reintentar</button></div>';
     }
