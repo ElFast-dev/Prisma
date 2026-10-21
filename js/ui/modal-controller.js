@@ -69,7 +69,7 @@ export function createModalController(ctx) {
       const returnMovieDetail = ctx.movieDetail || ctx.modalDraft.returnMovieDetail || null;
       if (returnMovieDetail) {
         ctx.movieDetail = returnMovieDetail;
-        ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.renderModal(); return;
+        ctx.modalDraft = null; ctx.ratingReturnDetail = false; renderModal(); return;
       }
     }
     ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.movieDetail = null; ctx.personDetail = null; ctx.utilitySheet = null;
