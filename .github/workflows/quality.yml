@@ -66,6 +66,9 @@ jobs:
       - name: Check service worker syntax
         run: node --check sw.js
 
+      - name: Validate manifest JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest', 'utf8'));"
+
       - name: Validate SDD documents
         run: node scripts/validate-sdd.mjs
 
@@ -105,6 +108,9 @@ jobs:
       - name: Test reliable watched-date provenance
         run: node scripts/test-watch-date-provenance.mjs
 
+      - name: Test modal event handlers
+        run: node scripts/test-modal-event-handlers.mjs
+
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs
 
@@ -119,6 +125,9 @@ jobs:
 
       - name: Test coordinated PWA cache versions
         run: node scripts/test-cache-versioning.mjs
+
+      - name: Test release pipeline gates
+        run: node scripts/test-release-gating.mjs
 
       - name: Test local storage protection API
         run: node scripts/test-storage-protection.mjs

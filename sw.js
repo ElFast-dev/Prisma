@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v74"
+const CACHE_NAME = "prisma-shell-v80"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -14,7 +14,7 @@ const APP_ASSETS = [
   "./styles/movie-details.css?v=ui-20261021-24",
   "./styles/prisma-design-system.css?v=ui-20261021-24",
 
-  "./app.js?v=ui-20261021-65",
+  "./app.js?v=ui-20261021-71",
   "./js/tmdb/client.js",
   "./js/core/movie-utils.js",
   "./js/core/storage.js?v=core-20261020-1",
@@ -32,16 +32,16 @@ const APP_ASSETS = [
   "./js/ui/presentation-utils.js?v=core-20261020-1",
   "./js/ui/page-views.js?v=core-20261021-13",
   "./js/ui/theme-controller.js?v=theme-20261020-1",
-  "./js/ui/modal-views.js?v=core-20261021-2",
+  "./js/ui/modal-views.js?v=core-20261021-3",
   "./js/app/movie-actions.js?v=core-20261021-1",
   "./js/import-export/actions.js?v=core-20261020-1",
-  "./js/app/event-handlers.js?v=core-20261021-3",
+  "./js/app/event-handlers.js?v=core-20261021-5",
   "./js/tmdb/settings-actions.js?v=core-20261020-3",
   "./js/ui/tmdb-views.js?v=core-20261020-1",
   "./js/tmdb/history-sync.js?v=core-20261020-1",
   "./js/tmdb/browser-actions.js?v=core-20261021-1",
   "./js/tmdb/movie-details.js?v=core-20261020-1",
-  "./js/ui/modal-controller.js?v=core-20261020-1",
+  "./js/ui/modal-controller.js?v=core-20261021-4",
   "./js/recommendations/ranking.js?v=core-20261021-3",
   "./js/recommendations/preferences.js?v=core-20261021-1",
   "./js/app/runtime.js?v=core-20261020-1",

@@ -13,16 +13,16 @@ import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-2026102
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261020-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261020-1";
 import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-13";
-import { createModalViews } from "./js/ui/modal-views.js?v=core-20261021-2";
+import { createModalViews } from "./js/ui/modal-views.js?v=core-20261021-3";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261021-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
-import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-3";
+import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-5";
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-3";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
 import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
 import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261021-1";
 import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-20261020-1";
-import { createModalController } from "./js/ui/modal-controller.js?v=core-20261020-1";
+import { createModalController } from "./js/ui/modal-controller.js?v=core-20261021-4";
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
@@ -767,6 +767,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     set activeGenre(value) { activeGenre = value; },
     get utilitySheet() { return utilitySheet; },
     set utilitySheet(value) { utilitySheet = value; },
+    get modalDraft() { return modalDraft; },
     get movieDetail() { return movieDetail; },
     get personDetail() { return personDetail; },
     set personDetail(value) { personDetail = value; },

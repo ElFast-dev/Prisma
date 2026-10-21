@@ -113,9 +113,11 @@ export function registerAppEvents(ctx) {
       if (action === "save-rating") { await ctx.saveRating(); return; }
       if (action === "delete-rating") { await ctx.deleteRating(button.dataset.title,button.dataset.tmdbId); return; }
       if (action === "emotion") {
-        if (!modalDraft) return;
-        const emotion = button.dataset.emotion, index = modalDraft.emotions.indexOf(emotion);
-        if (index >= 0) modalDraft.emotions.splice(index,1); else modalDraft.emotions.push(emotion);
+        if (!ctx.modalDraft) return;
+        const memoriesPanel = ctx.$(".rating-memories");
+        ctx.modalDraft.memoriesExpanded = Boolean(memoriesPanel && memoriesPanel.open);
+        const emotion = button.dataset.emotion, index = ctx.modalDraft.emotions.indexOf(emotion);
+        if (index >= 0) ctx.modalDraft.emotions.splice(index,1); else ctx.modalDraft.emotions.push(emotion);
         ctx.renderModal();
         return;
       }
@@ -128,20 +130,20 @@ export function registerAppEvents(ctx) {
       if (action === "retry-movie-detail") { if (ctx.movieDetail) { ctx.movieDetailCache.delete(String(ctx.movieDetail.movie.tmdbId || "")); ctx.loadMovieDetail(ctx.movieDetail.movie); } return; }
       if (action === "toggle-watchlist") { if (button.dataset.title) await ctx.toggleWatchlist(button.dataset.title,button.dataset.tmdbId); return; }
       if (action === "manage-pending") {
-        const title = ctx.movieDetail ? ctx.movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await ctx.toggleWatchlist(title,ctx.movieDetail && ctx.movieDetail.movie.tmdbId);
+        const actionMovie = ctx.movieDetail ? ctx.movieDetail.movie : (ctx.modalDraft && ctx.modalDraft.movie);
+        if (actionMovie) await ctx.toggleWatchlist(actionMovie.title,actionMovie.tmdbId);
         if (ctx.utilitySheet) { ctx.utilitySheet = null; ctx.renderModal(); }
         return;
       }
       if (action === "mark-watched" || action === "manage-history") {
-        const title = ctx.movieDetail ? ctx.movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await ctx.markWatched(title,ctx.movieDetail && ctx.movieDetail.movie.tmdbId);
+        const actionMovie = ctx.movieDetail ? ctx.movieDetail.movie : (ctx.modalDraft && ctx.modalDraft.movie);
+        if (actionMovie) await ctx.markWatched(actionMovie.title,actionMovie.tmdbId);
         if (ctx.utilitySheet) { ctx.utilitySheet = null; ctx.renderModal(); }
         return;
       }
       if (action === "toggle-hidden" || action === "manage-hidden") {
-        const title = ctx.movieDetail ? ctx.movieDetail.movie.title : (modalDraft && modalDraft.movie.title);
-        if (title) await ctx.toggleHidden(title,ctx.movieDetail && ctx.movieDetail.movie.tmdbId);
+        const actionMovie = ctx.movieDetail ? ctx.movieDetail.movie : (ctx.modalDraft && ctx.modalDraft.movie);
+        if (actionMovie) await ctx.toggleHidden(actionMovie.title,actionMovie.tmdbId);
         if (ctx.utilitySheet) { ctx.utilitySheet = null; ctx.renderModal(); }
         return;
       }

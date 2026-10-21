@@ -105,6 +105,12 @@ assert.ok(cached.has("./js/ui/page-views.js?v=core-20261021-13"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261021-4"),
   "El informe de diagnóstico v6 debe quedar versionado y disponible en la caché de la aplicación.");
+assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261021-5"),
+  "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
+assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261021-3"),
+  "La vista del modal debe quedar versionada al conservar el panel de emociones abierto.");
+assert.ok(cached.has("./js/ui/modal-controller.js?v=core-20261021-4"),
+  "El controlador del modal debe quedar versionado tras corregir su función de renderizado local.");
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {
     const resolvedPath = './' + posix.normalize(posix.join(posix.dirname(filename), match[1])).replace(/^\.\//, '');

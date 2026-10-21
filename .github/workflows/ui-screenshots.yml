@@ -2,7 +2,7 @@ name: Prisma UI screenshots
 
 on:
   workflow_run:
-    workflows: ["Deploy Prisma to GitHub Pages"]
+    workflows: ["SDD and static quality"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -31,8 +33,8 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
-      - name: Serve the pull request build for browser tests
-        if: github.event_name == 'pull_request'
+      - name: Serve the tested commit for browser tests
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_run'
         run: |
           python3 -m http.server 8765 --directory . > /tmp/prisma-preview.log 2>&1 &
           for attempt in $(seq 1 20); do
@@ -42,9 +44,16 @@ jobs:
           cat /tmp/prisma-preview.log
           exit 1
 
+      - name: Record the exact source SHA under test
+        env:
+          TESTED_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
+        run: |
+          mkdir -p artifacts
+          echo "$TESTED_SOURCE_SHA" > artifacts/tested-sha.txt
+
       - name: Capture the site and verify UI flows
         env:
-          PRISMA_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8765/' || 'https://elfast-dev.github.io/Prisma/' }}
+          PRISMA_URL: ${{ github.event_name != 'workflow_dispatch' && 'http://127.0.0.1:8765/' || 'https://elfast-dev.github.io/Prisma/' }}
         run: |
           mkdir -p artifacts
           node <<'NODE'
@@ -100,7 +109,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261021-24") &&
-                  lastUI.appSrc.includes("v=ui-20261021-65") &&
+                  lastUI.appSrc.includes("v=ui-20261021-71") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -467,15 +476,83 @@ jobs:
                 await localDetailTrigger.click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 await page.screenshot({ path: "artifacts/" + name + "-film-detail.png", fullPage: false, animations: "disabled" });
+
+                // The manage-list actions must work from the real detail sheet.
+                await page.locator(".detail-state-actions [data-action='manage-lists']").click();
+                await page.locator(".utility-sheet [data-action='manage-pending']").click();
+                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".detail-state-actions [data-action='manage-lists']").click();
+                const removePending = page.locator(".utility-sheet [data-action='manage-pending']");
+                await removePending.waitFor({ state: "visible", timeout: 10000 });
+                if (!(await removePending.innerText()).includes("Quitar de pendientes")) {
+                  throw new Error(name + ": adding to pending did not update the manage-list action");
+                }
+                await removePending.click();
+                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+
                 await page.locator(".detail-action-strip [data-action='rate']").click();
                 await page.locator(".rating-sheet .rating-star").last().waitFor({ state: "visible", timeout: 10000 });
                 const ratingStars = await page.locator(".rating-sheet .rating-star").count();
                 if (ratingStars !== 10) throw new Error(name + ": expected ten tappable rating stars, found " + ratingStars);
                 await page.screenshot({ path: "artifacts/" + name + "-rating-sheet.png", fullPage: false, animations: "disabled" });
+                await page.locator(".rating-sheet .rating-memories > summary").click();
+                const emotionChip = page.locator(".rating-sheet [data-action='emotion'][data-emotion='Asombro']");
+                await emotionChip.click();
+                if (!(await emotionChip.getAttribute("class")).includes("selected")) {
+                  throw new Error(name + ": clicking an emotion did not select it in the rating draft");
+                }
+                await emotionChip.click();
+                if ((await emotionChip.getAttribute("class")).includes("selected")) {
+                  throw new Error(name + ": clicking a selected emotion did not remove it from the rating draft");
+                }
+                await emotionChip.click();
+                if (!(await emotionChip.getAttribute("class")).includes("selected")) {
+                  throw new Error(name + ": an emotion could not be selected again after being removed");
+                }
+                const emotionToast = (await page.locator("#toastRoot").innerText()).trim();
+                if (/modalDraft is not defined|ReferenceError/.test(emotionToast)) {
+                  throw new Error(name + ": emotion action emitted a runtime error: " + emotionToast);
+                }
                 await page.locator(".rating-sheet .rating-star[data-rating='8']").click();
                 await page.locator(".rating-sheet [data-action='save-rating']").click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 if (!(await page.locator(".detail-action-strip").innerText()).includes("8/10")) throw new Error(name + ": the saved rating did not return to the film detail.");
+
+                // Reopen the editor to verify that the selected emotion survived saving.
+                await page.locator(".detail-action-strip [data-action='rate']").click();
+                await page.locator(".rating-sheet .rating-memories > summary").click();
+                const persistedEmotion = page.locator(".rating-sheet [data-action='emotion'][data-emotion='Asombro']");
+                await persistedEmotion.waitFor({ state: "visible", timeout: 10000 });
+                if (!(await persistedEmotion.getAttribute("class")).includes("selected")) {
+                  throw new Error(name + ": the selected emotion was not persisted with the rating");
+                }
+                await page.locator(".rating-sheet [data-action='close-modal']").click();
+                await page.waitForTimeout(150);
+                const ratingCloseDiagnostic = await page.evaluate(() => ({
+                  detailCount: document.querySelectorAll(".detail-sheet").length,
+                  ratingCount: document.querySelectorAll(".rating-sheet").length,
+                  modalText: document.querySelector("#modalRoot")?.innerText || "",
+                  modalHtml: document.querySelector("#modalRoot")?.innerHTML.slice(0, 1000) || "",
+                  toast: document.querySelector("#toastRoot")?.innerText || ""
+                }));
+                console.log("RATING_CLOSE_DIAGNOSTIC:", JSON.stringify(ratingCloseDiagnostic));
+                if (ratingCloseDiagnostic.detailCount !== 1) {
+                  throw new Error(name + ": closing the rating editor did not restore its detail sheet: " + JSON.stringify(ratingCloseDiagnostic));
+                }
+
+                // Hide/unhide must update the current detail state both ways.
+                const hiddenToggle = page.locator(".detail-state-actions [data-action='toggle-hidden']");
+                await hiddenToggle.click();
+                await page.waitForFunction(() => {
+                  const button = document.querySelector(".detail-state-actions [data-action='toggle-hidden']");
+                  return button && button.innerText.trim() === "Mostrar en Prisma";
+                }, null, { timeout: 10000 });
+                await page.locator(".detail-state-actions [data-action='toggle-hidden']").click();
+                await page.waitForFunction(() => {
+                  const button = document.querySelector(".detail-state-actions [data-action='toggle-hidden']");
+                  return button && button.innerText.trim() === "Ocultar";
+                }, null, { timeout: 10000 });
+
                 await page.locator(".detail-sheet [data-action='close-modal']").click();
                 await page.locator(".bottom-nav [data-nav='home']").click();
                 if (await page.locator(".progress-onboarding").count() !== 0) {
@@ -756,5 +833,5 @@ jobs:
         with:
           name: prisma-published-ui-screenshots
           path: artifacts/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14

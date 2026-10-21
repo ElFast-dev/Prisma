@@ -4,10 +4,14 @@ export function createModalController(ctx) {
     const existing = ctx.ratingFor(movie.title);
     const nextMode = mode || "details";
     if (nextMode === "rate") {
-      ctx.ratingReturnDetail = Boolean(ctx.movieDetail);
+      const detailIsVisible = Boolean(ctx.$(".detail-sheet"));
+      const returnMovieDetail = ctx.movieDetail ||
+        (detailIsVisible ? { movie: movie, data: null, loading: false, error: "" } : null);
+      ctx.ratingReturnDetail = Boolean(returnMovieDetail);
       ctx.modalDraft = {
         movie: movie,
         mode: "rate",
+        returnMovieDetail: returnMovieDetail,
         rating: existing ? ctx.ratingValue(existing) : 7,
         emotions: existing && Array.isArray(existing.emotions) ? existing.emotions.slice() : [],
         note: existing && existing.note ? existing.note : ""
@@ -59,8 +63,14 @@ export function createModalController(ctx) {
   }
 
   function closeModal() {
-    if (ctx.modalDraft && ctx.modalDraft.mode === "rate" && ctx.ratingReturnDetail && ctx.movieDetail) {
-      ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.renderModal(); return;
+    if (ctx.modalDraft && ctx.modalDraft.mode === "rate") {
+      // Keep an explicit return target: rating state and detail UI are different layers,
+      // and the detail may temporarily be cleared by a render/state transition.
+      const returnMovieDetail = ctx.movieDetail || ctx.modalDraft.returnMovieDetail || null;
+      if (returnMovieDetail) {
+        ctx.movieDetail = returnMovieDetail;
+        ctx.modalDraft = null; ctx.ratingReturnDetail = false; renderModal(); return;
+      }
     }
     ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.movieDetail = null; ctx.personDetail = null; ctx.utilitySheet = null;
     const root = ctx.$("#modalRoot");
