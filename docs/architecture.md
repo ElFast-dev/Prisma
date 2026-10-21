@@ -47,7 +47,6 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `styles/collection-content.css` | Jerarquía del contenido de colección. |
 | `styles/movie-details.css` | Ajustes de ficha y puntuaciones externas. |
 | `styles/prisma-design-system.css` | Tokens neutros para el modo negro predeterminado y el modo claro, estados de interacción y movimiento reducido. |
-| `data/catalog.json` | Catálogo de muestra. |
 | `assets/prisma.svg` | Identidad gráfica. |
 | `manifest.webmanifest` | Metadatos PWA. |
 | `sw.js` | Caché versionada y recuperación offline limitada. |
@@ -66,7 +65,7 @@ No se deben incluir historiales personales, credenciales, copias privadas ni not
 
 ## Catálogo y recomendador
 
-Los registros se normalizan por funciones de dominio compartidas. El motor recibe proveedores de valoraciones, búsqueda de películas, características y validación, lo que permite probar el perfil y la evaluación sin DOM ni almacenamiento. Las predicciones siguen limitadas de 1 a 10, dan mayor influencia a los géneros que a etiquetas aisladas y exponen cobertura/confianza según las señales disponibles. La evaluación leave-one-out respeta IDs TMDB de remakes y compara MAE con la media del pliegue de entrenamiento; sigue siendo una métrica experimental.
+No existe un catálogo de muestra empaquetado. Los registros personales se normalizan por funciones de dominio compartidas; la colección empieza vacía y los resultados remotos de TMDB se mantienen como resultados de exploración hasta que la persona añade una película explícitamente. El motor recibe proveedores de valoraciones, búsqueda de películas, características y validación, lo que permite probar el perfil y la evaluación sin DOM ni almacenamiento. Las predicciones siguen limitadas de 1 a 10, dan mayor influencia a los géneros que a etiquetas aisladas y exponen cobertura/confianza según las señales disponibles. La evaluación leave-one-out respeta IDs TMDB de remakes y compara MAE con la media del pliegue de entrenamiento; sigue siendo una métrica experimental.
 
 ## TMDB
 
