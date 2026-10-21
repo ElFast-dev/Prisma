@@ -46,6 +46,17 @@ assert.equal(merged.watchedAt, explicitDate,
   "Al reimportar una fecha explícita debe sustituir el timestamp antiguo sin procedencia.");
 assert.equal(merged.watchedAtSource, "imported-explicit");
 
+const incomingActionTime = {
+  title: "Synthetic Merge Movie",
+  tmdbId: "771122",
+  watchedAt: "2025-01-01T00:00:00.000Z",
+  watchedAtSource: "action-time"
+};
+const legacyAfterActionMerge = mergeMovieEntries(legacy, incomingActionTime);
+assert.equal(legacyAfterActionMerge.watchedAt, legacy.watchedAt,
+  "Una fecha de registro de acción no debe reemplazar un timestamp heredado existente.");
+assert.equal(legacyAfterActionMerge.watchedAtSource, undefined);
+
 const confirmed = {
   title: "Synthetic Merge Movie",
   tmdbId: "771122",
