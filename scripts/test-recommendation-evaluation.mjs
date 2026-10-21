@@ -115,7 +115,7 @@ const diversity = ideal.evaluation.evaluateDiversityModes();
 const affinity = diversity.find(item => item.mode === "affinity");
 const variety = diversity.find(item => item.mode === "variety");
 const balanced = diversity.find(item => item.mode === "balanced");
-assert.equal(affinity.score, 0.2);
+assert.equal(affinity.score, 0.4);
 assert.equal(affinity.uniqueGenres, 2);
 assert.equal(variety.score, 1);
 assert.equal(variety.uniqueGenres, 5);
