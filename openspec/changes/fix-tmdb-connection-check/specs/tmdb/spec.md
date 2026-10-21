@@ -23,3 +23,15 @@ Prisma DEBE poder funcionar sin credencial de TMDB. Cuando el usuario configura 
 - DADO que TMDB responde con un error de autenticación
 - CUANDO se comprueba la conexión
 - ENTONCES Prisma muestra el error real y no afirma que la conexión sea correcta
+
+#### Scenario: Desconexión confirmada
+
+- DADO que existe una credencial de TMDB guardada y la persona confirma eliminarla
+- CUANDO se ejecuta la acción de desconexión
+- ENTONCES Prisma elimina la credencial local, limpia los resultados remotos, reinicia la caché de géneros y muestra el estado desconectado
+
+#### Scenario: Desconexión cancelada
+
+- DADO que existe una credencial de TMDB guardada y la persona cancela la confirmación
+- CUANDO se inicia la acción de desconexión
+- ENTONCES Prisma conserva la credencial, los resultados en caché y la configuración actual
