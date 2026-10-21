@@ -56,6 +56,8 @@ const requiredFiles = [
   'js/core/state-model.js',
   'js/recommendations/features.js',
   'js/recommendations/engine.js',
+  'js/recommendations/evaluation.js',
+  'scripts/test-recommendation-evaluation.mjs',
   'js/recommendations/preferences.js',
   'js/catalog/csv-parser.js',
   'js/catalog/catalog-model.js',
