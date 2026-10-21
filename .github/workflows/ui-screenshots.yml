@@ -272,7 +272,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v1" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v2" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||
