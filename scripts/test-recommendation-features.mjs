@@ -28,6 +28,10 @@ const invalidOrMissing = [
   movieFeatures({ title: "Año imposible", year: 2201, genres: ["Drama"] }),
   movieFeatures({ title: "Texto", year: "dos mil", genres: ["Drama"] }),
   movieFeatures({ title: "Fecha incorrecta", releaseDate: "desconocida" }),
+  movieFeatures({ title: "Mes imposible", releaseDate: "2020-13-02", genres: ["Drama"] }),
+  movieFeatures({ title: "Día imposible", releaseDate: "2020-02-30", genres: ["Drama"] }),
+  movieFeatures({ title: "Día cero", release_date: "2020-03-00", genres: ["Drama"] }),
+  movieFeatures({ title: "Día bisiesto inválido", releaseDate: "2019-02-29", genres: ["Drama"] }),
   movieFeatures({ title: "Fecha de visionado", watchedAt: "2020-01-02" })
 ];
 for (const features of invalidOrMissing) {
@@ -35,6 +39,8 @@ for (const features of invalidOrMissing) {
     "Nunca se debe inventar la década a partir de un año o una fecha no fiable.");
 }
 
+assert.deepEqual(movieFeatures({ title: "Día bisiesto válido", release_date: "2020-02-29" }), ["década: 2020"],
+  "Las fechas reales de años bisiestos deben seguir siendo válidas.");
 assert.deepEqual(movieFeatures({ title: "Solo década", year: 1987 }, null, { includeDecade: false }), [],
   "La variante de evaluación debe poder excluir completamente la década.");
 assert.deepEqual(movieFeatures({ title: "Fecha aislada", year: 1887 }), [],

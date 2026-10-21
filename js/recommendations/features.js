@@ -18,9 +18,21 @@ function releaseYear(record) {
     const year = validYear(candidate);
     if (year != null) return year;
   }
-  const releaseDate = record.releaseDate || record.release_date;
-  const match = String(releaseDate || "").trim().match(/^(\d{4})(?:-\d{2}(?:-\d{2})?)?$/);
-  return match ? validYear(match[1]) : null;
+  const releaseDate = String(record.releaseDate || record.release_date || "").trim();
+  const match = releaseDate.match(/^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/);
+  if (!match) return null;
+
+  const year = validYear(match[1]);
+  if (year == null) return null;
+  if (!match[2]) return year;
+
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  if (!match[3]) return year;
+
+  const day = Number(match[3]);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return day >= 1 && day <= daysInMonth ? year : null;
 }
 
 export function movieFeatures(movie, ratingEntry, options) {
