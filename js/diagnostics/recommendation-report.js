@@ -140,6 +140,9 @@ function ratingEvaluation(source) {
     withDecadeMae: available ? rounded(evaluation.mae, 4) : null,
     withoutDecadeMae: available ? rounded(evaluation.withoutDecadeMae, 4) : null,
     decadeMaeDifferenceLowerIsBetter: available ? rounded(evaluation.decadeImprovement, 4) : null,
+    themeShrinkageMae: available ? rounded(evaluation.themeShrinkageMae, 4) : null,
+    themeShrinkageDeltaBaseMinusRegularized: available ? rounded(evaluation.themeShrinkageDelta, 4) : null,
+    themeShrinkageSupportPrior: numeric(evaluation.themeShrinkagePrior),
     decadeExamples: nonNegativeInteger(evaluation.decadeExamples),
     unavailableReason: available ? null : "Se necesitan al menos cinco valoraciones válidas con características enlazadas."
   };
