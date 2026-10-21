@@ -306,7 +306,9 @@ function unavailableRankingQuality(count, relevantCount, reason, foldCount) {
     reason: unavailableReason,
     modes: RANKING_MODES.map(function (mode) {
       return { mode: mode, available: false, baselineNdcgAt5: null, ridgeNdcgAt5: null,
-        deltaRidgeMinusBaseline: null, foldsEvaluated: 0, foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0 };
+        hybridNdcgAt5: null, deltaRidgeMinusBaseline: null, deltaHybridMinusBaseline: null,
+        foldsEvaluated: 0, foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0,
+        foldsHybridWins: 0, foldsHybridTies: 0, foldsHybridLosses: 0 };
     })
   };
 }
@@ -327,6 +329,24 @@ function summarizeMaeFoldStability(deltas) {
     baselineMaeWins: baselineMaeWins
   };
 }
+
+function summarizeHybridMaeFoldStability(deltas) {
+  let hybridMaeWins = 0;
+  let ties = 0;
+  let baselineMaeWins = 0;
+  (deltas || []).forEach(function (delta) {
+    if (delta > 1e-10) hybridMaeWins += 1;
+    else if (delta < -1e-10) baselineMaeWins += 1;
+    else ties += 1;
+  });
+  return {
+    available: (deltas || []).length > 0,
+    foldsEvaluated: (deltas || []).length,
+    hybridMaeWins: hybridMaeWins,
+    ties: ties,
+    baselineMaeWins: baselineMaeWins
+  };
+}
 function completeRankingQuality(count, relevantCount, totals, foldCount) {
   if (count < MIN_RANKING_RECORDS || relevantCount < MIN_RELEVANT_RECORDS) {
     return unavailableRankingQuality(count, relevantCount, null, foldCount);
@@ -336,7 +356,7 @@ function completeRankingQuality(count, relevantCount, totals, foldCount) {
     const available = Boolean(total && total.idealDcg > 0 && total.foldsEvaluated > 0);
     const baselineNdcgAt5 = available ? total.baselineDcg / total.idealDcg : null;
     const ridgeNdcgAt5 = available ? total.ridgeDcg / total.idealDcg : null;
-    return {
+    const result = {
       mode: mode,
       available: available,
       baselineNdcgAt5: baselineNdcgAt5,
@@ -347,6 +367,17 @@ function completeRankingQuality(count, relevantCount, totals, foldCount) {
       foldsRidgeTies: total ? total.foldsRidgeTies : 0,
       foldsRidgeLosses: total ? total.foldsRidgeLosses : 0
     };
+    // The fixed blend is measured in nested repeated CV, not in temporal evaluation.
+    if (total && Object.prototype.hasOwnProperty.call(total, "hybridDcg")) {
+      const hybridAvailable = Boolean(available && Number.isFinite(total.hybridDcg));
+      result.hybridNdcgAt5 = hybridAvailable ? total.hybridDcg / total.idealDcg : null;
+      result.deltaHybridMinusBaseline = hybridAvailable
+        ? result.hybridNdcgAt5 - baselineNdcgAt5 : null;
+      result.foldsHybridWins = total.foldsHybridWins || 0;
+      result.foldsHybridTies = total.foldsHybridTies || 0;
+      result.foldsHybridLosses = total.foldsHybridLosses || 0;
+    }
+    return result;
   });
   const usable = modes.filter(function (mode) { return mode.available; });
   if (!usable.length) return unavailableRankingQuality(count, relevantCount,
@@ -391,7 +422,10 @@ function unavailableRepeatedValidation(count, relevantCount, reason) {
     mae: null,
     baselineMae: null,
     deltaBaseMinusRidge: null,
+    hybridMae: null,
+    deltaBaseMinusHybrid: null,
     foldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
+    hybridFoldStability: { available: false, foldsEvaluated: 0, hybridMaeWins: 0, ties: 0, baselineMaeWins: 0 },
     rankingQuality: unavailableRankingQuality(count, relevantCount, null, totalFolds),
     repeatSummaries: [],
     unavailableReason: reason || "La validación Ridge repetida no está disponible."
@@ -405,6 +439,8 @@ function unavailableResult(count, reason, rankingQuality, relevantCount) {
     mae: null,
     baselineMae: null,
     deltaBaseMinusRidge: null,
+    hybridMae: null,
+    deltaBaseMinusHybrid: null,
     outerFolds: OUTER_FOLDS,
     foldsEvaluated: 0,
     innerFolds: INNER_FOLDS,
@@ -413,6 +449,7 @@ function unavailableResult(count, reason, rankingQuality, relevantCount) {
     predictionMin: null,
     predictionMax: null,
     foldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
+    hybridFoldStability: { available: false, foldsEvaluated: 0, hybridMaeWins: 0, ties: 0, baselineMaeWins: 0 },
     repeatedValidation: unavailableRepeatedValidation(count, relevantCount || 0, reason),
     rankingQuality: rankingQuality || unavailableRankingQuality(count, 0),
     reason: reason || "No hay suficientes valoraciones únicas con características."
@@ -498,14 +535,17 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const outer = foldIndices(indices, rows, OUTER_FOLDS, outerSalt);
     const ridgeErrors = [];
     const baselineErrors = [];
+    const hybridErrors = [];
     const foldMaeDeltas = [];
+    const hybridFoldMaeDeltas = [];
     const selectedAlphaCounts = Object.create(null);
     ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
     const rankingTotals = Object.create(null);
     RANKING_MODES.forEach(function (mode) {
       rankingTotals[mode] = {
-        baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0,
-        foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0
+        baselineDcg: 0, ridgeDcg: 0, hybridDcg: 0, idealDcg: 0, foldsEvaluated: 0,
+        foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0,
+        foldsHybridWins: 0, foldsHybridTies: 0, foldsHybridLosses: 0
       };
     });
     const canCompareRanking = rows.length >= MIN_RANKING_RECORDS && relevantCount >= MIN_RELEVANT_RECORDS;
@@ -522,9 +562,11 @@ export function createRidgeRecommendationExperiment(dependencies) {
       const additiveProfile = buildProfile(trainingRatings);
       const baselineCandidates = [];
       const ridgeCandidates = [];
+      const hybridCandidates = [];
       const gains = new Map();
       const ridgeFoldErrors = [];
       const baselineFoldErrors = [];
+      const hybridFoldErrors = [];
 
       testIndices.forEach(function (index, position) {
         const row = rows[index];
@@ -532,12 +574,16 @@ export function createRidgeRecommendationExperiment(dependencies) {
         const additiveResult = predictRating(row.candidate, additiveProfile);
         const additivePrediction = clampRating(Number.isFinite(additiveResult && additiveResult.score)
           ? additiveResult.score : additiveProfile.average);
+        const hybridPrediction = clampRating((ridgePrediction + additivePrediction) / 2);
         const ridgeError = Math.abs(ridgePrediction - row.rating);
         const baselineError = Math.abs(additivePrediction - row.rating);
+        const hybridError = Math.abs(hybridPrediction - row.rating);
         ridgeErrors.push(ridgeError);
         baselineErrors.push(baselineError);
+        hybridErrors.push(hybridError);
         ridgeFoldErrors.push(ridgeError);
         baselineFoldErrors.push(baselineError);
+        hybridFoldErrors.push(hybridError);
         predictionMin = Math.min(predictionMin, ridgePrediction);
         predictionMax = Math.max(predictionMax, ridgePrediction);
         if (canCompareRanking) {
@@ -546,11 +592,14 @@ export function createRidgeRecommendationExperiment(dependencies) {
           const ridgePredictionExplained = Object.assign({}, additiveResult || {}, { score: ridgePrediction });
           baselineCandidates.push(rankingCandidate(row, baselinePrediction, additivePrediction, token));
           ridgeCandidates.push(rankingCandidate(row, ridgePredictionExplained, ridgePrediction, token));
+          const hybridExplained = Object.assign({}, additiveResult || {}, { score: hybridPrediction });
+          hybridCandidates.push(rankingCandidate(row, hybridExplained, hybridPrediction, token));
           gains.set(token, relevanceGain(row.rating));
         }
       });
 
       foldMaeDeltas.push(meanAbsoluteError(baselineFoldErrors) - meanAbsoluteError(ridgeFoldErrors));
+      hybridFoldMaeDeltas.push(meanAbsoluteError(baselineFoldErrors) - meanAbsoluteError(hybridFoldErrors));
       if (canCompareRanking) {
         const ideal = testIndices.map(function (_, position) {
           const token = "candidate-" + position;
@@ -563,18 +612,27 @@ export function createRidgeRecommendationExperiment(dependencies) {
           RANKING_MODES.forEach(function (mode) {
             const baselineTop = rankRows(baselineCandidates, mode);
             const ridgeTop = rankRows(ridgeCandidates, mode);
+            const hybridTop = rankRows(hybridCandidates, mode);
             const baselineDcg = dcgAt5(baselineTop.map(function (candidate) {
               return { gain: gains.get(candidate.evaluationToken) || 0 };
             }));
             const ridgeDcg = dcgAt5(ridgeTop.map(function (candidate) {
               return { gain: gains.get(candidate.evaluationToken) || 0 };
             }));
+            const hybridDcg = dcgAt5(hybridTop.map(function (candidate) {
+              return { gain: gains.get(candidate.evaluationToken) || 0 };
+            }));
             const foldDelta = (ridgeDcg - baselineDcg) / idealDcg;
+            const hybridFoldDelta = (hybridDcg - baselineDcg) / idealDcg;
             if (foldDelta > 1e-10) rankingTotals[mode].foldsRidgeWins += 1;
             else if (foldDelta < -1e-10) rankingTotals[mode].foldsRidgeLosses += 1;
             else rankingTotals[mode].foldsRidgeTies += 1;
+            if (hybridFoldDelta > 1e-10) rankingTotals[mode].foldsHybridWins += 1;
+            else if (hybridFoldDelta < -1e-10) rankingTotals[mode].foldsHybridLosses += 1;
+            else rankingTotals[mode].foldsHybridTies += 1;
             rankingTotals[mode].baselineDcg += baselineDcg;
             rankingTotals[mode].ridgeDcg += ridgeDcg;
+            rankingTotals[mode].hybridDcg += hybridDcg;
             rankingTotals[mode].idealDcg += idealDcg;
             rankingTotals[mode].foldsEvaluated += 1;
           });
@@ -586,7 +644,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
       repetitionIndex: repetitionIndex,
       ridgeErrors: ridgeErrors,
       baselineErrors: baselineErrors,
+      hybridErrors: hybridErrors,
       foldMaeDeltas: foldMaeDeltas,
+      hybridFoldMaeDeltas: hybridFoldMaeDeltas,
       selectedAlphaCounts: selectedAlphaCounts,
       predictionMin: predictionMin,
       predictionMax: predictionMax,
@@ -604,21 +664,26 @@ export function createRidgeRecommendationExperiment(dependencies) {
     }, 0);
     const ridgeErrors = [];
     const baselineErrors = [];
+    const hybridErrors = [];
     const maeFoldDeltas = [];
+    const hybridMaeFoldDeltas = [];
     const rankingTotals = Object.create(null);
     const selectedAlphaCounts = Object.create(null);
     ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
     RANKING_MODES.forEach(function (mode) {
       rankingTotals[mode] = {
-        baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0,
-        foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0
+        baselineDcg: 0, ridgeDcg: 0, hybridDcg: 0, idealDcg: 0, foldsEvaluated: 0,
+        foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0,
+        foldsHybridWins: 0, foldsHybridTies: 0, foldsHybridLosses: 0
       };
     });
 
     foldSets.forEach(function (result) {
       result.ridgeErrors.forEach(function (value) { ridgeErrors.push(value); });
       result.baselineErrors.forEach(function (value) { baselineErrors.push(value); });
+      result.hybridErrors.forEach(function (value) { hybridErrors.push(value); });
       result.foldMaeDeltas.forEach(function (value) { maeFoldDeltas.push(value); });
+      result.hybridFoldMaeDeltas.forEach(function (value) { hybridMaeFoldDeltas.push(value); });
       Object.keys(result.selectedAlphaCounts).forEach(function (alpha) {
         selectedAlphaCounts[alpha] = (selectedAlphaCounts[alpha] || 0) + result.selectedAlphaCounts[alpha];
       });
@@ -627,11 +692,15 @@ export function createRidgeRecommendationExperiment(dependencies) {
         const target = rankingTotals[mode];
         target.baselineDcg += source.baselineDcg;
         target.ridgeDcg += source.ridgeDcg;
+        target.hybridDcg += source.hybridDcg || 0;
         target.idealDcg += source.idealDcg;
         target.foldsEvaluated += source.foldsEvaluated;
         target.foldsRidgeWins += source.foldsRidgeWins;
         target.foldsRidgeTies += source.foldsRidgeTies;
         target.foldsRidgeLosses += source.foldsRidgeLosses;
+        target.foldsHybridWins += source.foldsHybridWins || 0;
+        target.foldsHybridTies += source.foldsHybridTies || 0;
+        target.foldsHybridLosses += source.foldsHybridLosses || 0;
       });
     });
 
@@ -648,14 +717,18 @@ export function createRidgeRecommendationExperiment(dependencies) {
         mae: mae,
         baselineMae: baselineMae,
         deltaBaseMinusRidge: baselineMae - mae,
+        hybridMae: meanAbsoluteError(result.hybridErrors),
+        deltaBaseMinusHybrid: baselineMae - meanAbsoluteError(result.hybridErrors),
         selectedAlphaCounts: result.selectedAlphaCounts,
         foldStability: summarizeMaeFoldStability(result.foldMaeDeltas),
+        hybridFoldStability: summarizeHybridMaeFoldStability(result.hybridFoldMaeDeltas),
         rankingQuality: result.rankingQuality
       };
     });
 
     const mae = meanAbsoluteError(ridgeErrors);
     const baselineMae = meanAbsoluteError(baselineErrors);
+    const hybridMae = meanAbsoluteError(hybridErrors);
     return {
       available: true,
       sampleCount: sampleCount,
@@ -666,8 +739,11 @@ export function createRidgeRecommendationExperiment(dependencies) {
       mae: mae,
       baselineMae: baselineMae,
       deltaBaseMinusRidge: baselineMae - mae,
+      hybridMae: hybridMae,
+      deltaBaseMinusHybrid: baselineMae - hybridMae,
       selectedAlphaCounts: selectedAlphaCounts,
       foldStability: summarizeMaeFoldStability(maeFoldDeltas),
+      hybridFoldStability: summarizeHybridMaeFoldStability(hybridMaeFoldDeltas),
       rankingQuality: repeatedRanking,
       repeatSummaries: repeatSummaries,
       unavailableReason: null
@@ -678,12 +754,15 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const primary = repeatedRuns[0];
     const mae = meanAbsoluteError(primary.ridgeErrors);
     const baselineMae = meanAbsoluteError(primary.baselineErrors);
+    const hybridMae = meanAbsoluteError(primary.hybridErrors);
     return {
       available: true,
       count: rows.length,
       mae: mae,
       baselineMae: baselineMae,
       deltaBaseMinusRidge: baselineMae - mae,
+      hybridMae: hybridMae,
+      deltaBaseMinusHybrid: baselineMae - hybridMae,
       outerFolds: OUTER_FOLDS,
       foldsEvaluated: primary.outerFoldsEvaluated,
       innerFolds: INNER_FOLDS,
@@ -692,6 +771,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       predictionMin: primary.predictionMin,
       predictionMax: primary.predictionMax,
       foldStability: summarizeMaeFoldStability(primary.foldMaeDeltas),
+      hybridFoldStability: summarizeHybridMaeFoldStability(primary.hybridFoldMaeDeltas),
       rankingQuality: primary.rankingQuality,
       repeatedValidation: summarizeRepeatedValidation(repeatedRuns, rows.length, relevantCount),
       reason: null

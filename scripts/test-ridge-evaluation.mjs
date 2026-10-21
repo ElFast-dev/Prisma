@@ -95,6 +95,10 @@ assert.ok(Number.isFinite(result.mae));
 assert.ok(Number.isFinite(result.baselineMae));
 assert.ok(Number.isFinite(result.deltaBaseMinusRidge));
 assert.ok(Math.abs(result.deltaBaseMinusRidge - (result.baselineMae - result.mae)) < 1e-10);
+assert.ok(Number.isFinite(result.hybridMae), "El híbrido fijo debe producir un MAE fuera de muestra.");
+assert.ok(Number.isFinite(result.deltaBaseMinusHybrid));
+assert.ok(Math.abs(result.deltaBaseMinusHybrid - (result.baselineMae - result.hybridMae)) < 1e-10);
+assert.equal(result.hybridFoldStability.available, true);
 assert.ok(result.predictionMin >= 1 && result.predictionMin <= 10);
 assert.ok(result.predictionMax >= 1 && result.predictionMax <= 10);
 assert.equal(result.repeatedValidation.available, true);
@@ -102,6 +106,9 @@ assert.equal(result.repeatedValidation.repeats, 3);
 assert.equal(result.repeatedValidation.foldsPerRepeat, 5);
 assert.equal(result.repeatedValidation.foldsEvaluated, 15);
 assert.equal(result.repeatedValidation.sampleCount, records.length);
+assert.ok(Number.isFinite(result.repeatedValidation.hybridMae));
+assert.ok(Number.isFinite(result.repeatedValidation.deltaBaseMinusHybrid));
+assert.equal(result.repeatedValidation.hybridFoldStability.foldsEvaluated, 15);
 assert.equal(Object.values(result.repeatedValidation.selectedAlphaCounts).reduce((sum, value) => sum + value, 0), 15,
   "La distribución agregada de alpha debe cubrir todos los pliegues externos repetidos.");
 assert.ok(result.repeatedValidation.repeatSummaries.every(item =>
@@ -162,6 +169,12 @@ assert.equal(rankingResult.rankingQuality.folds, 5);
 assert.equal(rankingResult.rankingQuality.foldsEvaluated, 5);
 assert.deepEqual(rankingResult.rankingQuality.modes.map(item => item.mode),
   ["balanced", "affinity", "variety"]);
+assert.ok(rankingResult.rankingQuality.modes.every(item =>
+  Number.isFinite(item.hybridNdcgAt5) && Number.isFinite(item.deltaHybridMinusBaseline)),
+  "La evaluación debe incluir nDCG@5 del híbrido en cada modo.");
+assert.ok(rankingResult.rankingQuality.modes.every(item =>
+  item.foldsHybridWins + item.foldsHybridTies + item.foldsHybridLosses === item.foldsEvaluated),
+  "Los recuentos del híbrido deben cubrir los pliegues válidos por modo.");
 assert.equal(rankingResult.foldStability.available, true,
   "La evaluación debe resumir la dirección de MAE en cada pliegue externo.");
 assert.equal(rankingResult.foldStability.foldsEvaluated, rankingResult.outerFolds);
@@ -191,7 +204,9 @@ assert.equal(rankingResult.repeatedValidation.rankingQuality.foldsEvaluated, 15)
 assert.equal(rankingResult.repeatedValidation.rankingQuality.modes.length, 3);
 assert.ok(rankingResult.repeatedValidation.rankingQuality.modes.every(item =>
   item.available && item.foldsEvaluated === 15 &&
-  item.foldsRidgeWins + item.foldsRidgeTies + item.foldsRidgeLosses === item.foldsEvaluated
+  item.foldsRidgeWins + item.foldsRidgeTies + item.foldsRidgeLosses === item.foldsEvaluated &&
+  Number.isFinite(item.hybridNdcgAt5) &&
+  item.foldsHybridWins + item.foldsHybridTies + item.foldsHybridLosses === item.foldsEvaluated
 ));
 assert.deepEqual(rankingResult.repeatedValidation,
   harness(rankingRecords, rankingRecords).evaluate().repeatedValidation,
