@@ -86,11 +86,32 @@ export function createPageViews(ctx) {
     const genreChips = genres.slice(0,13).map(function (genre) {
       return '<button class="chip ' + (ctx.activeGenre === genre ? "active" : "") + '" type="button" data-action="genre" data-genre="' + ctx.escapeHTML(genre) + '">' + ctx.escapeHTML(ctx.displayGenre(genre)) + '</button>';
     }).join("");
-    const recs = ctx.getRecommendations(4);
+    const recommendationMode = ["balanced","affinity","variety"].includes(ctx.recommendationMode) ? ctx.recommendationMode : "balanced";
+    const profile = ctx.buildProfile();
+    const hasPersonalizedSignals = profile.withMetadata > 0;
+    const recs = ctx.getRecommendations(4,recommendationMode);
+    const recommendationModeCopy = {
+      balanced: "Mezcla equilibrada de afinidad y descubrimiento.",
+      affinity: "Prioriza las películas con mejores estimaciones para tus gustos.",
+      variety: "Busca géneros distintos sin perder de vista tu afinidad."
+    }[recommendationMode];
+    const recommendationModes = [
+      {id:"balanced",label:"Equilibrado"},
+      {id:"affinity",label:"Más afines"},
+      {id:"variety",label:"Más variedad"}
+    ].map(function (mode) {
+      const active = recommendationMode === mode.id;
+      return '<button class="chip recommendation-mode' + (active ? ' active' : '') + '" type="button" data-action="recommendation-mode" data-mode="' + mode.id + '" aria-pressed="' + active + '">' + mode.label + '</button>';
+    }).join("");
+    const recommendationTitle = hasPersonalizedSignals ? "Recomendadas para ti" : "Empieza a descubrir";
+    const recommendationIntro = hasPersonalizedSignals ? recommendationModeCopy :
+      "Cuando tengas valoraciones con géneros o temas enlazados, Prisma podrá adaptar estas sugerencias a tus gustos.";
     const searchCaption = ctx.catalogQuery.trim() ? 'Resultados para «' + ctx.escapeHTML(ctx.catalogQuery.trim()) + '»' : "Catálogo";
     return '<section class="page-heading discover-heading"><h1>Descubrir</h1>' + ctx.infoButton("discover","Información sobre Descubrir") + '<span class="discover-count">' + ctx.catalog.length.toLocaleString("es-PA") + ' títulos</span></section>' +
-      '<section class="discover-recommendations"><div class="section-head"><h2>Recomendadas para ti</h2>' + ctx.infoButton("recommendations","Cómo funcionan las recomendaciones") + '</div>' +
-      (recs.length ? '<div class="movie-grid poster-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie,{posterOnly:true}); }).join("") + '</div>' : '<div class="empty-inline"><strong>No hay recomendaciones todavía</strong><button class="btn btn-secondary btn-small" type="button" data-nav="library">Abrir colección</button></div>') +
+      '<section class="discover-recommendations"><div class="section-head"><h2>' + recommendationTitle + '</h2>' + ctx.infoButton("recommendations","Cómo funcionan las recomendaciones") + '</div>' +
+      '<div class="recommendation-controls" role="group" aria-label="Enfoque de recomendaciones">' + recommendationModes + '</div>' +
+      '<p class="recommendation-mode-copy" aria-live="polite">' + ctx.escapeHTML(recommendationIntro) + '</p>' +
+      (recs.length ? '<div class="movie-grid poster-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie,{posterOnly:true}); }).join("") + '</div>' : '<div class="empty-inline"><strong>No hay recomendaciones disponibles</strong><button class="btn btn-secondary btn-small" type="button" data-nav="library">Abrir colección</button></div>') +
       '</section>' +
       '<section class="panel tmdb-browser discover-tmdb"><div class="panel-head"><h3>Explorar TMDB</h3>' + ctx.infoButton("tmdb","Información sobre TMDB") + '</div><div id="tmdbStatus" class="kicker"></div><div id="tmdbResults" class="tmdb-results"></div></section>' +
       '<section class="local-catalog-section"><div class="section-head"><h2 id="catalogSearchTitle">' + searchCaption + '</h2><span id="catalogCount">Cargando…</span><button class="btn btn-secondary btn-small" type="button" data-action="import-catalog" aria-label="Importar catálogo CSV">＋ CSV</button></div><div class="chip-row catalog-genre-chips">' + genreChips + '</div><div id="localCatalogResults"></div></section>';
