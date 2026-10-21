@@ -75,8 +75,8 @@ for (const [action, expected] of cases) {
     action + " debe ejecutar su operación sobre el borrador activo.");
   assert.equal(harness.calls[expected][0][0], movie.title,
     action + " debe mantener el título del borrador.");
-  assert.equal(harness.calls[expected][0][1], undefined,
-    action + " no debe inferir un ID desde una ficha inexistente.");
+  assert.equal(harness.calls[expected][0][1], movie.tmdbId,
+    action + " debe conservar la identidad TMDB del borrador aunque no haya una ficha abierta.");
   assert.equal(harness.ctx.utilitySheet, null,
     action + " debe cerrar la hoja de gestión después de actuar.");
 }
