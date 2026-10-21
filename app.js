@@ -6,7 +6,7 @@ import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-7";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-5";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-6";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
