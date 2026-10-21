@@ -32,6 +32,7 @@ jobs:
           node --check js/core/movie-utils.js
           node --check js/core/storage.js
           node --check js/core/storage-protection.js
+          node --check js/diagnostics/recommendation-report.js
           node --check js/core/state-model.js
           node --check js/recommendations/features.js
           node --check js/recommendations/engine.js
@@ -111,6 +112,9 @@ jobs:
 
       - name: Test local storage protection API
         run: node scripts/test-storage-protection.mjs
+
+      - name: Test shareable recommendation diagnostic report
+        run: node scripts/test-recommendation-diagnostic-report.mjs
 
       - name: Test recommendation feature extraction
         run: node scripts/test-recommendation-features.mjs

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, stateModel, features, engine, evaluation, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -10,6 +10,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/core/movie-utils.js', 'utf8'),
   readFile('js/core/storage.js', 'utf8'),
   readFile('js/core/storage-protection.js', 'utf8'),
+  readFile('js/diagnostics/recommendation-report.js', 'utf8'),
   readFile('js/core/state-model.js', 'utf8'),
   readFile('js/recommendations/features.js', 'utf8'),
   readFile('js/recommendations/engine.js', 'utf8'),
@@ -62,6 +63,7 @@ const modules = [
   ['js/core/movie-utils.js', utils],
   ['js/core/storage.js', storage],
   ['js/core/storage-protection.js', storageProtection],
+  ['js/diagnostics/recommendation-report.js', diagnosticReport],
   ['js/core/state-model.js', stateModel],
   ['js/recommendations/features.js', features],
   ['js/recommendations/engine.js', engine],

@@ -100,7 +100,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261021-24") &&
-                  lastUI.appSrc.includes("v=ui-20261021-53") &&
+                  lastUI.appSrc.includes("v=ui-20261021-54") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -241,6 +241,47 @@ jobs:
                 if (new Set(recommendationKeys).size !== recommendationKeys.length) {
                   throw new Error(name + ": Recomendadas para ti contains duplicate movie identities: " + JSON.stringify(recommendedMovies));
                 }
+
+                // The local diagnostic report must be opt-in, reviewable, and omit raw movie records.
+                await page.locator(".topbar [data-nav='lab']").click();
+                await page.locator(".recommendation-diagnostic-panel").waitFor({ state: "visible", timeout: 10000 });
+                await page.evaluate(() => {
+                  Object.defineProperty(navigator, "clipboard", {
+                    configurable: true,
+                    value: {
+                      writeText: async text => { window.__prismaDiagnosticClipboard = text; }
+                    }
+                  });
+                });
+                await page.locator("#diagnosticFeatureLabels").check();
+                await page.locator('[data-action="copy-recommendation-diagnostics"]').click();
+                await page.waitForFunction(() => typeof window.__prismaDiagnosticClipboard === "string", null, { timeout: 10000 });
+                const diagnosticReport = await page.evaluate(() => {
+                  const text = window.__prismaDiagnosticClipboard;
+                  const report = JSON.parse(text);
+                  return {
+                    schema: report.schema,
+                    featureLabelsIncluded: report.privacy.featureLabelsIncluded,
+                    networkTransmission: report.privacy.networkTransmission,
+                    hasRawTitle: /"About Time"/i.test(text),
+                    hasMovieIdField: /tmdbId|tmdb_id/i.test(text),
+                    hasOutputField: Boolean(document.querySelector("#recommendationDiagnosticOutput")),
+                    reportsLocalGeneration: report.privacy.generatedLocally
+                  };
+                });
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v1" ||
+                    !diagnosticReport.featureLabelsIncluded ||
+                    diagnosticReport.networkTransmission !== false ||
+                    diagnosticReport.hasRawTitle ||
+                    diagnosticReport.hasMovieIdField ||
+                    !diagnosticReport.hasOutputField ||
+                    !diagnosticReport.reportsLocalGeneration) {
+                  throw new Error(name + ": local diagnostic report privacy/preview contract failed: " + JSON.stringify(diagnosticReport));
+                }
+                await page.screenshot({ path: "artifacts/" + name + "-lab-diagnostics.png", fullPage: false, animations: "disabled" });
+                await page.locator('[data-action="clear-recommendation-diagnostics"]').click();
+                await page.locator(".bottom-nav [data-nav='catalog']").click();
+                await page.locator(".discover-heading h1").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".topbar [data-nav='data']").click();
                 await page.locator(".settings-grid").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".appearance-panel").waitFor({ state: "visible", timeout: 10000 });
