@@ -15,3 +15,269 @@
   .detail-rating-card { min-height: 0; padding: 7px 8px; }
   .detail-rating-card strong { font-size: 17px; }
 }
+
+
+/* Ficha de película: jerarquía, lectura y controles coherentes con ambos temas. */
+.detail-sheet {
+  width: min(1000px,100%);
+  max-height: min(90dvh,900px);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 28px 84px rgba(0,0,0,.34);
+}
+.detail-scroll {
+  scroll-padding-block: 14px;
+}
+.detail-hero {
+  min-height: clamp(280px,38vh,360px);
+  padding: 20px clamp(20px,4vw,34px) 28px;
+  background-color: var(--bg-elevated);
+  background-position: center 32%;
+}
+.detail-back {
+  min-height: 44px;
+  padding: 10px 13px;
+  border-color: rgba(255,255,255,.24);
+  border-radius: 10px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.detail-hero-title {
+  max-width: 740px;
+  margin-top: auto;
+  padding-top: 52px;
+}
+.detail-hero-title .eyebrow {
+  color: rgba(255,255,255,.84);
+  font-size: 11px;
+  letter-spacing: .09em;
+}
+.detail-hero-title h2 {
+  max-width: 18ch;
+  font-size: clamp(30px,4.6vw,52px);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+}
+.detail-hero-title p {
+  max-width: 58ch;
+  margin-top: 9px;
+  color: rgba(255,255,255,.82);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.detail-body,
+.person-body {
+  padding: 24px clamp(18px,3.2vw,34px) 32px;
+}
+.detail-state-actions {
+  gap: 8px;
+  padding-bottom: 18px;
+}
+.detail-state-actions > .btn {
+  min-height: 44px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.detail-state-button small {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.detail-meta-line {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  align-items: stretch;
+  gap: 8px;
+  padding: 16px 0 8px;
+}
+.detail-meta-line > span {
+  min-width: 0;
+  min-height: 64px;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  background: var(--surface-raised);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.detail-meta-line strong {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.detail-chip-row {
+  gap: 7px;
+  padding-top: 8px;
+}
+.detail-chip {
+  padding: 7px 11px;
+  border-color: var(--line-strong);
+  color: var(--accent);
+  background: var(--accent-wash);
+  font-size: 10px;
+  line-height: 1.25;
+}
+.detail-section {
+  margin-top: 28px;
+}
+.detail-section-heading {
+  align-items: center;
+  margin-bottom: 13px;
+}
+.detail-section-heading h3 {
+  color: var(--text);
+  font-size: 16px;
+  letter-spacing: -.02em;
+}
+.synopsis-section p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.detail-rating-card {
+  border-color: var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+.provider-chip,
+.crew-person,
+.saga-card {
+  border-color: var(--line);
+  background: var(--surface-raised);
+}
+.provider-chip {
+  min-height: 46px;
+  gap: 10px;
+  padding: 7px 12px 7px 7px;
+  border-radius: 12px;
+}
+.provider-chip strong,
+.crew-person strong {
+  color: var(--text);
+  font-size: 11px;
+}
+.provider-chip small,
+.crew-person small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.cast-person,
+.similar-poster,
+.crew-person,
+.provider-chip,
+.saga-card,
+.detail-state-actions > .btn,
+.detail-action-strip > .btn {
+  transition: border-color .16s ease, background-color .16s ease, color .16s ease;
+}
+.detail-action-strip {
+  gap: 8px;
+  padding-top: 18px;
+}
+.detail-action-strip > .btn {
+  min-height: 44px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.detail-sheet :is(button,a):focus-visible,
+.person-sheet :is(button,a):focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .detail-sheet {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+  }
+  .detail-hero {
+    min-height: 250px;
+    padding: 16px 18px 22px;
+    background-position: center 30%;
+  }
+  .detail-hero-title {
+    padding-top: 42px;
+  }
+  .detail-hero-title h2 {
+    max-width: 15ch;
+    font-size: clamp(28px,8vw,39px);
+  }
+  .detail-hero-title p {
+    font-size: 12px;
+  }
+  .detail-body,
+  .person-body {
+    padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
+  }
+  .detail-state-actions {
+    gap: 7px;
+  }
+  .detail-state-actions > .btn {
+    flex: 1 1 calc(50% - 7px);
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 10px;
+  }
+  .detail-meta-line {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 7px;
+    padding-top: 13px;
+  }
+  .detail-meta-line > span {
+    min-height: 58px;
+    padding: 9px 10px;
+  }
+  .detail-section {
+    margin-top: 26px;
+  }
+  .detail-section-heading h3 {
+    font-size: 15px;
+  }
+  .synopsis-section p {
+    font-size: 13px;
+    line-height: 1.78;
+  }
+  .detail-action-strip > .btn {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+    min-width: 0;
+  }
+  .provider-chip {
+    max-width: 100%;
+  }
+}
+@media (max-width: 380px) {
+  .detail-hero {
+    min-height: 230px;
+  }
+  .detail-body {
+    padding-inline: 13px;
+  }
+  .detail-meta-line > span {
+    padding: 8px;
+  }
+  .detail-rating-card {
+    padding: 7px 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cast-person,
+  .similar-poster,
+  .crew-person,
+  .provider-chip,
+  .saga-card,
+  .detail-state-actions > .btn,
+  .detail-action-strip > .btn {
+    transition: none !important;
+  }
+}

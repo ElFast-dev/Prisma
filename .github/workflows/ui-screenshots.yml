@@ -99,8 +99,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261021-23") &&
-                  lastUI.appSrc.includes("v=ui-20261021-48") &&
+                  lastUI.cssHref.includes("v=ui-20261021-24") &&
+                  lastUI.appSrc.includes("v=ui-20261021-49") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -627,6 +627,30 @@ jobs:
                 if (ratingCardSize.height >= ratingCardSize.width || ratingCardSize.height > 80) {
                   throw new Error(name + ": rating links still render as oversized squares: " + JSON.stringify(ratingCardSize));
                 }
+
+                const detailPolish = await page.locator(".detail-sheet").evaluate(root => {
+                  const meta = root.querySelector(".detail-meta-line");
+                  const synopsis = root.querySelector(".synopsis-section p");
+                  const actions = Array.from(root.querySelectorAll(".detail-state-actions > .btn, .detail-action-strip > .btn"));
+                  const lineHeight = synopsis ? parseFloat(getComputedStyle(synopsis).lineHeight) : 0;
+                  const fontSize = synopsis ? parseFloat(getComputedStyle(synopsis).fontSize) : 0;
+                  return {
+                    metaDisplay: meta ? getComputedStyle(meta).display : "",
+                    metaColumns: meta ? getComputedStyle(meta).gridTemplateColumns.split(" ").filter(Boolean).length : 0,
+                    synopsisFontSize: fontSize,
+                    synopsisLineHeight: lineHeight,
+                    minActionHeight: actions.length ? Math.min(...actions.map(node => node.getBoundingClientRect().height)) : 0,
+                    width: root.clientWidth,
+                    scrollWidth: root.scrollWidth
+                  };
+                });
+                const expectedMetaColumns = name === "mobile" ? 2 : 4;
+                if (detailPolish.metaDisplay !== "grid" || detailPolish.metaColumns !== expectedMetaColumns ||
+                    detailPolish.synopsisFontSize < 13 || detailPolish.synopsisLineHeight <= detailPolish.synopsisFontSize ||
+                    detailPolish.minActionHeight < 44 || detailPolish.scrollWidth > detailPolish.width + 1) {
+                  throw new Error(name + ": movie detail hierarchy, touch targets or responsive layout failed: " + JSON.stringify(detailPolish));
+                }
+
                 await page.locator(".detail-state-actions [data-action='toggle-hidden']").click();
                 await page.waitForFunction(() => {
                   const button = document.querySelector(".detail-state-actions [data-action='toggle-hidden']");
