@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { movieFeatures } from "../js/recommendations/features.js";
+import { normalizeMovie } from "../js/core/movie-utils.js";
 
 const ordinary = movieFeatures({
   title: "Drama reciente",
@@ -8,6 +9,29 @@ const ordinary = movieFeatures({
   tags: ["Viaje en el tiempo"]
 });
 assert.deepEqual(ordinary, ["género: drama", "tema: viaje en el tiempo", "década: 2010"]);
+
+const canonicalScienceFiction = ["género: ciencia ficción"];
+const englishTMDBGenre = movieFeatures({ title: "TMDB en inglés", genres: ["science fiction"] });
+const spanishTMDBGenre = movieFeatures({ title: "TMDB normalizado", genres: ["Ciencia ficción"] });
+const sciFiAlias = movieFeatures({ title: "CSV abreviado", genres: ["sci-fi"] });
+const unaccentedSpanishGenre = movieFeatures({ title: "CSV sin tilde", genres: ["ciencia ficcion"] });
+assert.deepEqual(englishTMDBGenre, canonicalScienceFiction);
+assert.deepEqual(spanishTMDBGenre, canonicalScienceFiction);
+assert.deepEqual(sciFiAlias, canonicalScienceFiction);
+assert.deepEqual(unaccentedSpanishGenre, canonicalScienceFiction);
+
+const mixedSourceGenres = movieFeatures(
+  { title: "Catálogo TMDB", genres: ["Ciencia ficción"] },
+  { title: "Historial personal", genres: ["SCI-FI", "science-fiction", "ciencia ficción"] }
+);
+assert.deepEqual(mixedSourceGenres, canonicalScienceFiction,
+  "Las variantes de un mismo género deben colapsar en una sola señal aunque las fuentes discrepen.");
+assert.deepEqual(movieFeatures({ title: "Alias thriller", genres: ["thriller"] }),
+  movieFeatures({ title: "Alias suspense", genres: ["Suspense"] }),
+  "El género inglés thriller y su alias español deben usar la misma clave.");
+assert.deepEqual(normalizeMovie({ title: "CSV ciencia ficción", genres: ["SCI-FI", "science fiction"] }).genres,
+  ["Ciencia ficción"],
+  "El catálogo debe deduplicar los alias después de traducirlos.");
 
 const personalYearWins = movieFeatures(
   { title: "Registro TMDB", year: 2019, genres: ["Drama"] },
