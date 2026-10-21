@@ -102,7 +102,7 @@ export function mergeMovieEntries(existing, incoming) {
       (record.watchedAtSource === "imported-explicit" || record.watchedAtSource === "user-confirmed") &&
       Number.isFinite(Date.parse(record.watchedAt)));
   };
-  if (isExplicitDate(fresh) && !isExplicitDate(old)) {
+  if (isExplicitDate(fresh) && (!isExplicitDate(old) || old.watchedAtSource !== "user-confirmed")) {
     merged.watchedAt = fresh.watchedAt;
     merged.watchedAtSource = fresh.watchedAtSource;
   } else if (isExplicitDate(old)) {
