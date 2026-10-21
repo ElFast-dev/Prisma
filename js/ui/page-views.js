@@ -1,3 +1,5 @@
+import { summarizeRepeatedRidgeStability } from "../recommendations/repeated-validation-summary.js?v=core-20261021-1";
+
 export function createPageViews(ctx) {
   function movieCard(movie, options) {
     const opts = options || {};
@@ -308,6 +310,25 @@ export function createPageViews(ctx) {
           return alpha + ': ' + Number(repeated.selectedAlphaCounts[alpha]);
         }).join(' · ');
         const repeatedFoldStability = repeated.foldStability || {};
+        const repeatConsistency = summarizeRepeatedRidgeStability(repeated);
+        const formatObservedDelta = function (value) {
+          return (Number(value) > 0 ? "+" : "") + Number(value).toFixed(4).replace(".", ",");
+        };
+        const consistencyLine = function (label, summary) {
+          if (!summary || !summary.available) return "";
+          return '<p class="metric-note"><strong>' + ctx.escapeHTML(label) + ':</strong> cambio favorable a Ridge en ' +
+            Number(summary.ridgeFavorableRepeats || 0) + '/' + Number(summary.repeatsEvaluated || 0) +
+            ' repeticiones válidas; rango observado ' + formatObservedDelta(summary.minDelta) + ' a ' +
+            formatObservedDelta(summary.maxDelta) + '.</p>';
+        };
+        const repeatConsistencyMarkup = repeatConsistency.available
+          ? '<h5>Consistencia por repetición (agregados)</h5>' +
+            consistencyLine("MAE (base − Ridge)", repeatConsistency.mae) +
+            repeatConsistency.rankingModes.map(function (mode) {
+              return consistencyLine((rankingModeNames[mode.mode] || mode.mode) + " · nDCG@5", mode);
+            }).join("") +
+            '<p class="metric-note">El rango es el observado en estas repeticiones, no un intervalo de confianza. Las repeticiones usan el mismo historial.</p>'
+          : "";
         const repeatMarkup = (repeated.repeatSummaries || []).map(function (repeat) {
           const repeatDelta = Number(repeat.deltaBaseMinusRidge);
           const repeatAlphaCounts = Object.keys(repeat.selectedAlphaCounts || {}).filter(function (alpha) {
@@ -347,6 +368,7 @@ export function createPageViews(ctx) {
               Number(repeatedFoldStability.ties || 0) + ' y la base mejora en ' +
               Number(repeatedFoldStability.baselineMaeWins || 0) + '.</p>'
             : '') +
+          repeatConsistencyMarkup +
           '<h5>nDCG@5 agrupado por modo</h5>' + (repeatedModeMarkup || '<p class="metric-note">nDCG@5 no disponible con esta muestra.</p>') +
           '<h5>Resultados por repetición</h5>' + repeatMarkup +
           '<p class="metric-note">Estas repeticiones reutilizan el mismo historial y no constituyen muestras independientes ni una prueba de significación estadística. El ranking activo sigue usando el modelo aditivo.</p>' +
