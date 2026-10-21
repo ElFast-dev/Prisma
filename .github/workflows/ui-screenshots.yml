@@ -527,7 +527,18 @@ jobs:
                   throw new Error(name + ": the selected emotion was not persisted with the rating");
                 }
                 await page.locator(".rating-sheet [data-action='close-modal']").click();
-                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+                await page.waitForTimeout(150);
+                const ratingCloseDiagnostic = await page.evaluate(() => ({
+                  detailCount: document.querySelectorAll(".detail-sheet").length,
+                  ratingCount: document.querySelectorAll(".rating-sheet").length,
+                  modalText: document.querySelector("#modalRoot")?.innerText || "",
+                  modalHtml: document.querySelector("#modalRoot")?.innerHTML.slice(0, 1000) || "",
+                  toast: document.querySelector("#toastRoot")?.innerText || ""
+                }));
+                console.log("RATING_CLOSE_DIAGNOSTIC:", JSON.stringify(ratingCloseDiagnostic));
+                if (ratingCloseDiagnostic.detailCount !== 1) {
+                  throw new Error(name + ": closing the rating editor did not restore its detail sheet: " + JSON.stringify(ratingCloseDiagnostic));
+                }
 
                 // Hide/unhide must update the current detail state both ways.
                 const hiddenToggle = page.locator(".detail-state-actions [data-action='toggle-hidden']");
