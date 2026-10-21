@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v4";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v5";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -274,6 +274,56 @@ function ridgeEvaluation(source) {
   };
 }
 
+function temporalRidgeEvaluation(source) {
+  const evaluation = source && typeof source === "object" ? source : null;
+  const available = Boolean(evaluation && evaluation.available);
+  const stability = evaluation && evaluation.windowStability && typeof evaluation.windowStability === "object"
+    ? evaluation.windowStability : {};
+  const summaries = evaluation && Array.isArray(evaluation.windowSummaries) ? evaluation.windowSummaries : [];
+  return {
+    executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
+    available: available,
+    sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
+    featureRowCount: nonNegativeInteger(evaluation && evaluation.featureRowCount),
+    timestampedFeatureCount: nonNegativeInteger(evaluation && evaluation.timestampedFeatureCount),
+    missingDateCount: nonNegativeInteger(evaluation && evaluation.missingDateCount),
+    distinctDayCount: nonNegativeInteger(evaluation && evaluation.distinctDayCount),
+    warmupCount: nonNegativeInteger(evaluation && evaluation.warmupCount),
+    testCount: nonNegativeInteger(evaluation && evaluation.testCount),
+    windowsPlanned: nonNegativeInteger(evaluation && evaluation.windowsPlanned),
+    windowsEvaluated: nonNegativeInteger(evaluation && evaluation.windowsEvaluated),
+    innerWindows: nonNegativeInteger(evaluation && evaluation.innerWindows),
+    alphaGrid: (Array.isArray(evaluation && evaluation.alphaGrid) ? evaluation.alphaGrid : [])
+      .map(numeric).filter(function (value) { return value != null && value > 0; }),
+    selectedAlphaCounts: ridgeAlphaCounts(evaluation && evaluation.selectedAlphaCounts),
+    mae: available ? rounded(evaluation.mae, 4) : null,
+    baselineMaeSameWindows: available ? rounded(evaluation.baselineMae, 4) : null,
+    deltaBaselineMinusRidge: available ? rounded(evaluation.deltaBaseMinusRidge, 4) : null,
+    windowStability: {
+      available: Boolean(stability.available),
+      windowsEvaluated: nonNegativeInteger(stability.windowsEvaluated),
+      ridgeMaeWins: nonNegativeInteger(stability.ridgeMaeWins),
+      ties: nonNegativeInteger(stability.ties),
+      baselineMaeWins: nonNegativeInteger(stability.baselineMaeWins)
+    },
+    rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
+    windowSummaries: available ? summaries.map(function (window) {
+      return {
+        window: nonNegativeInteger(window && window.window),
+        trainingCount: nonNegativeInteger(window && window.trainingCount),
+        testCount: nonNegativeInteger(window && window.testCount),
+        selectedAlpha: numeric(window && window.selectedAlpha),
+        mae: rounded(window && window.mae, 4),
+        baselineMaeSameWindows: rounded(window && window.baselineMae, 4),
+        deltaBaselineMinusRidge: rounded(window && window.deltaBaseMinusRidge, 4),
+        rankingAvailable: Boolean(window && window.rankingAvailable)
+      };
+    }) : [],
+    unavailableReason: available ? null : (evaluation && typeof evaluation.unavailableReason === "string"
+      ? evaluation.unavailableReason : (evaluation ? "La evaluación temporal no está disponible." : "La evaluación temporal no se ha ejecutado."))
+  };
+}
+
 function rankingEvaluation(source) {
   const wrapper = source || {};
   const ranking = wrapper.ranking || wrapper;
@@ -341,7 +391,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Recuentos agregados de valoraciones, catálogo y colecciones",
         "Distribución de puntuaciones por valor",
         "Cobertura y señales agregadas del perfil",
-        "Pesos del algoritmo y resultados agregados de MAE, Ridge, validación repetida, nDCG@5 por modo y diversidad"
+        "Pesos del algoritmo y resultados agregados de MAE, Ridge, validación repetida, evaluación temporal walk-forward, nDCG@5 por modo y diversidad"
       ],
       excludes: [
         "Títulos y títulos originales de películas",
@@ -380,12 +430,14 @@ export function buildRecommendationDiagnosticReport(input) {
     evaluation: {
       ratingPrediction: ratingEvaluation(source.ratingEvaluation),
       ridgeExperiment: ridgeEvaluation(source.ridgeEvaluation),
+      temporalRidgeExperiment: temporalRidgeEvaluation(source.temporalRidgeEvaluation),
       rankingQuality: quality.ranking,
       currentListDiversity: quality.diversity
     },
     interpretationLimits: [
       "MAE mide la predicción de notas conocidas y no garantiza satisfacción con películas futuras.",
       "nDCG@5 de Prisma evalúa el orden de películas valoradas retenidas, no todas las películas desconocidas del catálogo.",
+      "La evaluación temporal entrena con días anteriores y prueba con días posteriores; sus ventanas reutilizan el mismo historial y no son muestras independientes.",
       "La diversidad Jaccard usa las listas actuales y no es una medida de serendipia.",
       "Una mejora observada en esta muestra personal es descriptiva; no demuestra significación estadística."
     ]
