@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v2";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v3";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -148,6 +148,34 @@ function ratingEvaluation(source) {
   };
 }
 
+
+function ridgeRankingEvaluation(source) {
+  const evaluation = source && typeof source === "object" ? source : {};
+  const available = Boolean(evaluation.available);
+  const modes = Array.isArray(evaluation.modes) ? evaluation.modes : [];
+  return {
+    available: available,
+    sampleCount: nonNegativeInteger(evaluation.count),
+    relevantRatingsCount: nonNegativeInteger(evaluation.relevantCount),
+    folds: nonNegativeInteger(evaluation.folds),
+    foldsEvaluated: nonNegativeInteger(evaluation.foldsEvaluated),
+    cutoff: nonNegativeInteger(evaluation.cutoff),
+    relevantRatingThreshold: numeric(evaluation.relevantThreshold),
+    unavailableReason: available ? null : (typeof evaluation.reason === "string" ? evaluation.reason : "La comparación Ridge de nDCG@5 no está disponible."),
+    modes: modes.map(function (mode) {
+      const modeAvailable = Boolean(mode.available);
+      return {
+        mode: String(mode.mode || ""),
+        available: modeAvailable,
+        baselineNdcgAt5: modeAvailable ? rounded(mode.baselineNdcgAt5, 4) : null,
+        ridgeNdcgAt5: modeAvailable ? rounded(mode.ridgeNdcgAt5, 4) : null,
+        deltaRidgeMinusBaseline: modeAvailable ? rounded(mode.deltaRidgeMinusBaseline, 4) : null,
+        foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated)
+      };
+    })
+  };
+}
+
 function ridgeEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
@@ -174,6 +202,7 @@ function ridgeEvaluation(source) {
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
     alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; }),
     selectedAlphaCounts: alphaCounts,
+    rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
       ? evaluation.reason : (evaluation ? "El experimento Ridge no está disponible." : "El experimento Ridge no se ha ejecutado."))
   };
@@ -246,7 +275,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Recuentos agregados de valoraciones, catálogo y colecciones",
         "Distribución de puntuaciones por valor",
         "Cobertura y señales agregadas del perfil",
-        "Pesos del algoritmo y resultados agregados disponibles de MAE, Ridge, nDCG@5 y diversidad"
+        "Pesos del algoritmo y resultados agregados disponibles de MAE, Ridge, nDCG@5 por modo y diversidad"
       ],
       excludes: [
         "Títulos y títulos originales de películas",
