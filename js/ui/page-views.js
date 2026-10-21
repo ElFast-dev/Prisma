@@ -298,7 +298,7 @@ export function createPageViews(ctx) {
       const hybridFoldStabilityMarkup = hybridStability.available
         ? '<p class="metric-note">Estabilidad del híbrido 50/50 frente a la base (' +
           Number(hybridStability.foldsEvaluated || 0) + ' pliegues): mejora en ' +
-          Number(hybridStability.ridgeMaeWins || 0) + ', empata en ' +
+          Number(hybridStability.hybridMaeWins || 0) + ', empata en ' +
           Number(hybridStability.ties || 0) + ' y la base mejora en ' +
           Number(hybridStability.baselineMaeWins || 0) +
           '. Recuento descriptivo, no prueba de significación estadística.</p>'
