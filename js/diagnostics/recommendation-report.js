@@ -155,9 +155,9 @@ function ridgeEvaluation(source) {
   const rawCounts = evaluation && evaluation.selectedAlphaCounts && typeof evaluation.selectedAlphaCounts === "object"
     ? evaluation.selectedAlphaCounts : {};
   Object.keys(rawCounts).sort(function (left, right) { return Number(left) - Number(right); }).forEach(function (alpha) {
-    const numericAlpha = numeric(alpha);
+    const numericAlpha = Number(alpha);
     const count = nonNegativeInteger(rawCounts[alpha]);
-    if (numericAlpha != null && numericAlpha > 0 && count > 0) {
+    if (Number.isFinite(numericAlpha) && numericAlpha > 0 && count > 0) {
       alphaCounts[String(numericAlpha)] = count;
     }
   });
