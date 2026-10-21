@@ -271,3 +271,26 @@ Prisma DEBE ofrecer un tema oscuro con fondo negro como predeterminado y un modo
 - CUANDO Prisma inicia
 - ENTONCES continúa con tema oscuro sin impedir el uso de la aplicación.
 
+
+
+### Requirement: Controles de mezcla de recomendaciones en Descubrir
+
+Descubrir DEBE mostrar recomendaciones antes de los resultados adicionales y ofrecer un selector compacto para Equilibrado, Más afines y Más variedad. El control activo DEBE exponerse mediante `aria-pressed`; la preferencia DEBE guardarse solo en el dispositivo. Cuando no existan características personales enlazadas, Prisma DEBE explicar esa limitación sin presentar la lista como gustos ya aprendidos.
+
+#### Scenario: Orden de contenido en Descubrir
+
+- DADO que se abre Descubrir
+- CUANDO se representa su contenido
+- ENTONCES las recomendaciones y el selector de enfoque aparecen antes de la exploración remota y del catálogo adicional
+
+#### Scenario: Selector accesible
+
+- DADO que se muestran los tres modos de recomendación
+- CUANDO uno está seleccionado
+- ENTONCES el grupo tiene un nombre accesible y solo el modo actual expone `aria-pressed="true"`
+
+#### Scenario: Perfil sin metadatos enlazados
+
+- DADO que no hay valoraciones enlazadas a características del catálogo
+- CUANDO se abre Descubrir
+- ENTONCES la interfaz explica que necesita esas señales antes de afirmar que las sugerencias reflejan gustos personales
