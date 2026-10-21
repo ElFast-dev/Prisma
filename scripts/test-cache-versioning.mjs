@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -15,6 +15,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/recommendations/features.js', 'utf8'),
   readFile('js/recommendations/engine.js', 'utf8'),
   readFile('js/recommendations/evaluation.js', 'utf8'),
+  readFile('js/recommendations/normalization-evaluation.js', 'utf8'),
   readFile('js/recommendations/ridge-evaluation.js', 'utf8'),
   readFile('js/recommendations/repeated-validation-summary.js', 'utf8'),
   readFile('js/catalog/csv-parser.js', 'utf8'),
@@ -70,6 +71,7 @@ const modules = [
   ['js/recommendations/features.js', features],
   ['js/recommendations/engine.js', engine],
   ['js/recommendations/evaluation.js', evaluation],
+  ['js/recommendations/normalization-evaluation.js', normalizationEvaluation],
   ['js/recommendations/ridge-evaluation.js', ridgeEvaluation],
   ['js/recommendations/repeated-validation-summary.js', repeatedValidationSummary],
   ['js/recommendations/preferences.js', recommendationPreferences],
@@ -103,8 +105,10 @@ assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
 assert.ok(cached.has("./js/ui/page-views.js?v=core-20261021-14"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
-assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261021-5"),
-  "El informe de diagnóstico v7 debe quedar versionado y disponible en la caché de la aplicación.");
+assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261021-6"),
+  "El informe de diagnóstico v8 debe quedar versionado y disponible en la caché de la aplicación.");
+assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),
+  "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261021-5"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
 assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261021-3"),
@@ -125,4 +129,6 @@ assert.match(ridgeEvaluation, /evaluateTemporalAsync/,
   "El experimento Ridge debe exportar la evaluación temporal bajo demanda.");
 assert.match(app, /runTemporalRidgeExperiment/);
 assert.match(diagnosticReport, /temporalRidgeExperiment/);
+assert.match(diagnosticReport, /influenceNormalizationExperiment/);
+assert.match(app, /runInfluenceNormalizationExperiment/);
 console.log('Versionado PWA, módulos y experimento temporal con procedencia coherentes: ' + scriptUrl + ' · caché ' + cacheName + ' · ' + modules.length + ' módulos verificados.');

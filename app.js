@@ -5,7 +5,8 @@ import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-7";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-5";
+import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-6";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
@@ -62,6 +63,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let temporalRidgeEvaluationBusy = false;
   let temporalRidgeEvaluationProgress = null;
   let temporalRidgeEvaluationRunId = 0;
+  let influenceNormalizationEvaluationResult = null;
+  let influenceNormalizationEvaluationBusy = false;
+  let influenceNormalizationEvaluationRunId = 0;
   const recommendationPreferences = createRecommendationPreferences(function () { return window.localStorage; });
   let recommendationMode = recommendationPreferences.getMode();
   let currentPage = "home";
@@ -204,7 +208,10 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get temporalRidgeEvaluationResult() { return temporalRidgeEvaluationResult; },
     get temporalRidgeEvaluationBusy() { return temporalRidgeEvaluationBusy; },
     get temporalRidgeEvaluationProgress() { return temporalRidgeEvaluationProgress; },
-    get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; }
+    get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
+    get influenceNormalizationEvaluationResult() { return influenceNormalizationEvaluationResult; },
+    get influenceNormalizationEvaluationBusy() { return influenceNormalizationEvaluationBusy; },
+    get runInfluenceNormalizationExperiment() { return runInfluenceNormalizationExperiment; }
   });
   const { movieCard, ratedMetadataCount, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp } = pageViews;
   const modalViews = createModalViews({
@@ -455,6 +462,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     temporalRidgeEvaluationResult = null;
     temporalRidgeEvaluationBusy = false;
     temporalRidgeEvaluationProgress = null;
+    influenceNormalizationEvaluationRunId += 1;
+    influenceNormalizationEvaluationResult = null;
+    influenceNormalizationEvaluationBusy = false;
     return persistStateToStorage();
   }
 
@@ -526,6 +536,53 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     titleKey: titleKey
   });
   const { evaluateRecommendationQuality } = recommendationEvaluation;
+
+  const recommendationNormalizationEvaluation = createRecommendationNormalizationEvaluation({
+    getRatings: function () { return state.rated; },
+    findMovie: findMovie,
+    movieFeatures: movieFeatures,
+    ratingValue: ratingValue,
+    buildProfile: buildProfile,
+    predictRating: predictRating,
+    rankCandidates: recommendationRanking.rankCandidates,
+    movieTmdbId: movieTmdbId,
+    titleKey: titleKey
+  });
+
+  async function runInfluenceNormalizationExperiment() {
+    if (influenceNormalizationEvaluationBusy || ridgeEvaluationBusy || temporalRidgeEvaluationBusy) return;
+    const runId = ++influenceNormalizationEvaluationRunId;
+    influenceNormalizationEvaluationBusy = true;
+    if (currentPage === "lab") renderApp();
+    await new Promise(function (resolve) {
+      if (window && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(resolve);
+      else window.setTimeout(resolve, 0);
+    });
+    try {
+      const evaluationResult = recommendationNormalizationEvaluation.evaluate();
+      if (runId !== influenceNormalizationEvaluationRunId) return;
+      influenceNormalizationEvaluationResult = evaluationResult;
+      toast(evaluationResult.available
+        ? "Calibración de influencia terminada: tres variantes y los mismos pliegues comparados."
+        : (evaluationResult.unavailableReason || "No se pudo evaluar la normalización de influencia."),
+      !evaluationResult.available);
+    } catch (_) {
+      if (runId !== influenceNormalizationEvaluationRunId) return;
+      influenceNormalizationEvaluationResult = {
+        executionStatus: "unavailable",
+        available: false,
+        sampleCount: 0,
+        methods: [],
+        unavailableReason: "No se pudo completar el experimento de normalización de forma estable."
+      };
+      toast("No se pudo completar el experimento de normalización de forma estable.", true);
+    } finally {
+      if (runId === influenceNormalizationEvaluationRunId) {
+        influenceNormalizationEvaluationBusy = false;
+        if (currentPage === "lab") renderApp();
+      }
+    }
+  }
 
   async function runRidgeExperiment() {
     if (ridgeEvaluationBusy || temporalRidgeEvaluationBusy) return;
@@ -636,6 +693,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
       ratingEvaluation: evaluateModel(),
       ridgeEvaluation: ridgeEvaluationResult,
       temporalRidgeEvaluation: temporalRidgeEvaluationResult,
+      influenceNormalizationEvaluation: influenceNormalizationEvaluationResult,
       recommendationQuality: evaluateRecommendationQuality(),
       includeFeatureLabels: recommendationDiagnosticFeatureLabelsIncluded
     });
@@ -836,6 +894,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get clearRecommendationDiagnosticReport() { return clearRecommendationDiagnosticReport; },
     get runRidgeExperiment() { return runRidgeExperiment; },
     get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
+    get runInfluenceNormalizationExperiment() { return runInfluenceNormalizationExperiment; },
     get setRecommendationDiagnosticFeatureLabelsIncluded() { return function (value) { recommendationDiagnosticFeatureLabelsIncluded = Boolean(value); }; },
     get setTheme() { return themeController.setTheme; }
   });

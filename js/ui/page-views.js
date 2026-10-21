@@ -446,6 +446,73 @@ export function createPageViews(ctx) {
   }
 
 
+  function renderInfluenceNormalizationPanel() {
+    const result = ctx.influenceNormalizationEvaluationResult || null;
+    const busy = Boolean(ctx.influenceNormalizationEvaluationBusy);
+    const ridgeBusy = Boolean(ctx.ridgeEvaluationBusy);
+    const temporalBusy = Boolean(ctx.temporalRidgeEvaluationBusy);
+    const buttonLabel = busy ? "Evaluando normalización…" : (result ? "Volver a evaluar" : "Evaluar normalización");
+    const methodNames = {
+      mean: "Media actual · N",
+      "coverage-sqrt": "Raíz de cobertura · √(N×K)",
+      "matched-only": "Solo coincidencias · K"
+    };
+    const modeNames = { balanced: "Equilibrado", affinity: "Más afines", variety: "Más variedad" };
+    let body = "";
+    if (busy) {
+      body = '<p class="metric-note" aria-live="polite">Comparando tres fórmulas con las mismas cinco particiones, perfiles de entrenamiento y películas retenidas. El recomendador activo no cambia.</p>';
+    } else if (!result) {
+      body = '<p class="metric-note">Esta prueba mide si dividir entre todas las características atenúa demasiado las señales conocidas. La raíz geométrica reduce esa atenuación conservando una penalización por baja cobertura; solo coincidencias se muestra como control sin esa penalización.</p>' +
+        '<p class="metric-note">Pulsa “Evaluar normalización” para calcular MAE, estabilidad por pliegue y nDCG@5. La ejecución es local y no modifica el perfil guardado ni las recomendaciones de producción.</p>';
+    } else if (!result.available) {
+      body = '<p class="metric-note" aria-live="polite">Experimento no disponible: ' +
+        ctx.escapeHTML(result.unavailableReason || "faltan valoraciones enlazadas.") + '</p>';
+    } else {
+      const methodMarkup = (result.methods || []).map(function (method) {
+        const delta = Number(method.deltaMaeVsMean);
+        const deltaLabel = method.method === "mean" ? "referencia" :
+          ((delta > 0 ? "+" : "") + delta.toFixed(4).replace(".", ",") + " · positivo favorece la variante");
+        const stability = method.maeFoldStability || {};
+        const stabilityMarkup = method.method === "mean" ? "" :
+          '<p class="metric-note">Estabilidad MAE frente a la media actual: mejora en ' +
+          Number(stability.variantWins || 0) + ', empata en ' + Number(stability.ties || 0) +
+          ' y la media actual mejora en ' + Number(stability.meanWins || 0) + ' de ' +
+          Number(stability.foldsEvaluated || 0) + ' pliegues.</p>';
+        const rankingMarkup = (method.rankingModes || []).filter(function (item) {
+          return item.available;
+        }).map(function (item) {
+          const change = Number(item.deltaNdcgVsMean);
+          return '<p class="metric-note"><strong>' + ctx.escapeHTML(modeNames[item.mode] || item.mode) +
+            ' · nDCG@5:</strong> ' + Number(item.ndcgAt5).toFixed(4).replace(".", ",") +
+            ' · cambio frente a media ' + (change > 0 ? "+" : "") + change.toFixed(4).replace(".", ",") +
+            ' · gana ' + Number(item.foldsWins || 0) + ', empata ' + Number(item.foldsTies || 0) +
+            ', pierde ' + Number(item.foldsLosses || 0) + '.</p>';
+        }).join("");
+        return '<section class="normalization-method-result"><h4>' +
+          ctx.escapeHTML(methodNames[method.method] || method.method) + '</h4>' +
+          '<div class="metrics-grid">' +
+          ctx.metric("MAE", Number(method.mae).toFixed(4).replace(".", ","), "Mismas películas retenidas") +
+          ctx.metric("Media − variante", deltaLabel, method.method === "mean" ? "Control sin cambios" : "Positivo favorece la variante") +
+          '</div>' + stabilityMarkup +
+          '<h5>Calidad del ranking · nDCG@5</h5>' +
+          (rankingMarkup || '<p class="metric-note">nDCG@5 no disponible: la muestra no alcanza los mínimos de ranking.</p>') +
+          '</section>';
+      }).join("");
+      body = '<p class="metric-note">Muestra: ' + Number(result.sampleCount || 0) +
+        ' valoraciones · ' + Number(result.foldsEvaluated || 0) + '/' + Number(result.folds || 0) +
+        ' pliegues · relevancia personal: nota ≥ ' + Number(result.relevantRatingThreshold || 7) + '.</p>' +
+        methodMarkup +
+        '<p class="metric-note">La fórmula actual se mantiene como control de producción. Resultados descriptivos: las particiones reutilizan el mismo historial y no prueban satisfacción futura ni significación estadística.</p>';
+    }
+    return '<section class="panel influence-normalization-panel" aria-labelledby="influence-normalization-heading">' +
+      '<div class="panel-head"><div><h3 id="influence-normalization-heading">Calibración de la normalización de influencia</h3>' +
+      '<p class="metric-note">¿La cantidad de metadatos diluye demasiado las coincidencias conocidas?</p></div>' +
+      '<button class="btn btn-secondary btn-small" type="button" data-action="run-influence-normalization-experiment"' +
+      (busy || ridgeBusy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      body + '</section>';
+  }
+
+
   function renderTemporalRidgePanel() {
     const result = ctx.temporalRidgeEvaluationResult || null;
     const busy = Boolean(ctx.temporalRidgeEvaluationBusy);
@@ -623,7 +690,7 @@ export function createPageViews(ctx) {
       '<div class="metric-note">La disimilitud de géneros se calcula con Jaccard entre pares que tienen metadatos. No mide serendipia ni satisfacción.</div></section>' +
       '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación de notas</h3>' + ctx.infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
       '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>' +
-      renderRidgeExperimentPanel() + renderTemporalRidgePanel() + renderRecommendationDiagnosticPanel();
+      renderRidgeExperimentPanel() + renderInfluenceNormalizationPanel() + renderTemporalRidgePanel() + renderRecommendationDiagnosticPanel();
   }
 
 

@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v7";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v8";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -354,6 +354,62 @@ function temporalRidgeEvaluation(source) {
   };
 }
 
+function influenceNormalizationEvaluation(source) {
+  const evaluation = source && typeof source === "object" ? source : null;
+  const available = Boolean(evaluation && evaluation.available);
+  const methods = Array.isArray(evaluation && evaluation.methods) ? evaluation.methods : [];
+  const allowedMethods = new Set(["mean", "coverage-sqrt", "matched-only"]);
+  const allowedModes = new Set(["balanced", "affinity", "variety"]);
+  return {
+    executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
+    available: available,
+    sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
+    relevantRatingsCount: nonNegativeInteger(evaluation && evaluation.relevantRatingsCount),
+    folds: nonNegativeInteger(evaluation && evaluation.folds),
+    foldsEvaluated: nonNegativeInteger(evaluation && evaluation.foldsEvaluated),
+    cutoff: nonNegativeInteger(evaluation && evaluation.cutoff),
+    relevantRatingThreshold: numeric(evaluation && evaluation.relevantRatingThreshold),
+    baselineMethod: "mean",
+    methods: methods.filter(function (method) {
+      return method && allowedMethods.has(method.method);
+    }).map(function (method) {
+      const methodAvailable = Boolean(method.available);
+      const stability = method.maeFoldStability || {};
+      const rankingModes = Array.isArray(method.rankingModes) ? method.rankingModes : [];
+      return {
+        method: method.method,
+        available: methodAvailable,
+        mae: methodAvailable ? rounded(method.mae, 4) : null,
+        deltaMaeVsMean: methodAvailable ? rounded(method.deltaMaeVsMean, 4) : null,
+        maeFoldStability: {
+          available: Boolean(stability.available),
+          foldsEvaluated: nonNegativeInteger(stability.foldsEvaluated),
+          variantWins: nonNegativeInteger(stability.variantWins),
+          ties: nonNegativeInteger(stability.ties),
+          meanWins: nonNegativeInteger(stability.meanWins)
+        },
+        rankingModes: rankingModes.filter(function (item) {
+          return item && allowedModes.has(item.mode);
+        }).map(function (item) {
+          const modeAvailable = Boolean(item.available);
+          return {
+            mode: item.mode,
+            available: modeAvailable,
+            ndcgAt5: modeAvailable ? rounded(item.ndcgAt5, 4) : null,
+            deltaNdcgVsMean: modeAvailable ? rounded(item.deltaNdcgVsMean, 4) : null,
+            foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+            foldsWins: nonNegativeInteger(item.foldsWins),
+            foldsTies: nonNegativeInteger(item.foldsTies),
+            foldsLosses: nonNegativeInteger(item.foldsLosses)
+          };
+        })
+      };
+    }),
+    unavailableReason: available ? null : "La calibración de normalización de influencia no está disponible."
+  };
+}
+
+
 function rankingEvaluation(source) {
   const wrapper = source || {};
   const ranking = wrapper.ranking || wrapper;
@@ -421,7 +477,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Recuentos agregados de valoraciones, catálogo y colecciones",
         "Distribución de puntuaciones por valor",
         "Cobertura y señales agregadas del perfil",
-        "Pesos del algoritmo y resultados agregados de MAE, Ridge, validación repetida, evaluación temporal walk-forward y procedencia agregada de fechas, nDCG@5 por modo y diversidad"
+        "Pesos del algoritmo y resultados agregados de MAE, Ridge, mezcla híbrida, validación repetida, evaluación temporal, calibración de normalización de influencia, nDCG@5 por modo y diversidad"
       ],
       excludes: [
         "Títulos y títulos originales de películas",
@@ -461,6 +517,7 @@ export function buildRecommendationDiagnosticReport(input) {
       ratingPrediction: ratingEvaluation(source.ratingEvaluation),
       ridgeExperiment: ridgeEvaluation(source.ridgeEvaluation),
       temporalRidgeExperiment: temporalRidgeEvaluation(source.temporalRidgeEvaluation),
+      influenceNormalizationExperiment: influenceNormalizationEvaluation(source.influenceNormalizationEvaluation),
       rankingQuality: quality.ranking,
       currentListDiversity: quality.diversity
     },
@@ -470,6 +527,7 @@ export function buildRecommendationDiagnosticReport(input) {
       "La evaluación temporal entrena con días anteriores y prueba con días posteriores; sus ventanas reutilizan el mismo historial y no son muestras independientes.",
       "Las métricas temporales con fechas sin procedencia verificable se marcan como exploratorias; el informe solo comparte recuentos agregados de procedencia.",
       "La diversidad Jaccard usa las listas actuales y no es una medida de serendipia.",
+      "La calibración de normalización compara el denominador actual con hipótesis diagnósticas; no cambia las recomendaciones activas.",
       "Una mejora observada en esta muestra personal es descriptiva; no demuestra significación estadística."
     ]
   };
