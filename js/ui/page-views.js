@@ -114,7 +114,8 @@ export function createPageViews(ctx) {
         ? '<div class="empty-inline"><strong>Tu espacio empieza vacío</strong><span>Conecta TMDB desde Ajustes / Datos para explorar películas reales. No se añadirá ninguna película a tu colección automáticamente.</span><button class="btn btn-secondary btn-small" type="button" data-nav="data">Conectar TMDB</button></div>'
         : '<div class="empty-inline"><strong>Aún no hay recomendaciones personales</strong><span>Explora las películas de TMDB y añade las que te interesen. Prisma podrá adaptar las sugerencias cuando haya valoraciones propias.</span></div>');
     const searchCaption = ctx.catalogQuery.trim() ? 'Resultados para «' + ctx.escapeHTML(ctx.catalogQuery.trim()) + '»' : "Catálogo";
-    return '<section class="page-heading discover-heading"><h1>Descubrir</h1>' + ctx.infoButton("discover","Información sobre Descubrir") + '<span class="discover-count">' + ctx.catalog.length.toLocaleString("es-PA") + ' títulos</span></section>' +
+    const personalCatalogCount = ctx.catalog.length.toLocaleString("es-PA") + (ctx.catalog.length === 1 ? " título personal" : " títulos personales");
+    return '<section class="page-heading discover-heading"><h1>Descubrir</h1>' + ctx.infoButton("discover","Información sobre Descubrir") + '<span class="discover-count">' + personalCatalogCount + '</span></section>' +
       '<section class="discover-recommendations"><div class="section-head"><h2>' + recommendationTitle + '</h2>' + ctx.infoButton("recommendations","Cómo funcionan las recomendaciones") + '</div>' +
       '<div class="recommendation-controls" role="group" aria-label="Enfoque de recomendaciones">' + recommendationModes + '</div>' +
       '<p class="recommendation-mode-copy" aria-live="polite">' + ctx.escapeHTML(recommendationIntro) + '</p>' +
