@@ -253,7 +253,7 @@ jobs:
                 }
 
                 // Keep the following catalogue/import checks isolated from this synthetic credential.
-                page.once("dialog", dialog => dialog.accept());
+                await page.evaluate(() => { window.confirm = () => true; });
                 await page.locator('[data-action="remove-tmdb"]').click();
                 await page.waitForFunction(() => {
                   const badge = document.querySelector(".tmdb-settings .badge");
