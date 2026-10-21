@@ -85,6 +85,7 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-20-fix-tmdb-csv-identity/tasks.md',
   'openspec/changes/archive/2026-10-20-fix-tmdb-csv-identity/specs/catalog/spec.md',
   'scripts/test-catalog-import.mjs',
+  'scripts/test-empty-first-run.mjs',
   'scripts/test-movie-rating-sources.mjs',
   'scripts/test-discovery-detail-polish.mjs',
   'scripts/test-mobile-navigation.mjs',
