@@ -264,6 +264,30 @@ jobs:
                 await page.locator(".progress-onboarding").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
                 await page.locator(".tmdb-browser").waitFor({ state: "visible", timeout: 10000 });
+
+                // Verify the recommendation mix selector and device-local persistence.
+                const recommendationModes = page.locator(".recommendation-controls [data-action='recommendation-mode']");
+                await recommendationModes.first().waitFor({ state: "visible", timeout: 10000 });
+                if (await recommendationModes.count() !== 3 ||
+                    await page.locator('[data-action="recommendation-mode"][data-mode="balanced"]').getAttribute("aria-pressed") !== "true") {
+                  throw new Error(name + ": recommendation modes are missing or Equilibrado is not the default");
+                }
+                await page.locator('[data-action="recommendation-mode"][data-mode="variety"]').click();
+                if (await page.locator('[data-action="recommendation-mode"][data-mode="variety"]').getAttribute("aria-pressed") !== "true" ||
+                    await page.evaluate(() => localStorage.getItem("prisma:recommendation-mode")) !== "variety") {
+                  throw new Error(name + ": Más variedad was not selected and persisted locally");
+                }
+                await page.reload({ waitUntil: "networkidle" });
+                await page.locator("main h1").waitFor({ state: "visible", timeout: 15000 });
+                await page.locator(".bottom-nav [data-nav='catalog']").click();
+                await page.locator(".recommendation-controls").waitFor({ state: "visible", timeout: 10000 });
+                if (await page.locator('[data-action="recommendation-mode"][data-mode="variety"]').getAttribute("aria-pressed") !== "true") {
+                  throw new Error(name + ": recommendation mode was not restored after reload");
+                }
+                await page.locator('[data-action="recommendation-mode"][data-mode="balanced"]').click();
+                if (await page.evaluate(() => localStorage.getItem("prisma:recommendation-mode")) !== "balanced") {
+                  throw new Error(name + ": test cleanup could not restore the balanced recommendation mode");
+                }
                 await page.waitForTimeout(250);
                 await page.screenshot({ path: "artifacts/" + name + "-catalog.png", fullPage: false, animations: "disabled" });
                 await page.evaluate(() => {
