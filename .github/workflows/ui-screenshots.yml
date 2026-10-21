@@ -104,8 +104,8 @@ jobs:
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
-                  lastUI.brandFavicon.includes("brand-20261020-1") &&
-                  lastUI.brandLogo.includes("brand-20261020-1") &&
+                  lastUI.brandFavicon.includes("brand-20261020-2") &&
+                  lastUI.brandLogo.includes("brand-20261020-2") &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
                   lastUI.topSearch &&
