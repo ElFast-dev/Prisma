@@ -480,7 +480,8 @@ export function createPageViews(ctx) {
       '<p class="metric-note">Entrenar con el pasado; probar con visionados posteriores</p></div>' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="run-temporal-ridge-experiment"' +
       (busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
-      body + '</section>';
+      body + '<p class="metric-note">Cautela con historiales antiguos: algunas versiones anteriores pudieron guardar ciertas fechas de visionado a partir de la edición de una nota. Las fechas <strong>watchedAt</strong> ya existentes no siempre permiten verificar esa procedencia; interpreta estos resultados de forma descriptiva. Las nuevas ediciones sin fecha fiable ya no crean <strong>watchedAt</strong> desde <strong>updatedAt</strong>.</p>' +
+      '</section>';
   }
 
   function renderLab() {

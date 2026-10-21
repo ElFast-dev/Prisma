@@ -35,12 +35,12 @@ assert.match(product, /combinar en una experiencia personal de cine/,
   "La misión elegida debe documentarse en la hoja de ruta.");
 assert.match(product, /Privacidad local primero[\s\S]*?exportación\/importación/,
   "La hoja de ruta debe preservar almacenamiento local y copias de seguridad.");
-assert.match(html, /app\.js\?v=ui-20261021-63/,
+assert.match(html, /app\.js\?v=ui-20261021-64/,
   "index.html debe apuntar a la versión actualizada de la aplicación.");
-assert.match(app, /page-views\.js\?v=core-20261021-11/,
+assert.match(app, /page-views\.js\?v=core-20261021-12/,
   "La aplicación debe cargar el módulo de vistas versionado.");
-assert.match(serviceWorker, /prisma-shell-v72/);
-assert.ok(serviceWorker.includes("./js/ui/page-views.js?v=core-20261021-11"),
+assert.match(serviceWorker, /prisma-shell-v73/);
+assert.ok(serviceWorker.includes("./js/ui/page-views.js?v=core-20261021-12"),
   "El shell PWA debe cachear exactamente el módulo de vistas activo.");
 
 console.log("Navegación móvil verificada: objetivos táctiles, estado accesible, movimiento contenido y caché sincronizada.");

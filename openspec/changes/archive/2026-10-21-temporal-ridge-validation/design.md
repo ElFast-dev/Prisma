@@ -2,7 +2,7 @@
 
 ## Fechas e identidad
 
-La evaluación parte de las valoraciones válidas con características que ya usa Ridge. Para cada entrada, busca su `watchedAt` directamente o en el historial de películas vistas, resolviendo identidad con ID TMDB cuando existe y con la identidad normalizada actual como fallback. La fecha debe parsearse correctamente. `updatedAt`, `addedAt`, el año de estreno y fechas de otros eventos no son sustitutos aceptables. Los registros sin fecha se excluyen del cálculo, pero se contabilizan de forma agregada.
+La evaluación parte de las valoraciones válidas con características que ya usa Ridge. Para cada entrada, busca su `watchedAt` directamente o en el historial de películas vistas, resolviendo identidad con ID TMDB cuando existe y con la identidad normalizada actual como fallback. La fecha debe parsearse correctamente. `updatedAt`, `addedAt`, el año de estreno y fechas de otros eventos no son sustitutos aceptables. Los registros sin fecha se excluyen del cálculo, pero se contabilizan de forma agregada. Algunas versiones antiguas de Prisma pudieron haber persistido `watchedAt` derivado de `updatedAt`; no siempre es posible auditar retrospectivamente ese campo ya guardado. La UI debe advertir esta limitación, y el cálculo se interpreta como descriptivo hasta que la procedencia de fechas históricas sea fiable.
 
 Se agrupan entradas por día UTC para que registros del mismo día nunca se separen entre entrenamiento y prueba. El día exacto nunca se incluye en el resultado compartible.
 
