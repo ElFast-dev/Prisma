@@ -9,12 +9,12 @@ const GENRE_LABELS = {
 
 function genreLookupKey(value) {
   return String(value || "").trim().normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[_-]+/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
-    .replace(/\\s+/g, " ");
+    .replace(/\s+/g, " ");
 }
 
 const NORMALIZED_GENRE_LABELS = Object.create(null);
