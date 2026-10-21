@@ -45,11 +45,11 @@ export function createTMDBSettingsActions(ctx) {
   }
 
   async function removeTMDBCredential() {
-    if (!window.confirm("¿Eliminar la credencial de TMDB guardada en este navegador?")) return;
+    if (!ctx.confirm("¿Eliminar la credencial de TMDB guardada en este navegador?")) return;
     ctx.tmdbCredential = null;
     await ctx.dbSet(ctx.TMDB_CREDENTIAL_KEY, null);
-    tmdbResults = [];
-    tmdbClient.resetGenres();
+    ctx.tmdbResults = [];
+    ctx.resetTMDBGenres();
     ctx.renderApp();
     ctx.toast("Credencial eliminada de este navegador.");
   }
