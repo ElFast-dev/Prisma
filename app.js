@@ -29,7 +29,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   "use strict";
 
   const $ = function (selector, root) { return (root || document).querySelector(selector); };
-  const $ = function (selector, root) { return Array.from((root || document).querySelectorAll(selector)); };
+  const $$ = function (selector, root) { return Array.from((root || document).querySelectorAll(selector)); };
   const themeController = createThemeController({ document: document, window: window });
   themeController.initialize();
   const STATE_KEY = "state";
