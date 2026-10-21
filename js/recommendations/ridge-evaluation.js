@@ -221,11 +221,12 @@ function watchedDayFor(record) {
     timestamp = raw > 1e12 ? raw : raw * 1000;
   } else {
     const text = String(raw).trim();
-    if (!/^\\d{4}-\\d{2}-\\d{2}(?:$|T)/.test(text)) return null;
+    if (!/^\d{4}-\d{2}-\d{2}(?:$|T)/.test(text)) return null;
     timestamp = Date.parse(text);
-    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(text) &&
-      Number.isFinite(timestamp) &&
-      new Date(timestamp).toISOString().slice(0, 10) !== text) return null;
+    const dayPart = text.slice(0, 10);
+    const dayTimestamp = Date.parse(dayPart + "T00:00:00.000Z");
+    if (!Number.isFinite(timestamp) || !Number.isFinite(dayTimestamp) ||
+      new Date(dayTimestamp).toISOString().slice(0, 10) !== dayPart) return null;
   }
   if (!Number.isFinite(timestamp)) return null;
   try { return new Date(timestamp).toISOString().slice(0, 10); }
