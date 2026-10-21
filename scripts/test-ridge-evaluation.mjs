@@ -100,6 +100,13 @@ assert.deepEqual(repeated.repeatedValidation, result.repeatedValidation,
   "Las tres repeticiones de validación anidada deben ser deterministas.");
 assert.deepEqual(repeated.rankingQuality, result.rankingQuality,
   "Disponibilidad y motivo de nDCG deben ser deterministas.");
+const asyncProgress = [];
+const asyncResult = await experiment.evaluateAsync(progress => asyncProgress.push(progress));
+assert.deepEqual(asyncResult.repeatedValidation, result.repeatedValidation,
+  "La ejecución asíncrona debe producir exactamente los mismos agregados.");
+assert.deepEqual(asyncProgress.map(item => item.completedRepeats), [1, 2, 3],
+  "La evaluación asíncrona debe informar progreso entre las tres repeticiones.");
+assert.ok(asyncProgress.every(item => item.totalRepeats === 3 && item.foldsPerRepeat === 5));
 
 const rankingRecords = fixtures(60);
 const rankingResult = harness(rankingRecords, rankingRecords).evaluate();
@@ -177,6 +184,9 @@ assert.match(viewsSource, /Validación repetida/);
 assert.match(viewsSource, /3 × 5/);
 assert.match(eventSource, /action === "run-ridge-experiment"/);
 assert.match(appSource, /3 repeticiones de 5 pliegues/);
+assert.match(appSource, /ridgeRecommendationExperiment\.evaluateAsync/);
+assert.match(appSource, /ridgeEvaluationProgress = progress/);
+assert.match(viewsSource, /ridgeEvaluationProgress/);
 assert.match(reportSource, /ridgeExperiment: ridgeEvaluation/);
 assert.match(reportSource, /repeatedValidation: ridgeRepeatedValidationEvaluation/);
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
