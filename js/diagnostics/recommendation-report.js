@@ -1,0 +1,261 @@
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v1";
+const MAX_FEATURE_DETAILS = 40;
+
+function numeric(value) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function rounded(value, digits) {
+  const n = numeric(value);
+  if (n == null) return null;
+  const factor = 10 ** (digits == null ? 4 : digits);
+  return Math.round(n * factor) / factor;
+}
+
+function nonNegativeInteger(value) {
+  const n = numeric(value);
+  return n == null ? 0 : Math.max(0, Math.floor(n));
+}
+
+function featureParts(name) {
+  const text = String(name || "");
+  const prefixes = [
+    ["genre", "género: "],
+    ["theme", "tema: "],
+    ["decade", "década: "]
+  ];
+  for (const [type, prefix] of prefixes) {
+    if (text.startsWith(prefix)) return { type, value: text.slice(prefix.length) };
+  }
+  return { type: "other", value: "" };
+}
+
+function summarizeFeatures(featureMap, includeLabels) {
+  const rows = [];
+  if (featureMap && typeof featureMap.forEach === "function") {
+    featureMap.forEach(function (item, name) {
+      const parts = featureParts(name);
+      const weight = numeric(item && item.weight) || 0;
+      const support = nonNegativeInteger(item && item.count);
+      rows.push({
+        type: parts.type,
+        value: parts.value,
+        support: support,
+        meanRating: rounded(item && item.mean, 3),
+        learnedWeight: rounded(weight, 4),
+        priority: Math.abs(weight) * Math.sqrt(Math.max(1, support))
+      });
+    });
+  }
+
+  const groups = Object.create(null);
+  rows.forEach(function (row) {
+    const group = groups[row.type] || {
+      featureCount: 0,
+      observations: 0,
+      repeatedFeatures: 0,
+      singleObservationFeatures: 0,
+      positiveWeights: 0,
+      negativeWeights: 0,
+      nearZeroWeights: 0,
+      meanAbsoluteWeight: 0,
+      _absoluteWeightSum: 0
+    };
+    group.featureCount += 1;
+    group.observations += row.support;
+    if (row.support >= 2) group.repeatedFeatures += 1;
+    else group.singleObservationFeatures += 1;
+    if (row.learnedWeight > 0.0001) group.positiveWeights += 1;
+    else if (row.learnedWeight < -0.0001) group.negativeWeights += 1;
+    else group.nearZeroWeights += 1;
+    group._absoluteWeightSum += Math.abs(row.learnedWeight);
+    groups[row.type] = group;
+  });
+
+  Object.keys(groups).forEach(function (type) {
+    const group = groups[type];
+    group.meanAbsoluteWeight = group.featureCount
+      ? rounded(group._absoluteWeightSum / group.featureCount, 4)
+      : 0;
+    delete group._absoluteWeightSum;
+  });
+
+  const aggregate = {
+    signalTypes: groups,
+    totalFeatures: rows.length
+  };
+  if (!includeLabels) return aggregate;
+
+  rows.sort(function (a, b) {
+    return b.priority - a.priority ||
+      b.support - a.support ||
+      a.type.localeCompare(b.type) ||
+      a.value.localeCompare(b.value);
+  });
+  aggregate.featureDetails = rows.slice(0, MAX_FEATURE_DETAILS).map(function (row) {
+    return {
+      type: row.type,
+      value: row.value,
+      support: row.support,
+      meanRating: row.meanRating,
+      learnedWeight: row.learnedWeight
+    };
+  });
+  aggregate.featureDetailsLimit = MAX_FEATURE_DETAILS;
+  aggregate.omittedFeatureDetails = Math.max(0, rows.length - MAX_FEATURE_DETAILS);
+  return aggregate;
+}
+
+function ratingHistogram(values) {
+  const counts = {};
+  for (let rating = 1; rating <= 10; rating += 1) counts[String(rating)] = 0;
+  values.forEach(function (value) {
+    const rating = numeric(value);
+    if (rating != null && rating >= 1 && rating <= 10) {
+      const key = String(Math.round(rating));
+      if (key in counts && Math.abs(rating - Math.round(rating)) < 0.000001) counts[key] += 1;
+    }
+  });
+  return counts;
+}
+
+function collectionCounts(counts) {
+  const input = counts || {};
+  return {
+    watched: nonNegativeInteger(input.watched),
+    pending: nonNegativeInteger(input.pending),
+    hidden: nonNegativeInteger(input.hidden)
+  };
+}
+
+function ratingEvaluation(source) {
+  const evaluation = source || {};
+  const available = Boolean(evaluation.available);
+  return {
+    available,
+    sampleCount: nonNegativeInteger(evaluation.count),
+    mae: available ? rounded(evaluation.mae, 4) : null,
+    baselineMae: available ? rounded(evaluation.baselineMae, 4) : null,
+    relativeImprovementPct: available ? rounded(evaluation.improvementPct, 2) : null,
+    withDecadeMae: available ? rounded(evaluation.mae, 4) : null,
+    withoutDecadeMae: available ? rounded(evaluation.withoutDecadeMae, 4) : null,
+    decadeMaeDifferenceLowerIsBetter: available ? rounded(evaluation.decadeImprovement, 4) : null,
+    decadeExamples: nonNegativeInteger(evaluation.decadeExamples),
+    unavailableReason: available ? null : "Se necesitan al menos cinco valoraciones válidas con características enlazadas."
+  };
+}
+
+function rankingEvaluation(source) {
+  const ranking = source || {};
+  const modes = Array.isArray(ranking.modes) ? ranking.modes : [];
+  const diversity = Array.isArray(source && source.diversity) ? source.diversity : [];
+  return {
+    ranking: {
+      available: Boolean(ranking.available),
+      sampleCount: nonNegativeInteger(ranking.count),
+      relevantRatingsCount: nonNegativeInteger(ranking.relevantCount),
+      folds: nonNegativeInteger(ranking.folds),
+      foldsEvaluated: nonNegativeInteger(ranking.foldsEvaluated),
+      cutoff: nonNegativeInteger(ranking.cutoff),
+      relevantRatingThreshold: numeric(ranking.relevantThreshold),
+      unavailableReason: ranking.available ? null : (typeof ranking.reason === "string" ? ranking.reason : "Datos insuficientes para la evaluación del ranking."),
+      modes: modes.map(function (mode) {
+        return {
+          mode: String(mode.mode || ""),
+          available: Boolean(mode.available),
+          ndcgAt5: mode.available ? rounded(mode.ndcgAt5, 4) : null,
+          foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated)
+        };
+      })
+    },
+    diversity: diversity.map(function (item) {
+      return {
+        mode: String(item.mode || ""),
+        score: rounded(item.score, 4),
+        comparablePairs: nonNegativeInteger(item.pairs),
+        listSize: nonNegativeInteger(item.titles),
+        titlesWithGenres: nonNegativeInteger(item.titlesWithGenres),
+        uniqueGenres: nonNegativeInteger(item.uniqueGenres)
+      };
+    })
+  };
+}
+
+/**
+ * Builds a shareable report from local aggregates only. It deliberately never accepts or
+ * serializes the raw profile state, movie records, titles, movie IDs, dates or notes.
+ */
+export function buildRecommendationDiagnosticReport(input) {
+  const source = input || {};
+  const ratings = Array.isArray(source.ratingValues)
+    ? source.ratingValues.filter(function (value) {
+      const rating = numeric(value);
+      return rating != null && rating >= 1 && rating <= 10;
+    })
+    : [];
+  const profile = source.profile || {};
+  const features = profile.features;
+  const weights = source.signalWeights || {};
+  const ratingCount = nonNegativeInteger(source.ratedCount == null ? ratings.length : source.ratedCount);
+  const metadataCount = Math.min(ratingCount, nonNegativeInteger(profile.withMetadata));
+  const featureCount = features && typeof features.size === "number" ? nonNegativeInteger(features.size) : 0;
+  const quality = rankingEvaluation(source.recommendationQuality);
+
+  return {
+    schema: REPORT_SCHEMA,
+    privacy: {
+      generatedLocally: true,
+      networkTransmission: false,
+      featureLabelsIncluded: Boolean(source.includeFeatureLabels),
+      includes: [
+        "Recuentos agregados de valoraciones, catálogo y colecciones",
+        "Distribución de puntuaciones por valor",
+        "Cobertura y señales agregadas del perfil",
+        "Pesos del algoritmo y resultados MAE/nDCG@5/diversidad disponibles"
+      ],
+      excludes: [
+        "Títulos y títulos originales de películas",
+        "IDs de TMDB y otros identificadores de películas",
+        "Registros individuales de valoración y predicciones por película",
+        "Fechas de visionado, valoración u otros eventos personales",
+        "Emociones, notas libres y textos personales",
+        "Credenciales, datos de almacenamiento y copias de seguridad"
+      ],
+      caution: "Las estadísticas agregadas de géneros o temas, si se incluyen sus nombres, pueden revelar parte de las preferencias personales. Revisa el informe antes de compartirlo."
+    },
+    sample: {
+      ratedEntries: ratingCount,
+      ratingsWithFeatures: metadataCount,
+      ratingsWithoutFeatures: Math.max(0, ratings.length - metadataCount),
+      metadataCoverage: ratingCount ? rounded(metadataCount / ratingCount, 4) : 0,
+      catalogEntries: nonNegativeInteger(source.catalogCount),
+      collectionCounts: collectionCounts(source.collectionCounts),
+      ratingDistribution: ratingHistogram(ratings)
+    },
+    model: {
+      kind: "additive-content-baseline",
+      activeRankingMode: ["balanced", "affinity", "variety"].includes(source.recommendationMode)
+        ? source.recommendationMode
+        : "balanced",
+      baselineAverageRating: rounded(profile.average, 4),
+      learnedFeatureCount: featureCount,
+      signalWeights: {
+        genre: rounded(weights.genre, 4),
+        theme: rounded(weights.theme, 4),
+        decade: rounded(weights.decade, 4)
+      },
+      featureAggregates: summarizeFeatures(features, Boolean(source.includeFeatureLabels))
+    },
+    evaluation: {
+      ratingPrediction: ratingEvaluation(source.ratingEvaluation),
+      rankingQuality: quality.ranking,
+      currentListDiversity: quality.diversity
+    },
+    interpretationLimits: [
+      "MAE mide la predicción de notas conocidas y no garantiza satisfacción con películas futuras.",
+      "nDCG@5 de Prisma evalúa el orden de películas valoradas retenidas, no todas las películas desconocidas del catálogo.",
+      "La diversidad Jaccard usa las listas actuales y no es una medida de serendipia.",
+      "Una mejora observada en esta muestra personal es descriptiva; no demuestra significación estadística."
+    ]
+  };
+}
