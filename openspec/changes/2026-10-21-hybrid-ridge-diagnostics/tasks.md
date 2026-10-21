@@ -5,8 +5,8 @@
 - [x] Calcular nDCG@5 de la mezcla para los tres modos en los mismos pliegues.
 - [x] Extender la serialización agregada del diagnóstico a v7 y conservar límites de privacidad.
 - [x] Mostrar las métricas de la mezcla en el Laboratorio, distinguiendo la mezcla diagnóstica del ranking de producción.
-- [ ] Ampliar las pruebas del motor Ridge y del serializador para verificar campos y estabilidad agregada.
-- [ ] Actualizar versiones de módulo, entrada y caché PWA, junto con las aserciones de versionado.
+- [x] Ampliar las pruebas del motor Ridge y del serializador para verificar campos y estabilidad agregada.
+- [x] Actualizar versiones de módulo, entrada y caché PWA, junto con las aserciones de versionado, incluido el test del sistema visual que exige renovar la caché.
 - [ ] Ejecutar sintaxis, pruebas de recomendación, privacidad, SDD y Playwright en escritorio/móvil; registrar evidencia del SHA exacto.
 - [ ] Revisar el diff final para confirmar que el algoritmo activo no cambió y que el experimento temporal no atribuye métricas no calculadas.
 - [ ] Archivar el expediente solo después de integrar y verificar la convergencia de la especificación permanente.
