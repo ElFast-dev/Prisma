@@ -12,7 +12,7 @@ Prisma es una aplicación web estática, mobile-first y en español, pensada par
 - Importación local de CSV de catálogo (incluido el formato `movies.csv` de MovieLens), exportación de copia de seguridad y PWA básica.
 - Perfil y colección guardados localmente, sin servidor; conexión a TMDB configurada desde la aplicación.
 
- > Prisma no incluye películas de muestra: una instalación nueva comienza con el perfil y el catálogo personal vacíos. Descubrir consulta datos reales de TMDB cuando conectas la credencial, pero no añade esos títulos a tu colección automáticamente. El motor solo puede aprender características que existan en los metadatos; una valoración sin géneros/etiquetas enlazados no revela por sí sola qué te gustó de la película.
+> Prisma no incluye películas de muestra: una instalación nueva comienza con el perfil y el catálogo personal vacíos. Descubrir consulta datos reales de TMDB cuando conectas la credencial, pero no añade esos títulos a tu colección automáticamente. El motor solo puede aprender características que existan en los metadatos; una valoración sin géneros/etiquetas enlazados no revela por sí sola qué te gustó de la película.
 
 ## Publicar gratis en GitHub Pages
 1. Abre **Settings → Pages** en este repositorio.
