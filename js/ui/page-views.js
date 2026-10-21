@@ -207,6 +207,27 @@ export function createPageViews(ctx) {
   }
 
 
+
+  function renderRecommendationDiagnosticPanel() {
+    const reportText = ctx.recommendationDiagnosticReportText || "";
+    const disclosure = '<p class="metric-note">El informe se calcula con tus datos reales en este dispositivo. Incluye cantidades, distribución agregada de notas, cobertura del perfil, pesos del modelo, estadísticas resumidas de señales y los resultados disponibles de MAE, nDCG@5 y diversidad.</p>' +
+      '<p class="metric-note">No incluye títulos de películas, IDs TMDB, notas por película, fechas personales, emociones, notas libres, credenciales ni copias de seguridad. Si incluyes nombres de señales, esos géneros y temas agregados pueden revelar parte de tus gustos.</p>';
+    const detailsToggle = '<label class="diagnostic-feature-option"><input id="diagnosticFeatureLabels" type="checkbox"' +
+      (ctx.recommendationDiagnosticFeatureLabelsIncluded ? ' checked' : '') +
+      '> Incluir hasta 40 nombres de señales agregadas (géneros, temas y décadas) para facilitar el análisis</label>';
+    const output = reportText
+      ? '<div class="diagnostic-report-result"><p class="metric-note">' + ctx.escapeHTML(ctx.recommendationDiagnosticCopyMessage || "") + '</p>' +
+        '<textarea class="field diagnostic-report-output" id="recommendationDiagnosticOutput" rows="12" readonly aria-label="Informe técnico para revisar">' + ctx.escapeHTML(reportText) + '</textarea>' +
+        '<div class="hero-actions"><button class="btn btn-quiet btn-small" type="button" data-action="clear-recommendation-diagnostics">Limpiar informe</button></div></div>'
+      : "";
+    return '<section class="panel recommendation-diagnostic-panel" aria-labelledby="recommendation-diagnostic-heading">' +
+      '<div class="panel-head"><div><h3 id="recommendation-diagnostic-heading">Informe para revisar el recomendador</h3><p class="metric-note">Preparado localmente a partir de las pruebas del Laboratorio</p></div>' +
+      '<button class="btn btn-secondary btn-small" type="button" data-action="copy-recommendation-diagnostics">Copiar diagnóstico técnico</button></div>' +
+      disclosure + detailsToggle +
+      '<p class="metric-note">Copiar no envía datos. Solo tú decides si pegas el informe en otra conversación.</p>' +
+      output + '</section>';
+  }
+
   function renderLab() {
     const stats = ctx.summaryStats();
     const profile = ctx.buildProfile();
@@ -285,7 +306,8 @@ export function createPageViews(ctx) {
       }).join("") + '</div>' +
       '<div class="metric-note">La disimilitud de géneros se calcula con Jaccard entre pares que tienen metadatos. No mide serendipia ni satisfacción.</div></section>' +
       '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación de notas</h3>' + ctx.infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
-      '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>';
+      '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>' +
+      renderRecommendationDiagnosticPanel();
   }
 
 

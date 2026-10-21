@@ -3,7 +3,8 @@ import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { createStorageProtection } from "./js/core/storage-protection.js";
 import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
-import { createRecommendationEngine } from "./js/recommendations/engine.js";
+import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
@@ -49,6 +50,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const storageProtection = createStorageProtection(typeof navigator !== "undefined" ? navigator.storage : null);
   let storageProtectionSnapshot = { supported: null, statusSupported: null, persisted: null, usage: null, quota: null };
   let storageProtectionBusy = false;
+  let recommendationDiagnosticReportText = "";
+  let recommendationDiagnosticCopyMessage = "";
+  let recommendationDiagnosticFeatureLabelsIncluded = false;
   const recommendationPreferences = createRecommendationPreferences(function () { return window.localStorage; });
   let recommendationMode = recommendationPreferences.getMode();
   let currentPage = "home";
@@ -152,6 +156,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get tmdbCredential() { return tmdbCredential; },
     get storageProtectionSnapshot() { return storageProtectionSnapshot; },
     get storageProtectionBusy() { return storageProtectionBusy; },
+    get recommendationDiagnosticReportText() { return recommendationDiagnosticReportText; },
+    get recommendationDiagnosticCopyMessage() { return recommendationDiagnosticCopyMessage; },
+    get recommendationDiagnosticFeatureLabelsIncluded() { return recommendationDiagnosticFeatureLabelsIncluded; },
     get escapeHTML() { return escapeHTML; },
     get titleKey() { return titleKey; },
     get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
@@ -470,6 +477,55 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { evaluateRecommendationQuality } = recommendationEvaluation;
 
 
+
+  function clearRecommendationDiagnosticReport() {
+    recommendationDiagnosticReportText = "";
+    recommendationDiagnosticCopyMessage = "";
+    if (currentPage === "lab") renderApp();
+  }
+
+  async function copyRecommendationDiagnosticReport(includeFeatureLabels) {
+    recommendationDiagnosticFeatureLabelsIncluded = Boolean(includeFeatureLabels);
+    const profile = buildProfile();
+    const report = buildRecommendationDiagnosticReport({
+      ratedCount: state.rated.length,
+      ratingValues: state.rated.map(ratingValue).filter(function (value) { return value != null; }),
+      catalogCount: catalog.length,
+      collectionCounts: {
+        watched: (state.watched || []).length,
+        pending: (state.watchlist || []).length,
+        hidden: (state.hidden || []).length
+      },
+      profile: profile,
+      signalWeights: RECOMMENDATION_SIGNAL_WEIGHTS,
+      recommendationMode: recommendationMode,
+      ratingEvaluation: evaluateModel(),
+      recommendationQuality: evaluateRecommendationQuality(),
+      includeFeatureLabels: recommendationDiagnosticFeatureLabelsIncluded
+    });
+    const reportText = JSON.stringify(report, null, 2);
+    recommendationDiagnosticReportText = reportText;
+    recommendationDiagnosticCopyMessage = "Informe generado localmente. Revisa su contenido antes de compartirlo; Prisma no lo envía a ningún servidor.";
+
+    let copied = false;
+    try {
+      if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") {
+        throw new Error("El portapapeles no está disponible");
+      }
+      // Keep the clipboard write directly within the explicit click activation.
+      const writePromise = navigator.clipboard.writeText(reportText);
+      await writePromise;
+      copied = true;
+      recommendationDiagnosticCopyMessage = "Copiado al portapapeles. Revisa el contenido de abajo antes de pegarlo en otra conversación.";
+    } catch (_) {
+      recommendationDiagnosticCopyMessage = "No se pudo copiar automáticamente. El informe completo está visible abajo para seleccionarlo y copiarlo manualmente.";
+    }
+
+    if (currentPage === "lab") renderApp();
+    if (copied) toast("Diagnóstico copiado. Revísalo antes de compartirlo.");
+    else toast("Informe preparado para revisión y copia manual.");
+  }
+
   async function refreshStorageProtectionSnapshot() {
     storageProtectionSnapshot = await storageProtection.inspect();
     if (currentPage === "data") renderApp();
@@ -639,6 +695,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get importCatalogCSV() { return importCatalogCSV; },
     get toast() { return toast; },
     get requestStorageProtection() { return requestStorageProtection; },
+    get copyRecommendationDiagnosticReport() { return copyRecommendationDiagnosticReport; },
+    get clearRecommendationDiagnosticReport() { return clearRecommendationDiagnosticReport; },
+    get setRecommendationDiagnosticFeatureLabelsIncluded() { return function (value) { recommendationDiagnosticFeatureLabelsIncluded = Boolean(value); }; },
     get setTheme() { return themeController.setTheme; }
   });
 

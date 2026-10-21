@@ -52,6 +52,13 @@ export function registerAppEvents(ctx) {
     const action = button.dataset.action;
     try {
       if (action === "protect-storage") { await ctx.requestStorageProtection(); return; }
+      if (action === "copy-recommendation-diagnostics") {
+        const includeLabels = Boolean(ctx.$("#diagnosticFeatureLabels") && ctx.$("#diagnosticFeatureLabels").checked);
+        ctx.setRecommendationDiagnosticFeatureLabelsIncluded(includeLabels);
+        await ctx.copyRecommendationDiagnosticReport(includeLabels);
+        return;
+      }
+      if (action === "clear-recommendation-diagnostics") { ctx.clearRecommendationDiagnosticReport(); return; }
       if (action === "set-theme") {
         ctx.setTheme(button.dataset.theme);
         ctx.renderApp();
