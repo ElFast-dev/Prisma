@@ -35,7 +35,10 @@ export function createTMDBSettingsActions(ctx) {
       if (input) input.value = "";
       ctx.renderApp();
       ctx.toast("Conexión con TMDB correcta. Ya puedes buscar películas.");
-      if (currentPage === "catalog") loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
+      if (ctx.currentPage === "catalog") {
+        const mode = ctx.catalogQuery.trim().length >= 2 ? "search" : "popular";
+        await ctx.loadTMDBPage(1, mode, false);
+      }
     } catch (error) {
       ctx.toast(error.message || "No se pudo conectar con TMDB.", true);
     }
