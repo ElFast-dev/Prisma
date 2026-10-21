@@ -430,3 +430,26 @@ El experimento Ridge DEBE comparar el orden producido por Ridge y el predictor a
 - DADO que el experimento produce métricas Ridge de MAE y nDCG@5
 - CUANDO Prisma recomienda películas o exporta el diagnóstico
 - ENTONCES el motor activo permanece aditivo y el informe incluye solo métricas agregadas sin identidades ni puntuaciones individuales
+
+### Requirement: Diagnóstico agregado de estabilidad por pliegue de Ridge
+
+El experimento Ridge DEBE resumir cuántos pliegues externos favorecen a Ridge, empatan o favorecen al predictor aditivo para el MAE y, por cada modo disponible, para nDCG@5. Estos datos DEBEN ser agregados y descriptivos; NO DEBEN exponer métricas individuales por película ni presentarse como prueba de significación estadística. La variante Ridge NO DEBE modificar automáticamente el modelo activo.
+
+#### Scenario: Recuento de estabilidad de MAE
+
+- DADO que termina una evaluación Ridge con pliegues externos válidos
+- CUANDO el Laboratorio muestra la comparación de MAE
+- ENTONCES informa las victorias, empates y derrotas por pliegue y sus recuentos suman el total evaluado
+
+#### Scenario: Recuento de estabilidad de nDCG por modo
+
+- DADO que nDCG@5 está disponible para un modo de ranking
+- CUANDO el Laboratorio presenta su comparación con Ridge
+- ENTONCES informa los pliegues válidos donde Ridge gana, empata o pierde, sin mezclar los resultados de los distintos modos
+
+#### Scenario: Compartir sin datos individuales
+
+- DADO que se genera un informe técnico
+- CUANDO incluye estabilidad por pliegue
+- ENTONCES únicamente serializa recuentos agregados y conserva la advertencia de que estos resultados no prueban significación estadística
+
