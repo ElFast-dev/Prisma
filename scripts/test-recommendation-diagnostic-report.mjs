@@ -68,6 +68,41 @@ const baseInput = {
     },
     reason: null
   },
+  temporalRidgeEvaluation: {
+    available: true,
+    sampleCount: 60,
+    featureRowCount: 60,
+    timestampedFeatureCount: 58,
+    missingDateCount: 2,
+    distinctDayCount: 55,
+    warmupCount: 29,
+    testCount: 29,
+    windowsPlanned: 5,
+    windowsEvaluated: 5,
+    innerWindows: 3,
+    alphaGrid: [0.1, 1, 10, 100],
+    selectedAlphaCounts: { "1": 3, "10": 2 },
+    mae: 0.91,
+    baselineMae: 1.08,
+    deltaBaseMinusRidge: 0.17,
+    windowStability: { available: true, windowsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1 },
+    rankingQuality: {
+      available: true, count: 29, relevantCount: 14, folds: 5, foldsEvaluated: 5,
+      cutoff: 5, relevantThreshold: 7, reason: null,
+      modes: [
+        { mode: "balanced", available: true, baselineNdcgAt5: 0.6, ridgeNdcgAt5: 0.7, deltaRidgeMinusBaseline: 0.1, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 0, foldsRidgeLosses: 1 },
+        { mode: "affinity", available: true, baselineNdcgAt5: 0.61, ridgeNdcgAt5: 0.68, deltaRidgeMinusBaseline: 0.07, foldsEvaluated: 5, foldsRidgeWins: 3, foldsRidgeTies: 0, foldsRidgeLosses: 2 },
+        { mode: "variety", available: true, baselineNdcgAt5: 0.52, ridgeNdcgAt5: 0.75, deltaRidgeMinusBaseline: 0.23, foldsEvaluated: 5, foldsRidgeWins: 5, foldsRidgeTies: 0, foldsRidgeLosses: 0 }
+      ]
+    },
+    windowSummaries: [
+      { window: 1, trainingCount: 29, testCount: 5, selectedAlpha: 1, mae: 0.9, baselineMae: 1.1, deltaBaseMinusRidge: 0.2, rankingAvailable: true,
+        watchedAt: "2030-05-13", title: "Private temporal title", tmdbId: "123456" },
+      { window: 2, trainingCount: 34, testCount: 6, selectedAlpha: 10, mae: 0.92, baselineMae: 1.06, deltaBaseMinusRidge: 0.14, rankingAvailable: true,
+        watchedAt: "2030-05-14", title: "Private temporal title", tmdbId: "123456" }
+    ],
+    unavailableReason: null
+  },
   recommendationQuality: {
     ranking: {
       available: true, count: 60, relevantCount: 15, folds: 5,
@@ -85,7 +120,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v4");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v5");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -131,6 +166,17 @@ assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeatSummari
 assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeatSummaries[2].mae, 1.04);
 assert.equal(compact.evaluation.rankingQuality.modes[2].ndcgAt5, 0.68);
 assert.equal(compact.evaluation.currentListDiversity[0].score, 0.4);
+assert.equal(compact.evaluation.temporalRidgeExperiment.executionStatus, "completed");
+assert.equal(compact.evaluation.temporalRidgeExperiment.available, true);
+assert.equal(compact.evaluation.temporalRidgeExperiment.timestampedFeatureCount, 58);
+assert.equal(compact.evaluation.temporalRidgeExperiment.missingDateCount, 2);
+assert.equal(compact.evaluation.temporalRidgeExperiment.mae, 0.91);
+assert.equal(compact.evaluation.temporalRidgeExperiment.deltaBaselineMinusRidge, 0.17);
+assert.equal(compact.evaluation.temporalRidgeExperiment.windowSummaries.length, 2);
+assert.equal(compact.evaluation.temporalRidgeExperiment.windowSummaries[0].trainingCount, 29);
+assert.equal(Object.prototype.hasOwnProperty.call(compact.evaluation.temporalRidgeExperiment.windowSummaries[0], "watchedAt"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(compact.evaluation.temporalRidgeExperiment.windowSummaries[0], "title"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(compact.evaluation.temporalRidgeExperiment.windowSummaries[0], "tmdbId"), false);
 assert.equal(compact.privacy.generatedLocally, true);
 assert.equal(compact.privacy.networkTransmission, false);
 
@@ -151,6 +197,11 @@ for (const forbidden of [
 }
 assert.equal(Object.prototype.hasOwnProperty.call(detailed, "ratings"), false);
 assert.equal(Object.prototype.hasOwnProperty.call(detailed, "movies"), false);
+const temporalSerialized = JSON.stringify(detailed.evaluation.temporalRidgeExperiment).toLowerCase();
+for (const forbidden of ["watchedat", "2030-05-", "private temporal title", "tmdbid", "123456"]) {
+  assert.equal(temporalSerialized.includes(forbidden), false,
+    "La evaluación temporal solo debe exportar agregados; no debe incluir " + forbidden);
+}
 const repeatedSerialized = JSON.stringify(detailed.evaluation.ridgeExperiment.repeatedValidation).toLowerCase();
 for (const forbidden of ["about time", "tmdbid", "tmdb_id", "title", "ratingentry", "watchedat"]) {
   assert.equal(repeatedSerialized.includes(forbidden), false,
@@ -168,6 +219,8 @@ assert.equal(unavailable.evaluation.ratingPrediction.mae, null);
 assert.equal(unavailable.evaluation.ridgeExperiment.available, false);
 assert.equal(unavailable.evaluation.ridgeExperiment.executionStatus, "not-run");
 assert.equal(unavailable.evaluation.ridgeExperiment.repeatedValidation.executionStatus, "not-run");
+assert.equal(unavailable.evaluation.temporalRidgeExperiment.executionStatus, "not-run");
+assert.equal(unavailable.evaluation.temporalRidgeExperiment.mae, null);
 assert.equal(unavailable.evaluation.ratingPrediction.unavailableReason,
   "Se necesitan al menos cinco valoraciones válidas con características enlazadas.");
 assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
