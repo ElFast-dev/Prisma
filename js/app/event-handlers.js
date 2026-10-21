@@ -59,6 +59,7 @@ export function registerAppEvents(ctx) {
         return;
       }
       if (action === "clear-recommendation-diagnostics") { ctx.clearRecommendationDiagnosticReport(); return; }
+      if (action === "run-ridge-experiment") { await ctx.runRidgeExperiment(); return; }
       if (action === "set-theme") {
         ctx.setTheme(button.dataset.theme);
         ctx.renderApp();

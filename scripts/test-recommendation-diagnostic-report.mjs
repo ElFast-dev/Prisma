@@ -26,6 +26,11 @@ const baseInput = {
     themeShrinkageMae: 1.1, themeShrinkageDelta: 0.1, themeShrinkagePrior: 2,
     decadeExamples: 3
   },
+  ridgeEvaluation: {
+    available: true, count: 60, mae: 1.05, baselineMae: 1.2, deltaBaseMinusRidge: 0.15,
+    outerFolds: 5, foldsEvaluated: 5, innerFolds: 3, alphaGrid: [0.1, 1, 10, 100],
+    selectedAlphaCounts: { "0.1": 1, "1": 2, "10": 2 }, reason: null
+  },
   recommendationQuality: {
     ranking: {
       available: true, count: 60, relevantCount: 15, folds: 5,
@@ -43,7 +48,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v1");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v2");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -58,6 +63,10 @@ assert.equal(compact.evaluation.ratingPrediction.mae, 1.2);
 assert.equal(compact.evaluation.ratingPrediction.themeShrinkageMae, 1.1);
 assert.equal(compact.evaluation.ratingPrediction.themeShrinkageDeltaBaseMinusRegularized, 0.1);
 assert.equal(compact.evaluation.ratingPrediction.themeShrinkageSupportPrior, 2);
+assert.equal(compact.evaluation.ridgeExperiment.mae, 1.05);
+assert.equal(compact.evaluation.ridgeExperiment.baselineMaeSameFolds, 1.2);
+assert.equal(compact.evaluation.ridgeExperiment.deltaBaselineMinusRidge, 0.15);
+assert.deepEqual(compact.evaluation.ridgeExperiment.selectedAlphaCounts, { "0.1": 1, "1": 2, "10": 2 });
 assert.equal(compact.evaluation.rankingQuality.modes[2].ndcgAt5, 0.68);
 assert.equal(compact.evaluation.currentListDiversity[0].score, 0.4);
 assert.equal(compact.privacy.generatedLocally, true);
@@ -89,6 +98,8 @@ const unavailable = buildRecommendationDiagnosticReport({
   recommendationQuality: { ranking: { available: false, count: 3, relevantCount: 1, folds: 5, reason: "Muestra insuficiente", modes: [] }, diversity: [] }
 });
 assert.equal(unavailable.evaluation.ratingPrediction.mae, null);
+assert.equal(unavailable.evaluation.ridgeExperiment.available, false);
+assert.equal(unavailable.evaluation.ridgeExperiment.executionStatus, "not-run");
 assert.equal(unavailable.evaluation.ratingPrediction.unavailableReason,
   "Se necesitan al menos cinco valoraciones válidas con características enlazadas.");
 assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);

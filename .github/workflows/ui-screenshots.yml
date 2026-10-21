@@ -245,6 +245,9 @@ jobs:
                 // The local diagnostic report must be opt-in, reviewable, and omit raw movie records.
                 await page.locator(".topbar [data-nav='lab']").click();
                 await page.locator(".recommendation-diagnostic-panel").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".ridge-experiment-panel").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator('[data-action="run-ridge-experiment"]').click();
+                await page.waitForFunction(() => (document.querySelector(".ridge-experiment-panel")?.innerText || "").includes("Se necesitan al menos 30 películas únicas"), null, { timeout: 10000 });
                 await page.evaluate(() => {
                   Object.defineProperty(navigator, "clipboard", {
                     configurable: true,

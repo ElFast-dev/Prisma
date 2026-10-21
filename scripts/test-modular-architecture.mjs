@@ -16,6 +16,7 @@ const files = [
   'js/core/state-model.js',
   'js/recommendations/features.js',
   'js/recommendations/engine.js',
+  'js/recommendations/ridge-evaluation.js',
   'js/recommendations/evaluation.js',
   'js/recommendations/preferences.js',
   'js/catalog/csv-parser.js',
