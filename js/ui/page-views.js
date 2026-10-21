@@ -419,7 +419,7 @@ export function createPageViews(ctx) {
     } else if (ridgeBusy) {
       body = '<p class="metric-note" aria-live="polite">El experimento temporal se ejecutará cuando termine la validación Ridge estándar.</p>';
     } else if (!result) {
-      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha de visionado válida, repartidas en 12 días distintos. Usa <strong>watchedAt</strong>; una edición de la nota no sustituye la fecha de visionado.</p>';
+      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha de visionado válida, repartidas en 12 días distintos. Usa el campo explícito <strong>watchedAt</strong> o <strong>watched_at</strong>. La fecha de añadido (<strong>a</strong>/<strong>addedAt</strong>) y la edición de una nota no son fechas de visionado.</p>';
     } else if (!result.available) {
       body = '<p class="metric-note" aria-live="polite">Evaluación temporal no disponible: ' +
         ctx.escapeHTML(result.unavailableReason || "faltan suficientes valoraciones fechadas.") + '</p>' +
@@ -461,7 +461,12 @@ export function createPageViews(ctx) {
         '<p class="metric-note">Muestra fechada con características: ' + Number(result.timestampedFeatureCount || 0) +
         ' · entrenamiento inicial: ' + Number(result.warmupCount || 0) +
         ' · prueba futura: ' + Number(result.testCount || 0) +
-        ' · sin fecha fiable: ' + Number(result.missingDateCount || 0) + '.</p>' +
+        ' · campo watchedAt explícito: ' + Number(result.explicitDateCount || 0) +
+        ' · procedencia no verificable: ' + Number(result.unverifiedDateCount || 0) +
+        ' · sin fecha: ' + Number(result.missingDateCount || 0) + '.</p>' +
+        (result.dateProvenanceStatus === "exploratory"
+          ? '<p class="metric-note">Resultado <strong>exploratorio</strong>: algunas fechas usadas no tienen procedencia verificable. Las marcas heredadas o generadas al registrar una acción no garantizan el día real del visionado. Reimporta un historial que incluya campos watchedAt explícitos para mejorar la trazabilidad.</p>'
+          : '<p class="metric-note">Las fechas usadas tienen un campo de visionado explícito o confirmado. Este marcador describe la procedencia del dato, no verifica de forma independiente que el día importado sea correcto.</p>') +
         '<p class="metric-note">Alpha se eligió en tres ventanas internas ordenadas dentro del pasado disponible: ' +
         ctx.escapeHTML(alphaCounts || "sin datos") + '.</p>' +
         (stability.available
