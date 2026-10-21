@@ -81,7 +81,7 @@ export function createRecommendationRanking(ctx) {
     const activeMode = requestedMode(mode);
     const profile = ctx.buildProfile();
     const results = ctx.uniqueDiscoveryMovies(ctx.catalog).filter(function (movie) {
-      return !ctx.isMovieInCollection(movie.title, movie.tmdbId) && movie.source !== "history";
+      return !ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history";
     }).map(function (movie) {
       const prediction = ctx.predictRating(movie, profile);
       return Object.assign({}, movie, { prediction: prediction });
