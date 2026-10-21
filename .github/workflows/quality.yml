@@ -81,6 +81,9 @@ jobs:
       - name: Test CSV import identity
         run: node scripts/test-catalog-import.mjs
 
+      - name: Test watched-date import provenance
+        run: node scripts/test-watched-date-import.mjs
+
       - name: Test empty first launch and saved-data preservation
         run: node scripts/test-empty-first-run.mjs
 

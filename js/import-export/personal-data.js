@@ -56,7 +56,16 @@ export function extractPersonalCollections(root) {
     if (!tmdbId) movie.tmdbId = null;
     movie.source = "imported-json";
     movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
-    if (type === "watched") movie.watchedAt = raw.a || raw.watchedAt || raw.watched_at || null;
+    if (type === "watched") {
+      const explicitWatchedAt = raw.watchedAt != null ? raw.watchedAt : raw.watched_at;
+      if (explicitWatchedAt != null && explicitWatchedAt !== "") {
+        movie.watchedAt = explicitWatchedAt;
+        movie.watchedAtSource = "imported-explicit";
+      } else {
+        delete movie.watchedAt;
+        delete movie.watchedAtSource;
+      }
+    }
     if (type === "pending") movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
     if (type === "hidden") movie.hiddenAt = raw.a || raw.hiddenAt || null;
     return movie;
@@ -88,6 +97,24 @@ export function mergeMovieEntries(existing, incoming) {
   });
   merged.genres = uniqueStrings((old.genres || []).concat(fresh.genres || []));
   merged.tags = uniqueStrings((old.tags || []).concat(fresh.tags || []));
+  const isExplicitDate = function (record) {
+    return Boolean(record && record.watchedAt &&
+      (record.watchedAtSource === "imported-explicit" || record.watchedAtSource === "user-confirmed") &&
+      Number.isFinite(Date.parse(record.watchedAt)));
+  };
+  if (isExplicitDate(fresh) && (!isExplicitDate(old) || old.watchedAtSource !== "user-confirmed")) {
+    merged.watchedAt = fresh.watchedAt;
+    merged.watchedAtSource = fresh.watchedAtSource;
+  } else if (isExplicitDate(old)) {
+    merged.watchedAt = old.watchedAt;
+    merged.watchedAtSource = old.watchedAtSource;
+  } else if (old.watchedAt && !old.watchedAtSource && fresh.watchedAtSource === "action-time") {
+    merged.watchedAt = old.watchedAt;
+    delete merged.watchedAtSource;
+  } else if (fresh.watchedAtSource && !old.watchedAtSource && !old.watchedAt) {
+    merged.watchedAt = fresh.watchedAt;
+    merged.watchedAtSource = fresh.watchedAtSource;
+  }
   return merged;
 }
 

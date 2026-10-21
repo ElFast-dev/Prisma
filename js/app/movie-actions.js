@@ -29,10 +29,30 @@ export function createMovieActions(ctx) {
     const watchedIndex = (ctx.state.watched || []).findIndex(function (entry) { return ctx.sameMovieRecord(entry,movie); });
     const oldWatched = watchedIndex >= 0 ? ctx.state.watched[watchedIndex] : null;
     const watchedRecord = Object.assign({},oldWatched || {},newEntry);
-    const reliableWatchedAt = (oldWatched && oldWatched.watchedAt) || old.watchedAt ||
-      (existingIndex < 0 ? new Date().toISOString() : null);
-    if (reliableWatchedAt) watchedRecord.watchedAt = reliableWatchedAt;
-    else delete watchedRecord.watchedAt;
+    const dateRecords = [oldWatched, old];
+    const explicitDate = dateRecords.find(function (entry) {
+      return entry && entry.watchedAt && entry.watchedAtSource === "user-confirmed" &&
+        Number.isFinite(Date.parse(entry.watchedAt));
+    }) || dateRecords.find(function (entry) {
+      return entry && entry.watchedAt && entry.watchedAtSource === "imported-explicit" &&
+        Number.isFinite(Date.parse(entry.watchedAt));
+    });
+    const existingDate = [oldWatched, old].find(function (entry) {
+      return entry && entry.watchedAt && Number.isFinite(Date.parse(entry.watchedAt));
+    });
+    if (explicitDate) {
+      watchedRecord.watchedAt = explicitDate.watchedAt;
+      watchedRecord.watchedAtSource = explicitDate.watchedAtSource;
+    } else if (existingDate) {
+      watchedRecord.watchedAt = existingDate.watchedAt;
+      watchedRecord.watchedAtSource = existingDate.watchedAtSource || "legacy-unknown";
+    } else if (existingIndex < 0) {
+      watchedRecord.watchedAt = new Date().toISOString();
+      watchedRecord.watchedAtSource = "action-time";
+    } else {
+      delete watchedRecord.watchedAt;
+      delete watchedRecord.watchedAtSource;
+    }
     if (watchedIndex >= 0) ctx.state.watched[watchedIndex] = watchedRecord;
     else ctx.state.watched.unshift(watchedRecord);
     ctx.logEvent("Valoración guardada: " + movie.title,"Nota " + rating + "/10" + (newEntry.emotions.length ? " · " + newEntry.emotions.length + " emociones registradas" : ""),"★");
@@ -94,7 +114,10 @@ export function createMovieActions(ctx) {
     const source = resolveMovieForAction(title,tmdbId);
     const index = (ctx.state.watched || []).findIndex(function (entry) { return ctx.sameMovieRecord(entry,source); });
     const previous = index >= 0 ? ctx.state.watched[index] : null;
-    const watched = Object.assign({},previous || {},source,{watchedAt:(previous && previous.watchedAt) || new Date().toISOString()});
+    const hadDate = Boolean(previous && previous.watchedAt);
+    const watchedAt = hadDate ? previous.watchedAt : new Date().toISOString();
+    const watched = Object.assign({},previous || {},source,{watchedAt:watchedAt});
+    if (!watched.watchedAtSource) watched.watchedAtSource = hadDate ? "legacy-unknown" : "action-time";
     if (index >= 0) ctx.state.watched[index] = watched;
     else ctx.state.watched.unshift(watched);
     ctx.state.watchlist = ctx.state.watchlist.filter(function (entry) { return !ctx.sameMovieRecord(entry,source); });

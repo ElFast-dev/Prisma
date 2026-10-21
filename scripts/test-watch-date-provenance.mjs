@@ -58,6 +58,8 @@ assert.equal(firstRating.state.watched.length, 1);
 assert.equal(typeof firstRating.state.watched[0].watchedAt, "string");
 assert.ok(Number.isFinite(Date.parse(firstRating.state.watched[0].watchedAt)),
   "Guardar una nueva valoración registra el momento de esa acción.");
+assert.equal(firstRating.state.watched[0].watchedAtSource, "action-time",
+  "La fecha de una acción de registro no debe confundirse con una fecha de visionado explícita.");
 
 const oldUpdatedAt = "2018-04-12T09:30:00.000Z";
 const editedRating = createHarness({
@@ -67,15 +69,18 @@ await editedRating.actions.saveRating();
 assert.equal(editedRating.state.watched.length, 1);
 assert.equal(Object.prototype.hasOwnProperty.call(editedRating.state.watched[0], "watchedAt"), false,
   "Editar una nota antigua sin fecha de visionado no debe fabricar watchedAt desde updatedAt.");
+assert.equal(Object.prototype.hasOwnProperty.call(editedRating.state.watched[0], "watchedAtSource"), false);
 
 const explicitWatchedAt = "2017-09-03T12:00:00.000Z";
 const existingWatch = createHarness({
   rated: [{ ...movie, rating: 6, updatedAt: oldUpdatedAt }],
-  watched: [{ ...movie, watchedAt: explicitWatchedAt }]
+  watched: [{ ...movie, watchedAt: explicitWatchedAt, watchedAtSource: "imported-explicit" }]
 });
 await existingWatch.actions.saveRating();
 assert.equal(existingWatch.state.watched[0].watchedAt, explicitWatchedAt,
   "Al editar una nota se conserva la fecha de visionado que ya existía.");
+assert.equal(existingWatch.state.watched[0].watchedAtSource, "imported-explicit",
+  "Editar una nota no debe degradar la procedencia de una fecha explícita.");
 
 const explicitMark = createHarness({
   rated: [{ ...movie, rating: 6, updatedAt: oldUpdatedAt }]
@@ -85,5 +90,6 @@ assert.ok(Number.isFinite(Date.parse(explicitMark.state.watched[0].watchedAt)),
   "La acción explícita «marcar como vista» debe registrar su propia fecha.");
 assert.notEqual(explicitMark.state.watched[0].watchedAt, oldUpdatedAt,
   "Marcar como vista no debe reutilizar la fecha de edición de la nota.");
+assert.equal(explicitMark.state.watched[0].watchedAtSource, "action-time");
 
 console.log("Procedencia de fechas verificada: nuevas acciones explícitas se fechan y la edición de notas no inventa watchedAt.");

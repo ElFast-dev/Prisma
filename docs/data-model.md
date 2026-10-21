@@ -15,7 +15,7 @@ La función de inicialización usa una estructura versionada con estos campos de
 | `updatedAt` | Última actualización del perfil cuando se registra. |
 | `importedAt` | Fecha de la última importación de historial personal reconocida. |
 
-Los registros de valoración contienen al menos título y una nota numérica entre 1 y 10 para formar parte del estado normalizado. Pueden incluir año, identificadores, géneros, etiquetas, emociones, nota personal, fechas y procedencia. No todos los formatos importados contienen todos esos campos.
+Los registros de valoración contienen al menos título y una nota numérica entre 1 y 10 para formar parte del estado normalizado. Pueden incluir año, identificadores, géneros, etiquetas, emociones, nota personal, fechas y procedencia. Los registros del historial pueden usar `watchedAtSource` con valores como `imported-explicit`, `action-time` o sin valor en datos heredados; no todos los formatos importados contienen todos esos campos. `addedAt` no debe convertirse en fecha de visionado por inferencia.
 
 ## Registro de película
 

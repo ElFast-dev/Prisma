@@ -70,6 +70,9 @@ const baseInput = {
   },
   temporalRidgeEvaluation: {
     available: true,
+    explicitDateCount: 40,
+    unverifiedDateCount: 18,
+    dateProvenanceStatus: "exploratory",
     sampleCount: 60,
     featureRowCount: 60,
     timestampedFeatureCount: 58,
@@ -120,7 +123,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v5");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v6");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -169,6 +172,9 @@ assert.equal(compact.evaluation.currentListDiversity[0].score, 0.4);
 assert.equal(compact.evaluation.temporalRidgeExperiment.executionStatus, "completed");
 assert.equal(compact.evaluation.temporalRidgeExperiment.available, true);
 assert.equal(compact.evaluation.temporalRidgeExperiment.timestampedFeatureCount, 58);
+assert.equal(compact.evaluation.temporalRidgeExperiment.explicitDateCount, 40);
+assert.equal(compact.evaluation.temporalRidgeExperiment.unverifiedDateCount, 18);
+assert.equal(compact.evaluation.temporalRidgeExperiment.dateProvenanceStatus, "exploratory");
 assert.equal(compact.evaluation.temporalRidgeExperiment.missingDateCount, 2);
 assert.equal(compact.evaluation.temporalRidgeExperiment.mae, 0.91);
 assert.equal(compact.evaluation.temporalRidgeExperiment.deltaBaselineMinusRidge, 0.17);
@@ -221,6 +227,7 @@ assert.equal(unavailable.evaluation.ridgeExperiment.executionStatus, "not-run");
 assert.equal(unavailable.evaluation.ridgeExperiment.repeatedValidation.executionStatus, "not-run");
 assert.equal(unavailable.evaluation.temporalRidgeExperiment.executionStatus, "not-run");
 assert.equal(unavailable.evaluation.temporalRidgeExperiment.mae, null);
+assert.equal(unavailable.evaluation.temporalRidgeExperiment.dateProvenanceStatus, "unavailable");
 assert.equal(unavailable.evaluation.ratingPrediction.unavailableReason,
   "Se necesitan al menos cinco valoraciones válidas con características enlazadas.");
 assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
