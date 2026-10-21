@@ -263,7 +263,7 @@ export function createPageViews(ctx) {
     const root = ctx.$("#appRoot");
     if (!root) return;
     const primaryPage = ctx.currentPage === "lab" ? "home" : (ctx.currentPage === "data" ? "library" : ctx.currentPage);
-    ctx.$(".nav-item").forEach(function (button) {
+    ctx.$$(".nav-item").forEach(function (button) {
       const active = button.dataset.nav === primaryPage;
       button.classList.toggle("active",active);
       if (active) button.setAttribute("aria-current","page");
