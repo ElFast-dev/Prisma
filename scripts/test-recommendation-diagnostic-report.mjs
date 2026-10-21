@@ -28,14 +28,19 @@ const baseInput = {
   },
   ridgeEvaluation: {
     available: true, count: 60, mae: 1.05, baselineMae: 1.2, deltaBaseMinusRidge: 0.15,
+    hybridMae: 1.11, deltaBaseMinusHybrid: 0.09,
     outerFolds: 5, foldsEvaluated: 5, innerFolds: 3, alphaGrid: [0.1, 1, 10, 100],
     selectedAlphaCounts: { "0.1": 1, "1": 2, "10": 2 },
     foldStability: { available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1 },
+    hybridFoldStability: { available: true, foldsEvaluated: 5, hybridMaeWins: 4, ties: 0, baselineMaeWins: 1 },
     rankingQuality: {
       available: true, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 5,
       cutoff: 5, relevantThreshold: 7, reason: null,
       modes: [
-        { mode: "balanced", available: true, baselineNdcgAt5: 0.61, ridgeNdcgAt5: 0.72, deltaRidgeMinusBaseline: 0.11, foldsEvaluated: 5, foldsRidgeWins: 3, foldsRidgeTies: 1, foldsRidgeLosses: 1 },
+        { mode: "balanced", available: true, baselineNdcgAt5: 0.61, ridgeNdcgAt5: 0.72, hybridNdcgAt5: 0.70,
+          deltaRidgeMinusBaseline: 0.11, deltaHybridMinusBaseline: 0.09, foldsEvaluated: 5,
+          foldsRidgeWins: 3, foldsRidgeTies: 1, foldsRidgeLosses: 1,
+          foldsHybridWins: 3, foldsHybridTies: 1, foldsHybridLosses: 1 },
         { mode: "affinity", available: true, baselineNdcgAt5: 0.64, ridgeNdcgAt5: 0.74, deltaRidgeMinusBaseline: 0.10, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 0, foldsRidgeLosses: 1 },
         { mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.70, deltaRidgeMinusBaseline: 0.02, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 1, foldsRidgeLosses: 0 }
       ]
@@ -44,18 +49,24 @@ const baseInput = {
       available: true, sampleCount: 60, repeats: 3, foldsPerRepeat: 5, foldsEvaluated: 15, innerFolds: 3,
       selectedAlphaCounts: { "1": 9, "10": 6 },
       mae: 1.04, baselineMae: 1.18, deltaBaseMinusRidge: 0.14,
+      hybridMae: 1.10, deltaBaseMinusHybrid: 0.08,
       foldStability: { available: true, foldsEvaluated: 15, ridgeMaeWins: 11, ties: 1, baselineMaeWins: 3 },
+      hybridFoldStability: { available: true, foldsEvaluated: 15, hybridMaeWins: 10, ties: 1, baselineMaeWins: 4 },
       rankingQuality: {
         available: true, count: 60, relevantCount: 31, folds: 15, foldsEvaluated: 15,
         cutoff: 5, relevantThreshold: 7, reason: null,
         modes: [
-          { mode: "balanced", available: true, baselineNdcgAt5: 0.62, ridgeNdcgAt5: 0.70, deltaRidgeMinusBaseline: 0.08, foldsEvaluated: 15, foldsRidgeWins: 10, foldsRidgeTies: 1, foldsRidgeLosses: 4 },
+          { mode: "balanced", available: true, baselineNdcgAt5: 0.62, ridgeNdcgAt5: 0.70, hybridNdcgAt5: 0.68,
+          deltaRidgeMinusBaseline: 0.08, deltaHybridMinusBaseline: 0.06, foldsEvaluated: 15,
+          foldsRidgeWins: 10, foldsRidgeTies: 1, foldsRidgeLosses: 4,
+          foldsHybridWins: 9, foldsHybridTies: 2, foldsHybridLosses: 4 },
           { mode: "affinity", available: true, baselineNdcgAt5: 0.64, ridgeNdcgAt5: 0.66, deltaRidgeMinusBaseline: 0.02, foldsEvaluated: 15, foldsRidgeWins: 7, foldsRidgeTies: 1, foldsRidgeLosses: 7 },
           { mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.79, deltaRidgeMinusBaseline: 0.11, foldsEvaluated: 15, foldsRidgeWins: 12, foldsRidgeTies: 0, foldsRidgeLosses: 3 }
         ]
       },
       repeatSummaries: [
         { repeat: 1, sampleCount: 60, foldsEvaluated: 5, selectedAlphaCounts: { "1": 3, "10": 2 }, mae: 1.05, baselineMae: 1.2, deltaBaseMinusRidge: 0.15,
+          hybridMae: 1.08, deltaBaseMinusHybrid: 0.12, hybridFoldStability: { available: true, foldsEvaluated: 5, hybridMaeWins: 4, ties: 0, baselineMaeWins: 1 },
           foldStability: { available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1 },
           rankingQuality: { available: true, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 5, cutoff: 5, relevantThreshold: 7, reason: null,
             modes: [{ mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.75, deltaRidgeMinusBaseline: 0.07, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 0, foldsRidgeLosses: 1 }] } },
@@ -141,9 +152,16 @@ assert.equal(compact.evaluation.ratingPrediction.themeShrinkageSupportPrior, 2);
 assert.equal(compact.evaluation.ridgeExperiment.mae, 1.05);
 assert.equal(compact.evaluation.ridgeExperiment.baselineMaeSameFolds, 1.2);
 assert.equal(compact.evaluation.ridgeExperiment.deltaBaselineMinusRidge, 0.15);
+assert.equal(compact.evaluation.ridgeExperiment.hybridMae, 1.11);
+assert.equal(compact.evaluation.ridgeExperiment.deltaBaselineMinusHybrid, 0.09);
+assert.deepEqual(compact.evaluation.ridgeExperiment.hybridFoldStability, {
+  available: true, foldsEvaluated: 5, hybridMaeWins: 4, ties: 0, baselineMaeWins: 1
+});
 assert.deepEqual(compact.evaluation.ridgeExperiment.selectedAlphaCounts, { "0.1": 1, "1": 2, "10": 2 });
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.available, true);
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[0].ridgeNdcgAt5, 0.72);
+assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[0].hybridNdcgAt5, 0.7);
+assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[0].deltaHybridMinusBaseline, 0.09);
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[1].deltaRidgeMinusBaseline, 0.1);
 assert.deepEqual(compact.evaluation.ridgeExperiment.foldStability, {
   available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1
@@ -158,6 +176,12 @@ assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.available, tr
 assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeats, 3);
 assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.foldsEvaluated, 15);
 assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.mae, 1.04);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.hybridMae, 1.1);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.deltaBaselineMinusHybrid, 0.08);
+assert.deepEqual(compact.evaluation.ridgeExperiment.repeatedValidation.hybridFoldStability, {
+  available: true, foldsEvaluated: 15, hybridMaeWins: 10, ties: 1, baselineMaeWins: 4
+});
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeatSummaries[0].hybridMae, 1.08);
 assert.deepEqual(compact.evaluation.ridgeExperiment.repeatedValidation.selectedAlphaCounts, { "1": 9, "10": 6 });
 assert.deepEqual(compact.evaluation.ridgeExperiment.repeatedValidation.repeatSummaries[0].selectedAlphaCounts, { "1": 3, "10": 2 });
 assert.deepEqual(compact.evaluation.ridgeExperiment.repeatedValidation.foldStability, {
