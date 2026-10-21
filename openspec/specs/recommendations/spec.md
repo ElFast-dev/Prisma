@@ -273,3 +273,32 @@ Prisma DEBE calcular nDCG@5 por separado para Equilibrado, Más afines y Más va
 - DADO que los tres modos tienen nDCG@5 calculado y listas actuales de recomendación
 - CUANDO se muestran los diagnósticos
 - ENTONCES nDCG@5 describe el orden entre candidatas valoradas retenidas y Jaccard describe por separado la diversidad de géneros en las listas actuales
+
+
+### Requirement: Diferencia descriptiva de nDCG frente a Más afines
+
+Cuando la evaluación por modo está disponible, Prisma DEBE mostrar para Equilibrado y Más variedad la diferencia absoluta de nDCG@5 frente a Más afines, calculada con las mismas muestras y pliegues. El Laboratorio DEBE identificar Más afines como referencia y DEBE explicar que esta diferencia es descriptiva, no una prueba de significación estadística ni de satisfacción. Si la métrica de referencia no está disponible, Prisma DEBE indicarlo en vez de fabricar una diferencia.
+
+#### Scenario: Mostrar la diferencia entre modos
+
+- DADO que nDCG@5 está disponible para Más afines y para otro modo
+- CUANDO se muestra el diagnóstico de calidad del ranking
+- ENTONCES el otro modo muestra su nDCG@5 y su diferencia con respecto a Más afines en la misma línea
+
+#### Scenario: Usar Más afines como referencia
+
+- DADO el modo Más afines
+- CUANDO se muestran sus resultados
+- ENTONCES se identifica como referencia y su diferencia propia no se presenta como una mejora
+
+#### Scenario: Referencia no disponible
+
+- DADO que la evaluación de Más afines no está disponible
+- CUANDO otro modo presenta un resultado
+- ENTONCES no se calcula ni muestra una diferencia numérica sin referencia válida
+
+#### Scenario: No exagerar las diferencias pequeñas
+
+- DADO que la diferencia entre dos modos es pequeña
+- CUANDO el Laboratorio la presenta
+- ENTONCES la describe como diferencia numérica y aclara que no demuestra una mejora estadísticamente significativa

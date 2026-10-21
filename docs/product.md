@@ -17,7 +17,7 @@ Prisma es una aplicación web personal para organizar películas vistas, valorac
 2. Colecciones separadas para valoraciones, películas vistas, pendientes y elementos ocultos.
 3. Fichas y búsqueda con metadatos de TMDB cuando la fuente está conectada, además de datos locales incorporados explícitamente por la persona.
 4. Recomendaciones basadas en señales explicables, con mayor influencia de los géneros que de etiquetas dispersas, una señal débil de década cuando existe año fiable, reducción hacia la media cuando faltan señales aprendidas y confianza acorde con la cobertura.
-5. Laboratorio con estadísticas descriptivas y evaluación experimental del recomendador: MAE frente a la media de entrenamiento, ablación de la señal de década y comparación de nDCG@5 entre Equilibrado, Más afines y Más variedad sobre las mismas candidatas retenidas. La diversidad de géneros en las listas actuales se mide por separado; las métricas no garantizan satisfacción ni sustituyen una evaluación de uso real.
+5. Laboratorio con estadísticas descriptivas y evaluación experimental del recomendador: MAE frente a la media de entrenamiento, ablación de la señal de década y comparación de nDCG@5 entre Equilibrado, Más afines y Más variedad sobre las mismas candidatas retenidas. Equilibrado y Más variedad muestran además la diferencia descriptiva respecto a Más afines; la diversidad de géneros en las listas actuales se mide por separado. Las métricas no garantizan satisfacción ni sustituyen una evaluación de uso real.
 6. Copia de seguridad y restauración local.
 7. Instalación PWA y un modo sin conexión limitado por la caché disponible.
 
