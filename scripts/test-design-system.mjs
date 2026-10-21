@@ -11,7 +11,7 @@ const [html, serviceWorker, css, interfaceSpec, pageViews, themeController] = aw
 ]);
 
 const links = [...html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/g)].map(match => match[1]);
-assert.equal(links.at(-1), './styles/prisma-design-system.css?v=ui-20261021-22',
+assert.equal(links.at(-1), './styles/prisma-design-system.css?v=ui-20261021-23',
   'El sistema visual debe ser la última hoja y utilizar la nueva versión.');
 assert.match(html, /<html\b[^>]*data-theme=["']dark["']/, 'El HTML debe iniciar en modo oscuro.');
 assert.match(css, /--bg:\s*#050505;/, 'El fondo oscuro debe ser negro.');
