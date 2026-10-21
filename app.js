@@ -57,6 +57,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let ridgeEvaluationResult = null;
   let ridgeEvaluationBusy = false;
   let ridgeEvaluationProgress = null;
+  let ridgeEvaluationRunId = 0;
   const recommendationPreferences = createRecommendationPreferences(function () { return window.localStorage; });
   let recommendationMode = recommendationPreferences.getMode();
   let currentPage = "home";
@@ -438,7 +439,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { logEvent, persistState: persistStateToStorage, toast } = appRuntime;
 
   function persistState() {
+    ridgeEvaluationRunId += 1;
     ridgeEvaluationResult = null;
+    ridgeEvaluationBusy = false;
     ridgeEvaluationProgress = null;
     return persistStateToStorage();
   }
@@ -513,6 +516,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
 
   async function runRidgeExperiment() {
     if (ridgeEvaluationBusy) return;
+    const runId = ++ridgeEvaluationRunId;
     ridgeEvaluationBusy = true;
     ridgeEvaluationProgress = { completedRepeats: 0, totalRepeats: 3, foldsPerRepeat: 5 };
     if (currentPage === "lab") renderApp();
@@ -521,14 +525,21 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
       else window.setTimeout(resolve, 0);
     });
     try {
-      ridgeEvaluationResult = await ridgeRecommendationExperiment.evaluateAsync(function (progress) {
-        ridgeEvaluationProgress = progress;
-        if (currentPage === "lab") renderApp();
+      const evaluationResult = await ridgeRecommendationExperiment.evaluateAsync(function (progress) {
+        if (runId !== ridgeEvaluationRunId) return false;
+        if (progress.phase !== "starting") {
+          ridgeEvaluationProgress = progress;
+          if (currentPage === "lab") renderApp();
+        }
+        return true;
       });
+      if (runId !== ridgeEvaluationRunId) return;
+      ridgeEvaluationResult = evaluationResult;
       toast(ridgeEvaluationResult.available
         ? "Validación Ridge terminada: se evaluaron 3 repeticiones de 5 pliegues. Revisa los agregados en el Laboratorio."
         : (ridgeEvaluationResult.reason || "No se pudo evaluar Ridge con esta muestra."), !ridgeEvaluationResult.available);
     } catch (_) {
+      if (runId !== ridgeEvaluationRunId) return;
       ridgeEvaluationResult = { available: false, count: 0, mae: null, baselineMae: null,
         deltaBaseMinusRidge: null, outerFolds: 5, foldsEvaluated: 0, innerFolds: 3,
         selectedAlphaCounts: {}, repeatedValidation: { available: false, repeats: 3, foldsPerRepeat: 5,
@@ -536,9 +547,11 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
         reason: "No se pudo completar el experimento Ridge de forma estable." };
       toast("No se pudo completar el experimento Ridge de forma estable.", true);
     } finally {
-      ridgeEvaluationBusy = false;
-      ridgeEvaluationProgress = null;
-      if (currentPage === "lab") renderApp();
+      if (runId === ridgeEvaluationRunId) {
+        ridgeEvaluationBusy = false;
+        ridgeEvaluationProgress = null;
+        if (currentPage === "lab") renderApp();
+      }
     }
   }
 
