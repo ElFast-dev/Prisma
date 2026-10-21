@@ -519,12 +519,14 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     try {
       ridgeEvaluationResult = ridgeRecommendationExperiment.evaluate();
       toast(ridgeEvaluationResult.available
-        ? "Experimento Ridge terminado. Revisa el MAE y nDCG@5 en el Laboratorio."
+        ? "Validación Ridge terminada: se evaluaron 3 repeticiones de 5 pliegues. Revisa los agregados en el Laboratorio."
         : (ridgeEvaluationResult.reason || "No se pudo evaluar Ridge con esta muestra."), !ridgeEvaluationResult.available);
     } catch (_) {
       ridgeEvaluationResult = { available: false, count: 0, mae: null, baselineMae: null,
         deltaBaseMinusRidge: null, outerFolds: 5, foldsEvaluated: 0, innerFolds: 3,
-        selectedAlphaCounts: {}, reason: "No se pudo completar el experimento Ridge de forma estable." };
+        selectedAlphaCounts: {}, repeatedValidation: { available: false, repeats: 3, foldsPerRepeat: 5,
+          foldsEvaluated: 0, repeatSummaries: [], unavailableReason: "No se pudo completar la validación Ridge repetida." },
+        reason: "No se pudo completar el experimento Ridge de forma estable." };
       toast("No se pudo completar el experimento Ridge de forma estable.", true);
     } finally {
       ridgeEvaluationBusy = false;
