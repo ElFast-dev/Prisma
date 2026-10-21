@@ -10,9 +10,21 @@ function createHarness(options = {}) {
   const requests = [];
   const pageLoads = [];
   let renderCount = 0;
+  let tmdbResults = [{ id: 'cached-fixture' }];
+  let resetGenresCount = 0;
+  let confirmCalls = 0;
+  let confirmMessage = '';
 
   const ctx = {
     tmdbCredential: options.savedCredential ?? null,
+    get tmdbResults() { return tmdbResults; },
+    set tmdbResults(value) { tmdbResults = value; },
+    resetTMDBGenres() { resetGenresCount += 1; },
+    confirm(message) {
+      confirmCalls += 1;
+      confirmMessage = message;
+      return options.confirmResult ?? true;
+    },
     TMDB_CREDENTIAL_KEY: 'tmdbCredential',
     currentPage: options.currentPage ?? 'home',
     catalogQuery: options.catalogQuery ?? '',
@@ -41,7 +53,11 @@ function createHarness(options = {}) {
     persisted,
     requests,
     pageLoads,
-    get renderCount() { return renderCount; }
+    get renderCount() { return renderCount; },
+    get tmdbResults() { return tmdbResults; },
+    get resetGenresCount() { return resetGenresCount; },
+    get confirmCalls() { return confirmCalls; },
+    get confirmMessage() { return confirmMessage; }
   };
 }
 
@@ -92,4 +108,34 @@ function createHarness(options = {}) {
   assert.match(harness.toasts.at(-1).message, /401/);
 }
 
-console.log('Acciones de conexión TMDB correctas: éxito, búsqueda en Descubrir, lista popular y credencial rechazada.');
+// La desconexión elimina la credencial, vacía los resultados y reinicia la caché con dependencias inyectadas.
+{
+  const harness = createHarness({
+    savedCredential: { kind: 'readToken', value: 'previous-synthetic-token' }
+  });
+  await harness.actions.removeTMDBCredential();
+  assert.equal(harness.confirmCalls, 1);
+  assert.match(harness.confirmMessage, /Eliminar la credencial de TMDB/);
+  assert.equal(harness.ctx.tmdbCredential, null);
+  assert.deepEqual(harness.persisted, [{ key: 'tmdbCredential', value: null }]);
+  assert.deepEqual(harness.tmdbResults, []);
+  assert.equal(harness.resetGenresCount, 1);
+  assert.equal(harness.renderCount, 1);
+  assert.equal(harness.toasts.at(-1).message, 'Credencial eliminada de este navegador.');
+  assert.equal(harness.toasts.at(-1).isError, false);
+}
+
+// Cancelar la confirmación no debe alterar la credencial ni la caché.
+{
+  const savedCredential = { kind: 'readToken', value: 'keep-synthetic-token' };
+  const harness = createHarness({ savedCredential, confirmResult: false });
+  await harness.actions.removeTMDBCredential();
+  assert.equal(harness.ctx.tmdbCredential, savedCredential);
+  assert.equal(harness.persisted.length, 0);
+  assert.deepEqual(harness.tmdbResults, [{ id: 'cached-fixture' }]);
+  assert.equal(harness.resetGenresCount, 0);
+  assert.equal(harness.renderCount, 0);
+  assert.equal(harness.toasts.length, 0);
+}
+
+console.log('Acciones TMDB correctas: conexión, búsqueda, lista popular, errores y eliminación/cancelación de credencial.');
