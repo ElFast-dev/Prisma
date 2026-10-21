@@ -26,6 +26,9 @@ function runEvaluation(entries, movieRecords) {
   const movieFeatures = (movie, entry, options) => {
     const candidate = movie || entry;
     const features = candidate && candidate.genre ? ['género: ' + String(candidate.genre).toLowerCase()] : [];
+    (candidate && Array.isArray(candidate.tags) ? candidate.tags : []).forEach(tag => {
+      features.push('tema: ' + String(tag).toLowerCase());
+    });
     const year = Number(candidate && candidate.year);
     if ((!options || options.includeDecade !== false) && Number.isInteger(year) && year >= 1888 && year <= 2100) {
       features.push('década: ' + String(Math.floor(year / 10) * 10));
@@ -33,7 +36,7 @@ function runEvaluation(entries, movieRecords) {
     return features;
   };
   const engine = createRecommendationEngine({ getRatings: () => entries, findMovie, movieFeatures, ratingValue });
-  return { result: engine.evaluateModel(), calls };
+  return { result: engine.evaluateModel(), calls, engine };
 }
 
 const records = [
@@ -54,6 +57,9 @@ assert.equal(evaluated.result.decadeExamples, 0);
 assert.equal(evaluated.result.decadeImprovement, null,
   'Sin fechas, la ablación no debe presentarse como una medición válida de la década.');
 assert.ok(Number.isFinite(evaluated.result.withoutDecadeMae));
+assert.ok(Number.isFinite(evaluated.result.themeShrinkageMae));
+assert.ok(Number.isFinite(evaluated.result.themeShrinkageDelta));
+assert.equal(evaluated.result.themeShrinkagePrior, 2);
 const validationCalls = evaluated.calls.slice(records.length);
 assert.ok(validationCalls.some(call => call.title === 'El mismo título' && call.id === '202'),
   'La validación debe conservar el ID del segundo remake al evaluar la muestra retenida');
@@ -86,6 +92,8 @@ assert.equal(insufficient.baselineMae, null);
 assert.equal(insufficient.improvementPct, null);
 assert.equal(insufficient.withoutDecadeMae, null);
 assert.equal(insufficient.decadeImprovement, null);
+assert.equal(insufficient.themeShrinkageMae, null);
+assert.equal(insufficient.themeShrinkageDelta, null);
 
 const perfectBaselineRecords = [
   { title: 'A', tmdbId: '501', rating: 8, genre: 'drama' },
@@ -99,6 +107,39 @@ assert.equal(zeroBaseline.mae, 0);
 assert.equal(zeroBaseline.baselineMae, 0);
 assert.equal(zeroBaseline.improvementPct, null);
 assert.equal(zeroBaseline.decadeImprovement, null);
+assert.equal(zeroBaseline.themeShrinkageMae, 0);
+assert.equal(zeroBaseline.themeShrinkageDelta, 0);
+
+const supportRecords = [
+  { title: 'Una señal rara', tmdbId: '711', rating: 10, genre: 'drama', tags: ['tema-raro'], year: 2001 },
+  { title: 'Tema común A', tmdbId: '712', rating: 8, genre: 'drama', tags: ['tema-comun'], year: 2002 },
+  { title: 'Tema común B', tmdbId: '713', rating: 7, genre: 'comedia', tags: ['tema-comun'], year: 2003 },
+  { title: 'Tema común C', tmdbId: '714', rating: 6, genre: 'misterio', tags: ['tema-comun'], year: 2004 },
+  { title: 'Tema común D', tmdbId: '715', rating: 5, genre: 'comedia', tags: ['tema-comun'], year: 2005 }
+];
+const supportHarness = runEvaluation(supportRecords, supportRecords);
+const baselineProfile = supportHarness.engine.buildProfile(supportRecords);
+const shrinkageProfile = supportHarness.engine.buildProfile(supportRecords, { themeSupportShrinkage: true });
+const rareBase = baselineProfile.features.get('tema: tema-raro');
+const rareShrunk = shrinkageProfile.features.get('tema: tema-raro');
+const commonBase = baselineProfile.features.get('tema: tema-comun');
+const commonShrunk = shrinkageProfile.features.get('tema: tema-comun');
+assert.equal(rareBase.count, 1);
+assert.ok(Math.abs(rareShrunk.weight - rareBase.weight / 3) < 1e-10,
+  'Un tema de soporte 1 debe reducir su peso por n/(n+2)=1/3.');
+assert.equal(commonBase.count, 4);
+assert.ok(Math.abs(commonShrunk.weight - commonBase.weight * 4 / 6) < 1e-10,
+  'Un tema de soporte 4 debe reducir su peso por n/(n+2)=4/6.');
+assert.equal(
+  shrinkageProfile.features.get('género: drama').weight,
+  baselineProfile.features.get('género: drama').weight,
+  'La comparación no debe cambiar pesos de género.'
+);
+assert.equal(
+  shrinkageProfile.features.get('década: 2000').weight,
+  baselineProfile.features.get('década: 2000').weight,
+  'La comparación no debe cambiar pesos de década.'
+);
 
 assert.ok(engineSource.includes('predictRating(candidate, profile).score'));
 assert.ok(uiSource.includes('Referencia (media de entrenamiento): '));

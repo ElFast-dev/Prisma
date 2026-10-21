@@ -1,3 +1,5 @@
+export const THEME_SUPPORT_SHRINKAGE_PRIOR = 2;
+
 export const RECOMMENDATION_SIGNAL_WEIGHTS = Object.freeze({
   genre: 1,
   theme: 0.35,
@@ -42,8 +44,11 @@ export function createRecommendationEngine(dependencies) {
         features.set(name, item);
       });
     });
-    features.forEach(function (item) {
+    features.forEach(function (item, name) {
       item.weight = item.sum / (item.count + 0.4);
+      if (options && options.themeSupportShrinkage && name.indexOf("tema: ") === 0) {
+        item.weight *= item.count / (item.count + THEME_SUPPORT_SHRINKAGE_PRIOR);
+      }
       item.mean = item.sumRating / item.count;
     });
     return { average: average, features: features, count: valid.length, withMetadata: withMetadata };
@@ -111,12 +116,15 @@ export function createRecommendationEngine(dependencies) {
       return {
         available: false, count: mapped.length, mae: null, baselineMae: null,
         improvementPct: null, withoutDecadeMae: null, decadeImprovement: null,
+        themeShrinkageMae: null, themeShrinkageDelta: null,
+        themeShrinkagePrior: THEME_SUPPORT_SHRINKAGE_PRIOR,
         decadeExamples: decadeExamples
       };
     }
     const errors = [];
     const baselineErrors = [];
     const withoutDecadeErrors = [];
+    const themeShrinkageErrors = [];
     mapped.forEach(function (heldOut, index) {
       const training = mapped.filter(function (_, i) { return i !== index; });
       const profile = buildProfile(training);
@@ -125,6 +133,11 @@ export function createRecommendationEngine(dependencies) {
       const predicted = predictRating(candidate, profile).score;
       errors.push(Math.abs(predicted - ratingValue(heldOut)));
       baselineErrors.push(Math.abs(profile.average - ratingValue(heldOut)));
+
+      // Paired experiment: same held-out entry and training split; only theme weights shrink.
+      const shrinkageProfile = buildProfile(training, { themeSupportShrinkage: true });
+      const shrinkagePrediction = predictRating(candidate, shrinkageProfile).score;
+      themeShrinkageErrors.push(Math.abs(shrinkagePrediction - ratingValue(heldOut)));
 
       // The ablation uses the same held-out title and training split, but excludes decade
       // both while learning the profile and while calculating the candidate prediction.
@@ -135,6 +148,8 @@ export function createRecommendationEngine(dependencies) {
     const mae = errors.reduce(function (sum, error) { return sum + error; }, 0) / errors.length;
     const baselineMae = baselineErrors.reduce(function (sum, error) { return sum + error; }, 0) / baselineErrors.length;
     const withoutDecadeMae = withoutDecadeErrors.reduce(function (sum, error) { return sum + error; }, 0) / withoutDecadeErrors.length;
+    const themeShrinkageMae = themeShrinkageErrors.reduce(function (sum, error) { return sum + error; }, 0) / themeShrinkageErrors.length;
+    const themeShrinkageDelta = mae - themeShrinkageMae;
     const improvementPct = baselineMae > 0 ? ((baselineMae - mae) / baselineMae) * 100 : null;
     const decadeImprovement = decadeExamples >= 5 ? withoutDecadeMae - mae : null;
     return {
@@ -145,6 +160,9 @@ export function createRecommendationEngine(dependencies) {
       improvementPct: improvementPct,
       withoutDecadeMae: withoutDecadeMae,
       decadeImprovement: decadeImprovement,
+      themeShrinkageMae: themeShrinkageMae,
+      themeShrinkageDelta: themeShrinkageDelta,
+      themeShrinkagePrior: THEME_SUPPORT_SHRINKAGE_PRIOR,
       decadeExamples: decadeExamples
     };
   }
