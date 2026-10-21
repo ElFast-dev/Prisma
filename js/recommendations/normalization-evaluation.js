@@ -215,7 +215,9 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
       let variantWins = 0;
       let ties = 0;
       let meanWins = 0;
-      if (method !== "mean") {
+      if (method === "mean") {
+        ties = baselineFoldMae.length;
+      } else {
         accumulator.foldMae.forEach(function (value, index) {
           const base = baselineFoldMae[index];
           if (value < base - 1e-12) variantWins += 1;
@@ -230,7 +232,9 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
         let wins = 0;
         let rankingTies = 0;
         let losses = 0;
-        if (available && method !== "mean") {
+        if (available && method === "mean") {
+          rankingTies = current.foldsEvaluated;
+        } else if (available) {
           current.foldNdcg.forEach(function (value, index) {
             const baseValue = base.foldNdcg[index];
             if (value > baseValue + 1e-12) wins += 1;
