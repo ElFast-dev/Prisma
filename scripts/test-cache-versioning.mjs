@@ -95,7 +95,7 @@ const modules = [
   ['js/ui/theme-controller.js', themeController]
 ];
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
-assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261021-1"),
+assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261021-2"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {
