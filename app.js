@@ -12,7 +12,7 @@ import { createModalViews } from "./js/ui/modal-views.js?v=core-20261020-1";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
 import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261020-1";
-import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-2";
+import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-3";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
 import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
 import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261020-1";
@@ -277,7 +277,11 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get tmdbRequest() { return tmdbRequest; },
     get currentPage() { return currentPage; },
     get catalogQuery() { return catalogQuery; },
-    get loadTMDBPage() { return loadTMDBPage; }
+    get loadTMDBPage() { return loadTMDBPage; },
+    get tmdbResults() { return tmdbResults; },
+    set tmdbResults(value) { tmdbResults = value; },
+    get resetTMDBGenres() { return tmdbClient.resetGenres; },
+    get confirm() { return window.confirm.bind(window); }
   });
   const { saveTMDBCredential, testTMDBCredential, removeTMDBCredential } = tmdbSettingsActions;
 
