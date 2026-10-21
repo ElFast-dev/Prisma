@@ -266,7 +266,7 @@ export function createPageViews(ctx) {
       let rankingMarkup = "";
       if (rankingQuality && rankingQuality.available) {
         rankingMarkup = '<div class="ridge-ranking-quality"><h4>Calidad del orden · nDCG@5</h4>' +
-          '<p class="metric-note">Mismas películas externas y mismos pliegues para los dos modelos; son valoraciones conocidas retenidas, no películas desconocidas.</p>' +
+          '<p class="metric-note">Mismas películas externas y mismos pliegues para los tres comparadores; son valoraciones conocidas retenidas, no películas desconocidas.</p>' +
           (rankingQuality.modes || []).map(function (mode) {
             const baseline = Number(mode.baselineNdcgAt5);
             const ridge = Number(mode.ridgeNdcgAt5);
@@ -332,6 +332,7 @@ export function createPageViews(ctx) {
           return alpha + ': ' + Number(repeated.selectedAlphaCounts[alpha]);
         }).join(' · ');
         const repeatedFoldStability = repeated.foldStability || {};
+        const hybridRepeatedStability = repeated.hybridFoldStability || {};
         const repeatConsistency = summarizeRepeatedRidgeStability(repeated);
         const formatObservedDelta = function (value) {
           return (Number(value) > 0 ? "+" : "") + Number(value).toFixed(4).replace(".", ",");
@@ -393,10 +394,16 @@ export function createPageViews(ctx) {
           '<p class="metric-note">Alpha elegido en los pliegues de las repeticiones (recuento agregado): ' +
           ctx.escapeHTML(repeatedAlphaCounts || 'sin datos') + '.</p>' +
           (repeatedFoldStability.available
-            ? '<p class="metric-note">Estabilidad de MAE en 15 pliegues: Ridge mejora en ' +
+            ? '<p class="metric-note">Estabilidad de MAE de Ridge en 15 pliegues: mejora en ' +
               Number(repeatedFoldStability.ridgeMaeWins || 0) + ', empata en ' +
               Number(repeatedFoldStability.ties || 0) + ' y la base mejora en ' +
               Number(repeatedFoldStability.baselineMaeWins || 0) + '.</p>'
+            : '') +
+          (hybridRepeatedStability.available
+            ? '<p class="metric-note">Estabilidad de MAE del híbrido 50/50 en 15 pliegues: mejora en ' +
+              Number(hybridRepeatedStability.hybridMaeWins || 0) + ', empata en ' +
+              Number(hybridRepeatedStability.ties || 0) + ' y la base mejora en ' +
+              Number(hybridRepeatedStability.baselineMaeWins || 0) + '.</p>'
             : '') +
           repeatConsistencyMarkup +
           '<h5>nDCG@5 agrupado por modo</h5>' + (repeatedModeMarkup || '<p class="metric-note">nDCG@5 no disponible con esta muestra.</p>') +
