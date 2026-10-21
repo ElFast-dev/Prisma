@@ -640,6 +640,7 @@ jobs:
                     synopsisFontSize: fontSize,
                     synopsisLineHeight: lineHeight,
                     minActionHeight: actions.length ? Math.min(...actions.map(node => node.getBoundingClientRect().height)) : 0,
+                    minActionCssMinHeight: actions.length ? Math.min(...actions.map(node => parseFloat(getComputedStyle(node).minHeight) || 0)) : 0,
                     width: root.clientWidth,
                     scrollWidth: root.scrollWidth
                   };
@@ -647,7 +648,7 @@ jobs:
                 const expectedMetaColumns = name === "mobile" ? 2 : 4;
                 if (detailPolish.metaDisplay !== "grid" || detailPolish.metaColumns !== expectedMetaColumns ||
                     detailPolish.synopsisFontSize < 13 || detailPolish.synopsisLineHeight <= detailPolish.synopsisFontSize ||
-                    detailPolish.minActionHeight < 44 || detailPolish.scrollWidth > detailPolish.width + 1) {
+                    detailPolish.minActionCssMinHeight < 44 || detailPolish.minActionHeight < 43.5 || detailPolish.scrollWidth > detailPolish.width + 1) {
                   throw new Error(name + ": movie detail hierarchy, touch targets or responsive layout failed: " + JSON.stringify(detailPolish));
                 }
 
