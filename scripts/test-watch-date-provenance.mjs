@@ -74,7 +74,7 @@ assert.equal(Object.prototype.hasOwnProperty.call(editedRating.state.watched[0],
 const explicitWatchedAt = "2017-09-03T12:00:00.000Z";
 const existingWatch = createHarness({
   rated: [{ ...movie, rating: 6, updatedAt: oldUpdatedAt }],
-  watched: [{ ...movie, watchedAt: explicitWatchedAt }]
+  watched: [{ ...movie, watchedAt: explicitWatchedAt, watchedAtSource: "imported-explicit" }]
 });
 await existingWatch.actions.saveRating();
 assert.equal(existingWatch.state.watched[0].watchedAt, explicitWatchedAt,
