@@ -4,7 +4,7 @@ const APP_ASSETS = [
   "./index.html",
   "./styles.css?v=ui-20261021-22",
   "./styles/movie-cards.css?v=ui-20261021-22",
-  "./styles/dialogs-feedback.css?v=ui-20261021-22",
+  "./styles/dialogs-feedback.css?v=ui-20261021-23",
   "./styles/responsive.css?v=ui-20261021-22",
   "./styles/visual-refinements.css?v=ui-20261021-22",
   "./styles/collection.css?v=ui-20261021-22",
