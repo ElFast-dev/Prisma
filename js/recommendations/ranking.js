@@ -19,7 +19,7 @@ export function createRecommendationRanking(ctx) {
     const ordered = results.slice().sort(function (a, b) {
       const aScore = a.prediction.score + Math.min(a.prediction.freshFeatures || 0, 3) * 0.025;
       const bScore = b.prediction.score + Math.min(b.prediction.freshFeatures || 0, 3) * 0.025;
-      return bScore - aScore || b.prediction.matches.length - a.prediction.matches.length || a.title.localeCompare(b.title);
+      return bScore - aScore || ((b.prediction.matches || []).length - (a.prediction.matches || []).length) || a.title.localeCompare(b.title);
     });
     const selected = [];
     const genreCounts = new Map();
