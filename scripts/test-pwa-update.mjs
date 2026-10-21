@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createPWAUpdateController } from "../js/app/pwa-update.js";
 
 class FakeElement {
@@ -81,4 +82,7 @@ const unsupportedUpdater = createPWAUpdateController({
   getServiceWorker: () => null, getWindow: () => ({ isSecureContext: true }), getToastRoot: () => toastRoot
 });
 assert.equal(await unsupportedUpdater.register(), null, "Sin soporte de service worker debe continuar sin error.");
+const feedbackStyles = await readFile(new URL("../styles/dialogs-feedback.css", import.meta.url), "utf8");
+assert.match(feedbackStyles, /\\.pwa-update-toast\\s*\\{[^}]*pointer-events:\\s*auto/s,
+  "La acción de actualizar debe poder pulsarse aunque el contenedor de avisos ignore eventos de puntero.");
 console.log("PWA: comprobación inmediata, aviso accesible, recarga explícita y primera instalación silenciosa.");
