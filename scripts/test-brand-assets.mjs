@@ -12,15 +12,15 @@ const manifest = JSON.parse(manifestSource);
 const iconUrl = './assets/prisma.svg?v=brand-20261020-2';
 const manifestUrl = './manifest.webmanifest?v=ui-20261020-15';
 
-const favicon = [...html.matchAll(/<link\\b[^>]*rel=["']icon["'][^>]*href=["']([^"']+)["'][^>]*>/g)];
+const favicon = [...html.matchAll(/<link\b[^>]*rel=["']icon["'][^>]*href=["']([^"']+)["'][^>]*>/g)];
 assert.equal(favicon.length, 1, 'index.html debe declarar un único favicon.');
 assert.equal(favicon[0][1], iconUrl, 'El favicon debe usar la URL versionada del SVG de marca.');
 
-const headerLogo = [...html.matchAll(/<img\\b[^>]*src=["']([^"']*assets\\/prisma\\.svg[^"']*)["'][^>]*>/g)];
+const headerLogo = [...html.matchAll(/<img\b[^>]*src=["']([^"']*assets\/prisma\.svg[^"']*)["'][^>]*>/g)];
 assert.equal(headerLogo.length, 1, 'La cabecera debe mostrar un único isotipo Prisma.');
 assert.equal(headerLogo[0][1], iconUrl, 'El logo del encabezado debe compartir la URL del favicon.');
 
-const manifestLink = [...html.matchAll(/<link\\b[^>]*rel=["']manifest["'][^>]*href=["']([^"']+)["'][^>]*>/g)];
+const manifestLink = [...html.matchAll(/<link\b[^>]*rel=["']manifest["'][^>]*href=["']([^"']+)["'][^>]*>/g)];
 assert.equal(manifestLink.length, 1, 'index.html debe declarar un único manifest.');
 assert.equal(manifestLink[0][1], manifestUrl, 'El manifest debe tener una URL versionada.');
 
