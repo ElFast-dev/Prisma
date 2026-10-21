@@ -30,13 +30,14 @@ const baseInput = {
     available: true, count: 60, mae: 1.05, baselineMae: 1.2, deltaBaseMinusRidge: 0.15,
     outerFolds: 5, foldsEvaluated: 5, innerFolds: 3, alphaGrid: [0.1, 1, 10, 100],
     selectedAlphaCounts: { "0.1": 1, "1": 2, "10": 2 },
+    foldStability: { available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1 },
     rankingQuality: {
       available: true, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 5,
       cutoff: 5, relevantThreshold: 7, reason: null,
       modes: [
-        { mode: "balanced", available: true, baselineNdcgAt5: 0.61, ridgeNdcgAt5: 0.72, deltaRidgeMinusBaseline: 0.11, foldsEvaluated: 5 },
-        { mode: "affinity", available: true, baselineNdcgAt5: 0.64, ridgeNdcgAt5: 0.74, deltaRidgeMinusBaseline: 0.10, foldsEvaluated: 5 },
-        { mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.70, deltaRidgeMinusBaseline: 0.02, foldsEvaluated: 5 }
+        { mode: "balanced", available: true, baselineNdcgAt5: 0.61, ridgeNdcgAt5: 0.72, deltaRidgeMinusBaseline: 0.11, foldsEvaluated: 5, foldsRidgeWins: 3, foldsRidgeTies: 1, foldsRidgeLosses: 1 },
+        { mode: "affinity", available: true, baselineNdcgAt5: 0.64, ridgeNdcgAt5: 0.74, deltaRidgeMinusBaseline: 0.10, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 0, foldsRidgeLosses: 1 },
+        { mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.70, deltaRidgeMinusBaseline: 0.02, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 1, foldsRidgeLosses: 0 }
       ]
     },
     reason: null
@@ -80,6 +81,14 @@ assert.deepEqual(compact.evaluation.ridgeExperiment.selectedAlphaCounts, { "0.1"
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.available, true);
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[0].ridgeNdcgAt5, 0.72);
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[1].deltaRidgeMinusBaseline, 0.1);
+assert.deepEqual(compact.evaluation.ridgeExperiment.foldStability, {
+  available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1
+});
+assert.deepEqual({
+  wins: compact.evaluation.ridgeExperiment.rankingQuality.modes[1].foldsRidgeWins,
+  ties: compact.evaluation.ridgeExperiment.rankingQuality.modes[1].foldsRidgeTies,
+  losses: compact.evaluation.ridgeExperiment.rankingQuality.modes[1].foldsRidgeLosses
+}, { wins: 4, ties: 0, losses: 1 });
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.sampleCount, 60);
 assert.equal(compact.evaluation.rankingQuality.modes[2].ndcgAt5, 0.68);
 assert.equal(compact.evaluation.currentListDiversity[0].score, 0.4);
