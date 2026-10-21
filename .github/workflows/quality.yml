@@ -38,6 +38,7 @@ jobs:
           node --check js/recommendations/engine.js
           node --check js/recommendations/ridge-evaluation.js
           node --check js/recommendations/evaluation.js
+          node --check js/recommendations/normalization-evaluation.js
           node --check js/catalog/csv-parser.js
           node --check js/catalog/catalog-model.js
           node --check js/collection/collection-model.js
@@ -140,6 +141,9 @@ jobs:
 
       - name: Test recommendation ranking quality and diversity
         run: node scripts/test-recommendation-evaluation.mjs
+
+      - name: Test recommendation influence normalization experiment
+        run: node scripts/test-recommendation-normalization-evaluation.mjs
 
       - name: Test recommendation signal weighting
         run: node scripts/test-recommendation-signal-weighting.mjs
