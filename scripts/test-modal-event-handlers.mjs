@@ -18,6 +18,7 @@ function createHarness(action, emotion) {
   const errors = [];
   const calls = { renderModal: 0, pending: [], watched: [], hidden: [] };
   const element = { addEventListener() {}, value: "" };
+  const memoriesPanel = { open: true };
   const ctx = {
     document: {
       addEventListener(type, listener) { listeners.set(type, listener); },
@@ -28,7 +29,7 @@ function createHarness(action, emotion) {
     modalDraft: { movie: { ...movie }, emotions: [] },
     movieDetail: null,
     utilitySheet: { type: "manage" },
-    $() { return element; },
+    $(selector) { return selector === ".rating-memories" ? memoriesPanel : element; },
     renderModal() { calls.renderModal += 1; },
     renderApp() {},
     toast(message, isError) { if (isError) errors.push(String(message)); },
@@ -61,6 +62,8 @@ function createHarness(action, emotion) {
 const emotion = createHarness("emotion", "Asombro");
 await emotion.click();
 assert.deepEqual(emotion.ctx.modalDraft.emotions, ["Asombro"]);
+assert.equal(emotion.ctx.modalDraft.memoriesExpanded, true,
+  "El contexto debe conservar abierto el panel de emociones al volver a pintar el modal.");
 assert.equal(emotion.calls.renderModal, 1);
 await emotion.click();
 assert.deepEqual(emotion.ctx.modalDraft.emotions, [],
