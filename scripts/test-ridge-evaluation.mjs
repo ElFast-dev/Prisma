@@ -369,6 +369,17 @@ assert.equal(joinedDates.available, true,
 assert.equal(joinedDates.timestampedFeatureCount, 120);
 assert.equal(joinedDates.explicitDateCount, 120,
   "Una fecha explícita del historial debe prevalecer sobre un watchedAt heredado de la valoración.");
+const conflictingLegacyRecords = temporalRecords.map(function (record) {
+  const copy = Object.assign({}, record, { watchedAt: "2010-02-01T10:00:00.000Z" });
+  delete copy.watchedAtSource;
+  return copy;
+});
+const conflictingDates = await harness(conflictingLegacyRecords, temporalRecords, temporalRecords).evaluateTemporalAsync();
+assert.equal(conflictingDates.available, true,
+  "Una fecha heredada repetida no debe ocultar las fechas explícitas del historial.");
+assert.equal(conflictingDates.distinctDayCount, 12,
+  "La ventana temporal debe ordenar por la fecha explícita, no por el timestamp heredado conflictivo.");
+assert.equal(conflictingDates.explicitDateCount, 120);
 const legacyDatedRecords = temporalRecords.map(function (record) {
   const copy = Object.assign({}, record, { watchedAtSource: "action-time" });
   return copy;
