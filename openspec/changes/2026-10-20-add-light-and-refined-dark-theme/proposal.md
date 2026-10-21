@@ -11,6 +11,7 @@ La capa visual publicada sigue utilizando acentos violetas y fondos azulados. Pr
 ## Alcance
 
 - Cambiar la paleta principal del tema oscuro a negro, grises neutros y azul acero discreto.
+- Alinear el isotipo, el favicon y el icono de la PWA con la misma paleta azul apagada.
 - Añadir un modo claro neutro con superficies blancas/grises y el mismo azul secundario.
 - Mantener modo oscuro como valor predeterminado para instalaciones sin preferencia guardada.
 - Permitir elegir el tema desde Ajustes y guardar la preferencia localmente.
@@ -32,4 +33,5 @@ La capa visual publicada sigue utilizando acentos violetas y fondos azulados. Pr
 4. Ajustes permite elegir Oscuro o Claro, comunica la selección con semántica accesible y aplica el cambio sin recargar.
 5. La preferencia se persiste solo en el navegador y se restaura al volver a abrir Prisma; el modo oscuro se usa cuando no hay valor válido.
 6. La preferencia afecta a vistas, tarjetas, navegación, campos, paneles, modales y barra superior, con contraste legible en ambos modos.
-7. Se versionan los recursos estáticos y la PWA renueva su caché; las pruebas de CI cubren ambos temas y preservan los flujos actuales.
+7. El isotipo conserva su geometría y usa azul acero apagado, sin violeta ni cian llamativos.
+8. Se versionan los recursos estáticos y la PWA renueva su caché; las pruebas de CI cubren ambos temas y preservan los flujos actuales.
