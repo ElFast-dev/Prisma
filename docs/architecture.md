@@ -10,17 +10,17 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | --- | --- |
 | `index.html` | Documento, navegación, puntos de montaje y entrada ES module versionada. |
 | `app.js` | Punto de entrada y composición: mantiene el estado global de interfaz e inyecta dependencias entre los módulos. Los renderizadores, acciones de dominio, ciclo de vida y servicios principales viven en módulos dedicados. |
-| `js/core/movie-utils.js` | Identidad y normalización de películas, listas, validación de notas y escape de texto. |
+| `js/core/movie-utils.js` | Identidad y normalización de películas, alias canónicos de géneros, listas, validación de notas y escape de texto. |
 | `js/core/state-model.js` | Estado inicial y normalización del estado persistido/importado. |
 | `js/core/storage.js` | IndexedDB y fallback a localStorage. |
 | `js/core/storage-protection.js` | Consulta persistencia/cuota del almacenamiento y solicita persistencia solo tras una acción explícita. |
-| `js/recommendations/features.js` | Extracción de géneros, etiquetas y década de estreno si existe un año válido. |
+| `js/recommendations/features.js` | Extracción de señales con claves de género canónicas compartidas por TMDB, catálogo CSV e historial personal, además de temas y década de estreno si existe un año válido. |
 | `js/recommendations/engine.js` | Perfil de preferencias, predicción, evaluación leave-one-out con ablación de década y experimento diagnóstico opcional de regularización de temas poco respaldados; la variante experimental no altera las recomendaciones activas. |
 | `js/recommendations/ridge-evaluation.js` | Experimento local y bajo demanda de Ridge: conserva validación de cinco pliegues y tres repeticiones, y añade walk-forward temporal en cinco ventanas futuras con selección interna de alpha y recuentos de procedencia de fechas; etiqueta como exploratorios los timestamps no verificables y no altera las recomendaciones activas. |
 | `js/recommendations/repeated-validation-summary.js` | Resumen puro de dirección y rango mínimo–máximo de las métricas agregadas por repetición; no produce intervalos de confianza ni modifica el modelo. |
 | `js/recommendations/evaluation.js` | Evaluación offline de nDCG@5 por modo sobre pliegues y candidatas comunes, además de diversidad de géneros en las listas actuales; no ajusta automáticamente el recomendador. |
 | `js/recommendations/ranking.js` | Puntúa y diversifica candidatas de catálogo local y el pool efímero de películas populares ya consultadas en TMDB; excluye la colección y no persiste candidatas remotas. |
-| `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v6 del Laboratorio, con métricas de validación Ridge repetida y temporal walk-forward y recuentos de procedencia de fechas; no serializa fechas exactas, registros individuales ni accede al DOM, almacenamiento o red. |
+| `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v7 del Laboratorio, con métricas de validación Ridge, comparación híbrida fija 50/50, validación repetida y temporal walk-forward y recuentos de procedencia de fechas; no serializa fechas exactas, registros individuales ni accede al DOM, almacenamiento o red. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
@@ -72,7 +72,7 @@ No se deben incluir historiales personales, credenciales, copias privadas ni not
 
 ## Catálogo y recomendador
 
-No existe un catálogo de muestra empaquetado. Los registros personales se normalizan por funciones de dominio compartidas; la colección empieza vacía y los resultados remotos de TMDB se mantienen como resultados de exploración hasta que la persona añade una película explícitamente. El motor recibe proveedores de valoraciones, búsqueda de películas, características y validación, lo que permite probar el perfil y la evaluación sin DOM ni almacenamiento. Las predicciones siguen limitadas de 1 a 10, dan mayor influencia a los géneros que a etiquetas aisladas y exponen cobertura/confianza según las señales disponibles. La evaluación leave-one-out respeta IDs TMDB de remakes y compara MAE con la media del pliegue de entrenamiento; sigue siendo una métrica experimental.
+No existe un catálogo de muestra empaquetado. Los registros personales se normalizan por funciones de dominio compartidas; la colección empieza vacía y los resultados remotos de TMDB se mantienen como resultados de exploración hasta que la persona añade una película explícitamente. El motor recibe proveedores de valoraciones, búsqueda de películas, características y validación, lo que permite probar el perfil y la evaluación sin DOM ni almacenamiento. Las predicciones siguen limitadas de 1 a 10, dan mayor influencia a los géneros que a etiquetas aisladas y exponen cobertura/confianza según las señales disponibles. Los géneros se convierten en claves canónicas mediante el módulo común para que alias localizados o importados como “science fiction”, “sci-fi” y “Ciencia ficción” coincidan entre perfil y candidatas. La evaluación leave-one-out respeta IDs TMDB de remakes y compara MAE con la media del pliegue de entrenamiento; sigue siendo una métrica experimental.
 
 ## TMDB
 
