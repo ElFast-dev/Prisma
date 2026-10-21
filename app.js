@@ -528,7 +528,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { evaluateRecommendationQuality } = recommendationEvaluation;
 
   async function runRidgeExperiment() {
-    if (ridgeEvaluationBusy) return;
+    if (ridgeEvaluationBusy || temporalRidgeEvaluationBusy) return;
     const runId = ++ridgeEvaluationRunId;
     ridgeEvaluationBusy = true;
     ridgeEvaluationProgress = { completedRepeats: 0, totalRepeats: 3, foldsPerRepeat: 5 };
@@ -569,7 +569,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   }
 
   async function runTemporalRidgeExperiment() {
-    if (temporalRidgeEvaluationBusy) return;
+    if (temporalRidgeEvaluationBusy || ridgeEvaluationBusy) return;
     const runId = ++temporalRidgeEvaluationRunId;
     temporalRidgeEvaluationBusy = true;
     temporalRidgeEvaluationProgress = { completedWindows: 0, totalWindows: 5 };
