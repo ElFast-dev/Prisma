@@ -244,8 +244,37 @@ assert.equal(summarizeRepeatedRidgeStability({ available: false, repeatSummaries
   "Sin validación repetida no se debe fabricar un resumen.");
 assert.equal(summarizeRepeatedRidgeStability({ available: true, repeatSummaries: [] }).mae.available, false,
   "Sin repeticiones la métrica debe permanecer no disponible.");
+const baselineWins = summarizeRepeatedRidgeStability({
+  available: true,
+  repeatSummaries: [{
+    deltaBaseMinusRidge: -0.025,
+    rankingQuality: { available: true, modes: [
+      { mode: "balanced", available: true, deltaRidgeMinusBaseline: -0.04 }
+    ] }
+  }]
+});
+assert.equal(baselineWins.mae.baselineFavorableRepeats, 1,
+  "El resumen de MAE debe contar las repeticiones favorables al baseline.");
+assert.equal(baselineWins.rankingModes.find(mode => mode.mode === "balanced").baselineFavorableRepeats, 1,
+  "El resumen de nDCG@5 debe contar las repeticiones favorables al baseline.");
+const missingMode = summarizeRepeatedRidgeStability({
+  available: true,
+  repeatSummaries: [
+    { deltaBaseMinusRidge: 0.01, rankingQuality: { available: true, modes: [
+      { mode: "balanced", available: true, deltaRidgeMinusBaseline: 0.02 }
+    ] } },
+    { deltaBaseMinusRidge: -0.03, rankingQuality: { available: false, modes: [] } }
+  ]
+});
+const balancedWithMissing = missingMode.rankingModes.find(mode => mode.mode === "balanced");
+assert.equal(balancedWithMissing.repeatsEvaluated, 1,
+  "nDCG@5 debe excluir repeticiones sin una comparación válida para ese modo.");
+assert.equal(balancedWithMissing.minDelta, 0.02,
+  "Una métrica ausente no debe introducir un cero ficticio en el rango.");
 
 assert.match(viewsSource, /Consistencia por repetición/);
 assert.match(viewsSource, /intervalo de confianza/);
+assert.match(viewsSource, /baselineFavorableRepeats/);
+assert.match(viewsSource, /summary\.ties/);
 
 console.log("Ridge verificado: validación anidada determinista, MAE y nDCG@5 emparejados, consistencia por repetición, privacidad y clipping 1–10.");
