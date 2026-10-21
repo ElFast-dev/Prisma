@@ -102,3 +102,14 @@ Prisma DEBE poder usar como candidatas los resultados populares consultados de T
 - DADO que hay candidatas de TMDB guardadas solo en memoria
 - CUANDO la persona elimina la credencial
 - ENTONCES Prisma vacía tanto los resultados de exploración como las candidatas remotas temporales
+
+
+### Requirement: Géneros de catálogo equivalentes
+
+Prisma DEBE convertir los alias reconocidos de género a una etiqueta española canónica y eliminar repeticiones tras la conversión.
+
+#### Scenario: Alias entre fuentes
+
+- DADO que la misma película contiene versiones inglesas, españolas o sin acentos de un género conocido
+- CUANDO se normaliza el catálogo
+- ENTONCES los alias reconocidos se guardan como una sola etiqueta canónica.

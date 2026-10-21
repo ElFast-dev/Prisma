@@ -246,7 +246,12 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/proposal.md',
   'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/design.md',
   'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/tasks.md',
-  'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/specs/recommendations/spec.md'
+  'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/specs/recommendations/spec.md',
+  'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/proposal.md',
+  'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/design.md',
+  'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/tasks.md',
+  'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/specs/recommendations/spec.md',
+  'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/specs/catalog/spec.md'
 ];
 
 const errors = [];
