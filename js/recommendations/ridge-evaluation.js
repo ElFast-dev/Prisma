@@ -18,6 +18,11 @@ function clampRating(value) {
   return Math.max(1, Math.min(10, value));
 }
 
+function nonNegativeInteger(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+}
+
 function stableHash(value) {
   let hash = 2166136261;
   const text = String(value);
