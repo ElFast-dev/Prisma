@@ -781,25 +781,61 @@ export function createRidgeRecommendationExperiment(dependencies) {
   function temporalRows() {
     const baseRows = mappedRows();
     const watchedDayByIdentity = new Map();
+    const isExplicitDate = function (entry) {
+      return Boolean(entry && (entry.watchedAtSource === "imported-explicit" ||
+        entry.watchedAtSource === "user-confirmed") && watchedDayFor(entry));
+    };
     (typeof getWatched === "function" ? getWatched() || [] : []).forEach(function (entry) {
       if (!entry || !entry.title) return;
       const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
       const identity = identityFor(entry, movie, dependencies);
       const day = watchedDayFor(entry);
       if (!identity || !day) return;
+      const explicitDay = isExplicitDate(entry) ? day : null;
       const previous = watchedDayByIdentity.get(identity);
-      if (!previous || day < previous) watchedDayByIdentity.set(identity, day);
+      if (!previous) {
+        watchedDayByIdentity.set(identity, { day: day, explicitDay: explicitDay });
+      } else {
+        if (day < previous.day) previous.day = day;
+        if (explicitDay && (!previous.explicitDay || explicitDay < previous.explicitDay)) {
+          previous.explicitDay = explicitDay;
+        }
+      }
     });
 
     const rows = [];
     let missingDateCount = 0;
+    let explicitDateCount = 0;
+    let unverifiedDateCount = 0;
     baseRows.forEach(function (row) {
-      const day = watchedDayFor(row.entry) || watchedDayByIdentity.get(row.identity) || null;
+      const entryDay = watchedDayFor(row.entry);
+      const entryIsExplicit = isExplicitDate(row.entry);
+      const history = watchedDayByIdentity.get(row.identity) || null;
+      let day = null;
+      let dateProvenance = "missing";
+      if (entryDay && entryIsExplicit) {
+        day = entryDay;
+        dateProvenance = "explicit";
+      } else if (history && history.explicitDay) {
+        day = history.explicitDay;
+        dateProvenance = "explicit";
+      } else if (entryDay) {
+        day = entryDay;
+        dateProvenance = "unverified";
+      } else if (history && history.day) {
+        day = history.day;
+        dateProvenance = "unverified";
+      }
       if (!day) {
         missingDateCount += 1;
         return;
       }
-      rows.push(Object.assign({}, row, { watchedDay: day }));
+      if (dateProvenance === "explicit") explicitDateCount += 1;
+      else unverifiedDateCount += 1;
+      rows.push(Object.assign({}, row, {
+        watchedDay: day,
+        dateProvenance: dateProvenance
+      }));
     });
     rows.sort(function (left, right) {
       return left.watchedDay.localeCompare(right.watchedDay) ||
@@ -808,7 +844,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
     return {
       rows: rows,
       featureRowCount: baseRows.length,
-      missingDateCount: missingDateCount
+      missingDateCount: missingDateCount,
+      explicitDateCount: explicitDateCount,
+      unverifiedDateCount: unverifiedDateCount
     };
   }
 
