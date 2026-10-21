@@ -99,7 +99,7 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261021-22") &&
+                  lastUI.cssHref.includes("v=ui-20261021-23") &&
                   lastUI.appSrc.includes("v=ui-20261021-48") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
