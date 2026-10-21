@@ -39,3 +39,8 @@ Se utiliza una clave independiente `prisma:theme` en localStorage; no se guarda 
 ## Validación
 
 Pruebas estáticas verifican tokens y reglas de ambos temas, preferencia predeterminada/persistida, recursos PWA versionados y modularidad. Playwright cambia Oscuro/Claro en escritorio y móvil, confirma el atributo del documento y estilos calculados, recarga la página y comprueba que la elección persiste.
+
+
+## Verificación final
+
+La implementación se fusionó mediante [PR #17](https://github.com/ElFast-dev/Prisma/pull/17). SDD y calidad, Validate Prisma y GitHub Pages finalizaron correctamente. Playwright confirmó en la rama y después del despliegue que el fondo predeterminado es `#050505`, el tema claro usa `#f4f5f7`, la selección se guarda localmente y la preferencia se restaura tras recargar tanto en escritorio como en móvil. La caché de shell activa es `prisma-shell-v50`.
