@@ -204,7 +204,9 @@ assert.equal(rankingResult.repeatedValidation.rankingQuality.foldsEvaluated, 15)
 assert.equal(rankingResult.repeatedValidation.rankingQuality.modes.length, 3);
 assert.ok(rankingResult.repeatedValidation.rankingQuality.modes.every(item =>
   item.available && item.foldsEvaluated === 15 &&
-  item.foldsRidgeWins + item.foldsRidgeTies + item.foldsRidgeLosses === item.foldsEvaluated
+  item.foldsRidgeWins + item.foldsRidgeTies + item.foldsRidgeLosses === item.foldsEvaluated &&
+  Number.isFinite(item.hybridNdcgAt5) &&
+  item.foldsHybridWins + item.foldsHybridTies + item.foldsHybridLosses === item.foldsEvaluated
 ));
 assert.deepEqual(rankingResult.repeatedValidation,
   harness(rankingRecords, rankingRecords).evaluate().repeatedValidation,
