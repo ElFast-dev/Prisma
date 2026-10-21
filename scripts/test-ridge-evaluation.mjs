@@ -352,9 +352,8 @@ assert.equal(temporalCancelled.available, false);
 assert.match(temporalCancelled.unavailableReason, /canceló/);
 
 const undatedRecords = temporalRecords.map(function (record) {
-  const copy = Object.assign({}, record);
+  const copy = Object.assign({}, record, { updatedAt: record.watchedAt });
   delete copy.watchedAt;
-  delete copy.updatedAt;
   return copy;
 });
 const joinedDatesExperiment = harness(undatedRecords, temporalRecords, temporalRecords);
