@@ -16,6 +16,18 @@ Prisma DEBE ofrecer un experimento temporal, local y bajo demanda que entrene co
 - CUANDO se prepara la muestra temporal
 - ENTONCES esa valoración no se usa para entrenar ni probar, y solo se informa su recuento agregado
 
+#### Scenario: Editar una nota sin fecha de visionado fiable
+
+- DADO que una valoración existente tiene `updatedAt` pero no tiene un `watchedAt` válido ni una fecha en el historial de visionados
+- CUANDO se vuelve a guardar o editar la nota
+- ENTONCES Prisma no debe crear `watchedAt` a partir de `updatedAt` y la valoración queda excluida de la evaluación temporal hasta que haya una fecha de visionado fiable
+
+#### Scenario: Marcar una película explícitamente como vista
+
+- DADO que una película no tiene una fecha de visionado previa
+- CUANDO el usuario activa la acción explícita «marcar como vista»
+- ENTONCES Prisma registra el momento de esa acción como `watchedAt`
+
 #### Scenario: Datos temporales insuficientes
 
 - DADO que hay menos de 100 valoraciones únicas fechadas con características o menos de 12 días válidos distintos
