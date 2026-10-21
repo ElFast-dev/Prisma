@@ -105,6 +105,19 @@ assert.equal(controllerState.modalRoot.innerHTML, "rating sheet",
   "La ruta de retorno debe delegar la pintura a renderModal, no borrar el detalle directamente.");
 assert.equal(controllerState.renderCalls, 1);
 
+controllerState.modalDraft = {
+  movie: detail,
+  mode: "rate",
+  emotions: [],
+  returnMovieDetail: { movie: detail }
+};
+controllerState.movieDetail = null;
+controllerState.renderCalls = 0;
+controller.closeModal();
+assert.deepEqual(controllerState.movieDetail, { movie: detail },
+  "El borrador debe recuperar la ficha original si movieDetail se pierde durante una transición del modal.");
+assert.equal(controllerState.modalDraft, null);
+assert.equal(controllerState.renderCalls, 1);
 
 const cases = [
   ["manage-pending", "pending"],
