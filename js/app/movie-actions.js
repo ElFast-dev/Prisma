@@ -28,9 +28,11 @@ export function createMovieActions(ctx) {
     ctx.state.watchlist = ctx.state.watchlist.filter(function (entry) { return !ctx.sameMovieRecord(entry,movie); });
     const watchedIndex = (ctx.state.watched || []).findIndex(function (entry) { return ctx.sameMovieRecord(entry,movie); });
     const oldWatched = watchedIndex >= 0 ? ctx.state.watched[watchedIndex] : null;
-    const watchedRecord = Object.assign({},oldWatched || {},newEntry,{
-      watchedAt:(oldWatched && oldWatched.watchedAt) || old.watchedAt || old.updatedAt || new Date().toISOString()
-    });
+    const watchedRecord = Object.assign({},oldWatched || {},newEntry);
+    const reliableWatchedAt = (oldWatched && oldWatched.watchedAt) || old.watchedAt ||
+      (existingIndex < 0 ? new Date().toISOString() : null);
+    if (reliableWatchedAt) watchedRecord.watchedAt = reliableWatchedAt;
+    else delete watchedRecord.watchedAt;
     if (watchedIndex >= 0) ctx.state.watched[watchedIndex] = watchedRecord;
     else ctx.state.watched.unshift(watchedRecord);
     ctx.logEvent("Valoración guardada: " + movie.title,"Nota " + rating + "/10" + (newEntry.emotions.length ? " · " + newEntry.emotions.length + " emociones registradas" : ""),"★");
