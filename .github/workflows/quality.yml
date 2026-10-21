@@ -51,6 +51,7 @@ jobs:
           node --check js/app/lifecycle.js
           node --check js/app/runtime.js
           node --check js/recommendations/ranking.js
+          node --check js/recommendations/preferences.js
           node --check js/ui/modal-controller.js
           node --check js/tmdb/movie-details.js
           node --check js/import-export/personal-data.js
@@ -101,3 +102,6 @@ jobs:
 
       - name: Test recommendation signal weighting
         run: node scripts/test-recommendation-signal-weighting.mjs
+
+      - name: Test customizable discovery recommendation modes
+        run: node scripts/test-recommendation-modes.mjs
