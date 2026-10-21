@@ -111,7 +111,7 @@ export function normalizeMovie(movie) {
     tmdbId: tmdbId && Number(tmdbId) > 0 ? String(tmdbId) : null,
     title: cleanTitle,
     year: year,
-    genres: genres.map(displayGenre),
+    genres: uniqueStrings(genres.map(displayGenre)),
     tags: tags,
     overview: String(overview || ""),
     posterPath: posterPath,
