@@ -33,8 +33,8 @@ assert.match(pageViews, /aria-pressed=/, 'El selector debe comunicar el modo act
 assert.match(themeController, /const THEME_KEY = "prisma:theme"/, 'La preferencia de tema debe persistirse aparte del perfil de cine.');
 assert.match(themeController, /currentTheme = "dark"/, 'El tema oscuro debe ser el fallback predeterminado.');
 assert.match(serviceWorker, /const CACHE_NAME = "prisma-shell-v56"/, 'La PWA debe renovar caché al publicar los temas.');
-assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261021-22"'),
+assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261021-23"'),
   'El service worker debe usar la misma versión de la hoja de temas.');
-assert.ok(serviceWorker.includes('"./app.js?v=ui-20261021-47"'),
+assert.ok(serviceWorker.includes('"./app.js?v=ui-20261021-48"'),
   'El service worker debe usar la misma entrada de aplicación versionada.');
 console.log('Sistema visual Prisma correcto: negro, azul discreto, modo claro, selector accesible y caché PWA.');
