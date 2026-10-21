@@ -51,7 +51,7 @@ function harness(records, allMovies, watchedRecords, temporalAudit) {
       const profile = engine.buildProfile(trainingRatings);
       if (temporalAudit) {
         const days = trainingRatings.map(record => String(record.watchedAt || "").slice(0, 10))
-          .filter(day => /^\\d{4}-\\d{2}-\\d{2}$/.test(day)).sort();
+          .filter(day => /^\d{4}-\d{2}-\d{2}$/.test(day)).sort();
         latestDayByProfile.set(profile, days.length ? days[days.length - 1] : null);
       }
       return profile;
