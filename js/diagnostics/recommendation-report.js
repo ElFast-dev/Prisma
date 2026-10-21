@@ -170,9 +170,24 @@ function ridgeRankingEvaluation(source) {
         baselineNdcgAt5: modeAvailable ? rounded(mode.baselineNdcgAt5, 4) : null,
         ridgeNdcgAt5: modeAvailable ? rounded(mode.ridgeNdcgAt5, 4) : null,
         deltaRidgeMinusBaseline: modeAvailable ? rounded(mode.deltaRidgeMinusBaseline, 4) : null,
-        foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated)
+        foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated),
+        foldsRidgeWins: nonNegativeInteger(mode.foldsRidgeWins),
+        foldsRidgeTies: nonNegativeInteger(mode.foldsRidgeTies),
+        foldsRidgeLosses: nonNegativeInteger(mode.foldsRidgeLosses)
       };
     })
+  };
+}
+
+function ridgeFoldStabilityEvaluation(source) {
+  const stability = source && typeof source === "object" ? source : {};
+  const available = Boolean(stability.available);
+  return {
+    available: available,
+    foldsEvaluated: nonNegativeInteger(stability.foldsEvaluated),
+    ridgeMaeWins: nonNegativeInteger(stability.ridgeMaeWins),
+    ties: nonNegativeInteger(stability.ties),
+    baselineMaeWins: nonNegativeInteger(stability.baselineMaeWins)
   };
 }
 
@@ -202,6 +217,7 @@ function ridgeEvaluation(source) {
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
     alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; }),
     selectedAlphaCounts: alphaCounts,
+    foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
       ? evaluation.reason : (evaluation ? "El experimento Ridge no está disponible." : "El experimento Ridge no se ha ejecutado."))
