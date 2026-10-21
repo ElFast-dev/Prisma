@@ -87,6 +87,9 @@ jobs:
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs
 
+      - name: Test mobile navigation touch targets and current page semantics
+        run: node scripts/test-mobile-navigation.mjs
+
       - name: Test theme preference persistence
         run: node scripts/test-theme-controller.mjs
 
