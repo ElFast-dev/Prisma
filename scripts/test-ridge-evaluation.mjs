@@ -94,6 +94,23 @@ assert.equal(rankingResult.rankingQuality.folds, 5);
 assert.equal(rankingResult.rankingQuality.foldsEvaluated, 5);
 assert.deepEqual(rankingResult.rankingQuality.modes.map(item => item.mode),
   ["balanced", "affinity", "variety"]);
+assert.equal(rankingResult.foldStability.available, true,
+  "La evaluación debe resumir la dirección de MAE en cada pliegue externo.");
+assert.equal(rankingResult.foldStability.foldsEvaluated, rankingResult.outerFolds);
+assert.equal(
+  rankingResult.foldStability.ridgeMaeWins + rankingResult.foldStability.ties +
+  rankingResult.foldStability.baselineMaeWins,
+  rankingResult.foldStability.foldsEvaluated,
+  "Los recuentos de estabilidad del MAE deben cubrir todos los pliegues evaluados."
+);
+assert.ok(rankingResult.rankingQuality.modes.every(item =>
+  item.foldsRidgeWins + item.foldsRidgeTies + item.foldsRidgeLosses === item.foldsEvaluated),
+  "Los resultados de cada modo deben clasificar todos los pliegues nDCG válidos."
+);
+assert.deepEqual(rankingResult.foldStability,
+  harness(rankingRecords, rankingRecords).evaluate().foldStability,
+  "La estabilidad agregada debe ser determinista.");
+
 assert.ok(rankingResult.rankingQuality.modes.every(item =>
   item.available && item.foldsEvaluated === 5 &&
   item.baselineNdcgAt5 >= 0 && item.baselineNdcgAt5 <= 1 &&
