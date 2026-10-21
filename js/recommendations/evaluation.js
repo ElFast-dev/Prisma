@@ -80,7 +80,7 @@ export function createRecommendationEvaluation(dependencies) {
   function candidateFor(row) {
     const movie = row.movie || {};
     const entry = row.entry || {};
-    return Object.assign({}, movie, {
+    const candidate = Object.assign({}, movie, {
       title: movie.title || entry.title || "",
       tmdbId: movie.tmdbId || movie.tmId || entry.tmdbId || entry.tmId || "",
       genres: movie.genres && movie.genres.length ? movie.genres : (entry.genres || []),
@@ -88,6 +88,11 @@ export function createRecommendationEvaluation(dependencies) {
       year: movie.year || entry.year || entry.releaseYear || entry.release_year || null,
       releaseDate: movie.releaseDate || movie.release_date || entry.releaseDate || entry.release_date || null
     });
+    // Personal ratings/labels are evaluation targets, not predictor or ranker inputs.
+    delete candidate.rating;
+    delete candidate.userRating;
+    delete candidate.personalRating;
+    return candidate;
   }
 
   function evaluateRankingQuality() {
@@ -128,18 +133,20 @@ export function createRecommendationEvaluation(dependencies) {
         return !testIdentities.has(row.identity);
       }).map(function (row) { return row.entry; });
       const profile = buildProfile(trainingRatings);
+      const gainsByIdentity = new Map(testRows.map(function (row) {
+        return [row.identity, relevanceGain(row.rating)];
+      }));
       const candidates = testRows.map(function (row) {
         const candidate = candidateFor(row);
         const prediction = predictRating(candidate, profile);
         const score = Number.isFinite(prediction && prediction.score) ? prediction.score : profile.average;
         return Object.assign(candidate, {
           evaluationIdentity: row.identity,
-          evaluationGain: relevanceGain(row.rating),
           prediction: Object.assign({}, prediction || {}, { score: score })
         });
       });
       const ideal = candidates.map(function (candidate) {
-        return { identity: candidate.evaluationIdentity, gain: candidate.evaluationGain };
+        return { identity: candidate.evaluationIdentity, gain: gainsByIdentity.get(candidate.evaluationIdentity) || 0 };
       }).sort(function (a, b) {
         return b.gain - a.gain || a.identity.localeCompare(b.identity);
       });
@@ -149,7 +156,7 @@ export function createRecommendationEvaluation(dependencies) {
       RECOMMENDATION_MODES.forEach(function (mode) {
         const rankedCandidates = rankCandidates(candidates, RANKING_CUTOFF, mode) || [];
         const ranked = rankedCandidates.slice(0, RANKING_CUTOFF).map(function (candidate) {
-          return { identity: candidate.evaluationIdentity, gain: candidate.evaluationGain };
+          return { identity: candidate.evaluationIdentity, gain: gainsByIdentity.get(candidate.evaluationIdentity) || 0 };
         });
         totals[mode].dcg += dcgAt5(ranked);
         totals[mode].idealDcg += idealDcg;

@@ -45,6 +45,10 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
   function predictRating(movie, profile) {
     assert.ok(!profile.seenIds.has(String(movie.tmdbId)),
       "La nota del candidato retenido nunca puede formar parte del perfil de entrenamiento.");
+    assert.equal(Object.prototype.hasOwnProperty.call(movie, "rating"), false,
+      "La nota retenida no debe viajar al predictor como propiedad del candidato.");
+    assert.equal(Object.prototype.hasOwnProperty.call(movie, "evaluationGain"), false,
+      "La ganancia de relevancia no debe exponerse al predictor.");
     const learned = profile.genreMeans.get(movie.genres[0]) || profile.average;
     return { score: reverse ? 11 - learned : learned };
   }
@@ -52,6 +56,10 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
   const productionRanking = createRecommendationRanking({});
   const rankingCalls = [];
   function rankCandidates(candidates, limit, mode) {
+    assert.ok(candidates.every(candidate =>
+      !Object.prototype.hasOwnProperty.call(candidate, "rating") &&
+      !Object.prototype.hasOwnProperty.call(candidate, "evaluationGain")),
+    "Las notas de evaluación no deben llegar al algoritmo que ordena las candidatas.");
     rankingCalls.push({ mode, identities: candidates.map(candidate => candidate.evaluationIdentity) });
     return productionRanking.rankCandidates(candidates, limit, mode);
   }
