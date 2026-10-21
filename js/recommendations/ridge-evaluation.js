@@ -850,13 +850,17 @@ export function createRidgeRecommendationExperiment(dependencies) {
     };
   }
 
-  function unavailableTemporalEvaluation(featureRowCount, datedRowCount, missingDateCount, reason, dayGroupCount) {
+  function unavailableTemporalEvaluation(featureRowCount, datedRowCount, missingDateCount, reason, dayGroupCount, explicitDateCount, unverifiedDateCount) {
     const unavailableReason = reason || "La evaluación temporal no está disponible.";
     return {
       available: false,
       sampleCount: nonNegativeInteger(datedRowCount),
       featureRowCount: nonNegativeInteger(featureRowCount),
       timestampedFeatureCount: nonNegativeInteger(datedRowCount),
+      explicitDateCount: nonNegativeInteger(explicitDateCount),
+      unverifiedDateCount: nonNegativeInteger(unverifiedDateCount),
+      dateProvenanceStatus: nonNegativeInteger(unverifiedDateCount) > 0 ? "exploratory" :
+        (nonNegativeInteger(datedRowCount) > 0 ? "verified" : "unavailable"),
       missingDateCount: nonNegativeInteger(missingDateCount),
       distinctDayCount: nonNegativeInteger(dayGroupCount),
       warmupCount: 0,
@@ -912,20 +916,20 @@ export function createRidgeRecommendationExperiment(dependencies) {
       return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
         "Se necesitan al menos " + TEMPORAL_MIN_RECORDS +
           " valoraciones únicas con características y fecha de visionado válida; hay " + rows.length + ".",
-        groups.length);
+        groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
     }
     if (groups.length < TEMPORAL_MIN_DATE_GROUPS) {
       return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
         "Se necesitan al menos " + TEMPORAL_MIN_DATE_GROUPS +
           " días de visionado distintos para formar ventanas temporales fiables; hay " + groups.length + ".",
-        groups.length);
+        groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
     }
 
     const schedule = forwardValidationWindows(rows, allIndices, TEMPORAL_OUTER_WINDOWS, TEMPORAL_WARMUP_RATIO);
     if (!schedule) {
       return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
         "No hay suficientes bloques cronológicos para ejecutar las cinco ventanas futuras.",
-        groups.length);
+        groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
     }
 
     try {
@@ -958,7 +962,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         if (typeof onProgress === "function" && onProgress(starting) === false) {
           return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
             "La evaluación temporal se canceló porque cambiaron los datos personales durante el cálculo.",
-            groups.length);
+            groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
         }
 
         const alpha = selectTemporalAlpha(rows, kernel, window.trainingIndices);
@@ -1046,7 +1050,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         }) === false) {
           return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
             "La evaluación temporal se canceló porque cambiaron los datos personales durante el cálculo.",
-            groups.length);
+            groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
         }
         if (windowIndex + 1 < schedule.windows.length) {
           await new Promise(function (resolve) { setTimeout(resolve, 0); });
@@ -1067,6 +1071,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
         sampleCount: rows.length,
         featureRowCount: prepared.featureRowCount,
         timestampedFeatureCount: rows.length,
+        explicitDateCount: prepared.explicitDateCount,
+        unverifiedDateCount: prepared.unverifiedDateCount,
+        dateProvenanceStatus: prepared.unverifiedDateCount > 0 ? "exploratory" : "verified",
         missingDateCount: prepared.missingDateCount,
         distinctDayCount: groups.length,
         warmupCount: schedule.warmupIndices.length,
@@ -1095,7 +1102,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     } catch (_) {
       return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
         "No se pudo resolver la evaluación temporal de forma estable con estas fechas y esta muestra.",
-        groups.length);
+        groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
     }
   }
 
