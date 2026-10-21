@@ -424,8 +424,10 @@ export function createPageViews(ctx) {
       body = '<p class="metric-note" aria-live="polite">Evaluación temporal no disponible: ' +
         ctx.escapeHTML(result.unavailableReason || "faltan suficientes valoraciones fechadas.") + '</p>' +
         '<p class="metric-note">Con características: ' + Number(result.featureRowCount || 0) +
-        ' · con fecha válida: ' + Number(result.timestampedFeatureCount || 0) +
-        ' · excluidas por falta de fecha fiable: ' + Number(result.missingDateCount || 0) + '.</p>';
+        ' · con fecha: ' + Number(result.timestampedFeatureCount || 0) +
+        ' · campo watchedAt explícito: ' + Number(result.explicitDateCount || 0) +
+        ' · procedencia no verificable: ' + Number(result.unverifiedDateCount || 0) +
+        ' · sin fecha: ' + Number(result.missingDateCount || 0) + '.</p>';
     } else {
       const delta = Number(result.deltaBaseMinusRidge);
       const stability = result.windowStability || {};
