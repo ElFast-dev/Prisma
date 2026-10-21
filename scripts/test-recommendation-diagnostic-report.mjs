@@ -29,7 +29,17 @@ const baseInput = {
   ridgeEvaluation: {
     available: true, count: 60, mae: 1.05, baselineMae: 1.2, deltaBaseMinusRidge: 0.15,
     outerFolds: 5, foldsEvaluated: 5, innerFolds: 3, alphaGrid: [0.1, 1, 10, 100],
-    selectedAlphaCounts: { "0.1": 1, "1": 2, "10": 2 }, reason: null
+    selectedAlphaCounts: { "0.1": 1, "1": 2, "10": 2 },
+    rankingQuality: {
+      available: true, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 5,
+      cutoff: 5, relevantThreshold: 7, reason: null,
+      modes: [
+        { mode: "balanced", available: true, baselineNdcgAt5: 0.61, ridgeNdcgAt5: 0.72, deltaRidgeMinusBaseline: 0.11, foldsEvaluated: 5 },
+        { mode: "affinity", available: true, baselineNdcgAt5: 0.64, ridgeNdcgAt5: 0.74, deltaRidgeMinusBaseline: 0.10, foldsEvaluated: 5 },
+        { mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.70, deltaRidgeMinusBaseline: 0.02, foldsEvaluated: 5 }
+      ]
+    },
+    reason: null
   },
   recommendationQuality: {
     ranking: {
@@ -48,7 +58,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v2");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v3");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -67,6 +77,10 @@ assert.equal(compact.evaluation.ridgeExperiment.mae, 1.05);
 assert.equal(compact.evaluation.ridgeExperiment.baselineMaeSameFolds, 1.2);
 assert.equal(compact.evaluation.ridgeExperiment.deltaBaselineMinusRidge, 0.15);
 assert.deepEqual(compact.evaluation.ridgeExperiment.selectedAlphaCounts, { "0.1": 1, "1": 2, "10": 2 });
+assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.available, true);
+assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[0].ridgeNdcgAt5, 0.72);
+assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[1].deltaRidgeMinusBaseline, 0.1);
+assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.sampleCount, 60);
 assert.equal(compact.evaluation.rankingQuality.modes[2].ndcgAt5, 0.68);
 assert.equal(compact.evaluation.currentListDiversity[0].score, 0.4);
 assert.equal(compact.privacy.generatedLocally, true);
