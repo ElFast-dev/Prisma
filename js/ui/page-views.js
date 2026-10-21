@@ -263,7 +263,12 @@ export function createPageViews(ctx) {
     const root = ctx.$("#appRoot");
     if (!root) return;
     const primaryPage = ctx.currentPage === "lab" ? "home" : (ctx.currentPage === "data" ? "library" : ctx.currentPage);
-    ctx.$$(".nav-item").forEach(function (button) { button.classList.toggle("active",button.dataset.nav === primaryPage); });
+    ctx.$(".nav-item").forEach(function (button) {
+      const active = button.dataset.nav === primaryPage;
+      button.classList.toggle("active",active);
+      if (active) button.setAttribute("aria-current","page");
+      else button.removeAttribute("aria-current");
+    });
     const views = {home:renderHome,catalog:renderCatalog,library:renderLibrary,lab:renderLab,data:renderData};
     root.innerHTML = (views[ctx.currentPage] || renderHome)() + (ctx.currentPage === "data" ? ctx.renderTMDBAttribution() : "");
     if (ctx.currentPage === "catalog") {
