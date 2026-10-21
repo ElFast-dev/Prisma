@@ -517,6 +517,16 @@ jobs:
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 if (!(await page.locator(".detail-action-strip").innerText()).includes("8/10")) throw new Error(name + ": the saved rating did not return to the film detail.");
 
+                // Reopen the editor to verify that the selected emotion survived saving.
+                await page.locator(".detail-action-strip [data-action='rate']").click();
+                const persistedEmotion = page.locator(".rating-sheet [data-action='emotion'][data-emotion='Asombro']");
+                await persistedEmotion.waitFor({ state: "visible", timeout: 10000 });
+                if (!(await persistedEmotion.getAttribute("class")).includes("selected")) {
+                  throw new Error(name + ": the selected emotion was not persisted with the rating");
+                }
+                await page.locator(".rating-sheet [data-action='close-modal']").click();
+                await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
+
                 // Hide/unhide must update the current detail state both ways.
                 const hiddenToggle = page.locator(".detail-state-actions [data-action='toggle-hidden']");
                 await hiddenToggle.click();
