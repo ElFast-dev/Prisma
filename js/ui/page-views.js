@@ -254,12 +254,21 @@ export function createPageViews(ctx) {
           : (evaluation.decadeImprovement > 0
             ? 'Con década, el MAE baja ' : 'Con década, el MAE sube ') +
               Math.abs(evaluation.decadeImprovement).toFixed(2).replace(".",",") + ' puntos frente a la variante sin década.') + '</div>';
-    const evaluationMarkup = evaluation.available ?
+    const themeShrinkageEvaluationMarkup = evaluation.themeShrinkageMae == null
+      ? '<div class="metric-note">Regularización experimental de temas: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>'
+      : '<div class="metric-note">Experimento (temas atenuados por soporte): ' + evaluation.themeShrinkageMae.toFixed(2).replace(".",",") + ' MAE · n=' + evaluation.count + ' · n/(n+' + evaluation.themeShrinkagePrior + ')</div>' +
+        '<div class="metric-note">' + (Math.abs(evaluation.themeShrinkageDelta) < 0.005
+          ? 'La regularización no cambia el MAE de forma apreciable en esta muestra.'
+          : (evaluation.themeShrinkageDelta > 0
+            ? 'La variante experimental reduce el MAE en ' : 'La variante experimental aumenta el MAE en ') +
+              Math.abs(evaluation.themeShrinkageDelta).toFixed(2).replace(".",",") + ' puntos frente al modelo base.') + '</div>' +
+        '<div class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo base. Diferencia descriptiva, no una prueba de significación estadística.</div>';
+    const evaluationMarkup = (evaluation.available ?
       '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".",",") + '</div>' +
       '<div class="metric-note">MAE del modelo · n=' + evaluation.count + '</div>' +
       '<div class="metric-note">Referencia (media de entrenamiento): ' + evaluation.baselineMae.toFixed(2).replace(".",",") + '</div>' +
       evaluationComparison + decadeEvaluationMarkup :
-      '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>';
+      '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>') + themeShrinkageEvaluationMarkup;
     return '<section class="page-heading"><h1>Laboratorio</h1>' + ctx.infoButton("lab","Información sobre el Laboratorio") + '</section>' +
       '<div class="metrics-grid">' + ctx.metric("Historial enlazado",profile.withMetadata + "/" + stats.total,"") + ctx.metric("Señales",String(profile.features.size),"") + ctx.metric("Nota media",overall.toFixed(1).replace(".",","),"") + '</div>' +
       '<div class="lab-metadata-host">' + ctx.renderTMDBHistoryPanel() + '</div>' +

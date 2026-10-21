@@ -23,6 +23,7 @@ const baseInput = {
   ratingEvaluation: {
     available: true, count: 4, mae: 1.2, baselineMae: 1.5,
     improvementPct: 20, withoutDecadeMae: 1.25, decadeImprovement: 0.05,
+    themeShrinkageMae: 1.1, themeShrinkageDelta: 0.1, themeShrinkagePrior: 2,
     decadeExamples: 3
   },
   recommendationQuality: {
@@ -54,6 +55,9 @@ assert.equal(compact.model.featureAggregates.signalTypes.theme.singleObservation
 assert.equal(compact.model.featureAggregates.featureDetails, undefined,
   "El informe resumido no debe contener nombres de señales");
 assert.equal(compact.evaluation.ratingPrediction.mae, 1.2);
+assert.equal(compact.evaluation.ratingPrediction.themeShrinkageMae, 1.1);
+assert.equal(compact.evaluation.ratingPrediction.themeShrinkageDeltaBaseMinusRegularized, 0.1);
+assert.equal(compact.evaluation.ratingPrediction.themeShrinkageSupportPrior, 2);
 assert.equal(compact.evaluation.rankingQuality.modes[2].ndcgAt5, 0.68);
 assert.equal(compact.evaluation.currentListDiversity[0].score, 0.4);
 assert.equal(compact.privacy.generatedLocally, true);
@@ -101,6 +105,8 @@ assert.match(appSource, /buildRecommendationDiagnosticReport/);
 assert.match(appSource, /navigator\.clipboard\.writeText/);
 assert.match(pageViewsSource, /data-action="copy-recommendation-diagnostics"/);
 assert.match(pageViewsSource, /No incluye títulos de películas, IDs TMDB/);
+assert.match(pageViewsSource, /Experimento \(temas atenuados por soporte\)/);
+assert.match(reportSource, /themeShrinkageDeltaBaseMinusRegularized/);
 assert.match(pageViewsSource, /Incluir hasta 40 nombres de señales agregadas/);
 assert.match(eventHandlersSource, /action === "copy-recommendation-diagnostics"/);
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,

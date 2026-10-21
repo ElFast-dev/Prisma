@@ -15,7 +15,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/core/storage.js` | IndexedDB y fallback a localStorage. |
 | `js/core/storage-protection.js` | Consulta persistencia/cuota del almacenamiento y solicita persistencia solo tras una acción explícita. |
 | `js/recommendations/features.js` | Extracción de géneros, etiquetas y década de estreno si existe un año válido. |
-| `js/recommendations/engine.js` | Perfil de preferencias, predicción y evaluación leave-one-out con una ablación de la señal de década, mediante dependencias explícitas. |
+| `js/recommendations/engine.js` | Perfil de preferencias, predicción, evaluación leave-one-out con ablación de década y experimento diagnóstico opcional de regularización de temas poco respaldados; la variante experimental no altera las recomendaciones activas. |
 | `js/recommendations/evaluation.js` | Evaluación offline de nDCG@5 por modo sobre pliegues y candidatas comunes, además de diversidad de géneros en las listas actuales; no ajusta automáticamente el recomendador. |
 | `js/recommendations/ranking.js` | Puntúa y diversifica candidatas de catálogo local y el pool efímero de películas populares ya consultadas en TMDB; excluye la colección y no persiste candidatas remotas. |
 | `js/diagnostics/recommendation-report.js` | Construye un informe JSON agregado del Laboratorio, con etiquetas de señales opcionales y sin serializar registros individuales ni acceder al DOM, almacenamiento o red. |
