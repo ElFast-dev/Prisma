@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, ridgeEvaluation, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -15,6 +15,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/recommendations/features.js', 'utf8'),
   readFile('js/recommendations/engine.js', 'utf8'),
   readFile('js/recommendations/evaluation.js', 'utf8'),
+  readFile('js/recommendations/ridge-evaluation.js', 'utf8'),
   readFile('js/catalog/csv-parser.js', 'utf8'),
   readFile('js/catalog/catalog-model.js', 'utf8'),
   readFile('js/collection/collection-model.js', 'utf8'),
@@ -68,6 +69,7 @@ const modules = [
   ['js/recommendations/features.js', features],
   ['js/recommendations/engine.js', engine],
   ['js/recommendations/evaluation.js', evaluation],
+  ['js/recommendations/ridge-evaluation.js', ridgeEvaluation],
   ['js/recommendations/preferences.js', recommendationPreferences],
   ['js/catalog/csv-parser.js', csvParser],
   ['js/catalog/catalog-model.js', catalogModel],
@@ -93,6 +95,8 @@ const modules = [
   ['js/ui/theme-controller.js', themeController]
 ];
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
+assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261021-1"),
+  "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {
     const resolvedPath = './' + posix.normalize(posix.join(posix.dirname(filename), match[1])).replace(/^\.\//, '');

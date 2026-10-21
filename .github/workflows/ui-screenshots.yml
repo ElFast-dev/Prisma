@@ -100,7 +100,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261021-24") &&
-                  lastUI.appSrc.includes("v=ui-20261021-56") &&
+                  lastUI.appSrc.includes("v=ui-20261021-57") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -245,6 +245,9 @@ jobs:
                 // The local diagnostic report must be opt-in, reviewable, and omit raw movie records.
                 await page.locator(".topbar [data-nav='lab']").click();
                 await page.locator(".recommendation-diagnostic-panel").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".ridge-experiment-panel").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator('[data-action="run-ridge-experiment"]').click();
+                await page.waitForFunction(() => (document.querySelector(".ridge-experiment-panel")?.innerText || "").includes("Se necesitan al menos 30 películas únicas"), null, { timeout: 10000 });
                 await page.evaluate(() => {
                   Object.defineProperty(navigator, "clipboard", {
                     configurable: true,
@@ -269,7 +272,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v1" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v2" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||

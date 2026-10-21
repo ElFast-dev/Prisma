@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v1";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v2";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -148,6 +148,37 @@ function ratingEvaluation(source) {
   };
 }
 
+function ridgeEvaluation(source) {
+  const evaluation = source && typeof source === "object" ? source : null;
+  const available = Boolean(evaluation && evaluation.available);
+  const alphaCounts = {};
+  const rawCounts = evaluation && evaluation.selectedAlphaCounts && typeof evaluation.selectedAlphaCounts === "object"
+    ? evaluation.selectedAlphaCounts : {};
+  Object.keys(rawCounts).sort(function (left, right) { return Number(left) - Number(right); }).forEach(function (alpha) {
+    const numericAlpha = Number(alpha);
+    const count = nonNegativeInteger(rawCounts[alpha]);
+    if (Number.isFinite(numericAlpha) && numericAlpha > 0 && count > 0) {
+      alphaCounts[String(numericAlpha)] = count;
+    }
+  });
+  const rawGrid = evaluation && Array.isArray(evaluation.alphaGrid) ? evaluation.alphaGrid : [];
+  return {
+    executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
+    available,
+    sampleCount: nonNegativeInteger(evaluation && evaluation.count),
+    mae: available ? rounded(evaluation.mae, 4) : null,
+    baselineMaeSameFolds: available ? rounded(evaluation.baselineMae, 4) : null,
+    deltaBaselineMinusRidge: available ? rounded(evaluation.deltaBaseMinusRidge, 4) : null,
+    outerFolds: nonNegativeInteger(evaluation && evaluation.outerFolds),
+    foldsEvaluated: nonNegativeInteger(evaluation && evaluation.foldsEvaluated),
+    innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
+    alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; }),
+    selectedAlphaCounts: alphaCounts,
+    unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
+      ? evaluation.reason : (evaluation ? "El experimento Ridge no está disponible." : "El experimento Ridge no se ha ejecutado."))
+  };
+}
+
 function rankingEvaluation(source) {
   const wrapper = source || {};
   const ranking = wrapper.ranking || wrapper;
@@ -215,7 +246,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Recuentos agregados de valoraciones, catálogo y colecciones",
         "Distribución de puntuaciones por valor",
         "Cobertura y señales agregadas del perfil",
-        "Pesos del algoritmo y resultados MAE/nDCG@5/diversidad disponibles"
+        "Pesos del algoritmo y resultados agregados disponibles de MAE, Ridge, nDCG@5 y diversidad"
       ],
       excludes: [
         "Títulos y títulos originales de películas",
@@ -253,6 +284,7 @@ export function buildRecommendationDiagnosticReport(input) {
     },
     evaluation: {
       ratingPrediction: ratingEvaluation(source.ratingEvaluation),
+      ridgeExperiment: ridgeEvaluation(source.ridgeEvaluation),
       rankingQuality: quality.ranking,
       currentListDiversity: quality.diversity
     },

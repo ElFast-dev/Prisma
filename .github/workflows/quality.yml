@@ -36,6 +36,7 @@ jobs:
           node --check js/core/state-model.js
           node --check js/recommendations/features.js
           node --check js/recommendations/engine.js
+          node --check js/recommendations/ridge-evaluation.js
           node --check js/recommendations/evaluation.js
           node --check js/catalog/csv-parser.js
           node --check js/catalog/catalog-model.js
@@ -94,6 +95,9 @@ jobs:
 
       - name: Test model evaluation identity and baseline
         run: node scripts/test-model-evaluation.mjs
+
+      - name: Test Ridge regression experiment
+        run: node scripts/test-ridge-evaluation.mjs
 
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs

@@ -210,7 +210,7 @@ export function createPageViews(ctx) {
 
   function renderRecommendationDiagnosticPanel() {
     const reportText = ctx.recommendationDiagnosticReportText || "";
-    const disclosure = '<p class="metric-note">El informe se calcula con tus datos reales en este dispositivo. Incluye cantidades, distribución agregada de notas, cobertura del perfil, pesos del modelo, estadísticas resumidas de señales y los resultados disponibles de MAE, nDCG@5 y diversidad.</p>' +
+    const disclosure = '<p class="metric-note">El informe se calcula con tus datos reales en este dispositivo. Incluye cantidades, distribución agregada de notas, cobertura del perfil, pesos del modelo, estadísticas resumidas de señales y los resultados disponibles de MAE, Ridge, nDCG@5 y diversidad.</p>' +
       '<p class="metric-note">No incluye títulos de películas, IDs TMDB, notas por película, fechas personales, emociones, notas libres, credenciales ni copias de seguridad. Si incluyes nombres de señales, esos géneros y temas agregados pueden revelar parte de tus gustos.</p>';
     const detailsToggle = '<label class="diagnostic-feature-option"><input id="diagnosticFeatureLabels" type="checkbox"' +
       (ctx.recommendationDiagnosticFeatureLabelsIncluded ? ' checked' : '') +
@@ -227,6 +227,50 @@ export function createPageViews(ctx) {
       '<p class="metric-note">Copiar no envía datos. Solo tú decides si pegas el informe en otra conversación.</p>' +
       output + '</section>';
   }
+
+  function renderRidgeExperimentPanel() {
+    const result = ctx.ridgeEvaluationResult || null;
+    const busy = Boolean(ctx.ridgeEvaluationBusy);
+    const buttonLabel = busy ? "Calculando Ridge…" : (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge");
+    let body = "";
+    if (busy) {
+      body = '<p class="metric-note" aria-live="polite">Calculando con datos locales. La aplicación no enviará ni guardará datos nuevos.</p>';
+    } else if (!result) {
+      body = '<p class="metric-note" aria-live="polite">Esta prueba no se ejecuta automáticamente. Usa validación cruzada anidada para elegir la regularización sin consultar las notas retenidas al evaluar.</p>';
+    } else if (!result.available) {
+      body = '<p class="metric-note" aria-live="polite">' + ctx.escapeHTML(result.reason || "No hay una muestra suficiente para evaluar Ridge.") + '</p>';
+    } else {
+      const ridgeMae = Number(result.mae);
+      const baseMae = Number(result.baselineMae);
+      const delta = Number(result.deltaBaseMinusRidge);
+      const alphaCounts = Object.keys(result.selectedAlphaCounts || {}).filter(function (alpha) {
+        return Number(result.selectedAlphaCounts[alpha]) > 0;
+      }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+        return alpha + ": " + Number(result.selectedAlphaCounts[alpha]);
+      }).join(" · ");
+      const comparison = Math.abs(delta) < 0.005
+        ? "Ridge y la base aditiva tienen un MAE muy parecido en estos pliegues."
+        : delta > 0
+          ? "Ridge reduce el MAE en " + delta.toFixed(3).replace(".", ",") + " puntos frente a la base aditiva en los mismos pliegues."
+          : "Ridge aumenta el MAE en " + Math.abs(delta).toFixed(3).replace(".", ",") + " puntos frente a la base aditiva en los mismos pliegues.";
+      body = '<div class="metrics-grid">' +
+        ctx.metric("MAE Ridge", ridgeMae.toFixed(4).replace(".", ","), result.count + " películas · " + result.foldsEvaluated + "/" + result.outerFolds + " pliegues") +
+        ctx.metric("MAE aditivo emparejado", baseMae.toFixed(4).replace(".", ","), "Mismas películas externas") +
+        ctx.metric("Diferencia base − Ridge", (delta > 0 ? "+" : "") + delta.toFixed(4).replace(".", ","), "Positivo favorece Ridge") +
+        '</div><p class="metric-note" aria-live="polite">' + ctx.escapeHTML(comparison) + '</p>' +
+        '<p class="metric-note">Alpha se seleccionó en ' + result.innerFolds + ' pliegues internos entre ' +
+          (result.alphaGrid || []).map(function (value) { return String(value); }).join(", ") + '. Distribución elegida por pliegue: ' +
+          ctx.escapeHTML(alphaCounts || "sin datos") + '.</p>' +
+        '<p class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo aditivo. La diferencia es descriptiva, no una prueba de significación estadística ni garantía de gusto futuro.</p>';
+    }
+    return '<section class="panel ridge-experiment-panel" aria-labelledby="ridge-experiment-heading">' +
+      '<div class="panel-head"><div><h3 id="ridge-experiment-heading">Experimento Ridge (regularización L2)</h3>' +
+      '<p class="metric-note">Comparación local y explícita con la base aditiva</p></div>' +
+      '<button class="btn btn-secondary btn-small" type="button" data-action="run-ridge-experiment"' +
+      (busy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      body + '</section>';
+  }
+
 
   function renderLab() {
     const stats = ctx.summaryStats();
@@ -316,7 +360,7 @@ export function createPageViews(ctx) {
       '<div class="metric-note">La disimilitud de géneros se calcula con Jaccard entre pares que tienen metadatos. No mide serendipia ni satisfacción.</div></section>' +
       '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación de notas</h3>' + ctx.infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
       '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>' +
-      renderRecommendationDiagnosticPanel();
+      renderRidgeExperimentPanel() + renderRecommendationDiagnosticPanel();
   }
 
 

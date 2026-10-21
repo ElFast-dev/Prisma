@@ -357,3 +357,20 @@ El Laboratorio DEBE mostrar el MAE de la variante experimental, su diferencia co
 - DADO que hay menos de cinco muestras evaluables
 - CUANDO se abre el Laboratorio
 - ENTONCES se explica que el experimento necesita más valoraciones enlazadas
+
+
+### Requirement: Control explícito de evaluación Ridge
+
+El Laboratorio DEBE ofrecer una acción explícita para calcular Ridge y mostrar su estado y métricas agregadas. El cálculo NO DEBE ocurrir en cada renderizado ni cambiar el comportamiento de Descubrir.
+
+#### Scenario: Ejecutar y revisar Ridge
+
+- DADO que se abre el Laboratorio
+- CUANDO se pulsa ejecutar experimento Ridge
+- ENTONCES se muestra el cálculo local y después el MAE Ridge y la base aditiva emparejados, el tamaño de muestra y los parámetros seleccionados
+
+#### Scenario: Historial actualizado
+
+- DADO que se modifican las valoraciones guardadas durante la sesión
+- CUANDO vuelve a renderizarse el Laboratorio
+- ENTONCES los resultados Ridge anteriores se invalidan

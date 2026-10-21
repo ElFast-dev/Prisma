@@ -390,3 +390,20 @@ Prisma DEBE poder comparar de forma local el modelo activo con una variante de d
 - DADO que existe una puntuación regularizada experimental
 - CUANDO Prisma recomienda películas durante el uso normal
 - ENTONCES sigue usando el perfil base y no la variante experimental hasta que una decisión separada se apoye en los resultados
+
+
+### Requirement: Experimento comparativo Ridge local
+
+El Laboratorio DEBE permitir evaluar una variante Ridge con regularización L2 de forma local y bajo demanda. La selección de alpha DEBE ocurrir en pliegues internos del entrenamiento y la comparación con la base aditiva DEBE usar exactamente las mismas películas retenidas externas. El resultado NO DEBE modificar automáticamente el modelo activo ni contener filas individuales en diagnósticos compartidos.
+
+#### Scenario: Selección de regularización sin fuga
+
+- DADO que hay al menos 30 valoraciones únicas válidas con características
+- CUANDO se ejecuta el experimento Ridge
+- ENTONCES alpha se selecciona dentro del entrenamiento de cada uno de cinco pliegues externos mediante tres pliegues internos, y ambas variantes se comparan sobre las mismas filas externas
+
+#### Scenario: Muestra insuficiente o error numérico
+
+- DADO que hay menos de 30 valoraciones únicas o un sistema no puede resolverse de forma estable
+- CUANDO se ejecuta el experimento Ridge
+- ENTONCES Prisma informa que el experimento no está disponible en lugar de mostrar una métrica parcial o inventada
