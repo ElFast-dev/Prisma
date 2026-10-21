@@ -114,6 +114,8 @@ export function registerAppEvents(ctx) {
       if (action === "delete-rating") { await ctx.deleteRating(button.dataset.title,button.dataset.tmdbId); return; }
       if (action === "emotion") {
         if (!ctx.modalDraft) return;
+        const memoriesPanel = ctx.$(".rating-memories");
+        ctx.modalDraft.memoriesExpanded = Boolean(memoriesPanel && memoriesPanel.open);
         const emotion = button.dataset.emotion, index = ctx.modalDraft.emotions.indexOf(emotion);
         if (index >= 0) ctx.modalDraft.emotions.splice(index,1); else ctx.modalDraft.emotions.push(emotion);
         ctx.renderModal();
