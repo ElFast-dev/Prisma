@@ -100,7 +100,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261020-20") &&
-                  lastUI.appSrc.includes("v=ui-20261020-43") &&
+                  lastUI.appSrc.includes("v=ui-20261020-44") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
