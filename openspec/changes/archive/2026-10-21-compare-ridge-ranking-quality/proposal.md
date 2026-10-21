@@ -2,7 +2,7 @@
 
 ## Contexto
 
-El experimento Ridge ejecutado localmente obtuvo MAE 1,0254 frente a 1,1214 del modelo aditivo en las mismas cinco particiones externas. Esa mejora mide el error de las notas previstas, pero no demuestra que las películas mejor valoradas aparezcan antes en las recomendaciones.
+El experimento Ridge existente compara el error de las notas previstas frente al modelo aditivo, pero una mejora de MAE por sí sola no demuestra que las películas mejor valoradas aparezcan antes en las recomendaciones. Las métricas concretas del perfil permanecen en el diagnóstico local y no se publican en la documentación del repositorio.
 
 ## Objetivo
 
