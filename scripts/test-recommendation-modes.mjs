@@ -82,7 +82,7 @@ const [pageViews, eventHandlers, cacheTest, modularTest, spec, workflow] = await
 assert.match(pageViews, /data-action="recommendation-mode"/);
 assert.match(pageViews, /aria-pressed=/);
 assert.match(eventHandlers, /action === "recommendation-mode"/);
-assert.match(spec, /Recomendaciones equilibradas y personalizables/);
+assert.match(spec, /Modos de recomendación ajustables/);
 assert.match(cacheTest, /js\/recommendations\/preferences\.js/);
 assert.match(modularTest, /js\/recommendations\/preferences\.js/);
 assert.match(workflow, /test-recommendation-modes\.mjs/);
