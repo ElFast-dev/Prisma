@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, features, engine, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -32,7 +32,8 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, stateModel, feature
   readFile('js/app/lifecycle.js', 'utf8'),
   readFile('js/import-export/personal-data.js', 'utf8'),
   readFile('js/tmdb/client.js', 'utf8'),
-  readFile('js/ui/theme-controller.js', 'utf8')
+  readFile('js/ui/theme-controller.js', 'utf8'),
+  readFile('js/recommendations/preferences.js', 'utf8')
 ]);
 
 function singleMatch(regex, source, label) {
@@ -60,6 +61,7 @@ const modules = [
   ['js/core/state-model.js', stateModel],
   ['js/recommendations/features.js', features],
   ['js/recommendations/engine.js', engine],
+  ['js/recommendations/preferences.js', recommendationPreferences],
   ['js/catalog/csv-parser.js', csvParser],
   ['js/catalog/catalog-model.js', catalogModel],
   ['js/collection/collection-model.js', collectionModel],

@@ -68,6 +68,15 @@ export function registerAppEvents(ctx) {
       if (action === "restore-backup") { ctx.$("#backupImportInput").click(); return; }
       if (action === "reset") { await ctx.resetAll(); return; }
       if (action === "show-info") { ctx.openInfoSheet(button.dataset.info || "collection"); return; }
+      if (action === "recommendation-mode") {
+        const mode = button.dataset.mode || "";
+        if (!["balanced","affinity","variety"].includes(mode)) return;
+        ctx.recommendationMode = mode;
+        ctx.renderApp();
+        const activeButton = ctx.$('[data-action="recommendation-mode"][data-mode="' + ctx.recommendationMode + '"]');
+        if (activeButton) activeButton.focus();
+        return;
+      }
       if (action === "genre") { ctx.activeGenre = button.dataset.genre || "Todos"; ctx.renderApp(); return; }
       if (action === "details") {
         const requestedId = button.dataset.tmdbId || "";

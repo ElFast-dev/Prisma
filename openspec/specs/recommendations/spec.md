@@ -136,3 +136,38 @@ Prisma DEBE ponderar con mayor influencia directa los géneros que las etiquetas
 - DADO que las señales aprendidas producirían una puntuación fuera del rango permitido
 - CUANDO Prisma calcula la nota estimada
 - ENTONCES la limita al rango de 1 a 10
+
+
+### Requirement: Modos de recomendación ajustables
+
+Prisma DEBE ofrecer Equilibrado como modo predeterminado y permitir elegir Más afines o Más variedad. Los modos DEBEN conservar exclusiones de la colección e identidad única; la preferencia DEBE guardarse solo en el dispositivo y mantenerse separada del perfil personal exportable.
+
+#### Scenario: Afinidad frente a variedad
+
+- DADO que hay candidatas con puntuaciones estimadas comparables
+- CUANDO se elige Más afines o Más variedad
+- ENTONCES Más afines prioriza la puntuación prevista y sus señales coincidentes, mientras Más variedad favorece géneros menos representados con una penalización moderada
+
+#### Scenario: Equilibrado como opción inicial
+
+- DADO que no existe una elección válida guardada
+- CUANDO se abre Descubrir
+- ENTONCES se utiliza Equilibrado y su control aparece como activo
+
+#### Scenario: Preferencia guardada localmente
+
+- DADO que el usuario escoge Más variedad
+- CUANDO recarga la aplicación en el mismo navegador
+- ENTONCES se restaura esa elección sin enviar la preferencia ni el perfil a un servidor
+
+#### Scenario: Fallo de localStorage
+
+- DADO que el navegador bloquea localStorage
+- CUANDO Prisma lee o cambia la preferencia
+- ENTONCES la aplicación continúa sin error y usa Equilibrado al no disponer de un modo guardado
+
+#### Scenario: Colección excluida con todos los modos
+
+- DADO que una candidata pertenece a vistas, valoradas, pendientes u ocultas
+- CUANDO se generan recomendaciones con cualquiera de los tres modos
+- ENTONCES esa candidata no aparece como nuevo descubrimiento
