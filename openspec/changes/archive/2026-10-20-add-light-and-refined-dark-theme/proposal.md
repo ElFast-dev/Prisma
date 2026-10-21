@@ -45,4 +45,4 @@ La capa visual publicada sigue utilizando acentos violetas y fondos azulados. Pr
 - [Validate Prisma](https://github.com/ElFast-dev/Prisma/actions/runs/39519374453): correcto.
 - [Despliegue de GitHub Pages](https://github.com/ElFast-dev/Prisma/actions/runs/39519374424): correcto.
 - [Playwright en la rama antes de fusionar](https://github.com/ElFast-dev/Prisma/actions/runs/39518978427): correcto; revisó modo oscuro y cambio/persistencia del modo claro en escritorio y móvil.
-- [Playwright post-despliegue](https://github.com/ElFast-dev/Prisma/actions/runs/39519413042): ejecución iniciada; resultado final pendiente al preparar este expediente.
+- [Playwright post-despliegue](https://github.com/ElFast-dev/Prisma/actions/runs/39519413042): correcto; la web publicada pasó la validación de UI.
