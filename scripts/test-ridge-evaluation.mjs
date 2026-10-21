@@ -317,7 +317,7 @@ assert.equal(temporalResult.sampleCount, 120);
 assert.equal(temporalResult.timestampedFeatureCount, 120);
 assert.equal(temporalResult.explicitDateCount, 120);
 assert.equal(temporalResult.unverifiedDateCount, 0);
-assert.equal(temporalResult.dateProvenanceStatus, "verified");
+assert.equal(temporalResult.dateProvenanceStatus, "explicit");
 assert.equal(temporalResult.missingDateCount, 0);
 assert.equal(temporalResult.distinctDayCount, 12,
   "Los registros del mismo día deben agruparse como una única unidad temporal.");
