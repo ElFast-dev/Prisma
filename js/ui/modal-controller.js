@@ -59,7 +59,9 @@ export function createModalController(ctx) {
   }
 
   function closeModal() {
-    if (ctx.modalDraft && ctx.modalDraft.mode === "rate" && ctx.ratingReturnDetail && ctx.movieDetail) {
+    if (ctx.modalDraft && ctx.modalDraft.mode === "rate" && ctx.movieDetail) {
+      // A live detail sheet is sufficient evidence for returning; do not let a stale
+      // ratingReturnDetail flag close and discard the underlying movie detail.
       ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.renderModal(); return;
     }
     ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.movieDetail = null; ctx.personDetail = null; ctx.utilitySheet = null;
