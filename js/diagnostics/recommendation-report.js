@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v5";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v6";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -286,6 +286,10 @@ function temporalRidgeEvaluation(source) {
     sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
     featureRowCount: nonNegativeInteger(evaluation && evaluation.featureRowCount),
     timestampedFeatureCount: nonNegativeInteger(evaluation && evaluation.timestampedFeatureCount),
+    explicitDateCount: nonNegativeInteger(evaluation && evaluation.explicitDateCount),
+    unverifiedDateCount: nonNegativeInteger(evaluation && evaluation.unverifiedDateCount),
+    dateProvenanceStatus: evaluation && evaluation.dateProvenanceStatus === "verified" ? "verified" :
+      (evaluation && evaluation.dateProvenanceStatus === "exploratory" ? "exploratory" : "unavailable"),
     missingDateCount: nonNegativeInteger(evaluation && evaluation.missingDateCount),
     distinctDayCount: nonNegativeInteger(evaluation && evaluation.distinctDayCount),
     warmupCount: nonNegativeInteger(evaluation && evaluation.warmupCount),
@@ -391,7 +395,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Recuentos agregados de valoraciones, catálogo y colecciones",
         "Distribución de puntuaciones por valor",
         "Cobertura y señales agregadas del perfil",
-        "Pesos del algoritmo y resultados agregados de MAE, Ridge, validación repetida, evaluación temporal walk-forward, nDCG@5 por modo y diversidad"
+        "Pesos del algoritmo y resultados agregados de MAE, Ridge, validación repetida, evaluación temporal walk-forward y procedencia agregada de fechas, nDCG@5 por modo y diversidad"
       ],
       excludes: [
         "Títulos y títulos originales de películas",
@@ -438,6 +442,7 @@ export function buildRecommendationDiagnosticReport(input) {
       "MAE mide la predicción de notas conocidas y no garantiza satisfacción con películas futuras.",
       "nDCG@5 de Prisma evalúa el orden de películas valoradas retenidas, no todas las películas desconocidas del catálogo.",
       "La evaluación temporal entrena con días anteriores y prueba con días posteriores; sus ventanas reutilizan el mismo historial y no son muestras independientes.",
+      "Las métricas temporales con fechas sin procedencia verificable se marcan como exploratorias; el informe solo comparte recuentos agregados de procedencia.",
       "La diversidad Jaccard usa las listas actuales y no es una medida de serendipia.",
       "Una mejora observada en esta muestra personal es descriptiva; no demuestra significación estadística."
     ]
