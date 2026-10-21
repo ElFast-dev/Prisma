@@ -1,6 +1,8 @@
 # Especificación de interfaz: procedencia temporal
 
-## Requirement: Mostrar procedencia agregada
+## Requirements
+
+### Requirement: Mostrar procedencia agregada
 
 El Laboratorio DEBE mostrar recuentos agregados de fechas explícitas, fechas no verificadas y fechas ausentes. Si usa una o más fechas heredadas o generadas por acciones, DEBE etiquetar los resultados como exploratorios. El diagnóstico comparte solo recuentos, nunca fechas exactas ni películas individuales.
 
