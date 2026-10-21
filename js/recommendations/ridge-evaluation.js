@@ -1,6 +1,11 @@
 const OUTER_FOLDS = 5;
 const INNER_FOLDS = 3;
 const MIN_RECORDS = 30;
+const MIN_RANKING_RECORDS = 50;
+const MIN_RELEVANT_RECORDS = 10;
+const RELEVANT_RATING_THRESHOLD = 7;
+const RANKING_CUTOFF = 5;
+const RANKING_MODES = Object.freeze(["balanced", "affinity", "variety"]);
 const ALPHAS = Object.freeze([0.1, 1, 10, 100]);
 const FAMILY_SCALES = Object.freeze({ genre: 1, theme: 0.35, decade: 0.2 });
 
@@ -202,7 +207,68 @@ function identityFor(entry, movie, dependencies) {
   return "title:" + title + ":" + (numericYear(entry) || numericYear(movie));
 }
 
-function unavailableResult(count, reason) {
+
+function relevanceGain(rating) {
+  return rating >= RELEVANT_RATING_THRESHOLD ? rating - 6 : 0;
+}
+function dcgAt5(rows) {
+  return rows.slice(0, RANKING_CUTOFF).reduce(function (sum, row, index) {
+    return sum + row.gain / Math.log2(index + 2);
+  }, 0);
+}
+function unavailableRankingQuality(count, relevantCount, reason) {
+  let unavailableReason = reason || "";
+  if (!unavailableReason && count < MIN_RANKING_RECORDS) unavailableReason = "Se necesitan al menos " + MIN_RANKING_RECORDS + " películas únicas con características para comparar nDCG@5.";
+  if (!unavailableReason && relevantCount < MIN_RELEVANT_RECORDS) unavailableReason = "Se necesitan al menos " + MIN_RELEVANT_RECORDS + " valoraciones de 7 o más para comparar nDCG@5.";
+  if (!unavailableReason) unavailableReason = "No se pudo calcular una comparación de ranking estable.";
+  return {
+    available: false, count: count, relevantCount: relevantCount, folds: OUTER_FOLDS,
+    foldsEvaluated: 0, cutoff: RANKING_CUTOFF, relevantThreshold: RELEVANT_RATING_THRESHOLD,
+    reason: unavailableReason,
+    modes: RANKING_MODES.map(function (mode) {
+      return { mode: mode, available: false, baselineNdcgAt5: null, ridgeNdcgAt5: null,
+        deltaRidgeMinusBaseline: null, foldsEvaluated: 0 };
+    })
+  };
+}
+function completeRankingQuality(count, relevantCount, totals) {
+  if (count < MIN_RANKING_RECORDS || relevantCount < MIN_RELEVANT_RECORDS) {
+    return unavailableRankingQuality(count, relevantCount);
+  }
+  const modes = RANKING_MODES.map(function (mode) {
+    const total = totals[mode];
+    const available = Boolean(total && total.idealDcg > 0 && total.foldsEvaluated > 0);
+    const baselineNdcgAt5 = available ? total.baselineDcg / total.idealDcg : null;
+    const ridgeNdcgAt5 = available ? total.ridgeDcg / total.idealDcg : null;
+    return { mode: mode, available: available, baselineNdcgAt5: baselineNdcgAt5,
+      ridgeNdcgAt5: ridgeNdcgAt5,
+      deltaRidgeMinusBaseline: available ? ridgeNdcgAt5 - baselineNdcgAt5 : null,
+      foldsEvaluated: total ? total.foldsEvaluated : 0 };
+  });
+  const usable = modes.filter(function (mode) { return mode.available; });
+  if (!usable.length) return unavailableRankingQuality(count, relevantCount,
+    "No hubo suficientes valoraciones relevantes distribuidas en los pliegues externos.");
+  return { available: true, count: count, relevantCount: relevantCount, folds: OUTER_FOLDS,
+    foldsEvaluated: Math.min.apply(null, usable.map(function (mode) { return mode.foldsEvaluated; })),
+    cutoff: RANKING_CUTOFF, relevantThreshold: RELEVANT_RATING_THRESHOLD, reason: null, modes: modes };
+}
+function rankingCandidate(row, prediction, fallbackScore, token) {
+  const movie = row.movie || {};
+  const entry = row.entry || {};
+  return {
+    title: movie.title || entry.title || "",
+    genres: movie.genres && movie.genres.length ? movie.genres.slice() : (entry.genres || []).slice(),
+    tags: movie.tags && movie.tags.length ? movie.tags.slice() : (entry.tags || []).slice(),
+    prediction: {
+      score: Number.isFinite(prediction && prediction.score) ? prediction.score : fallbackScore,
+      matches: Array.isArray(prediction && prediction.matches) ? prediction.matches : [],
+      freshFeatures: Number.isFinite(prediction && prediction.freshFeatures) ? prediction.freshFeatures : 0
+    },
+    evaluationToken: token
+  };
+}
+
+function unavailableResult(count, reason, rankingQuality) {
   return {
     available: false,
     count: Number.isInteger(count) && count >= 0 ? count : 0,
@@ -216,6 +282,7 @@ function unavailableResult(count, reason) {
     selectedAlphaCounts: {},
     predictionMin: null,
     predictionMax: null,
+    rankingQuality: rankingQuality || unavailableRankingQuality(count, 0),
     reason: reason || "No hay suficientes valoraciones únicas con características."
   };
 }
@@ -227,6 +294,14 @@ export function createRidgeRecommendationExperiment(dependencies) {
   const ratingValue = dependencies.ratingValue;
   const buildProfile = dependencies.buildProfile;
   const predictRating = dependencies.predictRating;
+  const rankCandidates = dependencies.rankCandidates;
+
+  function rankRows(candidates, mode) {
+    if (typeof rankCandidates === "function") return (rankCandidates(candidates, RANKING_CUTOFF, mode) || []).slice(0, RANKING_CUTOFF);
+    return candidates.slice().sort(function (left, right) {
+      return right.prediction.score - left.prediction.score || left.title.localeCompare(right.title);
+    }).slice(0, RANKING_CUTOFF);
+  }
 
   function mappedRows() {
     const seen = new Set();
@@ -283,9 +358,10 @@ export function createRidgeRecommendationExperiment(dependencies) {
 
   function evaluate() {
     const rows = mappedRows();
+    const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
     if (rows.length < MIN_RECORDS) {
-      return unavailableResult(rows.length,
-        "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.");
+      const reason = "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.";
+      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount));
     }
     try {
       const kernel = buildKernel(rows);
@@ -295,6 +371,11 @@ export function createRidgeRecommendationExperiment(dependencies) {
       const baselineErrors = [];
       const selectedAlphaCounts = Object.create(null);
       ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
+      const rankingTotals = Object.create(null);
+      RANKING_MODES.forEach(function (mode) {
+        rankingTotals[mode] = { baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0 };
+      });
+      const canCompareRanking = rows.length >= MIN_RANKING_RECORDS && relevantCount >= MIN_RELEVANT_RECORDS;
       let predictionMin = Infinity;
       let predictionMax = -Infinity;
 
@@ -306,16 +387,53 @@ export function createRidgeRecommendationExperiment(dependencies) {
         const ridgeModel = trainRidge(rows, kernel, trainingIndices, alpha);
         const trainingRatings = trainingIndices.map(function (index) { return rows[index].entry; });
         const additiveProfile = buildProfile(trainingRatings);
-        testIndices.forEach(function (index) {
-          const ridgePrediction = predictRidge(rows, ridgeModel, rows[index].trainingVector);
-          const additiveResult = predictRating(rows[index].candidate, additiveProfile);
+        const baselineCandidates = [];
+        const ridgeCandidates = [];
+        const gains = new Map();
+        testIndices.forEach(function (index, position) {
+          const row = rows[index];
+          const ridgePrediction = predictRidge(rows, ridgeModel, row.trainingVector);
+          const additiveResult = predictRating(row.candidate, additiveProfile);
           const additivePrediction = clampRating(Number.isFinite(additiveResult && additiveResult.score)
             ? additiveResult.score : additiveProfile.average);
-          ridgeErrors.push(Math.abs(ridgePrediction - rows[index].rating));
-          baselineErrors.push(Math.abs(additivePrediction - rows[index].rating));
+          ridgeErrors.push(Math.abs(ridgePrediction - row.rating));
+          baselineErrors.push(Math.abs(additivePrediction - row.rating));
           predictionMin = Math.min(predictionMin, ridgePrediction);
           predictionMax = Math.max(predictionMax, ridgePrediction);
+          if (canCompareRanking) {
+            const token = "candidate-" + position;
+            const baselinePrediction = Object.assign({}, additiveResult || {}, { score: additivePrediction });
+            const ridgePredictionExplained = Object.assign({}, additiveResult || {}, { score: ridgePrediction });
+            baselineCandidates.push(rankingCandidate(row, baselinePrediction, additivePrediction, token));
+            ridgeCandidates.push(rankingCandidate(row, ridgePredictionExplained, ridgePrediction, token));
+            gains.set(token, relevanceGain(row.rating));
+          }
         });
+        if (canCompareRanking) {
+          const ideal = testIndices.map(function (_, position) {
+            const token = "candidate-" + position;
+            return { gain: gains.get(token) || 0, token: token };
+          }).sort(function (left, right) {
+            return right.gain - left.gain || left.token.localeCompare(right.token);
+          });
+          const idealDcg = dcgAt5(ideal);
+          if (idealDcg > 0) {
+            RANKING_MODES.forEach(function (mode) {
+              const baselineTop = rankRows(baselineCandidates, mode);
+              const ridgeTop = rankRows(ridgeCandidates, mode);
+              const baselineDcg = dcgAt5(baselineTop.map(function (candidate) {
+                return { gain: gains.get(candidate.evaluationToken) || 0 };
+              }));
+              const ridgeDcg = dcgAt5(ridgeTop.map(function (candidate) {
+                return { gain: gains.get(candidate.evaluationToken) || 0 };
+              }));
+              rankingTotals[mode].baselineDcg += baselineDcg;
+              rankingTotals[mode].ridgeDcg += ridgeDcg;
+              rankingTotals[mode].idealDcg += idealDcg;
+              rankingTotals[mode].foldsEvaluated += 1;
+            });
+          }
+        }
       });
 
       const mae = meanAbsoluteError(ridgeErrors);
@@ -333,11 +451,14 @@ export function createRidgeRecommendationExperiment(dependencies) {
         selectedAlphaCounts: selectedAlphaCounts,
         predictionMin: predictionMin,
         predictionMax: predictionMax,
+        rankingQuality: canCompareRanking ? completeRankingQuality(rows.length, relevantCount, rankingTotals) :
+          unavailableRankingQuality(rows.length, relevantCount),
         reason: null
       };
     } catch (_) {
-      return unavailableResult(rows.length,
-        "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.");
+      const reason = "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.";
+      return unavailableResult(rows.length, reason,
+        unavailableRankingQuality(rows.length, relevantCount, "La comparación Ridge de ranking no se completó porque el ajuste no terminó."));
     }
   }
 

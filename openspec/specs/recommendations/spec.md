@@ -407,3 +407,26 @@ El Laboratorio DEBE permitir evaluar una variante Ridge con regularización L2 d
 - DADO que hay menos de 30 valoraciones únicas o un sistema no puede resolverse de forma estable
 - CUANDO se ejecuta el experimento Ridge
 - ENTONCES Prisma informa que el experimento no está disponible en lugar de mostrar una métrica parcial o inventada
+
+
+### Requirement: Comparación del orden con Ridge
+
+El experimento Ridge DEBE comparar el orden producido por Ridge y el predictor aditivo sobre las mismas candidatas retenidas y los mismos pliegues externos. DEBE reutilizar los tres modos de ranking, calcular nDCG@5 con ganancia graduada para valoraciones de 7 o más y mantenerse local y agregado; NO DEBE cambiar el predictor ni el ranking activo.
+
+#### Scenario: Comparación emparejada de modos
+
+- DADO que hay al menos 50 películas únicas con características y 10 valoraciones de 7 o más
+- CUANDO se completa el experimento Ridge
+- ENTONCES Equilibrado, Más afines y Más variedad informan nDCG@5 de ambos modelos sobre las mismas películas retenidas por pliegue
+
+#### Scenario: Muestra insuficiente para el ranking
+
+- DADO que hay menos de 50 películas únicas evaluables o menos de 10 valoraciones de 7 o más
+- CUANDO se completa el experimento Ridge
+- ENTONCES nDCG@5 se marca como no disponible con motivo y recuento, sin ceros ficticios
+
+#### Scenario: Preservar producción y privacidad
+
+- DADO que el experimento produce métricas Ridge de MAE y nDCG@5
+- CUANDO Prisma recomienda películas o exporta el diagnóstico
+- ENTONCES el motor activo permanece aditivo y el informe incluye solo métricas agregadas sin identidades ni puntuaciones individuales

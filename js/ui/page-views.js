@@ -253,6 +253,25 @@ export function createPageViews(ctx) {
         : delta > 0
           ? "Ridge reduce el MAE en " + delta.toFixed(3).replace(".", ",") + " puntos frente a la base aditiva en los mismos pliegues."
           : "Ridge aumenta el MAE en " + Math.abs(delta).toFixed(3).replace(".", ",") + " puntos frente a la base aditiva en los mismos pliegues.";
+      const rankingQuality = result.rankingQuality || null;
+      const rankingModeNames = { balanced: "Equilibrado", affinity: "Más afines", variety: "Más variedad" };
+      let rankingMarkup = "";
+      if (rankingQuality && rankingQuality.available) {
+        rankingMarkup = '<div class="ridge-ranking-quality"><h4>Calidad del orden · nDCG@5</h4>' +
+          '<p class="metric-note">Mismas películas externas y mismos pliegues para los dos modelos; son valoraciones conocidas retenidas, no películas desconocidas.</p>' +
+          (rankingQuality.modes || []).map(function (mode) {
+            const baseline = Number(mode.baselineNdcgAt5);
+            const ridge = Number(mode.ridgeNdcgAt5);
+            const difference = Number(mode.deltaRidgeMinusBaseline);
+            if (!mode.available || !Number.isFinite(baseline) || !Number.isFinite(ridge) || !Number.isFinite(difference)) return "";
+            return '<p class="metric-note"><strong>' + ctx.escapeHTML(rankingModeNames[mode.mode] || mode.mode) + ':</strong> aditivo ' +
+              baseline.toFixed(4).replace(".", ",") + ' · Ridge ' + ridge.toFixed(4).replace(".", ",") + ' · cambio ' +
+              (difference > 0 ? "+" : "") + difference.toFixed(4).replace(".", ",") + '.</p>';
+          }).join("") + '</div>';
+      } else {
+        rankingMarkup = '<p class="metric-note">Comparación de nDCG@5: ' +
+          ctx.escapeHTML((rankingQuality && rankingQuality.reason) || "No disponible con esta muestra.") + '</p>';
+      }
       body = '<div class="metrics-grid">' +
         ctx.metric("MAE Ridge", ridgeMae.toFixed(4).replace(".", ","), result.count + " películas · " + result.foldsEvaluated + "/" + result.outerFolds + " pliegues") +
         ctx.metric("MAE aditivo emparejado", baseMae.toFixed(4).replace(".", ","), "Mismas películas externas") +
@@ -261,7 +280,8 @@ export function createPageViews(ctx) {
         '<p class="metric-note">Alpha se seleccionó en ' + result.innerFolds + ' pliegues internos entre ' +
           (result.alphaGrid || []).map(function (value) { return String(value); }).join(", ") + '. Distribución elegida por pliegue: ' +
           ctx.escapeHTML(alphaCounts || "sin datos") + '.</p>' +
-        '<p class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo aditivo. La diferencia es descriptiva, no una prueba de significación estadística ni garantía de gusto futuro.</p>';
+        rankingMarkup +
+        '<p class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo aditivo. nDCG@5 mide el orden de películas valoradas retenidas y no garantiza satisfacción futura ni significación estadística.</p>';
     }
     return '<section class="panel ridge-experiment-panel" aria-labelledby="ridge-experiment-heading">' +
       '<div class="panel-head"><div><h3 id="ridge-experiment-heading">Experimento Ridge (regularización L2)</h3>' +
