@@ -77,6 +77,11 @@ assert.equal(result.repeatedValidation.repeats, 3);
 assert.equal(result.repeatedValidation.foldsPerRepeat, 5);
 assert.equal(result.repeatedValidation.foldsEvaluated, 15);
 assert.equal(result.repeatedValidation.sampleCount, records.length);
+assert.equal(Object.values(result.repeatedValidation.selectedAlphaCounts).reduce((sum, value) => sum + value, 0), 15,
+  "La distribución agregada de alpha debe cubrir todos los pliegues externos repetidos.");
+assert.ok(result.repeatedValidation.repeatSummaries.every(item =>
+  Object.values(item.selectedAlphaCounts).reduce((sum, value) => sum + value, 0) === 5
+));
 assert.equal(result.repeatedValidation.repeats * result.repeatedValidation.foldsPerRepeat,
   result.repeatedValidation.foldsEvaluated);
 assert.equal(result.repeatedValidation.repeatSummaries[0].mae, result.mae,
