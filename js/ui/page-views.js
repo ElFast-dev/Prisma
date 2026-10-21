@@ -212,7 +212,7 @@ export function createPageViews(ctx) {
 
   function renderRecommendationDiagnosticPanel() {
     const reportText = ctx.recommendationDiagnosticReportText || "";
-    const disclosure = '<p class="metric-note">El informe se calcula con tus datos reales en este dispositivo. Incluye cantidades, distribución agregada de notas, cobertura del perfil, pesos del modelo, estadísticas resumidas de señales y los resultados disponibles de MAE, Ridge, nDCG@5 y diversidad.</p>' +
+    const disclosure = '<p class="metric-note">El informe se calcula con tus datos reales en este dispositivo. Incluye cantidades, distribución agregada de notas, cobertura del perfil, pesos del modelo, estadísticas resumidas de señales y los resultados agregados de MAE, Ridge, validación repetida y temporal, nDCG@5 por modo y diversidad.</p>' +
       '<p class="metric-note">No incluye títulos de películas, IDs TMDB, notas por película, fechas personales, emociones, notas libres, credenciales ni copias de seguridad. Si incluyes nombres de señales, esos géneros y temas agregados pueden revelar parte de tus gustos.</p>';
     const detailsToggle = '<label class="diagnostic-feature-option"><input id="diagnosticFeatureLabels" type="checkbox"' +
       (ctx.recommendationDiagnosticFeatureLabelsIncluded ? ' checked' : '') +
