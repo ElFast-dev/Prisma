@@ -231,10 +231,15 @@ export function createPageViews(ctx) {
   function renderRidgeExperimentPanel() {
     const result = ctx.ridgeEvaluationResult || null;
     const busy = Boolean(ctx.ridgeEvaluationBusy);
-    const buttonLabel = busy ? "Calculando Ridge (3 × 5)…" : (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge");
+    const progress = ctx.ridgeEvaluationProgress || null;
+    const completedRepeats = Number(progress && progress.completedRepeats || 0);
+    const totalRepeats = Number(progress && progress.totalRepeats || 3);
+    const buttonLabel = busy ? "Ridge " + completedRepeats + "/" + totalRepeats + "…" :
+      (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge");
     let body = "";
     if (busy) {
-      body = '<p class="metric-note" aria-live="polite">Calculando localmente tres repeticiones de cinco pliegues externos, cada una con selección interna de alpha. Puede tardar más que la evaluación estándar; no se envían ni guardan datos nuevos.</p>';
+      body = '<p class="metric-note" aria-live="polite">Validación repetida en curso: ' + completedRepeats + ' de ' +
+        totalRepeats + ' repeticiones completadas. Cada repetición evalúa cinco pliegues externos y selecciona alpha en tres pliegues internos. El cálculo es local; no se envían ni guardan datos nuevos.</p>';
     } else if (!result) {
       body = '<p class="metric-note" aria-live="polite">Esta prueba no se ejecuta automáticamente. Usa validación cruzada anidada para elegir la regularización sin consultar las notas retenidas al evaluar.</p>';
     } else if (!result.available) {
