@@ -1,5 +1,6 @@
 import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js";
 import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
+import { createStorageProtection } from "./js/core/storage-protection.js";
 import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine } from "./js/recommendations/engine.js";
@@ -45,6 +46,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let catalog = [];
   let catalogByTitle = new Map();
   let state = emptyState();
+  const storageProtection = createStorageProtection(typeof navigator !== "undefined" ? navigator.storage : null);
+  let storageProtectionSnapshot = { supported: null, statusSupported: null, persisted: null, usage: null, quota: null };
+  let storageProtectionBusy = false;
   const recommendationPreferences = createRecommendationPreferences(function () { return window.localStorage; });
   let recommendationMode = recommendationPreferences.getMode();
   let currentPage = "home";
@@ -146,6 +150,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get onlyReleased() { return onlyReleased; },
     get showCollectionSearch() { return showCollectionSearch; },
     get tmdbCredential() { return tmdbCredential; },
+    get storageProtectionSnapshot() { return storageProtectionSnapshot; },
+    get storageProtectionBusy() { return storageProtectionBusy; },
     get escapeHTML() { return escapeHTML; },
     get titleKey() { return titleKey; },
     get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
@@ -463,6 +469,44 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   });
   const { evaluateRecommendationQuality } = recommendationEvaluation;
 
+
+  async function refreshStorageProtectionSnapshot() {
+    storageProtectionSnapshot = await storageProtection.inspect();
+    if (currentPage === "data") renderApp();
+    return storageProtectionSnapshot;
+  }
+
+  async function requestStorageProtection() {
+    if (storageProtectionBusy) return;
+    storageProtectionBusy = true;
+
+    // Invoke persist() immediately from the explicit click, before rendering or awaiting.
+    const requestPromise = storageProtection.request(storageProtectionSnapshot);
+    if (currentPage === "data") renderApp();
+
+    try {
+      const result = await requestPromise;
+      storageProtectionSnapshot = result;
+      if (result.granted) {
+        toast(result.reason === "already-persistent"
+          ? "El almacenamiento ya tenía persistencia concedida por el navegador."
+          : "El navegador concedió persistencia para el almacenamiento de Prisma.");
+      } else if (result.reason === "unsupported") {
+        toast("Este navegador no permite solicitar persistencia del almacenamiento.", true);
+      } else if (result.reason === "denied") {
+        toast("El navegador no concedió persistencia. Prisma seguirá funcionando; exporta una copia de seguridad.", true);
+      } else {
+        toast("No se pudo confirmar la protección del almacenamiento. Exporta una copia de seguridad.", true);
+      }
+    } catch (_) {
+      storageProtectionSnapshot = await storageProtection.inspect();
+      toast("No se pudo confirmar la protección del almacenamiento. Exporta una copia de seguridad.", true);
+    } finally {
+      storageProtectionBusy = false;
+      if (currentPage === "data") renderApp();
+    }
+  }
+
   const appLifecycle = createAppLifecycle({
     get state() { return state; },
     set state(value) { state = value; },
@@ -594,8 +638,13 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get importPersonalJSON() { return importPersonalJSON; },
     get importCatalogCSV() { return importCatalogCSV; },
     get toast() { return toast; },
+    get requestStorageProtection() { return requestStorageProtection; },
     get setTheme() { return themeController.setTheme; }
   });
 
-  init();
+  init().then(function () {
+    return refreshStorageProtectionSnapshot();
+  }).catch(function () {
+    storageProtectionSnapshot = { supported: false, statusSupported: false, persisted: null, usage: null, quota: null };
+  });
 }());

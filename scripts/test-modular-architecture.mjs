@@ -11,6 +11,7 @@ const files = [
   'app.js',
   'js/core/movie-utils.js',
   'js/core/storage.js',
+  'js/core/storage-protection.js',
   'js/core/state-model.js',
   'js/recommendations/features.js',
   'js/recommendations/engine.js',
