@@ -1,11 +1,28 @@
 const GENRE_LABELS = {
   "science fiction": "Ciencia ficción", "sci-fi": "Ciencia ficción", "sci fi": "Ciencia ficción",
-  "thriller": "Suspenso", "mystery": "Misterio", "crime": "Crimen", "drama": "Drama",
+  "thriller": "Suspenso", "suspense": "Suspenso", "mystery": "Misterio", "crime": "Crimen", "drama": "Drama",
   "action": "Acción", "adventure": "Aventura", "fantasy": "Fantasía", "romance": "Romance",
   "comedy": "Comedia", "horror": "Terror", "animation": "Animación", "anime": "Anime",
   "war": "Bélica", "sport": "Deportes", "sports": "Deportes", "family": "Familiar",
   "biography": "Biografía", "music": "Música", "history": "Historia", "documentary": "Documental"
 };
+
+function genreLookupKey(value) {
+  return String(value || "").trim().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+const NORMALIZED_GENRE_LABELS = Object.create(null);
+Object.keys(GENRE_LABELS).forEach(function (alias) {
+  const label = GENRE_LABELS[alias];
+  NORMALIZED_GENRE_LABELS[genreLookupKey(alias)] = label;
+  NORMALIZED_GENRE_LABELS[genreLookupKey(label)] = label;
+});
 
 export function escapeHTML(value) {
   return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
@@ -67,8 +84,12 @@ export function splitList(value) {
 }
 
 export function displayGenre(value) {
-  const raw = String(value || "").trim();
-  return GENRE_LABELS[raw.toLowerCase()] || raw;
+  const raw = String(value || "").trim().normalize("NFC");
+  return NORMALIZED_GENRE_LABELS[genreLookupKey(raw)] || raw;
+}
+
+export function normalizeGenreKey(value) {
+  return displayGenre(value).toLowerCase();
 }
 
 export function normalizeMovie(movie) {
@@ -90,7 +111,7 @@ export function normalizeMovie(movie) {
     tmdbId: tmdbId && Number(tmdbId) > 0 ? String(tmdbId) : null,
     title: cleanTitle,
     year: year,
-    genres: genres.map(displayGenre),
+    genres: uniqueStrings(genres.map(displayGenre)),
     tags: tags,
     overview: String(overview || ""),
     posterPath: posterPath,
