@@ -31,6 +31,8 @@ const movies = [
   { title: "Acción uno alternativo", tmdbId: "11", genres: ["Acción"], score: 9.0 },
   { title: "Ya vista", tmdbId: "90", genres: ["Drama"], score: 10.0 },
   { title: "Solo historial", tmdbId: "91", genres: ["Drama"], score: 10.0, source: "history" },
+  { title: "Pendiente", tmdbId: "92", genres: ["Acción"], score: 9.7 },
+  { title: "Oculta", tmdbId: "93", genres: ["Acción"], score: 9.6 },
   { title: "Remake clásico", tmdbId: "95", genres: ["Drama"], score: 8.4 },
   { title: "Remake moderno", tmdbId: "96", genres: ["Drama"], score: 8.3 }
 ];
@@ -38,7 +40,7 @@ const ctx = {
   get catalog() { return movies; },
   buildProfile() { return { average: 6.5 }; },
   uniqueDiscoveryMovies,
-  isMovieInCollection(title, tmdbId) { return ["90", "92"].includes(String(tmdbId || "")); },
+  isMovieInCollection(title, tmdbId) { return ["90", "92", "93"].includes(String(tmdbId || "")); },
   predictRating(movie) {
     const matches = movie.tmdbId === "12" ? 3 : (movie.tmdbId === "13" ? 2 : 0);
     return { score: movie.score, freshFeatures: 0, matches: Array.from({ length: matches }, (_, i) => ({ name: "señal " + i })) };
@@ -61,7 +63,8 @@ for (const list of [affinity, balanced, variety]) {
   assert.equal(ids.length, new Set(ids).size, "No puede repetirse una identidad dentro de una mezcla.");
   assert.ok(!ids.includes("90"), "Las películas vistas/valoradas deben excluirse en todos los modos.");
   assert.ok(!ids.includes("91"), "Entradas solo de historial no deben ser candidatas.");
-  assert.ok(!ids.includes("92"), "Las películas de la colección deben excluirse sin depender del modo.");
+  assert.ok(!ids.includes("92"), "Las pendientes deben excluirse sin depender del modo.");
+  assert.ok(!ids.includes("93"), "Las ocultas deben excluirse sin depender del modo.");
 }
 const allVariety = ranking.getRecommendations(20, "variety");
 assert.notEqual(allVariety.find(movie => movie.tmdbId === "95"), undefined);
