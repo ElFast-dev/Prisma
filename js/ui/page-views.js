@@ -319,7 +319,7 @@ export function createPageViews(ctx) {
           return '<p class="metric-note"><strong>' + ctx.escapeHTML(label) + ':</strong> cambio favorable a Ridge en ' +
             Number(summary.ridgeFavorableRepeats || 0) + '/' + Number(summary.repeatsEvaluated || 0) +
             ' repeticiones válidas · empates ' + Number(summary.ties || 0) +
-            ' · favorecen a la base ' + Number(summary.baselineFavorableRepeats || 0) +
+            ' · a favor de la base: ' + Number(summary.baselineFavorableRepeats || 0) +
             ' · rango observado ' + formatObservedDelta(summary.minDelta) + ' a ' +
             formatObservedDelta(summary.maxDelta) + '.</p>';
         };
