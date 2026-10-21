@@ -47,6 +47,8 @@ assert.match(browser, /name: prisma-published-ui-screenshots/,
   "Playwright debe emitir el artefacto que autoriza el despliegue.");
 assert.match(browser, /tested-sha\.txt/,
   "El artefacto de Playwright debe llevar el SHA exacto validado.");
+assert.match(browser, /if-no-files-found: error/,
+  "El flujo de navegador no debe poder aprobar sin el artefacto con el SHA probado.");
 assert.match(deploy, /actions\/download-artifact@v4/,
   "El despliegue debe descargar la aprobación generada por Playwright.");
 assert.match(deploy, /name: prisma-published-ui-screenshots/,
