@@ -288,7 +288,7 @@ function temporalRidgeEvaluation(source) {
     timestampedFeatureCount: nonNegativeInteger(evaluation && evaluation.timestampedFeatureCount),
     explicitDateCount: nonNegativeInteger(evaluation && evaluation.explicitDateCount),
     unverifiedDateCount: nonNegativeInteger(evaluation && evaluation.unverifiedDateCount),
-    dateProvenanceStatus: evaluation && evaluation.dateProvenanceStatus === "verified" ? "verified" :
+    dateProvenanceStatus: evaluation && evaluation.dateProvenanceStatus === "explicit" ? "explicit" :
       (evaluation && evaluation.dateProvenanceStatus === "exploratory" ? "exploratory" : "unavailable"),
     missingDateCount: nonNegativeInteger(evaluation && evaluation.missingDateCount),
     distinctDayCount: nonNegativeInteger(evaluation && evaluation.distinctDayCount),
