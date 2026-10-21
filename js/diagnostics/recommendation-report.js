@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v6";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v7";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -169,11 +169,16 @@ function ridgeRankingEvaluation(source) {
         available: modeAvailable,
         baselineNdcgAt5: modeAvailable ? rounded(mode.baselineNdcgAt5, 4) : null,
         ridgeNdcgAt5: modeAvailable ? rounded(mode.ridgeNdcgAt5, 4) : null,
+        hybridNdcgAt5: modeAvailable ? rounded(mode.hybridNdcgAt5, 4) : null,
         deltaRidgeMinusBaseline: modeAvailable ? rounded(mode.deltaRidgeMinusBaseline, 4) : null,
+        deltaHybridMinusBaseline: modeAvailable ? rounded(mode.deltaHybridMinusBaseline, 4) : null,
         foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated),
         foldsRidgeWins: nonNegativeInteger(mode.foldsRidgeWins),
         foldsRidgeTies: nonNegativeInteger(mode.foldsRidgeTies),
-        foldsRidgeLosses: nonNegativeInteger(mode.foldsRidgeLosses)
+        foldsRidgeLosses: nonNegativeInteger(mode.foldsRidgeLosses),
+        foldsHybridWins: nonNegativeInteger(mode.foldsHybridWins),
+        foldsHybridTies: nonNegativeInteger(mode.foldsHybridTies),
+        foldsHybridLosses: nonNegativeInteger(mode.foldsHybridLosses)
       };
     })
   };
@@ -219,7 +224,10 @@ function ridgeRepeatedValidationEvaluation(source) {
     mae: available ? rounded(evaluation.mae, 4) : null,
     baselineMaeSameFolds: available ? rounded(evaluation.baselineMae, 4) : null,
     deltaBaselineMinusRidge: available ? rounded(evaluation.deltaBaseMinusRidge, 4) : null,
+    hybridMae: available ? rounded(evaluation.hybridMae, 4) : null,
+    deltaBaselineMinusHybrid: available ? rounded(evaluation.deltaBaseMinusHybrid, 4) : null,
     foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
+    hybridFoldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     repeatSummaries: repeatSummaries.map(function (repeat) {
       const repeatAvailable = repeat && typeof repeat === "object";
@@ -231,7 +239,10 @@ function ridgeRepeatedValidationEvaluation(source) {
         mae: repeatAvailable ? rounded(repeat.mae, 4) : null,
         baselineMaeSameFolds: repeatAvailable ? rounded(repeat.baselineMae, 4) : null,
         deltaBaselineMinusRidge: repeatAvailable ? rounded(repeat.deltaBaseMinusRidge, 4) : null,
+        hybridMae: repeatAvailable ? rounded(repeat.hybridMae, 4) : null,
+        deltaBaselineMinusHybrid: repeatAvailable ? rounded(repeat.deltaBaseMinusHybrid, 4) : null,
         foldStability: ridgeFoldStabilityEvaluation(repeat && repeat.foldStability),
+        hybridFoldStability: ridgeFoldStabilityEvaluation(repeat && repeat.hybridFoldStability),
         rankingQuality: ridgeRankingEvaluation(repeat && repeat.rankingQuality)
       };
     }),
@@ -261,12 +272,15 @@ function ridgeEvaluation(source) {
     mae: available ? rounded(evaluation.mae, 4) : null,
     baselineMaeSameFolds: available ? rounded(evaluation.baselineMae, 4) : null,
     deltaBaselineMinusRidge: available ? rounded(evaluation.deltaBaseMinusRidge, 4) : null,
+    hybridMae: available ? rounded(evaluation.hybridMae, 4) : null,
+    deltaBaselineMinusHybrid: available ? rounded(evaluation.deltaBaseMinusHybrid, 4) : null,
     outerFolds: nonNegativeInteger(evaluation && evaluation.outerFolds),
     foldsEvaluated: nonNegativeInteger(evaluation && evaluation.foldsEvaluated),
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
     alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; }),
     selectedAlphaCounts: alphaCounts,
     foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
+    hybridFoldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     repeatedValidation: ridgeRepeatedValidationEvaluation(evaluation && evaluation.repeatedValidation),
     unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
