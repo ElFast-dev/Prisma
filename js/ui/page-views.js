@@ -266,12 +266,20 @@ export function createPageViews(ctx) {
             if (!mode.available || !Number.isFinite(baseline) || !Number.isFinite(ridge) || !Number.isFinite(difference)) return "";
             return '<p class="metric-note"><strong>' + ctx.escapeHTML(rankingModeNames[mode.mode] || mode.mode) + ':</strong> aditivo ' +
               baseline.toFixed(4).replace(".", ",") + ' · Ridge ' + ridge.toFixed(4).replace(".", ",") + ' · cambio ' +
-              (difference > 0 ? "+" : "") + difference.toFixed(4).replace(".", ",") + '.</p>';
+              (difference > 0 ? "+" : "") + difference.toFixed(4).replace(".", ",") + ' · pliegues válidos: ' +
+              Number(mode.foldsEvaluated || 0) + ' · Ridge gana ' + Number(mode.foldsRidgeWins || 0) +
+              ', empata ' + Number(mode.foldsRidgeTies || 0) + ', pierde ' + Number(mode.foldsRidgeLosses || 0) + '.</p>';
           }).join("") + '</div>';
       } else {
         rankingMarkup = '<p class="metric-note">Comparación de nDCG@5: ' +
           ctx.escapeHTML((rankingQuality && rankingQuality.reason) || "No disponible con esta muestra.") + '</p>';
       }
+      const stability = result.foldStability || {};
+      const foldStabilityMarkup = stability.available
+        ? '<p class="metric-note">Estabilidad de MAE (' + Number(stability.foldsEvaluated || 0) + ' pliegues): Ridge mejora en ' +
+          Number(stability.ridgeMaeWins || 0) + ', empata en ' + Number(stability.ties || 0) + ' y la base mejora en ' +
+          Number(stability.baselineMaeWins || 0) + '. Recuento descriptivo, no prueba de significación estadística.</p>'
+        : '';
       body = '<div class="metrics-grid">' +
         ctx.metric("MAE Ridge", ridgeMae.toFixed(4).replace(".", ","), result.count + " películas · " + result.foldsEvaluated + "/" + result.outerFolds + " pliegues") +
         ctx.metric("MAE aditivo emparejado", baseMae.toFixed(4).replace(".", ","), "Mismas películas externas") +
@@ -280,6 +288,7 @@ export function createPageViews(ctx) {
         '<p class="metric-note">Alpha se seleccionó en ' + result.innerFolds + ' pliegues internos entre ' +
           (result.alphaGrid || []).map(function (value) { return String(value); }).join(", ") + '. Distribución elegida por pliegue: ' +
           ctx.escapeHTML(alphaCounts || "sin datos") + '.</p>' +
+        foldStabilityMarkup +
         rankingMarkup +
         '<p class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo aditivo. nDCG@5 mide el orden de películas valoradas retenidas y no garantiza satisfacción futura ni significación estadística.</p>';
     }
