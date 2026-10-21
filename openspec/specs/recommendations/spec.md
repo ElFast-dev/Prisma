@@ -573,6 +573,35 @@ La evaluación temporal DEBE distinguir fechas de visionado importadas explícit
 
 #### Scenario: Privacidad
 
-- DADO que se comparte el diagnóstico v6
+- DADO que se comparte el diagnóstico de la versión vigente
 - CUANDO incluye procedencia de fechas
 - ENTONCES exporta únicamente recuentos agregados y estado de fiabilidad, nunca fechas, títulos o IDs de películas
+
+
+### Requirement: Evaluación diagnóstica aislada de una mezcla híbrida fija
+
+Prisma DEBE ofrecer en el Laboratorio una comparación local y reproducible de una mezcla fija 50/50 entre las predicciones Ridge y el modelo aditivo sobre las mismas particiones externas de validación. La mezcla DEBE calcularse sin optimizar su proporción con las notas retenidas; DEBE informar MAE y, cuando se satisfagan los mínimos de ranking, nDCG@5 para Equilibrado, Más afines y Más variedad. El recomendador de producción DEBE seguir usando el modelo aditivo hasta que una propuesta independiente tenga evidencia suficiente y pase sus propios criterios de aceptación. Los resultados DEBEN describirse como diagnósticos experimentales, no como garantía de gusto futuro ni prueba de significación.
+
+#### Scenario: Mezcla sin fuga de notas retenidas
+
+- DADO un pliegue con candidatas retenidas fuera del entrenamiento
+- CUANDO se calcula una predicción híbrida
+- ENTONCES se usa la media acotada al rango 1–10 de las predicciones Ridge y aditiva, sin utilizar la nota real retenida para elegir el peso
+
+#### Scenario: Ranking comparable entre modelos
+
+- DADO que la muestra satisface los mínimos de evaluación de nDCG@5
+- CUANDO el Laboratorio compara los modelos
+- ENTONCES la base aditiva, Ridge y la mezcla usan las mismas candidatas, relevancias y particiones externas, y la mezcla informa sus diferencias y recuentos descriptivos por modo
+
+#### Scenario: Muestra insuficiente para ranking
+
+- DADO que la muestra no satisface los mínimos existentes para la evaluación de ranking
+- CUANDO se ejecuta el experimento
+- ENTONCES las métricas de ranking del híbrido se muestran como no disponibles, no como ceros medidos
+
+#### Scenario: Separación de producción y privacidad
+
+- DADO que se ha ejecutado el experimento híbrido y se genera el diagnóstico de la versión vigente
+- CUANDO se muestran recomendaciones normales o se comparte el informe
+- ENTONCES la producción sigue siendo aditiva y el informe contiene solo estadísticas agregadas, sin títulos, IDs TMDB, registros individuales ni fechas personales
