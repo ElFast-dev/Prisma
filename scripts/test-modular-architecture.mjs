@@ -30,6 +30,7 @@ const files = [
   'js/tmdb/history-sync.js',
   'js/tmdb/browser-actions.js',
   'js/app/lifecycle.js',
+  'js/app/pwa-update.js',
   'js/app/runtime.js',
   'js/recommendations/ranking.js',
   'js/ui/modal-controller.js',
