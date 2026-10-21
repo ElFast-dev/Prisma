@@ -191,6 +191,17 @@ function ridgeFoldStabilityEvaluation(source) {
   };
 }
 
+function ridgeAlphaCounts(source) {
+  const counts = {};
+  const raw = source && typeof source === "object" ? source : {};
+  Object.keys(raw).sort(function (left, right) { return Number(left) - Number(right); }).forEach(function (alpha) {
+    const numericAlpha = Number(alpha);
+    const count = nonNegativeInteger(raw[alpha]);
+    if (Number.isFinite(numericAlpha) && numericAlpha > 0 && count > 0) counts[String(numericAlpha)] = count;
+  });
+  return counts;
+}
+
 function ridgeRepeatedValidationEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
@@ -204,6 +215,7 @@ function ridgeRepeatedValidationEvaluation(source) {
     foldsPerRepeat: nonNegativeInteger(evaluation && evaluation.foldsPerRepeat),
     foldsEvaluated: nonNegativeInteger(evaluation && evaluation.foldsEvaluated),
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
+    selectedAlphaCounts: ridgeAlphaCounts(evaluation && evaluation.selectedAlphaCounts),
     mae: available ? rounded(evaluation.mae, 4) : null,
     baselineMaeSameFolds: available ? rounded(evaluation.baselineMae, 4) : null,
     deltaBaselineMinusRidge: available ? rounded(evaluation.deltaBaseMinusRidge, 4) : null,
@@ -215,6 +227,7 @@ function ridgeRepeatedValidationEvaluation(source) {
         repeat: nonNegativeInteger(repeat && repeat.repeat),
         sampleCount: nonNegativeInteger(repeat && repeat.sampleCount),
         foldsEvaluated: nonNegativeInteger(repeat && repeat.foldsEvaluated),
+        selectedAlphaCounts: ridgeAlphaCounts(repeat && repeat.selectedAlphaCounts),
         mae: repeatAvailable ? rounded(repeat.mae, 4) : null,
         baselineMaeSameFolds: repeatAvailable ? rounded(repeat.baselineMae, 4) : null,
         deltaBaselineMinusRidge: repeatAvailable ? rounded(repeat.deltaBaseMinusRidge, 4) : null,
