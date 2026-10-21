@@ -15,3 +15,9 @@ Los candidatos se deduplican antes de puntuarse y se excluyen mediante la funci�
 
 ## Compatibilidad
 Sin dependencias nuevas ni cambios en el perfil. Se versionan los módulos modificados y las hojas CSS del shell; se actualizan validadores y pruebas de caché.
+
+## Verificación final
+Las tres ejecuciones terminaron con éxito sobre `4a4f534f33b28f73889be532e8750f7b0013697f`:
+- [Calidad SDD y JavaScript](https://github.com/ElFast-dev/Prisma/actions/runs/39525632203) — success.
+- [Validación Prisma](https://github.com/ElFast-dev/Prisma/actions/runs/39525632151) — success.
+- [Playwright: capturas, selección y persistencia](https://github.com/ElFast-dev/Prisma/actions/runs/39525632116) — success.

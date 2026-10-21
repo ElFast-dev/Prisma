@@ -1,7 +1,7 @@
 # Propuesta: personalizar la mezcla de recomendaciones de Descubrir
 
 ## Estado
-En implementación; pendiente de verificación antes del archivo.
+Completado y archivado después de pasar calidad SDD/JavaScript, Validate Prisma y Playwright en el commit final.
 
 ## Motivación
 La persona usuaria prefiere una combinación equilibrada que pueda personalizar y quiere que Descubrir muestre primero sugerencias personales, seguidas del catálogo. El ranking actual usa una ordenación heurística y limita la repetición de un género, pero no permite elegir si priorizar afinidad o variedad; tampoco persiste una preferencia local separada.
