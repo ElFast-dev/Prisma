@@ -241,7 +241,7 @@ export function createPageViews(ctx) {
       body = '<p class="metric-note" aria-live="polite">Validación repetida en curso: ' + completedRepeats + ' de ' +
         totalRepeats + ' repeticiones completadas. Cada repetición evalúa cinco pliegues externos y selecciona alpha en tres pliegues internos. El cálculo es local; no se envían ni guardan datos nuevos.</p>';
     } else if (!result) {
-      body = '<p class="metric-note" aria-live="polite">Esta prueba no se ejecuta automáticamente. Usa validación cruzada anidada para elegir la regularización sin consultar las notas retenidas al evaluar.</p>';
+      body = '<p class="metric-note" aria-live="polite">Esta prueba no se ejecuta automáticamente. Ejecuta validación anidada repetida (3 × 5 pliegues) para elegir alpha sin consultar las notas retenidas al evaluar.</p>';
     } else if (!result.available) {
       body = '<p class="metric-note" aria-live="polite">' + ctx.escapeHTML(result.reason || "No hay una muestra suficiente para evaluar Ridge.") + '</p>';
     } else {
