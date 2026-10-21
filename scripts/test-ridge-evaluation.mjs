@@ -110,9 +110,15 @@ const asyncProgress = [];
 const asyncResult = await experiment.evaluateAsync(progress => asyncProgress.push(progress));
 assert.deepEqual(asyncResult.repeatedValidation, result.repeatedValidation,
   "La ejecución asíncrona debe producir exactamente los mismos agregados.");
-assert.deepEqual(asyncProgress.map(item => item.completedRepeats), [1, 2, 3],
+assert.deepEqual(asyncProgress.filter(item => item.phase === "completed").map(item => item.completedRepeats), [1, 2, 3],
   "La evaluación asíncrona debe informar progreso entre las tres repeticiones.");
 assert.ok(asyncProgress.every(item => item.totalRepeats === 3 && item.foldsPerRepeat === 5));
+const cancelled = await experiment.evaluateAsync(progress =>
+  progress.phase !== "completed" || progress.completedRepeats < 1
+);
+assert.equal(cancelled.available, false,
+  "La evaluación repetida debe detenerse si el usuario invalida sus datos durante el cálculo.");
+assert.match(cancelled.reason, /canceló/);
 
 const rankingRecords = fixtures(60);
 const rankingResult = harness(rankingRecords, rankingRecords).evaluate();
