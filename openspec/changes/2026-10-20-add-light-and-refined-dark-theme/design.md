@@ -20,6 +20,10 @@ No se añade una tercera capa CSS. `styles/prisma-design-system.css` sigue siend
 
 Las notas, errores y confirmaciones se mantienen en tokens semánticos moderados y distinguibles.
 
+## Isotipo y PWA
+
+El isotipo conserva su geometría y adopta un degradado neutro de `#e2e8f0`, azul acero `#8197b2` y azul pizarra `#607d9e` sobre `#111417`. Favicon, cabecera y manifest comparten `./assets/prisma.svg?v=brand-20261020-2`. El manifest usa la versión `ui-20261020-15` y el shell sube a `prisma-shell-v50` para invalidar todas las referencias antiguas.
+
 ## Implementación modular
 
 - `js/ui/theme-controller.js`: valida, lee, aplica y persiste la preferencia `dark|light`; no mezcla el tema con datos de películas.
