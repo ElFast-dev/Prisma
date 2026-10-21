@@ -17,6 +17,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/recommendations/features.js` | Extracción de géneros, etiquetas y década de estreno si existe un año válido. |
 | `js/recommendations/engine.js` | Perfil de preferencias, predicción y evaluación leave-one-out con una ablación de la señal de década, mediante dependencias explícitas. |
 | `js/recommendations/evaluation.js` | Evaluación offline de nDCG@5 por modo sobre pliegues y candidatas comunes, además de diversidad de géneros en las listas actuales; no ajusta automáticamente el recomendador. |
+| `js/recommendations/ranking.js` | Puntúa y diversifica candidatas de catálogo local y el pool efímero de películas populares ya consultadas en TMDB; excluye la colección y no persiste candidatas remotas. |
 | `js/diagnostics/recommendation-report.js` | Construye un informe JSON agregado del Laboratorio, con etiquetas de señales opcionales y sin serializar registros individuales ni acceder al DOM, almacenamiento o red. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |

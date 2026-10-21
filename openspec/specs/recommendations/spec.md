@@ -325,3 +325,32 @@ Prisma DEBE permitir generar bajo demanda un informe reproducible con las métri
 - DADO que el navegador deniega el portapapeles o no ofrece la API
 - CUANDO el usuario intenta copiar el informe
 - ENTONCES Prisma mantiene el contenido en un campo visible que se puede seleccionar manualmente y no afirma que la copia haya funcionado
+
+
+### Requirement: Pool híbrido de candidatas para recomendaciones personales
+
+Prisma DEBE combinar candidatas válidas del catálogo local con resultados populares de TMDB cargados durante la sesión y puntuar ambas fuentes con el mismo perfil personal y el mismo ranking. Las consultas de búsqueda manual NO DEBEN reemplazar el pool genérico de populares. Las candidatas remotas NO DEBEN persistirse automáticamente.
+
+#### Scenario: Candidatas populares cargadas
+
+- DADO que TMDB ha devuelto una página de películas populares
+- CUANDO se recalculan las recomendaciones
+- ENTONCES las películas nuevas elegibles entran en el ranking local junto con el catálogo personal, sin guardarse automáticamente
+
+#### Scenario: Paginación de películas populares
+
+- DADO que se carga una página adicional de películas populares
+- CUANDO termina la consulta
+- ENTONCES el pool temporal incorpora las nuevas candidatas y elimina identidades duplicadas sin borrar las páginas ya cargadas
+
+#### Scenario: Búsqueda manual separada
+
+- DADO que se ejecuta una búsqueda de películas por texto
+- CUANDO llegan sus resultados
+- ENTONCES la lista de recomendaciones sigue utilizando el pool genérico de populares y no se adapta el endpoint a las valoraciones personales
+
+#### Scenario: Exclusión de la colección
+
+- DADO que una candidata remota o local está valorada, vista, pendiente u oculta
+- CUANDO se construye la lista final
+- ENTONCES se excluye en todos los modos de ranking

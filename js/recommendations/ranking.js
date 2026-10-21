@@ -93,7 +93,8 @@ export function createRecommendationRanking(ctx) {
   function getRecommendations(limit, mode) {
     const requestedLimit = Math.max(1, Number(limit) || 8);
     const profile = ctx.buildProfile();
-    const results = ctx.uniqueDiscoveryMovies(ctx.catalog).filter(function (movie) {
+    const candidates = (ctx.catalog || []).concat(ctx.recommendationCandidates || []);
+    const results = ctx.uniqueDiscoveryMovies(candidates).filter(function (movie) {
       return !ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history";
     }).map(function (movie) {
       const prediction = ctx.predictRating(movie, profile);

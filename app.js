@@ -19,10 +19,10 @@ import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-2"
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-3";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
 import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
-import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261020-1";
+import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261021-1";
 import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-20261020-1";
 import { createModalController } from "./js/ui/modal-controller.js?v=core-20261020-1";
-import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-2";
+import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
@@ -61,6 +61,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let modalDraft = null;
   let tmdbCredential = null;
   let tmdbResults = [];
+  let tmdbRecommendationCandidates = [];
   let tmdbPage = 1;
   let tmdbTotalPages = 1;
   let tmdbMode = "popular";
@@ -297,6 +298,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get loadTMDBPage() { return loadTMDBPage; },
     get tmdbResults() { return tmdbResults; },
     set tmdbResults(value) { tmdbResults = value; },
+    get recommendationCandidates() { return tmdbRecommendationCandidates; },
+    set recommendationCandidates(value) { tmdbRecommendationCandidates = Array.isArray(value) ? value : []; },
     get resetTMDBGenres() { return tmdbClient.resetGenres; },
     get confirm() { return window.confirm.bind(window); }
   });
@@ -344,6 +347,11 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     set tmdbError(value) { tmdbError = value; },
     get tmdbResults() { return tmdbResults; },
     set tmdbResults(value) { tmdbResults = value; },
+    get recommendationCandidates() { return tmdbRecommendationCandidates; },
+    set recommendationCandidates(value) { tmdbRecommendationCandidates = Array.isArray(value) ? value : []; },
+    get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
+    get currentPage() { return currentPage; },
+    get renderApp() { return renderApp; },
     get tmdbPage() { return tmdbPage; },
     set tmdbPage(value) { tmdbPage = value; },
     get tmdbTotalPages() { return tmdbTotalPages; },
@@ -453,6 +461,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const recommendationRanking = createRecommendationRanking({
     get state() { return state; },
     get catalog() { return catalog; },
+    get recommendationCandidates() { return tmdbRecommendationCandidates; },
     get buildProfile() { return buildProfile; },
     get predictRating() { return predictRating; },
     get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
