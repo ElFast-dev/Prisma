@@ -302,3 +302,26 @@ Cuando la evaluación por modo está disponible, Prisma DEBE mostrar para Equili
 - DADO que la diferencia entre dos modos es pequeña
 - CUANDO el Laboratorio la presenta
 - ENTONCES la describe como diferencia numérica y aclara que no demuestra una mejora estadísticamente significativa
+
+
+### Requirement: Informe de diagnóstico del recomendador con datos locales
+
+Prisma DEBE permitir generar bajo demanda un informe reproducible con las métricas de evaluación calculadas sobre las valoraciones locales reales. El informe DEBE ser agregado y NO DEBE incluir títulos, IDs TMDB, registros individuales de valoraciones, fechas personales, emociones, notas libres, credenciales ni copias de seguridad. La interfaz DEBE enumerar los tipos de datos incluidos antes de copiarlo y DEBE dejar claro que las estadísticas agregadas de señales pueden revelar parte de los gustos de la persona. Prisma NO DEBE transmitir ni guardar el informe de forma automática.
+
+#### Scenario: Copiar diagnóstico
+
+- DADO que el usuario está en el Laboratorio
+- CUANDO pulsa «Copiar diagnóstico técnico»
+- ENTONCES Prisma genera un informe con los recuentos de muestra, distribución agregada de notas, cobertura de metadatos, resumen de señales, MAE, comparación de modos nDCG@5 y diversidad disponible
+
+#### Scenario: Privacidad del informe
+
+- DADO que el informe se ha generado usando valoraciones reales
+- CUANDO se inspecciona su contenido
+- ENTONCES no contiene títulos, identificadores TMDB, filas de películas, notas libres, emociones, fechas personales ni credenciales
+
+#### Scenario: Portapapeles no disponible
+
+- DADO que el navegador deniega el portapapeles o no ofrece la API
+- CUANDO el usuario intenta copiar el informe
+- ENTONCES Prisma mantiene el contenido en un campo visible que se puede seleccionar manualmente y no afirma que la copia haya funcionado

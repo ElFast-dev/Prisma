@@ -60,3 +60,20 @@ Prisma DEBE informar del estado de persistencia del almacenamiento cuando el nav
 - DADO que el navegador informa de que el almacenamiento ya es persistente
 - CUANDO se muestran los ajustes
 - ENTONCES Prisma informa de ese estado y no solicita de nuevo la concesión
+
+
+### Requirement: Compartir diagnósticos agregados de forma consciente
+
+Prisma DEBE ejecutar la generación del diagnóstico localmente y solo poner su texto en el portapapeles tras una acción explícita. El informe DEBE excluir registros individuales y los identificadores directos de películas; la UI DEBE advertir de que las estadísticas agregadas por género o tema pueden revelar preferencias. Prisma NO DEBE enviar el informe a ninguna red ni añadirlo a las copias de seguridad o a la persistencia del perfil.
+
+#### Scenario: Generación local sin envío
+
+- DADO que hay valoraciones en el navegador
+- CUANDO se genera un informe diagnóstico
+- ENTONCES las métricas se calculan en el dispositivo y no se envía ninguna petición de red con esos datos
+
+#### Scenario: Revisión antes de compartir
+
+- DADO que la persona va a copiar el informe para compartirlo en otra conversación
+- CUANDO consulta la explicación de privacidad
+- ENTONCES Prisma identifica los datos que incluye y excluye, y avisa de que las estadísticas de géneros y temas aún pueden revelar gustos personales
