@@ -39,7 +39,7 @@ assert.match(html, /app\.js\?v=ui-20261021-48/,
   "index.html debe apuntar a la versión actualizada de la aplicación.");
 assert.match(app, /page-views\.js\?v=core-20261021-3/,
   "La aplicación debe cargar el módulo de vistas versionado.");
-assert.match(serviceWorker, /prisma-shell-v56/);
+assert.match(serviceWorker, /prisma-shell-v57/);
 assert.ok(serviceWorker.includes("./js/ui/page-views.js?v=core-20261021-3"),
   "El shell PWA debe cachear exactamente el módulo de vistas activo.");
 
