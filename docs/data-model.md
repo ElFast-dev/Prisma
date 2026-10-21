@@ -51,3 +51,8 @@ La exportación usa un objeto con `format: "prisma-backup"`, número de versión
 ## Descubrimiento y ficha
 
 Descubrir deduplica registros por ID TMDB positivo y, si falta, por título normalizado y año disponible. La identidad mantiene separados los remakes con IDs TMDB diferentes. El catálogo local y los resultados de TMDB omiten películas ya vistas o valoradas; las recomendaciones omiten también las pendientes y ocultas. La ficha completa tiene scroll propio para mostrar sinopsis largas y secciones posteriores. La fecha del historial se presenta como MM/DD/YYYY sin hora.
+
+
+## Inicio vacío y fuentes
+
+Prisma no incluye un catálogo local predeterminado. En un navegador nuevo, el estado normalizado, el catálogo personalizado y el catálogo combinado empiezan vacíos. Los resultados de exploración de TMDB son temporales y no modifican la colección personal por sí solos. La credencial TMDB se mantiene separada de las copias de seguridad. El catálogo solo se amplía mediante una acción explícita, como añadir una película, importar un historial o importar un CSV.
