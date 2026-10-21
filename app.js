@@ -21,7 +21,7 @@ import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-202610
 import { createModalController } from "./js/ui/modal-controller.js?v=core-20261020-1";
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-2";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
-import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-1";
+import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";

@@ -49,6 +49,7 @@ jobs:
           node --check js/tmdb/history-sync.js
           node --check js/tmdb/browser-actions.js
           node --check js/app/lifecycle.js
+          node --check js/app/pwa-update.js
           node --check js/app/runtime.js
           node --check js/recommendations/ranking.js
           node --check js/recommendations/preferences.js
@@ -78,6 +79,9 @@ jobs:
 
       - name: Test empty first launch and saved-data preservation
         run: node scripts/test-empty-first-run.mjs
+
+      - name: Test safe PWA update notification and refresh
+        run: node scripts/test-pwa-update.mjs
 
       - name: Test rating-source transparency
         run: node scripts/test-movie-rating-sources.mjs

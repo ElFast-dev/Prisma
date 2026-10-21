@@ -64,3 +64,19 @@ El favicon, el isotipo visible en el encabezado y el icono declarado en el manif
 - CUANDO se prepara una publicación de Prisma
 - ENTONCES el manifest, HTML y service worker declaran la URL versionada del nuevo SVG y el service worker renueva su caché para no conservar la marca anterior.
 
+
+### Requirement: Actualización no disruptiva de clientes abiertos
+
+Prisma DEBE comprobar actualizaciones del service worker sin depender de la caché HTTP del script del worker. Si una actualización cambia el controlador de una página que ya estaba abierta, DEBE informar a la persona y ofrecer una acción explícita para recargar. La aplicación NO DEBE borrar ni modificar datos personales como parte de la actualización, y NO DEBE recargar automáticamente una página con posibles cambios de interfaz sin guardar.
+
+#### Scenario: Actualización mientras la aplicación está abierta
+
+- DADO que Prisma ya está abierto y un nuevo service worker toma el control
+- CUANDO cambia el controlador de la página
+- ENTONCES Prisma muestra un aviso con una acción «Recargar» y no recarga ni borra datos personales por sí solo
+
+#### Scenario: Primera instalación o navegador sin un controlador previo
+
+- DADO que Prisma se abre por primera vez sin un service worker controlador
+- CUANDO el nuevo service worker toma el control inicial
+- ENTONCES Prisma no muestra un aviso de actualización innecesario

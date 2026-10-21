@@ -33,7 +33,8 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/modal-controller.js` | Estado de interacción para fichas, puntuaciones y paneles auxiliares. |
 | `js/recommendations/ranking.js` | Orden y diversificación de recomendaciones, además de estadísticas por género. |
 | `js/app/runtime.js` | Eventos de actividad, persistencia principal y notificaciones breves. |
-| `js/app/lifecycle.js` | Navegación, inicialización del perfil local y registro del service worker. |
+| `js/app/lifecycle.js` | Navegación, inicialización del perfil local y coordinación del registro del service worker. |
+| `js/app/pwa-update.js` | Detección de cambios de controlador PWA y aviso accesible para recargar sin interrumpir ni borrar datos personales. |
 | `js/import-export/personal-data.js` | Reconocimiento de exportaciones personales, normalización y combinación de registros. |
 | `js/tmdb/client.js` | Credenciales, peticiones HTTP, errores, caché de géneros y conversión de respuestas TMDB. |
 | `styles.css` | Tokens, base y estructura general. |
