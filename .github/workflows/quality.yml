@@ -34,6 +34,7 @@ jobs:
           node --check js/core/state-model.js
           node --check js/recommendations/features.js
           node --check js/recommendations/engine.js
+          node --check js/recommendations/evaluation.js
           node --check js/catalog/csv-parser.js
           node --check js/catalog/catalog-model.js
           node --check js/collection/collection-model.js
@@ -109,6 +110,9 @@ jobs:
 
       - name: Test recommendation feature extraction
         run: node scripts/test-recommendation-features.mjs
+
+      - name: Test recommendation ranking quality and diversity
+        run: node scripts/test-recommendation-evaluation.mjs
 
       - name: Test recommendation signal weighting
         run: node scripts/test-recommendation-signal-weighting.mjs
