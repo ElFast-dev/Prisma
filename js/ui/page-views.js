@@ -302,9 +302,19 @@ export function createPageViews(ctx) {
             ', empata ' + Number(mode.foldsRidgeTies || 0) + ', pierde ' + Number(mode.foldsRidgeLosses || 0) +
             ' de ' + Number(mode.foldsEvaluated || 0) + ' pliegues válidos.</p>';
         }).join('');
+        const repeatedAlphaCounts = Object.keys(repeated.selectedAlphaCounts || {}).filter(function (alpha) {
+          return Number(repeated.selectedAlphaCounts[alpha]) > 0;
+        }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+          return alpha + ': ' + Number(repeated.selectedAlphaCounts[alpha]);
+        }).join(' · ');
         const repeatedFoldStability = repeated.foldStability || {};
         const repeatMarkup = (repeated.repeatSummaries || []).map(function (repeat) {
           const repeatDelta = Number(repeat.deltaBaseMinusRidge);
+          const repeatAlphaCounts = Object.keys(repeat.selectedAlphaCounts || {}).filter(function (alpha) {
+            return Number(repeat.selectedAlphaCounts[alpha]) > 0;
+          }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+            return alpha + ': ' + Number(repeat.selectedAlphaCounts[alpha]);
+          }).join(' · ');
           const repeatModes = repeat.rankingQuality && Array.isArray(repeat.rankingQuality.modes)
             ? repeat.rankingQuality.modes : [];
           const modeDeltaText = repeatModes.filter(function (mode) {
@@ -318,6 +328,7 @@ export function createPageViews(ctx) {
             Number(repeat.mae).toFixed(4).replace('.', ',') + ' · base ' +
             Number(repeat.baselineMae).toFixed(4).replace('.', ',') + ' · base − Ridge ' +
             (repeatDelta > 0 ? '+' : '') + repeatDelta.toFixed(4).replace('.', ',') +
+            (repeatAlphaCounts ? ' · alpha: ' + ctx.escapeHTML(repeatAlphaCounts) : '') +
             (modeDeltaText ? ' · delta nDCG@5: ' + ctx.escapeHTML(modeDeltaText) : '') + '.</p>';
         }).join('');
         repeatedMarkup = '<section class="ridge-repeated-validation" aria-label="Validación Ridge repetida">' +
@@ -328,6 +339,8 @@ export function createPageViews(ctx) {
           ' · base ' + Number(repeated.baselineMae).toFixed(4).replace('.', ',') +
           ' · base − Ridge ' + (Number(repeated.deltaBaseMinusRidge) > 0 ? '+' : '') +
           Number(repeated.deltaBaseMinusRidge).toFixed(4).replace('.', ',') + '.</p>' +
+          '<p class="metric-note">Alpha elegido en los pliegues de las repeticiones (recuento agregado): ' +
+          ctx.escapeHTML(repeatedAlphaCounts || 'sin datos') + '.</p>' +
           (repeatedFoldStability.available
             ? '<p class="metric-note">Estabilidad de MAE en 15 pliegues: Ridge mejora en ' +
               Number(repeatedFoldStability.ridgeMaeWins || 0) + ', empata en ' +
