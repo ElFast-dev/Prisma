@@ -5,10 +5,10 @@ import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine } from "./js/recommendations/engine.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
-import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261020-1";
+import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261020-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261020-1";
-import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-2";
+import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-3";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261020-1";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
@@ -21,7 +21,7 @@ import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-202610
 import { createModalController } from "./js/ui/modal-controller.js?v=core-20261020-1";
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-2";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
-import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261020-1";
+import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
@@ -40,7 +40,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const EMOTIONS = ["Asombro", "Alegría", "Tristeza", "Tensión", "Sorpresa", "Miedo", "Esperanza", "Curiosidad", "Empatía", "Nostalgia", "Frustración", "Alivio", "Ilusión", "Inquietud"];
  
 
-  let seedCatalog = [];
   let customCatalog = [];
   let catalog = [];
   let catalogByTitle = new Map();
@@ -91,7 +90,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { cardColor, infoButton, metric, sectionHead, barRow, formatDate, niceRuntime, dateLabel, formatWatchedDate, displayMovieStatus, externalMovieUrl, personImage, hasTrustedTMDBScore, formatVoteCount, buildRatingMetrics, personAge } = presentationUtils;
 
   const catalogModel = createCatalogModel({
-    getSeedCatalog: function () { return seedCatalog; },
     getCustomCatalog: function () { return customCatalog; },
     getState: function () { return state; },
     getCatalog: function () { return catalog; },
@@ -452,8 +450,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const appLifecycle = createAppLifecycle({
     get state() { return state; },
     set state(value) { state = value; },
-    get seedCatalog() { return seedCatalog; },
-    set seedCatalog(value) { seedCatalog = value; },
     get customCatalog() { return customCatalog; },
     set customCatalog(value) { customCatalog = value; },
     get tmdbCredential() { return tmdbCredential; },
