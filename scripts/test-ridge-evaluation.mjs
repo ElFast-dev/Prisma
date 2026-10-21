@@ -169,6 +169,12 @@ assert.equal(rankingResult.rankingQuality.folds, 5);
 assert.equal(rankingResult.rankingQuality.foldsEvaluated, 5);
 assert.deepEqual(rankingResult.rankingQuality.modes.map(item => item.mode),
   ["balanced", "affinity", "variety"]);
+assert.ok(rankingResult.rankingQuality.modes.every(item =>
+  Number.isFinite(item.hybridNdcgAt5) && Number.isFinite(item.deltaHybridMinusBaseline)),
+  "La evaluación debe incluir nDCG@5 del híbrido en cada modo.");
+assert.ok(rankingResult.rankingQuality.modes.every(item =>
+  item.foldsHybridWins + item.foldsHybridTies + item.foldsHybridLosses === item.foldsEvaluated),
+  "Los recuentos del híbrido deben cubrir los pliegues válidos por modo.");
 assert.equal(rankingResult.foldStability.available, true,
   "La evaluación debe resumir la dirección de MAE en cada pliegue externo.");
 assert.equal(rankingResult.foldStability.foldsEvaluated, rankingResult.outerFolds);
