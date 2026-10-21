@@ -588,6 +588,38 @@ export function createRidgeRecommendationExperiment(dependencies) {
     };
   }
 
+  function completedEvaluation(rows, repeatedRuns, relevantCount) {
+    const primary = repeatedRuns[0];
+    const mae = meanAbsoluteError(primary.ridgeErrors);
+    const baselineMae = meanAbsoluteError(primary.baselineErrors);
+    return {
+      available: true,
+      count: rows.length,
+      mae: mae,
+      baselineMae: baselineMae,
+      deltaBaseMinusRidge: baselineMae - mae,
+      outerFolds: OUTER_FOLDS,
+      foldsEvaluated: primary.outerFoldsEvaluated,
+      innerFolds: INNER_FOLDS,
+      alphaGrid: ALPHAS.slice(),
+      selectedAlphaCounts: primary.selectedAlphaCounts,
+      predictionMin: primary.predictionMin,
+      predictionMax: primary.predictionMax,
+      foldStability: summarizeMaeFoldStability(primary.foldMaeDeltas),
+      rankingQuality: primary.rankingQuality,
+      repeatedValidation: summarizeRepeatedValidation(repeatedRuns, rows.length, relevantCount),
+      reason: null
+    };
+  }
+
+  function unavailableEvaluation(rows, relevantCount) {
+    const reason = "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.";
+    return unavailableResult(rows.length, reason,
+      unavailableRankingQuality(rows.length, relevantCount,
+        "La comparación Ridge de ranking no se completó porque el ajuste no terminó."),
+      relevantCount);
+  }
+
   function evaluate() {
     const rows = mappedRows();
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
@@ -602,34 +634,41 @@ export function createRidgeRecommendationExperiment(dependencies) {
       for (let repetitionIndex = 0; repetitionIndex < REPEATED_VALIDATION_RUNS; repetitionIndex += 1) {
         repeatedRuns.push(evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount));
       }
-      const primary = repeatedRuns[0];
-      const mae = meanAbsoluteError(primary.ridgeErrors);
-      const baselineMae = meanAbsoluteError(primary.baselineErrors);
-      return {
-        available: true,
-        count: rows.length,
-        mae: mae,
-        baselineMae: baselineMae,
-        deltaBaseMinusRidge: baselineMae - mae,
-        outerFolds: OUTER_FOLDS,
-        foldsEvaluated: primary.outerFoldsEvaluated,
-        innerFolds: INNER_FOLDS,
-        alphaGrid: ALPHAS.slice(),
-        selectedAlphaCounts: primary.selectedAlphaCounts,
-        predictionMin: primary.predictionMin,
-        predictionMax: primary.predictionMax,
-        foldStability: summarizeMaeFoldStability(primary.foldMaeDeltas),
-        rankingQuality: primary.rankingQuality,
-        repeatedValidation: summarizeRepeatedValidation(repeatedRuns, rows.length, relevantCount),
-        reason: null
-      };
+      return completedEvaluation(rows, repeatedRuns, relevantCount);
     } catch (_) {
-      const reason = "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.";
-      return unavailableResult(rows.length, reason,
-        unavailableRankingQuality(rows.length, relevantCount, "La comparación Ridge de ranking no se completó porque el ajuste no terminó."),
-        relevantCount);
+      return unavailableEvaluation(rows, relevantCount);
     }
   }
 
-  return { evaluate: evaluate };
+  async function evaluateAsync(onProgress) {
+    const rows = mappedRows();
+    const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
+    if (rows.length < MIN_RECORDS) {
+      const reason = "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.";
+      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
+    }
+    try {
+      const kernel = buildKernel(rows);
+      const indices = rows.map(function (_, index) { return index; });
+      const repeatedRuns = [];
+      for (let repetitionIndex = 0; repetitionIndex < REPEATED_VALIDATION_RUNS; repetitionIndex += 1) {
+        repeatedRuns.push(evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount));
+        if (typeof onProgress === "function") {
+          onProgress({
+            completedRepeats: repetitionIndex + 1,
+            totalRepeats: REPEATED_VALIDATION_RUNS,
+            foldsPerRepeat: OUTER_FOLDS
+          });
+        }
+        if (repetitionIndex + 1 < REPEATED_VALIDATION_RUNS) {
+          await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        }
+      }
+      return completedEvaluation(rows, repeatedRuns, relevantCount);
+    } catch (_) {
+      return unavailableEvaluation(rows, relevantCount);
+    }
+  }
+
+  return { evaluate: evaluate, evaluateAsync: evaluateAsync };
 }
