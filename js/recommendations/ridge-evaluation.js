@@ -652,12 +652,27 @@ export function createRidgeRecommendationExperiment(dependencies) {
       const indices = rows.map(function (_, index) { return index; });
       const repeatedRuns = [];
       for (let repetitionIndex = 0; repetitionIndex < REPEATED_VALIDATION_RUNS; repetitionIndex += 1) {
+        if (repetitionIndex > 0 && typeof onProgress === "function") {
+          const canStart = onProgress({
+            completedRepeats: repetitionIndex,
+            totalRepeats: REPEATED_VALIDATION_RUNS,
+            foldsPerRepeat: OUTER_FOLDS,
+            phase: "starting"
+          });
+          if (canStart === false) {
+            const reason = "La validación Ridge repetida se canceló porque cambiaron los datos personales durante el cálculo.";
+            return unavailableResult(rows.length, reason,
+              unavailableRankingQuality(rows.length, relevantCount, reason, REPEATED_VALIDATION_RUNS * OUTER_FOLDS),
+              relevantCount);
+          }
+        }
         repeatedRuns.push(evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount));
         if (typeof onProgress === "function") {
           const shouldContinue = onProgress({
             completedRepeats: repetitionIndex + 1,
             totalRepeats: REPEATED_VALIDATION_RUNS,
-            foldsPerRepeat: OUTER_FOLDS
+            foldsPerRepeat: OUTER_FOLDS,
+            phase: "completed"
           });
           if (shouldContinue === false) {
             const reason = "La validación Ridge repetida se canceló porque cambiaron los datos personales durante el cálculo.";
