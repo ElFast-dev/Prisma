@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { registerAppEvents } from "../js/app/event-handlers.js";
+import { createModalController } from "../js/ui/modal-controller.js";
 
 const appSource = await readFile(new URL("../app.js", import.meta.url), "utf8");
 const registrationStart = appSource.indexOf("  registerAppEvents({");
@@ -70,6 +71,40 @@ assert.deepEqual(emotion.ctx.modalDraft.emotions, [],
   "Volver a pulsar una emoción debe quitarla del borrador.");
 assert.equal(emotion.calls.renderModal, 2);
 assert.deepEqual(emotion.errors, [], "No debe aparecer el ReferenceError modalDraft is not defined.");
+
+const detail = { ...movie };
+const controllerState = {
+  modalDraft: { movie: detail, mode: "rate", emotions: [] },
+  movieDetail: { movie: detail },
+  ratingReturnDetail: false,
+  personDetail: null,
+  utilitySheet: null,
+  modalRoot: { innerHTML: "rating sheet" },
+  renderCalls: 0
+};
+const controller = createModalController({
+  get modalDraft() { return controllerState.modalDraft; },
+  set modalDraft(value) { controllerState.modalDraft = value; },
+  get movieDetail() { return controllerState.movieDetail; },
+  set movieDetail(value) { controllerState.movieDetail = value; },
+  get ratingReturnDetail() { return controllerState.ratingReturnDetail; },
+  set ratingReturnDetail(value) { controllerState.ratingReturnDetail = value; },
+  get personDetail() { return controllerState.personDetail; },
+  set personDetail(value) { controllerState.personDetail = value; },
+  get utilitySheet() { return controllerState.utilitySheet; },
+  set utilitySheet(value) { controllerState.utilitySheet = value; },
+  $() { return controllerState.modalRoot; },
+  renderModal() { controllerState.renderCalls += 1; }
+});
+controller.closeModal();
+assert.equal(controllerState.modalDraft, null,
+  "Cerrar el editor debe retirar el borrador temporal.");
+assert.deepEqual(controllerState.movieDetail, { movie: detail },
+  "Cerrar el editor debe conservar una ficha activa incluso si ratingReturnDetail está desincronizado.");
+assert.equal(controllerState.modalRoot.innerHTML, "rating sheet",
+  "La ruta de retorno debe delegar la pintura a renderModal, no borrar el detalle directamente.");
+assert.equal(controllerState.renderCalls, 1);
+
 
 const cases = [
   ["manage-pending", "pending"],
