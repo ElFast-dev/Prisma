@@ -41,8 +41,20 @@ assert.match(deploy, /github\.event\.workflow_run\.conclusion\s*==\s*'success'/,
   "Un Playwright fallido debe bloquear el despliegue.");
 assert.match(deploy, /github\.event\.workflow_run\.event\s*==\s*'workflow_run'/,
   "Una ejecución manual aislada de capturas no debe disparar el deploy.");
-assert.match(deploy, /ref:\s*\$\{\{ github\.event\.workflow_run\.head_sha \}\}/,
-  "Pages debe desplegar el mismo SHA verificado por Playwright.");
+assert.match(browser, /TESTED_SOURCE_SHA:\s*\$\{\{ github\.event_name == 'workflow_run' && github\.event\.workflow_run\.head_sha/,
+  "Playwright debe escribir el SHA del commit exacto que recibió de la validación.");
+assert.match(browser, /name: prisma-published-ui-screenshots/,
+  "Playwright debe emitir el artefacto que autoriza el despliegue.");
+assert.match(browser, /tested-sha\.txt/,
+  "El artefacto de Playwright debe llevar el SHA exacto validado.");
+assert.match(deploy, /actions\/download-artifact@v4/,
+  "El despliegue debe descargar la aprobación generada por Playwright.");
+assert.match(deploy, /name: prisma-published-ui-screenshots/,
+  "El nombre del artefacto de deploy debe coincidir con el de Playwright.");
+assert.match(deploy, /release-approval\/tested-sha\.txt/,
+  "El SHA desplegable debe proceder del artefacto validado.");
+assert.match(deploy, /ref:\s*\$\{\{ steps\.tested-source\.outputs\.sha \}\}/,
+  "Pages debe desplegar el SHA aprobado, no un head SHA móvil de main.");
 assert.doesNotMatch(deploy, /^\s{2}push:/m,
   "No se permite desplegar directamente con cualquier push a main.");
 assert.doesNotMatch(deploy, /^\s{2}workflow_dispatch:/m,
