@@ -81,6 +81,7 @@ const [pageViews, eventHandlers, cacheTest, modularTest, spec, workflow] = await
 ]);
 assert.match(pageViews, /data-action="recommendation-mode"/);
 assert.match(pageViews, /aria-pressed=/);
+assert.match(pageViews, /Δ frente a Más afines:/, "Laboratorio debe mostrar la diferencia de nDCG frente al modo de afinidad.");
 assert.match(eventHandlers, /action === "recommendation-mode"/);
 assert.match(spec, /Modos de recomendación ajustables/);
 assert.match(cacheTest, /js\/recommendations\/preferences\.js/);

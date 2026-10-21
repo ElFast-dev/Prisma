@@ -212,6 +212,7 @@ export function createPageViews(ctx) {
     const profile = ctx.buildProfile();
     const evaluation = ctx.evaluateModel();
     const recommendationQuality = ctx.evaluateRecommendationQuality();
+    const affinityReference = recommendationQuality.ranking.modes.find(function (item) { return item.mode === "affinity"; });
     const genres = ctx.genreStats();
     const overall = stats.average || 6.5;
     const top = genres.slice().sort(function (a,b) { return b.average-a.average; }).slice(0,7);
@@ -258,12 +259,22 @@ export function createPageViews(ctx) {
       '<div class="panel-head"><h4>Calidad del orden · nDCG@5 por modo</h4></div>' +
       '<div class="event-list">' + recommendationQuality.ranking.modes.map(function (item) {
         const label = {balanced:"Equilibrado",affinity:"Más afines",variety:"Más variedad"}[item.mode] || item.mode;
+        const delta = item.available && affinityReference && affinityReference.available
+          ? item.ndcgAt5 - affinityReference.ndcgAt5
+          : null;
+        const deltaLabel = item.mode === "affinity"
+          ? "referencia"
+          : (delta == null
+            ? "sin referencia comparable"
+            : "Δ frente a Más afines: " + (Math.abs(delta) < 0.005
+              ? "0,00"
+              : (delta > 0 ? "+" : "−") + Math.abs(delta).toFixed(2).replace(".",",")));
         const summary = item.available
-          ? "nDCG@5 " + item.ndcgAt5.toFixed(2).replace(".",",") + " · " + item.foldsEvaluated + "/" + recommendationQuality.ranking.folds + " pliegues"
+          ? "nDCG@5 " + item.ndcgAt5.toFixed(2).replace(".",",") + " · " + deltaLabel + " · " + item.foldsEvaluated + "/" + recommendationQuality.ranking.folds + " pliegues"
           : "Sin medición suficiente para este modo";
         return '<div class="event-item"><div class="event-mark" aria-hidden="true">✦</div><div class="event-copy"><strong>' + label + '</strong><small>' + ctx.escapeHTML(summary) + '</small></div></div>';
       }).join("") + '</div>' +
-      '<div class="metric-note">El nDCG estima la calidad del orden entre las películas del pliegue retenido; no mide satisfacción ni garantiza el orden de títulos aún no vistos.</div>' +
+      '<div class="metric-note">Δ frente a Más afines es una diferencia descriptiva de nDCG, no una mejora estadísticamente demostrada. El nDCG estima el orden de películas valoradas retenidas; no mide satisfacción ni garantiza el orden de títulos aún no vistos.</div>' +
       '<div class="panel-head"><h4>Diversidad de géneros · primeras cinco películas del catálogo actual</h4></div>' +
       '<div class="event-list">' + recommendationQuality.diversity.map(function (item) {
         const label = {balanced:"Equilibrado",affinity:"Más afines",variety:"Más variedad"}[item.mode] || item.mode;
