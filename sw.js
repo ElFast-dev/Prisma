@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v71"
+const CACHE_NAME = "prisma-shell-v72"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -14,7 +14,7 @@ const APP_ASSETS = [
   "./styles/movie-details.css?v=ui-20261021-24",
   "./styles/prisma-design-system.css?v=ui-20261021-24",
 
-  "./app.js?v=ui-20261021-62",
+  "./app.js?v=ui-20261021-63",
   "./js/tmdb/client.js",
   "./js/core/movie-utils.js",
   "./js/core/storage.js?v=core-20261020-1",
@@ -22,15 +22,15 @@ const APP_ASSETS = [
   "./js/core/state-model.js",
   "./js/recommendations/features.js",
   "./js/recommendations/engine.js",
-  "./js/recommendations/ridge-evaluation.js?v=core-20261021-4",
+  "./js/recommendations/ridge-evaluation.js?v=core-20261021-5",
   "./js/recommendations/repeated-validation-summary.js?v=core-20261021-1",
   "./js/recommendations/evaluation.js",
-  "./js/diagnostics/recommendation-report.js?v=core-20261021-2",
+  "./js/diagnostics/recommendation-report.js?v=core-20261021-3",
   "./js/catalog/csv-parser.js",
   "./js/catalog/catalog-model.js?v=core-20261021-1",
   "./js/collection/collection-model.js?v=core-20261020-1",
   "./js/ui/presentation-utils.js?v=core-20261020-1",
-  "./js/ui/page-views.js?v=core-20261021-10",
+  "./js/ui/page-views.js?v=core-20261021-11",
   "./js/ui/theme-controller.js?v=theme-20261020-1",
   "./js/ui/modal-views.js?v=core-20261021-2",
   "./js/app/movie-actions.js?v=core-20261020-1",
