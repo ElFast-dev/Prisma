@@ -125,14 +125,14 @@ assert.ok(reversedAffinity.ndcgAt5 < idealAffinity.ndcgAt5,
 const tooSmall = createDataset({ count: 49 });
 const smallResult = tooSmall.evaluation.evaluateRankingQuality();
 assert.equal(smallResult.available, false);
-assert.equal(smallResult.ndcgAt5, null);
+assert.ok(smallResult.modes.every(item => item.ndcgAt5 === null));
 assert.equal(smallResult.count, 49);
 assert.ok(smallResult.reason.includes("50"));
 
 const noRelevant = createDataset({ lowRatings: true });
 const noRelevantResult = noRelevant.evaluation.evaluateRankingQuality();
 assert.equal(noRelevantResult.available, false);
-assert.equal(noRelevantResult.ndcgAt5, null);
+assert.ok(noRelevantResult.modes.every(item => item.ndcgAt5 === null));
 assert.equal(noRelevantResult.relevantCount, 0);
 assert.ok(noRelevantResult.reason.includes("10 valoraciones"));
 
