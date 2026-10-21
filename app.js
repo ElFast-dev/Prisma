@@ -767,6 +767,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     set activeGenre(value) { activeGenre = value; },
     get utilitySheet() { return utilitySheet; },
     set utilitySheet(value) { utilitySheet = value; },
+    get modalDraft() { return modalDraft; },
     get movieDetail() { return movieDetail; },
     get personDetail() { return personDetail; },
     set personDetail(value) { personDetail = value; },
