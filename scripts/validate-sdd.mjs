@@ -15,6 +15,7 @@ const requiredFiles = [
   'openspec/changes/2026-10-21-temporal-date-provenance/design.md',
   'openspec/changes/2026-10-21-temporal-date-provenance/tasks.md',
   'openspec/changes/2026-10-21-temporal-date-provenance/specs/recommendations/spec.md',
+  'openspec/changes/2026-10-21-temporal-date-provenance/specs/interface/spec.md',
   'scripts/test-watched-date-import.mjs',
   'openspec/changes/archive/2026-10-21-temporal-ridge-validation/proposal.md',
   'openspec/changes/archive/2026-10-21-temporal-ridge-validation/design.md',
