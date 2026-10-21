@@ -35,6 +35,6 @@ assert.match(themeController, /currentTheme = "dark"/, 'El tema oscuro debe ser 
 assert.match(serviceWorker, /const CACHE_NAME = "prisma-shell-v81"/, 'La PWA debe renovar caché al publicar los temas.');
 assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261021-24"'),
   'El service worker debe usar la misma versión de la hoja de temas.');
-assert.ok(serviceWorker.includes('"./app.js?v=ui-20261021-71"'),
+assert.ok(serviceWorker.includes('"./app.js?v=ui-20261021-72"'),
   'El service worker debe usar la misma entrada de aplicación versionada.');
 console.log('Sistema visual Prisma correcto: negro, azul discreto, modo claro, selector accesible y caché PWA.');
