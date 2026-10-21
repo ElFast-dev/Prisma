@@ -401,6 +401,84 @@ export function createPageViews(ctx) {
   }
 
 
+  function renderTemporalRidgePanel() {
+    const result = ctx.temporalRidgeEvaluationResult || null;
+    const busy = Boolean(ctx.temporalRidgeEvaluationBusy);
+    const progress = ctx.temporalRidgeEvaluationProgress || null;
+    const completedWindows = Number(progress && progress.completedWindows || 0);
+    const totalWindows = Number(progress && progress.totalWindows || 5);
+    const buttonLabel = busy ? "Ventana " + completedWindows + "/" + totalWindows + "…" :
+      (result ? "Volver a evaluar" : "Evaluar historial temporal");
+    const modeNames = { balanced: "Equilibrado", affinity: "Más afines", variety: "Más variedad" };
+    let body = "";
+    if (busy) {
+      body = '<p class="metric-note" aria-live="polite">Evaluación temporal en curso: ' + completedWindows + ' de ' +
+        totalWindows + ' ventanas futuras completadas. Cada ventana se entrena con días anteriores y selecciona alpha con validación walk-forward interna.</p>';
+    } else if (!result) {
+      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha de visionado válida, repartidas en 12 días distintos. Usa <strong>watchedAt</strong>; una edición de la nota no sustituye la fecha de visionado.</p>';
+    } else if (!result.available) {
+      body = '<p class="metric-note" aria-live="polite">Evaluación temporal no disponible: ' +
+        ctx.escapeHTML(result.unavailableReason || "faltan suficientes valoraciones fechadas.") + '</p>' +
+        '<p class="metric-note">Con características: ' + Number(result.featureRowCount || 0) +
+        ' · con fecha válida: ' + Number(result.timestampedFeatureCount || 0) +
+        ' · excluidas por falta de fecha fiable: ' + Number(result.missingDateCount || 0) + '.</p>';
+    } else {
+      const delta = Number(result.deltaBaseMinusRidge);
+      const stability = result.windowStability || {};
+      const modes = result.rankingQuality && Array.isArray(result.rankingQuality.modes)
+        ? result.rankingQuality.modes : [];
+      const alphaCounts = Object.keys(result.selectedAlphaCounts || {}).filter(function (alpha) {
+        return Number(result.selectedAlphaCounts[alpha]) > 0;
+      }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+        return alpha + ": " + Number(result.selectedAlphaCounts[alpha]);
+      }).join(" · ");
+      const modeMarkup = modes.filter(function (mode) { return mode.available; }).map(function (mode) {
+        const difference = Number(mode.deltaRidgeMinusBaseline);
+        return '<p class="metric-note"><strong>' + ctx.escapeHTML(modeNames[mode.mode] || mode.mode) +
+          ' · nDCG@5:</strong> aditivo ' + Number(mode.baselineNdcgAt5).toFixed(4).replace(".", ",") +
+          ' · Ridge ' + Number(mode.ridgeNdcgAt5).toFixed(4).replace(".", ",") +
+          ' · cambio ' + (difference > 0 ? "+" : "") + difference.toFixed(4).replace(".", ",") +
+          ' · ventanas válidas ' + Number(mode.foldsEvaluated || 0) + '.</p>';
+      }).join("");
+      const windowsMarkup = (result.windowSummaries || []).map(function (window) {
+        const windowDelta = Number(window.deltaBaseMinusRidge);
+        return '<p class="metric-note"><strong>Ventana futura ' + Number(window.window || 0) + ':</strong> entrenamiento n=' +
+          Number(window.trainingCount || 0) + ' · prueba n=' + Number(window.testCount || 0) +
+          ' · alpha ' + Number(window.selectedAlpha || 0) +
+          ' · MAE Ridge ' + Number(window.mae).toFixed(4).replace(".", ",") +
+          ' · aditivo ' + Number(window.baselineMae).toFixed(4).replace(".", ",") +
+          ' · base − Ridge ' + (windowDelta > 0 ? "+" : "") + windowDelta.toFixed(4).replace(".", ",") + '.</p>';
+      }).join("");
+      body = '<div class="metrics-grid">' +
+        ctx.metric("MAE Ridge temporal", Number(result.mae).toFixed(4).replace(".", ","), Number(result.testCount || 0) + " valoraciones futuras") +
+        ctx.metric("MAE aditivo", Number(result.baselineMae).toFixed(4).replace(".", ","), "Mismas valoraciones futuras") +
+        ctx.metric("Base − Ridge", (delta > 0 ? "+" : "") + delta.toFixed(4).replace(".", ","), "Positivo favorece Ridge") +
+        '</div>' +
+        '<p class="metric-note">Muestra fechada con características: ' + Number(result.timestampedFeatureCount || 0) +
+        ' · entrenamiento inicial: ' + Number(result.warmupCount || 0) +
+        ' · prueba futura: ' + Number(result.testCount || 0) +
+        ' · sin fecha fiable: ' + Number(result.missingDateCount || 0) + '.</p>' +
+        '<p class="metric-note">Alpha se eligió en tres ventanas internas ordenadas dentro del pasado disponible: ' +
+        ctx.escapeHTML(alphaCounts || "sin datos") + '.</p>' +
+        (stability.available
+          ? '<p class="metric-note">Estabilidad entre las ' + Number(stability.windowsEvaluated || 0) +
+            ' ventanas: Ridge mejora el MAE en ' + Number(stability.ridgeMaeWins || 0) +
+            ', empata en ' + Number(stability.ties || 0) + ' y la base mejora en ' +
+            Number(stability.baselineMaeWins || 0) + '.</p>'
+          : '') +
+        '<h4>Calidad del orden futuro · nDCG@5</h4>' +
+        (modeMarkup || '<p class="metric-note">nDCG@5 no disponible con la parte futura de esta muestra: se necesitan al menos 50 pruebas y 10 notas relevantes.</p>') +
+        '<h4>Resultados agregados por ventana</h4>' + windowsMarkup +
+        '<p class="metric-note">Las ventanas son bloques temporales del mismo historial, no muestras independientes. No se muestran fechas exactas. Las recomendaciones activas siguen usando el modelo aditivo.</p>';
+    }
+    return '<section class="panel temporal-ridge-panel" aria-labelledby="temporal-ridge-heading">' +
+      '<div class="panel-head"><div><h3 id="temporal-ridge-heading">Validación temporal · Ridge frente al modelo aditivo</h3>' +
+      '<p class="metric-note">Entrenar con el pasado; probar con visionados posteriores</p></div>' +
+      '<button class="btn btn-secondary btn-small" type="button" data-action="run-temporal-ridge-experiment"' +
+      (busy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      body + '</section>';
+  }
+
   function renderLab() {
     const stats = ctx.summaryStats();
     const profile = ctx.buildProfile();
@@ -489,7 +567,7 @@ export function createPageViews(ctx) {
       '<div class="metric-note">La disimilitud de géneros se calcula con Jaccard entre pares que tienen metadatos. No mide serendipia ni satisfacción.</div></section>' +
       '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación de notas</h3>' + ctx.infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
       '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>' +
-      renderRidgeExperimentPanel() + renderRecommendationDiagnosticPanel();
+      renderRidgeExperimentPanel() + renderTemporalRidgePanel() + renderRecommendationDiagnosticPanel();
   }
 
 
