@@ -37,7 +37,7 @@ assert.match(product, /Privacidad local primero[\s\S]*?exportación\/importació
   "La hoja de ruta debe preservar almacenamiento local y copias de seguridad.");
 assert.match(html, /app\.js\?v=ui-20261021-47/,
   "index.html debe apuntar a la versión actualizada de la aplicación.");
-assert.match(app, /page-views\.js\?v=core-20261021-2/,
+assert.match(app, /page-views\.js\?v=core-20261021-3/,
   "La aplicación debe cargar el módulo de vistas versionado.");
 assert.match(serviceWorker, /prisma-shell-v55/);
 assert.ok(serviceWorker.includes("./js/ui/page-views.js?v=core-20261021-3"),
