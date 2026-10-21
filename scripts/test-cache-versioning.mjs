@@ -97,14 +97,14 @@ const modules = [
   ['js/ui/theme-controller.js', themeController]
 ];
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
-assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261021-5"),
+assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261021-6"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261021-12"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261021-13"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
-assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261021-3"),
-  "El informe de diagnóstico v5 debe quedar versionado y disponible en la caché de la aplicación.");
+assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261021-4"),
+  "El informe de diagnóstico v6 debe quedar versionado y disponible en la caché de la aplicación.");
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {
     const resolvedPath = './' + posix.normalize(posix.join(posix.dirname(filename), match[1])).replace(/^\.\//, '');
@@ -119,4 +119,4 @@ assert.match(ridgeEvaluation, /evaluateTemporalAsync/,
   "El experimento Ridge debe exportar la evaluación temporal bajo demanda.");
 assert.match(app, /runTemporalRidgeExperiment/);
 assert.match(diagnosticReport, /temporalRidgeExperiment/);
-console.log('Versionado PWA, módulos y experimento temporal coherentes: ' + scriptUrl + ' · caché ' + cacheName + ' · ' + modules.length + ' módulos verificados.');
+console.log('Versionado PWA, módulos y experimento temporal con procedencia coherentes: ' + scriptUrl + ' · caché ' + cacheName + ' · ' + modules.length + ' módulos verificados.');
