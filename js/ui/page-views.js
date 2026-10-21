@@ -233,11 +233,12 @@ export function createPageViews(ctx) {
   function renderRidgeExperimentPanel() {
     const result = ctx.ridgeEvaluationResult || null;
     const busy = Boolean(ctx.ridgeEvaluationBusy);
+    const temporalBusy = Boolean(ctx.temporalRidgeEvaluationBusy);
     const progress = ctx.ridgeEvaluationProgress || null;
     const completedRepeats = Number(progress && progress.completedRepeats || 0);
     const totalRepeats = Number(progress && progress.totalRepeats || 3);
     const buttonLabel = busy ? "Ridge " + completedRepeats + "/" + totalRepeats + "…" :
-      (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge");
+      (temporalBusy ? "Evaluación temporal en curso…" : (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge"));
     let body = "";
     if (busy) {
       body = '<p class="metric-note" aria-live="polite">Validación repetida en curso: ' + completedRepeats + ' de ' +
@@ -396,7 +397,7 @@ export function createPageViews(ctx) {
       '<div class="panel-head"><div><h3 id="ridge-experiment-heading">Experimento Ridge (regularización L2)</h3>' +
       '<p class="metric-note">Comparación local y explícita con la base aditiva</p></div>' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="run-ridge-experiment"' +
-      (busy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      (busy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
       body + '</section>';
   }
 
@@ -404,16 +405,19 @@ export function createPageViews(ctx) {
   function renderTemporalRidgePanel() {
     const result = ctx.temporalRidgeEvaluationResult || null;
     const busy = Boolean(ctx.temporalRidgeEvaluationBusy);
+    const ridgeBusy = Boolean(ctx.ridgeEvaluationBusy);
     const progress = ctx.temporalRidgeEvaluationProgress || null;
     const completedWindows = Number(progress && progress.completedWindows || 0);
     const totalWindows = Number(progress && progress.totalWindows || 5);
     const buttonLabel = busy ? "Ventana " + completedWindows + "/" + totalWindows + "…" :
-      (result ? "Volver a evaluar" : "Evaluar historial temporal");
+      (ridgeBusy ? "Validación Ridge en curso…" : (result ? "Volver a evaluar" : "Evaluar historial temporal"));
     const modeNames = { balanced: "Equilibrado", affinity: "Más afines", variety: "Más variedad" };
     let body = "";
     if (busy) {
       body = '<p class="metric-note" aria-live="polite">Evaluación temporal en curso: ' + completedWindows + ' de ' +
         totalWindows + ' ventanas futuras completadas. Cada ventana se entrena con días anteriores y selecciona alpha con validación walk-forward interna.</p>';
+    } else if (ridgeBusy) {
+      body = '<p class="metric-note" aria-live="polite">El experimento temporal se ejecutará cuando termine la validación Ridge estándar.</p>';
     } else if (!result) {
       body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha de visionado válida, repartidas en 12 días distintos. Usa <strong>watchedAt</strong>; una edición de la nota no sustituye la fecha de visionado.</p>';
     } else if (!result.available) {
@@ -475,7 +479,7 @@ export function createPageViews(ctx) {
       '<div class="panel-head"><div><h3 id="temporal-ridge-heading">Validación temporal · Ridge frente al modelo aditivo</h3>' +
       '<p class="metric-note">Entrenar con el pasado; probar con visionados posteriores</p></div>' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="run-temporal-ridge-experiment"' +
-      (busy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      (busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
       body + '</section>';
   }
 
