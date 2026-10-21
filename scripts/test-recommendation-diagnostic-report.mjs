@@ -40,6 +40,31 @@ const baseInput = {
         { mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.70, deltaRidgeMinusBaseline: 0.02, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 1, foldsRidgeLosses: 0 }
       ]
     },
+    repeatedValidation: {
+      available: true, sampleCount: 60, repeats: 3, foldsPerRepeat: 5, foldsEvaluated: 15, innerFolds: 3,
+      mae: 1.04, baselineMae: 1.18, deltaBaseMinusRidge: 0.14,
+      foldStability: { available: true, foldsEvaluated: 15, ridgeMaeWins: 11, ties: 1, baselineMaeWins: 3 },
+      rankingQuality: {
+        available: true, count: 60, relevantCount: 31, folds: 15, foldsEvaluated: 15,
+        cutoff: 5, relevantThreshold: 7, reason: null,
+        modes: [
+          { mode: "balanced", available: true, baselineNdcgAt5: 0.62, ridgeNdcgAt5: 0.70, deltaRidgeMinusBaseline: 0.08, foldsEvaluated: 15, foldsRidgeWins: 10, foldsRidgeTies: 1, foldsRidgeLosses: 4 },
+          { mode: "affinity", available: true, baselineNdcgAt5: 0.64, ridgeNdcgAt5: 0.66, deltaRidgeMinusBaseline: 0.02, foldsEvaluated: 15, foldsRidgeWins: 7, foldsRidgeTies: 1, foldsRidgeLosses: 7 },
+          { mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.79, deltaRidgeMinusBaseline: 0.11, foldsEvaluated: 15, foldsRidgeWins: 12, foldsRidgeTies: 0, foldsRidgeLosses: 3 }
+        ]
+      },
+      repeatSummaries: [
+        { repeat: 1, sampleCount: 60, foldsEvaluated: 5, mae: 1.05, baselineMae: 1.2, deltaBaseMinusRidge: 0.15,
+          foldStability: { available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1 },
+          rankingQuality: { available: true, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 5, cutoff: 5, relevantThreshold: 7, reason: null,
+            modes: [{ mode: "variety", available: true, baselineNdcgAt5: 0.68, ridgeNdcgAt5: 0.75, deltaRidgeMinusBaseline: 0.07, foldsEvaluated: 5, foldsRidgeWins: 4, foldsRidgeTies: 0, foldsRidgeLosses: 1 }] } },
+        { repeat: 2, sampleCount: 60, foldsEvaluated: 5, mae: 1.03, baselineMae: 1.17, deltaBaseMinusRidge: 0.14,
+          foldStability: { available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 1, baselineMaeWins: 0 }, rankingQuality: { available: false, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 0, cutoff: 5, relevantThreshold: 7, reason: "Muestra no válida", modes: [] } },
+        { repeat: 3, sampleCount: 60, foldsEvaluated: 5, mae: 1.04, baselineMae: 1.17, deltaBaseMinusRidge: 0.13,
+          foldStability: { available: true, foldsEvaluated: 5, ridgeMaeWins: 3, ties: 0, baselineMaeWins: 2 }, rankingQuality: { available: true, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 5, cutoff: 5, relevantThreshold: 7, reason: null, modes: [] } }
+      ],
+      unavailableReason: null
+    },
     reason: null
   },
   recommendationQuality: {
@@ -59,7 +84,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v3");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v4");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -90,6 +115,17 @@ assert.deepEqual({
   losses: compact.evaluation.ridgeExperiment.rankingQuality.modes[1].foldsRidgeLosses
 }, { wins: 4, ties: 0, losses: 1 });
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.sampleCount, 60);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.available, true);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeats, 3);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.foldsEvaluated, 15);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.mae, 1.04);
+assert.deepEqual(compact.evaluation.ridgeExperiment.repeatedValidation.foldStability, {
+  available: true, foldsEvaluated: 15, ridgeMaeWins: 11, ties: 1, baselineMaeWins: 3
+});
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.rankingQuality.modes[2].foldsRidgeWins, 12);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeatSummaries.length, 3);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeatSummaries[0].repeat, 1);
+assert.equal(compact.evaluation.ridgeExperiment.repeatedValidation.repeatSummaries[2].mae, 1.04);
 assert.equal(compact.evaluation.rankingQuality.modes[2].ndcgAt5, 0.68);
 assert.equal(compact.evaluation.currentListDiversity[0].score, 0.4);
 assert.equal(compact.privacy.generatedLocally, true);
@@ -123,6 +159,7 @@ const unavailable = buildRecommendationDiagnosticReport({
 assert.equal(unavailable.evaluation.ratingPrediction.mae, null);
 assert.equal(unavailable.evaluation.ridgeExperiment.available, false);
 assert.equal(unavailable.evaluation.ridgeExperiment.executionStatus, "not-run");
+assert.equal(unavailable.evaluation.ridgeExperiment.repeatedValidation.executionStatus, "not-run");
 assert.equal(unavailable.evaluation.ratingPrediction.unavailableReason,
   "Se necesitan al menos cinco valoraciones válidas con características enlazadas.");
 assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
