@@ -15,9 +15,9 @@
 
 ## Validación y cierre
 - [x] Validar SDD, sintaxis y todas las pruebas estáticas en CI.
-- [x] Verificar el cambio de tema y persistencia con Playwright de escritorio/móvil en la rama; falta cerrar la verificación post-despliegue.
-- [x] Fusionar el cambio y confirmar GitHub Pages.
-- [x] Archivar la propuesta con evidencias CI y despliegue; la última prueba pública se vinculará cuando termine.
+- [x] Verificar el cambio de tema, persistencia y estados accesibles con Playwright en la rama y en la web publicada, escritorio y móvil.
+- [x] Fusionar el cambio y confirmar GitHub Pages y Playwright de la web publicada.
+- [x] Archivar la propuesta con evidencias finales de CI, despliegue y validación de UI publicada.
 
 
 ## Evidencia
@@ -28,3 +28,5 @@
 - Validate Prisma: https://github.com/ElFast-dev/Prisma/actions/runs/39519374453
 - Deploy Pages: https://github.com/ElFast-dev/Prisma/actions/runs/39519374424
 - Playwright de la rama: https://github.com/ElFast-dev/Prisma/actions/runs/39518978427
+
+- Playwright post-despliegue: https://github.com/ElFast-dev/Prisma/actions/runs/39519413042
