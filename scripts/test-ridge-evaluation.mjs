@@ -77,6 +77,12 @@ assert.equal(result.repeatedValidation.repeats, 3);
 assert.equal(result.repeatedValidation.foldsPerRepeat, 5);
 assert.equal(result.repeatedValidation.foldsEvaluated, 15);
 assert.equal(result.repeatedValidation.sampleCount, records.length);
+assert.equal(result.repeatedValidation.repeats * result.repeatedValidation.foldsPerRepeat,
+  result.repeatedValidation.foldsEvaluated);
+assert.equal(result.repeatedValidation.repeatSummaries[0].mae, result.mae,
+  "La repetición inicial debe preservar la evaluación histórica de cinco pliegues.");
+assert.equal(result.repeatedValidation.repeatSummaries[0].baselineMae, result.baselineMae);
+assert.deepEqual(result.repeatedValidation.repeatSummaries[0].rankingQuality, result.rankingQuality);
 assert.equal(result.repeatedValidation.repeatSummaries.length, 3);
 assert.ok(result.repeatedValidation.repeatSummaries.every(item =>
   item.foldsEvaluated === 5 && item.sampleCount === records.length &&
