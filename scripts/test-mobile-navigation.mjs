@@ -37,10 +37,10 @@ assert.match(product, /Privacidad local primero[\s\S]*?exportación\/importació
   "La hoja de ruta debe preservar almacenamiento local y copias de seguridad.");
 assert.match(html, /app\.js\?v=ui-20261021-72/,
   "index.html debe apuntar a la versión actualizada de la aplicación.");
-assert.match(app, /page-views\.js\?v=core-20261021-13/,
+assert.match(app, /page-views\.js\?v=core-20261021-14/,
   "La aplicación debe cargar el módulo de vistas versionado.");
 assert.match(serviceWorker, /prisma-shell-v80/);
-assert.ok(serviceWorker.includes("./js/ui/page-views.js?v=core-20261021-13"),
+assert.ok(serviceWorker.includes("./js/ui/page-views.js?v=core-20261021-14"),
   "El shell PWA debe cachear exactamente el módulo de vistas activo.");
 
 console.log("Navegación móvil verificada: objetivos táctiles, estado accesible, movimiento contenido y caché sincronizada.");
