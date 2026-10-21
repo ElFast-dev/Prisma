@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createRecommendationEvaluation } from "../js/recommendations/evaluation.js";
+import { createRecommendationRanking } from "../js/recommendations/ranking.js";
 
 function createDataset({ count = 60, reverse = false, lowRatings = false } = {}) {
   const ratings = [];
@@ -44,8 +45,23 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
   function predictRating(movie, profile) {
     assert.ok(!profile.seenIds.has(String(movie.tmdbId)),
       "La nota del candidato retenido nunca puede formar parte del perfil de entrenamiento.");
+    assert.equal(Object.prototype.hasOwnProperty.call(movie, "rating"), false,
+      "La nota retenida no debe viajar al predictor como propiedad del candidato.");
+    assert.equal(Object.prototype.hasOwnProperty.call(movie, "evaluationGain"), false,
+      "La ganancia de relevancia no debe exponerse al predictor.");
     const learned = profile.genreMeans.get(movie.genres[0]) || profile.average;
     return { score: reverse ? 11 - learned : learned };
+  }
+
+  const productionRanking = createRecommendationRanking({});
+  const rankingCalls = [];
+  function rankCandidates(candidates, limit, mode) {
+    assert.ok(candidates.every(candidate =>
+      !Object.prototype.hasOwnProperty.call(candidate, "rating") &&
+      !Object.prototype.hasOwnProperty.call(candidate, "evaluationGain")),
+    "Las notas de evaluación no deben llegar al algoritmo que ordena las candidatas.");
+    rankingCalls.push({ mode, identities: candidates.map(candidate => candidate.evaluationIdentity) });
+    return productionRanking.rankCandidates(candidates, limit, mode);
   }
 
   const diversityLists = {
@@ -73,10 +89,11 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
     buildProfile,
     predictRating,
     getRecommendations: (limit, mode) => (diversityLists[mode] || []).slice(0, limit),
+    rankCandidates,
     movieTmdbId: entry => entry && entry.tmdbId && Number(entry.tmdbId) > 0 ? String(entry.tmdbId) : "",
     titleKey: value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
   });
-  return { evaluation, ratings, movies };
+  return { evaluation, ratings, movies, rankingCalls };
 }
 
 const ideal = createDataset();
@@ -86,28 +103,44 @@ assert.equal(idealResult.count, 60);
 assert.equal(idealResult.relevantCount, 24);
 assert.equal(idealResult.folds, 5);
 assert.equal(idealResult.foldsEvaluated, 5);
-assert.ok(Math.abs(idealResult.ndcgAt5 - 1) < 1e-12,
-  "Un ranking que coloca primero las notas relevantes debe alcanzar nDCG@5 = 1.");
+assert.equal(idealResult.modes.length, 3);
+assert.deepEqual(idealResult.modes.map(item => item.mode), ["balanced", "affinity", "variety"]);
+assert.ok(idealResult.modes.every(item => item.available && item.ndcgAt5 >= 0 && item.ndcgAt5 <= 1));
+const idealAffinity = idealResult.modes.find(item => item.mode === "affinity");
+assert.ok(Math.abs(idealAffinity.ndcgAt5 - 1) < 1e-12,
+  "El modo por afinidad que prioriza las notas relevantes debe alcanzar nDCG@5 = 1 en este conjunto sintético.");
 assert.deepEqual(idealResult, ideal.evaluation.evaluateRankingQuality(),
   "Los pliegues y resultados deben repetirse de forma determinista.");
+
+const evaluatedFoldCount = idealResult.foldsEvaluated;
+assert.equal(ideal.rankingCalls.length, evaluatedFoldCount * 3 * 2,
+  "Cada pasada debe puntuar tres modos por pliegue con señal relevante.");
+for (let i = 0; i < evaluatedFoldCount * 3; i += 3) {
+  assert.deepEqual(ideal.rankingCalls[i].identities.slice().sort(), ideal.rankingCalls[i + 1].identities.slice().sort(),
+    "Afinidad debe recibir las mismas candidatas retenidas que Equilibrado.");
+  assert.deepEqual(ideal.rankingCalls[i].identities.slice().sort(), ideal.rankingCalls[i + 2].identities.slice().sort(),
+    "Variedad debe recibir las mismas candidatas retenidas que Equilibrado.");
+  assert.deepEqual(ideal.rankingCalls.slice(i, i + 3).map(call => call.mode), ["balanced", "affinity", "variety"]);
+}
 
 const reversed = createDataset({ reverse: true });
 const reversedResult = reversed.evaluation.evaluateRankingQuality();
 assert.equal(reversedResult.available, true);
-assert.ok(reversedResult.ndcgAt5 < idealResult.ndcgAt5,
-  "El nDCG debe distinguir un orden degradado de un orden ideal.");
+const reversedAffinity = reversedResult.modes.find(item => item.mode === "affinity");
+assert.ok(reversedAffinity.ndcgAt5 < idealAffinity.ndcgAt5,
+  "El nDCG por afinidad debe distinguir un orden degradado de un orden ideal.");
 
 const tooSmall = createDataset({ count: 49 });
 const smallResult = tooSmall.evaluation.evaluateRankingQuality();
 assert.equal(smallResult.available, false);
-assert.equal(smallResult.ndcgAt5, null);
+assert.ok(smallResult.modes.every(item => item.ndcgAt5 === null));
 assert.equal(smallResult.count, 49);
 assert.ok(smallResult.reason.includes("50"));
 
 const noRelevant = createDataset({ lowRatings: true });
 const noRelevantResult = noRelevant.evaluation.evaluateRankingQuality();
 assert.equal(noRelevantResult.available, false);
-assert.equal(noRelevantResult.ndcgAt5, null);
+assert.ok(noRelevantResult.modes.every(item => item.ndcgAt5 === null));
 assert.equal(noRelevantResult.relevantCount, 0);
 assert.ok(noRelevantResult.reason.includes("10 valoraciones"));
 
@@ -151,4 +184,4 @@ const shortList = createRecommendationEvaluation({
 assert.equal(shortList.evaluateDiversityModes()[0].score, null,
   "Una lista de un solo título no tiene pares con los que medir diversidad.");
 
-console.log("Evaluación de recomendaciones correcta: nDCG@5, pliegues sin fuga de notas, umbrales, determinismo y diversidad Jaccard.");
+console.log("Evaluación de recomendaciones correcta: nDCG@5 por modo con las mismas candidatas, pliegues sin fuga de notas, umbrales, determinismo y diversidad Jaccard.");

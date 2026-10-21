@@ -248,14 +248,23 @@ export function createPageViews(ctx) {
       '</section></div>' +
       '<section class="panel lab-ranking-diagnostics"><div class="panel-head"><div><h3>Calidad del ranking</h3><p class="metric-note">Diagnóstico offline, no una garantía de gusto futuro.</p></div>' + ctx.infoButton("lab","Información sobre la calidad del ranking y la diversidad") + '</div>' +
       '<div class="metrics-grid">' +
-      ctx.metric("nDCG@5", recommendationQuality.ranking.available ? recommendationQuality.ranking.ndcgAt5.toFixed(2).replace(".",",") : "—", "") +
       ctx.metric("Películas evaluables", String(recommendationQuality.ranking.count), "Con características enlazadas") +
       ctx.metric("Notas relevantes", String(recommendationQuality.ranking.relevantCount), "Puntuación personal de 7 a 10") +
+      ctx.metric("Particiones", String(recommendationQuality.ranking.folds), "Mismas cinco para los tres modos") +
       '</div>' +
       '<div class="metric-note">' + ctx.escapeHTML(recommendationQuality.ranking.available
-        ? "Validación cruzada de 5 pliegues. Ganancia: nota − 6 para notas de 7 a 10; las notas de 1 a 6 no se cuentan como relevantes. Pliegues con señal relevante: " + recommendationQuality.ranking.foldsEvaluated + "/5."
+        ? "Validación cruzada offline: las tres variantes reciben las mismas candidatas retenidas por pliegue y el perfil se entrena sin sus notas. Ganancia graduada: nota − 6 para notas de 7 a 10; las notas de 1 a 6 no se consideran relevantes."
         : recommendationQuality.ranking.reason) + '</div>' +
-      '<div class="panel-head"><h4>Diversidad de géneros · primeras cinco películas</h4></div>' +
+      '<div class="panel-head"><h4>Calidad del orden · nDCG@5 por modo</h4></div>' +
+      '<div class="event-list">' + recommendationQuality.ranking.modes.map(function (item) {
+        const label = {balanced:"Equilibrado",affinity:"Más afines",variety:"Más variedad"}[item.mode] || item.mode;
+        const summary = item.available
+          ? "nDCG@5 " + item.ndcgAt5.toFixed(2).replace(".",",") + " · " + item.foldsEvaluated + "/" + recommendationQuality.ranking.folds + " pliegues"
+          : "Sin medición suficiente para este modo";
+        return '<div class="event-item"><div class="event-mark" aria-hidden="true">✦</div><div class="event-copy"><strong>' + label + '</strong><small>' + ctx.escapeHTML(summary) + '</small></div></div>';
+      }).join("") + '</div>' +
+      '<div class="metric-note">El nDCG estima la calidad del orden entre las películas del pliegue retenido; no mide satisfacción ni garantiza el orden de títulos aún no vistos.</div>' +
+      '<div class="panel-head"><h4>Diversidad de géneros · primeras cinco películas del catálogo actual</h4></div>' +
       '<div class="event-list">' + recommendationQuality.diversity.map(function (item) {
         const label = {balanced:"Equilibrado",affinity:"Más afines",variety:"Más variedad"}[item.mode] || item.mode;
         const summary = item.score == null

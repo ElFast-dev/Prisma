@@ -457,6 +457,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     buildProfile: buildProfile,
     predictRating: predictRating,
     getRecommendations: getRecommendations,
+    rankCandidates: recommendationRanking.rankCandidates,
     movieTmdbId: movieTmdbId,
     titleKey: titleKey
   });

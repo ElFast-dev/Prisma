@@ -7,7 +7,7 @@ export function createRecommendationRanking(ctx) {
 
   function compareAffinity(a, b) {
     return b.prediction.score - a.prediction.score ||
-      b.prediction.matches.length - a.prediction.matches.length ||
+      ((b.prediction.matches || []).length - (a.prediction.matches || []).length) ||
       a.title.localeCompare(b.title);
   }
 
@@ -19,7 +19,7 @@ export function createRecommendationRanking(ctx) {
     const ordered = results.slice().sort(function (a, b) {
       const aScore = a.prediction.score + Math.min(a.prediction.freshFeatures || 0, 3) * 0.025;
       const bScore = b.prediction.score + Math.min(b.prediction.freshFeatures || 0, 3) * 0.025;
-      return bScore - aScore || b.prediction.matches.length - a.prediction.matches.length || a.title.localeCompare(b.title);
+      return bScore - aScore || ((b.prediction.matches || []).length - (a.prediction.matches || []).length) || a.title.localeCompare(b.title);
     });
     const selected = [];
     const genreCounts = new Map();
@@ -76,9 +76,22 @@ export function createRecommendationRanking(ctx) {
     return selected;
   }
 
-  function getRecommendations(limit, mode) {
+  // Pure ranking function shared by Discover and offline evaluation.
+  function rankCandidates(results, limit, mode) {
     const requestedLimit = Math.max(1, Number(limit) || 8);
     const activeMode = requestedMode(mode);
+    const candidates = Array.isArray(results) ? results.slice() : [];
+    if (activeMode === "affinity") {
+      return candidates.sort(compareAffinity).slice(0, requestedLimit);
+    }
+    if (activeMode === "variety") {
+      return getVariedRecommendations(candidates, requestedLimit);
+    }
+    return getBalancedRecommendations(candidates, requestedLimit);
+  }
+
+  function getRecommendations(limit, mode) {
+    const requestedLimit = Math.max(1, Number(limit) || 8);
     const profile = ctx.buildProfile();
     const results = ctx.uniqueDiscoveryMovies(ctx.catalog).filter(function (movie) {
       return !ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history";
@@ -86,14 +99,7 @@ export function createRecommendationRanking(ctx) {
       const prediction = ctx.predictRating(movie, profile);
       return Object.assign({}, movie, { prediction: prediction });
     });
-
-    if (activeMode === "affinity") {
-      return results.sort(compareAffinity).slice(0, requestedLimit);
-    }
-    if (activeMode === "variety") {
-      return getVariedRecommendations(results, requestedLimit);
-    }
-    return getBalancedRecommendations(results, requestedLimit);
+    return rankCandidates(results, requestedLimit, mode);
   }
 
   function genreStats() {
@@ -115,5 +121,5 @@ export function createRecommendationRanking(ctx) {
     }).filter(function (item) { return item.count >= 2; }).sort(function (a, b) { return b.average - a.average; });
   }
 
-  return { getRecommendations, genreStats };
+  return { getRecommendations, genreStats, rankCandidates };
 }
