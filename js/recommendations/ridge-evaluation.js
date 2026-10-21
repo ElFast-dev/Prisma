@@ -860,7 +860,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       explicitDateCount: nonNegativeInteger(explicitDateCount),
       unverifiedDateCount: nonNegativeInteger(unverifiedDateCount),
       dateProvenanceStatus: nonNegativeInteger(unverifiedDateCount) > 0 ? "exploratory" :
-        (nonNegativeInteger(datedRowCount) > 0 ? "verified" : "unavailable"),
+        (nonNegativeInteger(datedRowCount) > 0 ? "explicit" : "unavailable"),
       missingDateCount: nonNegativeInteger(missingDateCount),
       distinctDayCount: nonNegativeInteger(dayGroupCount),
       warmupCount: 0,
@@ -1073,7 +1073,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         timestampedFeatureCount: rows.length,
         explicitDateCount: prepared.explicitDateCount,
         unverifiedDateCount: prepared.unverifiedDateCount,
-        dateProvenanceStatus: prepared.unverifiedDateCount > 0 ? "exploratory" : "verified",
+        dateProvenanceStatus: prepared.unverifiedDateCount > 0 ? "exploratory" : "explicit",
         missingDateCount: prepared.missingDateCount,
         distinctDayCount: groups.length,
         warmupCount: schedule.warmupIndices.length,
