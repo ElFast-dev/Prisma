@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRecommendationEngine } from '../js/recommendations/engine.js';
 import { ratingValue } from '../js/core/movie-utils.js';
+
 const [appSource, pageViewsSource] = await Promise.all([
   readFile('app.js', 'utf8'),
   readFile('js/ui/page-views.js', 'utf8')
 ]);
 const uiSource = appSource + '\\n' + pageViewsSource;
 const engineSource = await readFile('js/recommendations/engine.js', 'utf8');
+
 function runEvaluation(entries, movieRecords) {
   const calls = [];
   const byId = new Map(movieRecords.filter(movie => movie.tmdbId).map(movie => [String(movie.tmdbId), movie]));
@@ -21,13 +23,19 @@ function runEvaluation(entries, movieRecords) {
     calls.push({ title, id });
     return id ? (byId.get(id) || null) : (byTitle.get(String(title).trim().toLocaleLowerCase('es')) || null);
   };
-  const movieFeatures = (movie, entry) => {
+  const movieFeatures = (movie, entry, options) => {
     const candidate = movie || entry;
-    return candidate && candidate.genre ? [candidate.genre] : [];
+    const features = candidate && candidate.genre ? ['género: ' + String(candidate.genre).toLowerCase()] : [];
+    const year = Number(candidate && candidate.year);
+    if ((!options || options.includeDecade !== false) && Number.isInteger(year) && year >= 1888 && year <= 2100) {
+      features.push('década: ' + String(Math.floor(year / 10) * 10));
+    }
+    return features;
   };
   const engine = createRecommendationEngine({ getRatings: () => entries, findMovie, movieFeatures, ratingValue });
   return { result: engine.evaluateModel(), calls };
 }
+
 const records = [
   { title: 'El mismo título', tmdbId: '101', rating: 9, genre: 'drama' },
   { title: 'El mismo título', tmdbId: '202', rating: 2, genre: 'comedia' },
@@ -42,17 +50,43 @@ assert.ok(Number.isFinite(evaluated.result.mae));
 assert.ok(Number.isFinite(evaluated.result.baselineMae));
 assert.ok(evaluated.result.mae < evaluated.result.baselineMae,
   'Las características de género deben mejorar la predicción frente a usar solo la media en este escenario sintético');
+assert.equal(evaluated.result.decadeExamples, 0);
+assert.equal(evaluated.result.decadeImprovement, null,
+  'Sin fechas, la ablación no debe presentarse como una medición válida de la década.');
+assert.ok(Number.isFinite(evaluated.result.withoutDecadeMae));
 const validationCalls = evaluated.calls.slice(records.length);
 assert.ok(validationCalls.some(call => call.title === 'El mismo título' && call.id === '202'),
   'La validación debe conservar el ID del segundo remake al evaluar la muestra retenida');
 assert.ok(validationCalls.some(call => call.title === 'Película E' && call.id == null),
   'Cuando no existe ID TMDB, la validación debe conservar la alternativa por título');
+
+const eraRecords = [
+  { title: 'Clásico uno', tmdbId: '601', rating: 9, genre: 'drama', year: 1981 },
+  { title: 'Clásico dos', tmdbId: '602', rating: 9, genre: 'drama', year: 1984 },
+  { title: 'Clásico tres', tmdbId: '603', rating: 9, genre: 'drama', year: 1988 },
+  { title: 'Moderna uno', tmdbId: '604', rating: 2, genre: 'drama', year: 2011 },
+  { title: 'Moderna dos', tmdbId: '605', rating: 2, genre: 'drama', year: 2014 },
+  { title: 'Moderna tres', tmdbId: '606', rating: 2, genre: 'drama', year: 2018 }
+];
+const eraEvaluation = runEvaluation(eraRecords, eraRecords).result;
+assert.equal(eraEvaluation.available, true);
+assert.equal(eraEvaluation.decadeExamples, 6);
+assert.ok(Number.isFinite(eraEvaluation.withoutDecadeMae));
+assert.ok(eraEvaluation.decadeImprovement > 0,
+  'El escenario sintético debe demostrar que la ablación distingue una señal temporal útil.');
+assert.ok(Math.abs(eraEvaluation.decadeImprovement -
+  (eraEvaluation.withoutDecadeMae - eraEvaluation.mae)) < 1e-9,
+  'El efecto de década debe usar los mismos pliegues y definirse como MAE sin década menos MAE completo.');
+
 const insufficient = runEvaluation(records.slice(0, 4), records.slice(0, 4)).result;
 assert.equal(insufficient.available, false);
 assert.equal(insufficient.count, 4);
 assert.equal(insufficient.mae, null);
 assert.equal(insufficient.baselineMae, null);
 assert.equal(insufficient.improvementPct, null);
+assert.equal(insufficient.withoutDecadeMae, null);
+assert.equal(insufficient.decadeImprovement, null);
+
 const perfectBaselineRecords = [
   { title: 'A', tmdbId: '501', rating: 8, genre: 'drama' },
   { title: 'B', tmdbId: '502', rating: 8, genre: 'comedia' },
@@ -64,7 +98,10 @@ const zeroBaseline = runEvaluation(perfectBaselineRecords, perfectBaselineRecord
 assert.equal(zeroBaseline.mae, 0);
 assert.equal(zeroBaseline.baselineMae, 0);
 assert.equal(zeroBaseline.improvementPct, null);
-assert.ok(engineSource.includes('predictRating(movie || heldOut, profile).score'));
+assert.equal(zeroBaseline.decadeImprovement, null);
+
+assert.ok(engineSource.includes('predictRating(candidate, profile).score'));
 assert.ok(uiSource.includes('Referencia (media de entrenamiento): '));
-assert.ok(uiSource.includes('Datos insuficientes: se necesitan al menos 5 películas valoradas con características'));
-console.log('Pruebas de evaluación correctas: API modular, identidad TMDB, mejora frente a la media, muestra insuficiente y referencia perfecta.');
+assert.ok(uiSource.includes('Sin señal de década: '));
+assert.ok(uiSource.includes('Se necesitan al menos 5 valoraciones evaluadas con año válido para medir la señal de década'));
+console.log('Pruebas de evaluación correctas: identidad TMDB, referencia, ablación de década, muestra insuficiente y efecto temporal.');

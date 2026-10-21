@@ -41,6 +41,12 @@ assert.equal(strong.confidence, 'Moderada');
 const tagOnly = predict(['tema: espías'], profile([['tema: espías', signal(0.8, 5)]]));
 const genreOnly = predict(['género: suspenso'], profile([['género: suspenso', signal(0.8, 5)]]));
 assert.ok(genreOnly.score - 6.5 > tagOnly.score - 6.5);
+const decadeOnly = predict(['década: 2010'], profile([['década: 2010', signal(0.8, 5)]]));
+assert.equal(decadeOnly.matches[0].signalWeight, 0.2);
+assert.ok(genreOnly.score - 6.5 > decadeOnly.score - 6.5,
+  'La década debe influir menos que una señal de género de magnitud equivalente.');
+assert.equal(decadeOnly.matches[0].name, 'década de 2010');
+
 const noMatch = predict(['género: aventura'], profile([]));
 assert.equal(noMatch.score, 6.5);
 assert.equal(noMatch.confidence, 'Muy baja');
