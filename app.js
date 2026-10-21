@@ -56,6 +56,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let recommendationDiagnosticFeatureLabelsIncluded = false;
   let ridgeEvaluationResult = null;
   let ridgeEvaluationBusy = false;
+  let ridgeEvaluationProgress = null;
   const recommendationPreferences = createRecommendationPreferences(function () { return window.localStorage; });
   let recommendationMode = recommendationPreferences.getMode();
   let currentPage = "home";
@@ -193,6 +194,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get evaluateRecommendationQuality() { return evaluateRecommendationQuality; },
     get ridgeEvaluationResult() { return ridgeEvaluationResult; },
     get ridgeEvaluationBusy() { return ridgeEvaluationBusy; },
+    get ridgeEvaluationProgress() { return ridgeEvaluationProgress; },
     get runRidgeExperiment() { return runRidgeExperiment; }
   });
   const { movieCard, ratedMetadataCount, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp } = pageViews;
@@ -437,6 +439,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
 
   function persistState() {
     ridgeEvaluationResult = null;
+    ridgeEvaluationProgress = null;
     return persistStateToStorage();
   }
 
@@ -511,13 +514,17 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   async function runRidgeExperiment() {
     if (ridgeEvaluationBusy) return;
     ridgeEvaluationBusy = true;
+    ridgeEvaluationProgress = { completedRepeats: 0, totalRepeats: 3, foldsPerRepeat: 5 };
     if (currentPage === "lab") renderApp();
     await new Promise(function (resolve) {
       if (window && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(resolve);
       else window.setTimeout(resolve, 0);
     });
     try {
-      ridgeEvaluationResult = ridgeRecommendationExperiment.evaluate();
+      ridgeEvaluationResult = await ridgeRecommendationExperiment.evaluateAsync(function (progress) {
+        ridgeEvaluationProgress = progress;
+        if (currentPage === "lab") renderApp();
+      });
       toast(ridgeEvaluationResult.available
         ? "Validación Ridge terminada: se evaluaron 3 repeticiones de 5 pliegues. Revisa los agregados en el Laboratorio."
         : (ridgeEvaluationResult.reason || "No se pudo evaluar Ridge con esta muestra."), !ridgeEvaluationResult.available);
@@ -530,6 +537,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
       toast("No se pudo completar el experimento Ridge de forma estable.", true);
     } finally {
       ridgeEvaluationBusy = false;
+      ridgeEvaluationProgress = null;
       if (currentPage === "lab") renderApp();
     }
   }
