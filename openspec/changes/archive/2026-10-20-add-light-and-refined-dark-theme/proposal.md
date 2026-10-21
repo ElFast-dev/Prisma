@@ -2,7 +2,7 @@
 
 ## Estado
 
-En curso. Esta propuesta define el comportamiento y la paleta antes de tocar los estilos o la interfaz.
+Cerrada y archivada el 2026-10-20 después de la fusión del PR #17 y las verificaciones de calidad y despliegue.
 
 ## Motivación
 
@@ -35,3 +35,14 @@ La capa visual publicada sigue utilizando acentos violetas y fondos azulados. Pr
 6. La preferencia afecta a vistas, tarjetas, navegación, campos, paneles, modales y barra superior, con contraste legible en ambos modos.
 7. El isotipo conserva su geometría y usa azul acero apagado, sin violeta ni cian llamativos.
 8. Se versionan los recursos estáticos y la PWA renueva su caché; las pruebas de CI cubren ambos temas y preservan los flujos actuales.
+
+
+## Evidencia de cierre
+
+- Implementación fusionada: [PR #17](https://github.com/ElFast-dev/Prisma/pull/17).
+- Commit publicado: [9aa8ade](https://github.com/ElFast-dev/Prisma/commit/9aa8adeb4b7e7d9840b24544eb5a79d1dd5c3556).
+- [SDD y calidad estática](https://github.com/ElFast-dev/Prisma/actions/runs/39519374500): correcto.
+- [Validate Prisma](https://github.com/ElFast-dev/Prisma/actions/runs/39519374453): correcto.
+- [Despliegue de GitHub Pages](https://github.com/ElFast-dev/Prisma/actions/runs/39519374424): correcto.
+- [Playwright en la rama antes de fusionar](https://github.com/ElFast-dev/Prisma/actions/runs/39518978427): correcto; revisó modo oscuro y cambio/persistencia del modo claro en escritorio y móvil.
+- [Playwright post-despliegue](https://github.com/ElFast-dev/Prisma/actions/runs/39519413042): correcto; la web publicada pasó la validación de UI.
