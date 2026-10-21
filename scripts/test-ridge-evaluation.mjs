@@ -245,9 +245,6 @@ assert.equal(summarizeRepeatedRidgeStability({ available: false, repeatSummaries
 assert.equal(summarizeRepeatedRidgeStability({ available: true, repeatSummaries: [] }).mae.available, false,
   "Sin repeticiones la métrica debe permanecer no disponible.");
 
-const [viewsSource] = await Promise.all([
-  import("node:fs/promises").then(fs => fs.readFile("js/ui/page-views.js", "utf8"))
-]);
 assert.match(viewsSource, /Consistencia por repetición/);
 assert.match(viewsSource, /intervalo de confianza/);
 
