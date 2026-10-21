@@ -11,6 +11,7 @@ function createHarness(options = {}) {
   const pageLoads = [];
   let renderCount = 0;
   let tmdbResults = [{ id: 'cached-fixture' }];
+  let recommendationCandidates = [{ id: 'candidate-fixture' }];
   let resetGenresCount = 0;
   let confirmCalls = 0;
   let confirmMessage = '';
@@ -19,6 +20,8 @@ function createHarness(options = {}) {
     tmdbCredential: options.savedCredential ?? null,
     get tmdbResults() { return tmdbResults; },
     set tmdbResults(value) { tmdbResults = value; },
+    get recommendationCandidates() { return recommendationCandidates; },
+    set recommendationCandidates(value) { recommendationCandidates = value; },
     resetTMDBGenres() { resetGenresCount += 1; },
     confirm(message) {
       confirmCalls += 1;
@@ -55,6 +58,7 @@ function createHarness(options = {}) {
     pageLoads,
     get renderCount() { return renderCount; },
     get tmdbResults() { return tmdbResults; },
+    get recommendationCandidates() { return recommendationCandidates; },
     get resetGenresCount() { return resetGenresCount; },
     get confirmCalls() { return confirmCalls; },
     get confirmMessage() { return confirmMessage; }
@@ -119,6 +123,7 @@ function createHarness(options = {}) {
   assert.equal(harness.ctx.tmdbCredential, null);
   assert.deepEqual(harness.persisted, [{ key: 'tmdbCredential', value: null }]);
   assert.deepEqual(harness.tmdbResults, []);
+  assert.deepEqual(harness.recommendationCandidates, [], 'Desconectar TMDB también debe borrar el pool efímero de recomendaciones.');
   assert.equal(harness.resetGenresCount, 1);
   assert.equal(harness.renderCount, 1);
   assert.equal(harness.toasts.at(-1).message, 'Credencial eliminada de este navegador.');
@@ -133,6 +138,7 @@ function createHarness(options = {}) {
   assert.equal(harness.ctx.tmdbCredential, savedCredential);
   assert.equal(harness.persisted.length, 0);
   assert.deepEqual(harness.tmdbResults, [{ id: 'cached-fixture' }]);
+  assert.deepEqual(harness.recommendationCandidates, [{ id: 'candidate-fixture' }], 'Cancelar no debe borrar las candidatas activas.');
   assert.equal(harness.resetGenresCount, 0);
   assert.equal(harness.renderCount, 0);
   assert.equal(harness.toasts.length, 0);
