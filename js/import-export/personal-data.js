@@ -108,7 +108,7 @@ export function mergeMovieEntries(existing, incoming) {
   } else if (isExplicitDate(old)) {
     merged.watchedAt = old.watchedAt;
     merged.watchedAtSource = old.watchedAtSource;
-  } else if (fresh.watchedAtSource && !old.watchedAtSource) {
+  } else if (fresh.watchedAtSource && !old.watchedAtSource && !old.watchedAt) {
     merged.watchedAt = fresh.watchedAt;
     merged.watchedAtSource = fresh.watchedAtSource;
   }
