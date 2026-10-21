@@ -375,7 +375,7 @@ assert.doesNotMatch(JSON.stringify(temporalResult.windowSummaries), /2020-|watch
 assert.match(appSource, /runTemporalRidgeExperiment/);
 assert.match(appSource, /evaluateTemporalAsync/);
 assert.match(viewsSource, /data-action="run-temporal-ridge-experiment"/);
-assert.match(viewsSource, /historias antiguos[\s\S]*?watchedAt[\s\S]*?updatedAt/);
+assert.match(viewsSource, /historiales antiguos[\s\S]*?watchedAt[\s\S]*?updatedAt/);
 assert.match(eventSource, /action === "run-temporal-ridge-experiment"/);
 assert.match(reportSource, /temporalRidgeExperiment/);
 
