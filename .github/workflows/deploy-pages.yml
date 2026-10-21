@@ -1,9 +1,10 @@
 name: Deploy Prisma to GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Prisma UI screenshots"]
+    types: [completed]
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,13 +17,16 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'workflow_run'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout the commit verified by Playwright
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
