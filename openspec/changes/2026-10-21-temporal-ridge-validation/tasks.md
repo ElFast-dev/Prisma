@@ -1,7 +1,7 @@
 # Tareas: validación temporal Ridge
 
 - [ ] TR1. Especificar fechas válidas, límites, privacidad y escenarios walk-forward.
-- [ ] TR2. Implementar cruce por identidad y validación anidada temporal sin fuga.
+- [ ] TR2. Implementar cruce por identidad, impedir que la edición de notas genere fechas de visionado desde updatedAt y validar selección temporal sin fuga.
 - [ ] TR3. Añadir ejecución bajo demanda, progreso, cancelación y resultados diferenciados en el Laboratorio.
 - [ ] TR4. Incorporar métricas agregadas temporales al diagnóstico y versionar su esquema a v5.
 - [ ] TR5. Probar fechas ausentes, límites de muestra, orden temporal, selección de alpha y ausencia de fuga.
