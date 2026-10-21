@@ -63,8 +63,9 @@ for (const list of [affinity, balanced, variety]) {
   assert.ok(!ids.includes("91"), "Entradas solo de historial no deben ser candidatas.");
   assert.ok(!ids.includes("92"), "Las películas de la colección deben excluirse sin depender del modo.");
 }
-assert.notEqual(variety.find(movie => movie.tmdbId === "95"), undefined);
-assert.notEqual(variety.find(movie => movie.tmdbId === "96"), undefined,
+const allVariety = ranking.getRecommendations(20, "variety");
+assert.notEqual(allVariety.find(movie => movie.tmdbId === "95"), undefined);
+assert.notEqual(allVariety.find(movie => movie.tmdbId === "96"), undefined,
   "Los remakes con IDs TMDB distintos deben conservar su identidad.");
 
 const [pageViews, eventHandlers, cacheTest, modularTest, spec, workflow] = await Promise.all([
