@@ -4,19 +4,19 @@ import { createStorageProtection } from "./js/core/storage-protection.js";
 import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
-import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-4";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-2";
+import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-5";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-3";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261020-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261020-1";
-import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-10";
+import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-11";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261021-2";
-import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
+import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-2";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
-import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-2";
+import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-3";
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-3";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
 import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
@@ -58,6 +58,10 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let ridgeEvaluationBusy = false;
   let ridgeEvaluationProgress = null;
   let ridgeEvaluationRunId = 0;
+  let temporalRidgeEvaluationResult = null;
+  let temporalRidgeEvaluationBusy = false;
+  let temporalRidgeEvaluationProgress = null;
+  let temporalRidgeEvaluationRunId = 0;
   const recommendationPreferences = createRecommendationPreferences(function () { return window.localStorage; });
   let recommendationMode = recommendationPreferences.getMode();
   let currentPage = "home";
@@ -196,7 +200,11 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get ridgeEvaluationResult() { return ridgeEvaluationResult; },
     get ridgeEvaluationBusy() { return ridgeEvaluationBusy; },
     get ridgeEvaluationProgress() { return ridgeEvaluationProgress; },
-    get runRidgeExperiment() { return runRidgeExperiment; }
+    get runRidgeExperiment() { return runRidgeExperiment; },
+    get temporalRidgeEvaluationResult() { return temporalRidgeEvaluationResult; },
+    get temporalRidgeEvaluationBusy() { return temporalRidgeEvaluationBusy; },
+    get temporalRidgeEvaluationProgress() { return temporalRidgeEvaluationProgress; },
+    get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; }
   });
   const { movieCard, ratedMetadataCount, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp } = pageViews;
   const modalViews = createModalViews({
@@ -443,6 +451,10 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     ridgeEvaluationResult = null;
     ridgeEvaluationBusy = false;
     ridgeEvaluationProgress = null;
+    temporalRidgeEvaluationRunId += 1;
+    temporalRidgeEvaluationResult = null;
+    temporalRidgeEvaluationBusy = false;
+    temporalRidgeEvaluationProgress = null;
     return persistStateToStorage();
   }
 
@@ -490,6 +502,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
 
   const ridgeRecommendationExperiment = createRidgeRecommendationExperiment({
     getRatings: function () { return state.rated; },
+    getWatched: function () { return state.watched || []; },
     findMovie: findMovie,
     movieFeatures: movieFeatures,
     ratingValue: ratingValue,
@@ -515,7 +528,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { evaluateRecommendationQuality } = recommendationEvaluation;
 
   async function runRidgeExperiment() {
-    if (ridgeEvaluationBusy) return;
+    if (ridgeEvaluationBusy || temporalRidgeEvaluationBusy) return;
     const runId = ++ridgeEvaluationRunId;
     ridgeEvaluationBusy = true;
     ridgeEvaluationProgress = { completedRepeats: 0, totalRepeats: 3, foldsPerRepeat: 5 };
@@ -555,6 +568,50 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     }
   }
 
+  async function runTemporalRidgeExperiment() {
+    if (temporalRidgeEvaluationBusy || ridgeEvaluationBusy) return;
+    const runId = ++temporalRidgeEvaluationRunId;
+    temporalRidgeEvaluationBusy = true;
+    temporalRidgeEvaluationProgress = { completedWindows: 0, totalWindows: 5 };
+    if (currentPage === "lab") renderApp();
+    await new Promise(function (resolve) {
+      if (window && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(resolve);
+      else window.setTimeout(resolve, 0);
+    });
+    try {
+      const evaluationResult = await ridgeRecommendationExperiment.evaluateTemporalAsync(function (progress) {
+        if (runId !== temporalRidgeEvaluationRunId) return false;
+        if (progress.phase !== "starting") {
+          temporalRidgeEvaluationProgress = progress;
+          if (currentPage === "lab") renderApp();
+        }
+        return true;
+      });
+      if (runId !== temporalRidgeEvaluationRunId) return;
+      temporalRidgeEvaluationResult = evaluationResult;
+      toast(temporalRidgeEvaluationResult.available
+        ? "Validación temporal terminada. Revisa las ventanas futuras en el Laboratorio."
+        : (temporalRidgeEvaluationResult.unavailableReason || "No se pudo completar la evaluación temporal."),
+      !temporalRidgeEvaluationResult.available);
+    } catch (_) {
+      if (runId !== temporalRidgeEvaluationRunId) return;
+      temporalRidgeEvaluationResult = {
+        available: false, sampleCount: 0, featureRowCount: 0, timestampedFeatureCount: 0,
+        missingDateCount: 0, warmupCount: 0, testCount: 0, windowsPlanned: 5,
+        windowsEvaluated: 0, innerWindows: 3, selectedAlphaCounts: {}, mae: null, baselineMae: null,
+        deltaBaseMinusRidge: null, windowSummaries: [],
+        unavailableReason: "No se pudo completar la evaluación temporal de forma estable."
+      };
+      toast("No se pudo completar la evaluación temporal de forma estable.", true);
+    } finally {
+      if (runId === temporalRidgeEvaluationRunId) {
+        temporalRidgeEvaluationBusy = false;
+        temporalRidgeEvaluationProgress = null;
+        if (currentPage === "lab") renderApp();
+      }
+    }
+  }
+
   function clearRecommendationDiagnosticReport() {
     recommendationDiagnosticReportText = "";
     recommendationDiagnosticCopyMessage = "";
@@ -578,6 +635,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
       recommendationMode: recommendationMode,
       ratingEvaluation: evaluateModel(),
       ridgeEvaluation: ridgeEvaluationResult,
+      temporalRidgeEvaluation: temporalRidgeEvaluationResult,
       recommendationQuality: evaluateRecommendationQuality(),
       includeFeatureLabels: recommendationDiagnosticFeatureLabelsIncluded
     });
@@ -776,6 +834,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get copyRecommendationDiagnosticReport() { return copyRecommendationDiagnosticReport; },
     get clearRecommendationDiagnosticReport() { return clearRecommendationDiagnosticReport; },
     get runRidgeExperiment() { return runRidgeExperiment; },
+    get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
     get setRecommendationDiagnosticFeatureLabelsIncluded() { return function (value) { recommendationDiagnosticFeatureLabelsIncluded = Boolean(value); }; },
     get setTheme() { return themeController.setTheme; }
   });

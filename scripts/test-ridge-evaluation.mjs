@@ -16,16 +16,22 @@ function fixtures(count) {
     const title = index < 2 ? "El mismo remake" : "Película de prueba " + index;
     const tmdbId = String(7000 + index);
     const target = (genre === "Drama" ? 8 : 4) + (index % 3 - 1) * 0.4 + (tags.includes("esperanza") ? 0.2 : 0);
+    const watchedAt = new Date(Date.UTC(2020, 0, 1 + index)).toISOString();
     const record = {
-      title, tmdbId, year, genres: [genre], tags,
+      title, tmdbId, year, genres: [genre], tags, watchedAt,
       rating: Math.max(1, Math.min(10, target))
     };
     return record;
   });
 }
 
-function harness(records, allMovies) {
+function harness(records, allMovies, watchedRecords, temporalAudit) {
   const movieById = new Map(allMovies.map(movie => [String(movie.tmdbId), movie]));
+  const latestDayByProfile = new WeakMap();
+  const watchedSource = watchedRecords || records;
+  const watched = watchedSource.map(record => ({
+    title: record.title, tmdbId: record.tmdbId, year: record.year, watchedAt: record.watchedAt
+  }));
   const productionRanking = createRecommendationRanking({});
   const engine = createRecommendationEngine({
     getRatings: () => records,
@@ -36,12 +42,29 @@ function harness(records, allMovies) {
   });
   return createRidgeRecommendationExperiment({
     getRatings: () => records,
+    getWatched: () => watched,
     findMovie: (title, id) => id != null ? (movieById.get(String(id)) || null) :
       (allMovies.find(movie => movie.title === title) || null),
     movieFeatures,
     ratingValue,
-    buildProfile: engine.buildProfile,
-    predictRating: engine.predictRating,
+    buildProfile: function (trainingRatings) {
+      const profile = engine.buildProfile(trainingRatings);
+      if (temporalAudit) {
+        const days = trainingRatings.map(record => String(record.watchedAt || "").slice(0, 10))
+          .filter(day => /^\d{4}-\d{2}-\d{2}$/.test(day)).sort();
+        latestDayByProfile.set(profile, days.length ? days[days.length - 1] : null);
+      }
+      return profile;
+    },
+    predictRating: function (candidate, profile) {
+      if (temporalAudit) {
+        const candidateDay = String(candidate && candidate.watchedAt || "").slice(0, 10);
+        const latestTrainingDay = latestDayByProfile.get(profile);
+        if (!candidateDay || !latestTrainingDay || latestTrainingDay >= candidateDay) temporalAudit.violations += 1;
+        temporalAudit.predictions += 1;
+      }
+      return engine.predictRating(candidate, profile);
+    },
     movieTmdbId,
     titleKey,
     rankCandidates: (candidates, limit, mode) => {
@@ -277,4 +300,82 @@ assert.match(viewsSource, /intervalo de confianza/);
 assert.match(viewsSource, /baselineFavorableRepeats/);
 assert.match(viewsSource, /summary\.ties/);
 
-console.log("Ridge verificado: validación anidada determinista, MAE y nDCG@5 emparejados, consistencia por repetición, privacidad y clipping 1–10.");
+
+const temporalAudit = { violations: 0, predictions: 0 };
+const temporalRecords = fixtures(120).map(function (record, index) {
+  return Object.assign({}, record, {
+    watchedAt: new Date(Date.UTC(2020, 0, 1 + Math.floor(index / 10))).toISOString()
+  });
+});
+const temporalExperiment = harness(temporalRecords, temporalRecords, null, temporalAudit);
+const temporalProgress = [];
+const temporalResult = await temporalExperiment.evaluateTemporalAsync(progress => temporalProgress.push(progress));
+assert.equal(temporalResult.available, true, "Una muestra sintética fechada y suficiente debe habilitar walk-forward.");
+assert.equal(temporalResult.sampleCount, 120);
+assert.equal(temporalResult.timestampedFeatureCount, 120);
+assert.equal(temporalResult.missingDateCount, 0);
+assert.equal(temporalResult.distinctDayCount, 12,
+  "Los registros del mismo día deben agruparse como una única unidad temporal.");
+assert.equal(temporalResult.windowsPlanned, 5);
+assert.equal(temporalResult.windowsEvaluated, 5);
+assert.equal(temporalResult.innerWindows, 3);
+assert.ok(temporalResult.warmupCount > 0);
+assert.equal(temporalResult.warmupCount + temporalResult.testCount, temporalResult.sampleCount);
+assert.equal(temporalResult.windowSummaries.length, 5);
+assert.ok(temporalResult.windowSummaries.every((window, index, windows) =>
+  window.trainingCount < temporalResult.sampleCount &&
+  window.testCount > 0 &&
+  (index === 0 || window.trainingCount >= windows[index - 1].trainingCount)
+), "Cada ventana exterior usa solo el pasado y resume recuentos.");
+assert.equal(Object.values(temporalResult.selectedAlphaCounts).reduce((sum, count) => sum + count, 0), 5);
+assert.equal(temporalResult.windowStability.ridgeMaeWins + temporalResult.windowStability.ties +
+  temporalResult.windowStability.baselineMaeWins, 5);
+assert.deepEqual(temporalProgress.filter(item => item.phase === "completed").map(item => item.completedWindows),
+  [1, 2, 3, 4, 5]);
+assert.equal(temporalAudit.violations, 0,
+  "Cada predicción debe entrenarse únicamente con visionados estrictamente anteriores al día de prueba.");
+assert.ok(temporalAudit.predictions > 0);
+const temporalRepeat = await temporalExperiment.evaluateTemporalAsync();
+assert.deepEqual({
+  mae: temporalRepeat.mae,
+  baselineMae: temporalRepeat.baselineMae,
+  windowSummaries: temporalRepeat.windowSummaries
+}, {
+  mae: temporalResult.mae,
+  baselineMae: temporalResult.baselineMae,
+  windowSummaries: temporalResult.windowSummaries
+}, "Walk-forward debe ser determinista.");
+const temporalCancelled = await temporalExperiment.evaluateTemporalAsync(progress =>
+  progress.phase !== "completed" || progress.completedWindows < 1
+);
+assert.equal(temporalCancelled.available, false);
+assert.match(temporalCancelled.unavailableReason, /canceló/);
+
+const undatedRecords = temporalRecords.map(function (record) {
+  const copy = Object.assign({}, record, { updatedAt: record.watchedAt });
+  delete copy.watchedAt;
+  return copy;
+});
+const joinedDatesExperiment = harness(undatedRecords, temporalRecords, temporalRecords);
+const joinedDates = await joinedDatesExperiment.evaluateTemporalAsync();
+assert.equal(joinedDates.available, true,
+  "La fecha puede resolverse por identidad desde el historial de vistas aunque falte en la valoración.");
+assert.equal(joinedDates.timestampedFeatureCount, 120);
+const noDates = await harness(undatedRecords, undatedRecords).evaluateTemporalAsync();
+assert.equal(noDates.available, false);
+assert.equal(noDates.timestampedFeatureCount, 0);
+assert.equal(noDates.missingDateCount, 120);
+assert.equal(noDates.mae, null, "Sin fechas válidas no se debe presentar una métrica.");
+const sameDayRecords = temporalRecords.map(record => Object.assign({}, record, { watchedAt: "2020-02-01T10:00:00.000Z" }));
+const sameDay = await harness(sameDayRecords, sameDayRecords).evaluateTemporalAsync();
+assert.equal(sameDay.available, false, "Un solo día no debe dividirse artificialmente entre entrenamiento y prueba.");
+assert.equal(sameDay.distinctDayCount, 1);
+assert.doesNotMatch(JSON.stringify(temporalResult.windowSummaries), /2020-|watchedAt|tmdbId|Película de prueba/i);
+
+assert.match(appSource, /runTemporalRidgeExperiment/);
+assert.match(appSource, /evaluateTemporalAsync/);
+assert.match(viewsSource, /data-action="run-temporal-ridge-experiment"/);
+assert.match(eventSource, /action === "run-temporal-ridge-experiment"/);
+assert.match(reportSource, /temporalRidgeExperiment/);
+
+console.log("Ridge verificado: validación anidada repetida, evaluación temporal walk-forward, privacidad y clipping 1–10.");

@@ -7,11 +7,20 @@ const MIN_RELEVANT_RECORDS = 10;
 const RELEVANT_RATING_THRESHOLD = 7;
 const RANKING_CUTOFF = 5;
 const RANKING_MODES = Object.freeze(["balanced", "affinity", "variety"]);
+const TEMPORAL_OUTER_WINDOWS = 5;
+const TEMPORAL_MIN_RECORDS = 100;
+const TEMPORAL_MIN_DATE_GROUPS = 12;
+const TEMPORAL_WARMUP_RATIO = 0.5;
 const ALPHAS = Object.freeze([0.1, 1, 10, 100]);
 const FAMILY_SCALES = Object.freeze({ genre: 1, theme: 0.35, decade: 0.2 });
 
 function clampRating(value) {
   return Math.max(1, Math.min(10, value));
+}
+
+function nonNegativeInteger(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
 }
 
 function stableHash(value) {
@@ -209,6 +218,75 @@ function identityFor(entry, movie, dependencies) {
 }
 
 
+function watchedDayFor(record) {
+  const raw = record && (record.watchedAt != null ? record.watchedAt : record.watched_at);
+  if (raw == null || raw === "") return null;
+  let timestamp;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    timestamp = raw >= 1e11 ? raw : raw * 1000;
+  } else {
+    const text = String(raw).trim();
+    const numericEpoch = /^\d{10,13}$/.test(text) ? Number(text) : null;
+    if (numericEpoch != null) {
+      timestamp = numericEpoch >= 1e11 ? numericEpoch : numericEpoch * 1000;
+    } else {
+      if (!/^\d{4}-\d{2}-\d{2}(?:$|T)/.test(text)) return null;
+      timestamp = Date.parse(text);
+      const dayPart = text.slice(0, 10);
+      const dayTimestamp = Date.parse(dayPart + "T00:00:00.000Z");
+      if (!Number.isFinite(timestamp) || !Number.isFinite(dayTimestamp) ||
+        new Date(dayTimestamp).toISOString().slice(0, 10) !== dayPart) return null;
+    }
+  }
+  if (!Number.isFinite(timestamp)) return null;
+  try { return new Date(timestamp).toISOString().slice(0, 10); }
+  catch (_) { return null; }
+}
+
+function groupIndicesByWatchedDay(rows, indices) {
+  const ordered = indices.slice().sort(function (left, right) {
+    return rows[left].watchedDay.localeCompare(rows[right].watchedDay) ||
+      rows[left].identity.localeCompare(rows[right].identity);
+  });
+  const groups = [];
+  ordered.forEach(function (index) {
+    const day = rows[index].watchedDay;
+    let group = groups[groups.length - 1];
+    if (!group || group.day !== day) {
+      group = { day: day, indices: [] };
+      groups.push(group);
+    }
+    group.indices.push(index);
+  });
+  return groups;
+}
+
+function forwardValidationWindows(rows, indices, windowCount, warmupRatio) {
+  const groups = groupIndicesByWatchedDay(rows, indices);
+  const warmupGroupCount = Math.floor(groups.length * warmupRatio);
+  const futureGroups = groups.slice(warmupGroupCount);
+  if (warmupGroupCount < 1 || futureGroups.length < windowCount) return null;
+  const windows = [];
+  for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
+    const start = Math.floor(futureGroups.length * windowIndex / windowCount);
+    const end = Math.floor(futureGroups.length * (windowIndex + 1) / windowCount);
+    const testGroups = futureGroups.slice(start, end);
+    if (!testGroups.length) return null;
+    const trainingGroups = groups.slice(0, warmupGroupCount + start);
+    windows.push({
+      trainingIndices: trainingGroups.reduce(function (all, group) { return all.concat(group.indices); }, []),
+      testIndices: testGroups.reduce(function (all, group) { return all.concat(group.indices); }, [])
+    });
+  }
+  return {
+    dayGroupCount: groups.length,
+    warmupIndices: groups.slice(0, warmupGroupCount).reduce(function (all, group) {
+      return all.concat(group.indices);
+    }, []),
+    windows: windows
+  };
+}
+
 function relevanceGain(rating) {
   return rating >= RELEVANT_RATING_THRESHOLD ? rating - 6 : 0;
 }
@@ -349,6 +427,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
   const buildProfile = dependencies.buildProfile;
   const predictRating = dependencies.predictRating;
   const rankCandidates = dependencies.rankCandidates;
+  const getWatched = dependencies.getWatched;
 
   function rankRows(candidates, mode) {
     if (typeof rankCandidates === "function") return (rankCandidates(candidates, RANKING_CUTOFF, mode) || []).slice(0, RANKING_CUTOFF);
@@ -698,5 +777,289 @@ export function createRidgeRecommendationExperiment(dependencies) {
     }
   }
 
-  return { evaluate: evaluate, evaluateAsync: evaluateAsync };
+
+  function temporalRows() {
+    const baseRows = mappedRows();
+    const watchedDayByIdentity = new Map();
+    (typeof getWatched === "function" ? getWatched() || [] : []).forEach(function (entry) {
+      if (!entry || !entry.title) return;
+      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
+      const identity = identityFor(entry, movie, dependencies);
+      const day = watchedDayFor(entry);
+      if (!identity || !day) return;
+      const previous = watchedDayByIdentity.get(identity);
+      if (!previous || day < previous) watchedDayByIdentity.set(identity, day);
+    });
+
+    const rows = [];
+    let missingDateCount = 0;
+    baseRows.forEach(function (row) {
+      const day = watchedDayFor(row.entry) || watchedDayByIdentity.get(row.identity) || null;
+      if (!day) {
+        missingDateCount += 1;
+        return;
+      }
+      rows.push(Object.assign({}, row, { watchedDay: day }));
+    });
+    rows.sort(function (left, right) {
+      return left.watchedDay.localeCompare(right.watchedDay) ||
+        left.identity.localeCompare(right.identity);
+    });
+    return {
+      rows: rows,
+      featureRowCount: baseRows.length,
+      missingDateCount: missingDateCount
+    };
+  }
+
+  function unavailableTemporalEvaluation(featureRowCount, datedRowCount, missingDateCount, reason, dayGroupCount) {
+    const unavailableReason = reason || "La evaluación temporal no está disponible.";
+    return {
+      available: false,
+      sampleCount: nonNegativeInteger(datedRowCount),
+      featureRowCount: nonNegativeInteger(featureRowCount),
+      timestampedFeatureCount: nonNegativeInteger(datedRowCount),
+      missingDateCount: nonNegativeInteger(missingDateCount),
+      distinctDayCount: nonNegativeInteger(dayGroupCount),
+      warmupCount: 0,
+      testCount: 0,
+      windowsPlanned: TEMPORAL_OUTER_WINDOWS,
+      windowsEvaluated: 0,
+      innerWindows: INNER_FOLDS,
+      alphaGrid: ALPHAS.slice(),
+      selectedAlphaCounts: {},
+      mae: null,
+      baselineMae: null,
+      deltaBaseMinusRidge: null,
+      windowStability: {
+        available: false, windowsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0
+      },
+      rankingQuality: unavailableRankingQuality(0, 0, unavailableReason, TEMPORAL_OUTER_WINDOWS),
+      windowSummaries: [],
+      unavailableReason: unavailableReason
+    };
+  }
+
+  function selectTemporalAlpha(rows, kernel, outerTrainingIndices) {
+    const inner = forwardValidationWindows(rows, outerTrainingIndices, INNER_FOLDS, TEMPORAL_WARMUP_RATIO);
+    if (!inner) throw new Error("No hay suficientes días anteriores para seleccionar alpha con validación temporal interna.");
+    let bestAlpha = null;
+    let bestMae = Infinity;
+    ALPHAS.forEach(function (alpha) {
+      const errors = [];
+      inner.windows.forEach(function (window) {
+        const model = trainRidge(rows, kernel, window.trainingIndices, alpha);
+        window.testIndices.forEach(function (index) {
+          const prediction = predictRidge(rows, model, rows[index].candidateVector);
+          errors.push(Math.abs(prediction - rows[index].rating));
+        });
+      });
+      if (!errors.length) throw new Error("No hay ventanas internas válidas para seleccionar alpha.");
+      const mae = meanAbsoluteError(errors);
+      if (mae < bestMae - 1e-10 || (Math.abs(mae - bestMae) <= 1e-10 && alpha > bestAlpha)) {
+        bestMae = mae;
+        bestAlpha = alpha;
+      }
+    });
+    if (bestAlpha == null) throw new Error("No se pudo seleccionar alpha en el pasado del entrenamiento.");
+    return bestAlpha;
+  }
+
+  async function evaluateTemporalAsync(onProgress) {
+    const prepared = temporalRows();
+    const rows = prepared.rows;
+    const allIndices = rows.map(function (_, index) { return index; });
+    const groups = groupIndicesByWatchedDay(rows, allIndices);
+    if (rows.length < TEMPORAL_MIN_RECORDS) {
+      return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
+        "Se necesitan al menos " + TEMPORAL_MIN_RECORDS +
+          " valoraciones únicas con características y fecha de visionado válida; hay " + rows.length + ".",
+        groups.length);
+    }
+    if (groups.length < TEMPORAL_MIN_DATE_GROUPS) {
+      return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
+        "Se necesitan al menos " + TEMPORAL_MIN_DATE_GROUPS +
+          " días de visionado distintos para formar ventanas temporales fiables; hay " + groups.length + ".",
+        groups.length);
+    }
+
+    const schedule = forwardValidationWindows(rows, allIndices, TEMPORAL_OUTER_WINDOWS, TEMPORAL_WARMUP_RATIO);
+    if (!schedule) {
+      return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
+        "No hay suficientes bloques cronológicos para ejecutar las cinco ventanas futuras.",
+        groups.length);
+    }
+
+    try {
+      const kernel = buildKernel(rows);
+      const ridgeErrors = [];
+      const baselineErrors = [];
+      const windowMaeDeltas = [];
+      const selectedAlphaCounts = Object.create(null);
+      ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
+      const rankingTotals = Object.create(null);
+      RANKING_MODES.forEach(function (mode) {
+        rankingTotals[mode] = {
+          baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0,
+          foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0
+        };
+      });
+      const windowSummaries = [];
+      let predictionMin = Infinity;
+      let predictionMax = -Infinity;
+      const testIndicesAll = [];
+
+      for (let windowIndex = 0; windowIndex < schedule.windows.length; windowIndex += 1) {
+        const window = schedule.windows[windowIndex];
+        const starting = {
+          completedWindows: windowIndex,
+          totalWindows: TEMPORAL_OUTER_WINDOWS,
+          windowsPlanned: TEMPORAL_OUTER_WINDOWS,
+          phase: "starting"
+        };
+        if (typeof onProgress === "function" && onProgress(starting) === false) {
+          return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
+            "La evaluación temporal se canceló porque cambiaron los datos personales durante el cálculo.",
+            groups.length);
+        }
+
+        const alpha = selectTemporalAlpha(rows, kernel, window.trainingIndices);
+        selectedAlphaCounts[String(alpha)] += 1;
+        const ridgeModel = trainRidge(rows, kernel, window.trainingIndices, alpha);
+        const trainingRatings = window.trainingIndices.map(function (index) { return rows[index].entry; });
+        const additiveProfile = buildProfile(trainingRatings);
+        const baselineCandidates = [];
+        const ridgeCandidates = [];
+        const gains = new Map();
+        const ridgeWindowErrors = [];
+        const baselineWindowErrors = [];
+
+        window.testIndices.forEach(function (index, position) {
+          const row = rows[index];
+          const ridgePrediction = predictRidge(rows, ridgeModel, row.trainingVector);
+          const additiveResult = predictRating(row.candidate, additiveProfile);
+          const baselinePrediction = clampRating(Number.isFinite(additiveResult && additiveResult.score)
+            ? additiveResult.score : additiveProfile.average);
+          const ridgeError = Math.abs(ridgePrediction - row.rating);
+          const baselineError = Math.abs(baselinePrediction - row.rating);
+          ridgeErrors.push(ridgeError);
+          baselineErrors.push(baselineError);
+          ridgeWindowErrors.push(ridgeError);
+          baselineWindowErrors.push(baselineError);
+          testIndicesAll.push(index);
+          predictionMin = Math.min(predictionMin, ridgePrediction);
+          predictionMax = Math.max(predictionMax, ridgePrediction);
+          const token = "window-" + windowIndex + "-candidate-" + position;
+          const baselineCandidate = Object.assign({}, additiveResult || {}, { score: baselinePrediction });
+          const ridgeCandidate = Object.assign({}, additiveResult || {}, { score: ridgePrediction });
+          baselineCandidates.push(rankingCandidate(row, baselineCandidate, baselinePrediction, token));
+          ridgeCandidates.push(rankingCandidate(row, ridgeCandidate, ridgePrediction, token));
+          gains.set(token, relevanceGain(row.rating));
+        });
+
+        const ridgeMae = meanAbsoluteError(ridgeWindowErrors);
+        const baselineMae = meanAbsoluteError(baselineWindowErrors);
+        const deltaBaseMinusRidge = baselineMae - ridgeMae;
+        windowMaeDeltas.push(deltaBaseMinusRidge);
+        let windowRankingAvailable = false;
+        const ideal = window.testIndices.map(function (_, position) {
+          const token = "window-" + windowIndex + "-candidate-" + position;
+          return { gain: gains.get(token) || 0, token: token };
+        }).sort(function (left, right) {
+          return right.gain - left.gain || left.token.localeCompare(right.token);
+        });
+        const idealDcg = dcgAt5(ideal);
+        if (idealDcg > 0) {
+          windowRankingAvailable = true;
+          RANKING_MODES.forEach(function (mode) {
+            const baselineTop = rankRows(baselineCandidates, mode);
+            const ridgeTop = rankRows(ridgeCandidates, mode);
+            const baselineDcg = dcgAt5(baselineTop.map(function (candidate) {
+              return { gain: gains.get(candidate.evaluationToken) || 0 };
+            }));
+            const ridgeDcg = dcgAt5(ridgeTop.map(function (candidate) {
+              return { gain: gains.get(candidate.evaluationToken) || 0 };
+            }));
+            const foldDelta = (ridgeDcg - baselineDcg) / idealDcg;
+            if (foldDelta > 1e-10) rankingTotals[mode].foldsRidgeWins += 1;
+            else if (foldDelta < -1e-10) rankingTotals[mode].foldsRidgeLosses += 1;
+            else rankingTotals[mode].foldsRidgeTies += 1;
+            rankingTotals[mode].baselineDcg += baselineDcg;
+            rankingTotals[mode].ridgeDcg += ridgeDcg;
+            rankingTotals[mode].idealDcg += idealDcg;
+            rankingTotals[mode].foldsEvaluated += 1;
+          });
+        }
+        windowSummaries.push({
+          window: windowIndex + 1,
+          trainingCount: window.trainingIndices.length,
+          testCount: window.testIndices.length,
+          selectedAlpha: alpha,
+          mae: ridgeMae,
+          baselineMae: baselineMae,
+          deltaBaseMinusRidge: deltaBaseMinusRidge,
+          rankingAvailable: windowRankingAvailable
+        });
+        if (typeof onProgress === "function" && onProgress({
+          completedWindows: windowIndex + 1,
+          totalWindows: TEMPORAL_OUTER_WINDOWS,
+          windowsPlanned: TEMPORAL_OUTER_WINDOWS,
+          phase: "completed"
+        }) === false) {
+          return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
+            "La evaluación temporal se canceló porque cambiaron los datos personales durante el cálculo.",
+            groups.length);
+        }
+        if (windowIndex + 1 < schedule.windows.length) {
+          await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        }
+      }
+
+      const testCount = testIndicesAll.length;
+      const relevantTestCount = testIndicesAll.filter(function (index) {
+        return rows[index].rating >= RELEVANT_RATING_THRESHOLD;
+      }).length;
+      const rankingQuality = testCount >= MIN_RANKING_RECORDS && relevantTestCount >= MIN_RELEVANT_RECORDS
+        ? completeRankingQuality(testCount, relevantTestCount, rankingTotals, TEMPORAL_OUTER_WINDOWS)
+        : unavailableRankingQuality(testCount, relevantTestCount,
+          null, TEMPORAL_OUTER_WINDOWS);
+      const stability = summarizeMaeFoldStability(windowMaeDeltas);
+      return {
+        available: true,
+        sampleCount: rows.length,
+        featureRowCount: prepared.featureRowCount,
+        timestampedFeatureCount: rows.length,
+        missingDateCount: prepared.missingDateCount,
+        distinctDayCount: groups.length,
+        warmupCount: schedule.warmupIndices.length,
+        testCount: testCount,
+        windowsPlanned: TEMPORAL_OUTER_WINDOWS,
+        windowsEvaluated: windowSummaries.length,
+        innerWindows: INNER_FOLDS,
+        alphaGrid: ALPHAS.slice(),
+        selectedAlphaCounts: selectedAlphaCounts,
+        mae: meanAbsoluteError(ridgeErrors),
+        baselineMae: meanAbsoluteError(baselineErrors),
+        deltaBaseMinusRidge: meanAbsoluteError(baselineErrors) - meanAbsoluteError(ridgeErrors),
+        predictionMin: predictionMin,
+        predictionMax: predictionMax,
+        windowStability: {
+          available: stability.available,
+          windowsEvaluated: stability.foldsEvaluated,
+          ridgeMaeWins: stability.ridgeMaeWins,
+          ties: stability.ties,
+          baselineMaeWins: stability.baselineMaeWins
+        },
+        rankingQuality: rankingQuality,
+        windowSummaries: windowSummaries,
+        unavailableReason: null
+      };
+    } catch (_) {
+      return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
+        "No se pudo resolver la evaluación temporal de forma estable con estas fechas y esta muestra.",
+        groups.length);
+    }
+  }
+
+  return { evaluate: evaluate, evaluateAsync: evaluateAsync, evaluateTemporalAsync: evaluateTemporalAsync };
 }
