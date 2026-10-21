@@ -127,3 +127,6 @@ jobs:
 
       - name: Test customizable discovery recommendation modes
         run: node scripts/test-recommendation-modes.mjs
+
+      - name: Test temporary TMDB recommendation candidates
+        run: node scripts/test-tmdb-recommendation-candidates.mjs

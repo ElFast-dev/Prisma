@@ -86,3 +86,19 @@ Prisma DEBE empezar con el perfil personal y el catálogo local vacíos cuando n
 - DADO un navegador con valoraciones o un catálogo importado guardados
 - CUANDO se actualiza la aplicación
 - ENTONCES los datos existentes se conservan y no se mezclan películas de muestra
+
+### Requirement: Candidatas remotas temporales
+
+Prisma DEBE poder usar como candidatas los resultados populares consultados de TMDB y DEBE mantenerlos separados del catálogo personalizado persistente. El uso de una película para puntuarla NO DEBE guardarla por sí mismo en las valoraciones, historial, pendientes, ocultas, catálogo ni copias de seguridad.
+
+#### Scenario: Película remota usada solo para recomendar
+
+- DADO que una película popular de TMDB no pertenece a ninguna lista personal
+- CUANDO el ranking la considera una recomendación
+- ENTONCES puede mostrarse sin guardarla automáticamente en el navegador como parte de la colección
+
+#### Scenario: Eliminar la credencial
+
+- DADO que hay candidatas de TMDB guardadas solo en memoria
+- CUANDO la persona elimina la credencial
+- ENTONCES Prisma vacía tanto los resultados de exploración como las candidatas remotas temporales

@@ -10,7 +10,10 @@ export function createTMDBBrowserActions(ctx) {
     ctx.tmdbMode = safeMode;
     ctx.tmdbLoading = true;
     ctx.tmdbError = "";
-    if (!append) ctx.tmdbResults = [];
+    if (!append) {
+      ctx.tmdbResults = [];
+      if (safeMode === "popular") ctx.recommendationCandidates = [];
+    }
     ctx.renderTMDBResults();
     try {
       try { await ctx.ensureTMDBGenres(); } catch (_) {
@@ -23,6 +26,10 @@ export function createTMDBBrowserActions(ctx) {
       if (requestId !== ctx.tmdbRequestSerial) return;
       const mapped = (data.results || []).map(ctx.fromTMDB).filter(function (movie) { return Boolean(movie.title); });
       ctx.tmdbResults = append ? ctx.tmdbResults.concat(mapped) : mapped;
+      if (safeMode === "popular") {
+        const previousCandidates = append ? (ctx.recommendationCandidates || []) : [];
+        ctx.recommendationCandidates = ctx.uniqueDiscoveryMovies(previousCandidates.concat(mapped));
+      }
       ctx.tmdbPage = Number(data.page) || page;
       ctx.tmdbTotalPages = Math.min(Number(data.total_pages) || 1, 500);
       ctx.tmdbError = "";
@@ -32,7 +39,8 @@ export function createTMDBBrowserActions(ctx) {
     } finally {
       if (requestId === ctx.tmdbRequestSerial) {
         ctx.tmdbLoading = false;
-        ctx.renderTMDBResults();
+        if (ctx.currentPage === "catalog" && typeof ctx.renderApp === "function") ctx.renderApp();
+        else ctx.renderTMDBResults();
       }
     }
   }

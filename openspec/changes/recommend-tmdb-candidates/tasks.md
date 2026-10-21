@@ -1,8 +1,8 @@
 # Tareas: candidatas de recomendaciones desde TMDB
 
-- [ ] R1. Verificar el flujo real de consulta TMDB, modos de ranking, exclusión de la colección, inicio vacío, especificaciones y versiones PWA.
-- [ ] R2. Añadir este expediente SDD con escenarios de aceptación antes de cambiar la implementación.
-- [ ] R3. Separar en memoria el pool de películas populares de TMDB de los resultados de búsqueda y del catálogo local persistente.
+- [x] R1. Verificar el flujo real de consulta TMDB, modos de ranking, exclusión de la colección, inicio vacío, especificaciones y versiones PWA.
+- [x] R2. Añadir este expediente SDD con escenarios de aceptación antes de cambiar la implementación.
+- [x] R3. Separar en memoria el pool de películas populares de TMDB de los resultados de búsqueda y del catálogo local persistente.
 - [ ] R4. Combinar candidatas locales y remotas en el mismo ranking, conservando deduplicación y exclusiones.
 - [ ] R5. Actualizar la lista recomendada al terminar la consulta de populares y borrar el pool al desconectar TMDB.
 - [ ] R6. Añadir pruebas automatizadas con datos sintéticos para ranking, deduplicación, exclusiones y separación de persistencia.

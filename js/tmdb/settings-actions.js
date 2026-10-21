@@ -49,6 +49,7 @@ export function createTMDBSettingsActions(ctx) {
     ctx.tmdbCredential = null;
     await ctx.dbSet(ctx.TMDB_CREDENTIAL_KEY, null);
     ctx.tmdbResults = [];
+    ctx.recommendationCandidates = [];
     ctx.resetTMDBGenres();
     ctx.renderApp();
     ctx.toast("Credencial eliminada de este navegador.");
