@@ -7,6 +7,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -23,10 +24,31 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the commit verified by Playwright
+      - name: Download Playwright approval artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: prisma-published-ui-screenshots
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: release-approval
+
+      - name: Validate approved source SHA
+        id: tested-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(cat release-approval/tested-sha.txt)"
+          if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Playwright approval artifact does not contain a valid source SHA." >&2
+            exit 1
+          fi
+          echo "Deploying SHA verified by quality and Playwright: $source_sha"
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the exact commit verified by Playwright
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ steps.tested-source.outputs.sha }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
