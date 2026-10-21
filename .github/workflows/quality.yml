@@ -99,6 +99,9 @@ jobs:
       - name: Test Ridge regression experiment
         run: node scripts/test-ridge-evaluation.mjs
 
+      - name: Test reliable watched-date provenance
+        run: node scripts/test-watch-date-provenance.mjs
+
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs
 
