@@ -329,6 +329,24 @@ function summarizeMaeFoldStability(deltas) {
     baselineMaeWins: baselineMaeWins
   };
 }
+
+function summarizeHybridMaeFoldStability(deltas) {
+  let hybridMaeWins = 0;
+  let ties = 0;
+  let baselineMaeWins = 0;
+  (deltas || []).forEach(function (delta) {
+    if (delta > 1e-10) hybridMaeWins += 1;
+    else if (delta < -1e-10) baselineMaeWins += 1;
+    else ties += 1;
+  });
+  return {
+    available: (deltas || []).length > 0,
+    foldsEvaluated: (deltas || []).length,
+    hybridMaeWins: hybridMaeWins,
+    ties: ties,
+    baselineMaeWins: baselineMaeWins
+  };
+}
 function completeRankingQuality(count, relevantCount, totals, foldCount) {
   if (count < MIN_RANKING_RECORDS || relevantCount < MIN_RELEVANT_RECORDS) {
     return unavailableRankingQuality(count, relevantCount, null, foldCount);
@@ -407,7 +425,7 @@ function unavailableRepeatedValidation(count, relevantCount, reason) {
     hybridMae: null,
     deltaBaseMinusHybrid: null,
     foldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
-    hybridFoldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
+    hybridFoldStability: { available: false, foldsEvaluated: 0, hybridMaeWins: 0, ties: 0, baselineMaeWins: 0 },
     rankingQuality: unavailableRankingQuality(count, relevantCount, null, totalFolds),
     repeatSummaries: [],
     unavailableReason: reason || "La validación Ridge repetida no está disponible."
@@ -431,7 +449,7 @@ function unavailableResult(count, reason, rankingQuality, relevantCount) {
     predictionMin: null,
     predictionMax: null,
     foldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
-    hybridFoldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
+    hybridFoldStability: { available: false, foldsEvaluated: 0, hybridMaeWins: 0, ties: 0, baselineMaeWins: 0 },
     repeatedValidation: unavailableRepeatedValidation(count, relevantCount || 0, reason),
     rankingQuality: rankingQuality || unavailableRankingQuality(count, 0),
     reason: reason || "No hay suficientes valoraciones únicas con características."
@@ -703,7 +721,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         deltaBaseMinusHybrid: baselineMae - meanAbsoluteError(result.hybridErrors),
         selectedAlphaCounts: result.selectedAlphaCounts,
         foldStability: summarizeMaeFoldStability(result.foldMaeDeltas),
-        hybridFoldStability: summarizeMaeFoldStability(result.hybridFoldMaeDeltas),
+        hybridFoldStability: summarizeHybridMaeFoldStability(result.hybridFoldMaeDeltas),
         rankingQuality: result.rankingQuality
       };
     });
@@ -725,7 +743,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       deltaBaseMinusHybrid: baselineMae - hybridMae,
       selectedAlphaCounts: selectedAlphaCounts,
       foldStability: summarizeMaeFoldStability(maeFoldDeltas),
-      hybridFoldStability: summarizeMaeFoldStability(hybridMaeFoldDeltas),
+      hybridFoldStability: summarizeHybridMaeFoldStability(hybridMaeFoldDeltas),
       rankingQuality: repeatedRanking,
       repeatSummaries: repeatSummaries,
       unavailableReason: null
@@ -753,7 +771,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       predictionMin: primary.predictionMin,
       predictionMax: primary.predictionMax,
       foldStability: summarizeMaeFoldStability(primary.foldMaeDeltas),
-      hybridFoldStability: summarizeMaeFoldStability(primary.hybridFoldMaeDeltas),
+      hybridFoldStability: summarizeHybridMaeFoldStability(primary.hybridFoldMaeDeltas),
       rankingQuality: primary.rankingQuality,
       repeatedValidation: summarizeRepeatedValidation(repeatedRuns, rows.length, relevantCount),
       reason: null
