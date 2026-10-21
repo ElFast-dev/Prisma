@@ -111,6 +111,9 @@ jobs:
       - name: Test modal event handlers
         run: node scripts/test-modal-event-handlers.mjs
 
+      - name: Test modal controller return target
+        run: node scripts/test-modal-controller.mjs
+
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs
 
