@@ -4,11 +4,14 @@ export function createModalController(ctx) {
     const existing = ctx.ratingFor(movie.title);
     const nextMode = mode || "details";
     if (nextMode === "rate") {
-      ctx.ratingReturnDetail = Boolean(ctx.movieDetail);
+      const detailIsVisible = Boolean(ctx.$(".detail-sheet"));
+      const returnMovieDetail = ctx.movieDetail ||
+        (detailIsVisible ? { movie: movie, data: null, loading: false, error: "" } : null);
+      ctx.ratingReturnDetail = Boolean(returnMovieDetail);
       ctx.modalDraft = {
         movie: movie,
         mode: "rate",
-        returnMovieDetail: ctx.movieDetail || null,
+        returnMovieDetail: returnMovieDetail,
         rating: existing ? ctx.ratingValue(existing) : 7,
         emotions: existing && Array.isArray(existing.emotions) ? existing.emotions.slice() : [],
         note: existing && existing.note ? existing.note : ""
