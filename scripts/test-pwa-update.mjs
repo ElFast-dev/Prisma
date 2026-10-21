@@ -83,6 +83,6 @@ const unsupportedUpdater = createPWAUpdateController({
 });
 assert.equal(await unsupportedUpdater.register(), null, "Sin soporte de service worker debe continuar sin error.");
 const feedbackStyles = await readFile(new URL("../styles/dialogs-feedback.css", import.meta.url), "utf8");
-assert.match(feedbackStyles, /\\.pwa-update-toast\\s*\\{[^}]*pointer-events:\\s*auto/s,
+assert.ok(feedbackStyles.includes(".pwa-update-toast {") && feedbackStyles.includes("pointer-events: auto;"),
   "La acción de actualizar debe poder pulsarse aunque el contenedor de avisos ignore eventos de puntero.");
 console.log("PWA: comprobación inmediata, aviso accesible, recarga explícita y primera instalación silenciosa.");
