@@ -214,19 +214,24 @@ function identityFor(entry, movie, dependencies) {
 
 
 function watchedDayFor(record) {
-  const raw = record && (record.watchedAt || record.watched_at);
+  const raw = record && (record.watchedAt != null ? record.watchedAt : record.watched_at);
   if (raw == null || raw === "") return null;
   let timestamp;
   if (typeof raw === "number" && Number.isFinite(raw)) {
-    timestamp = raw > 1e12 ? raw : raw * 1000;
+    timestamp = raw >= 1e11 ? raw : raw * 1000;
   } else {
     const text = String(raw).trim();
-    if (!/^\d{4}-\d{2}-\d{2}(?:$|T)/.test(text)) return null;
-    timestamp = Date.parse(text);
-    const dayPart = text.slice(0, 10);
-    const dayTimestamp = Date.parse(dayPart + "T00:00:00.000Z");
-    if (!Number.isFinite(timestamp) || !Number.isFinite(dayTimestamp) ||
-      new Date(dayTimestamp).toISOString().slice(0, 10) !== dayPart) return null;
+    const numericEpoch = /^\d{10,13}$/.test(text) ? Number(text) : null;
+    if (numericEpoch != null) {
+      timestamp = numericEpoch >= 1e11 ? numericEpoch : numericEpoch * 1000;
+    } else {
+      if (!/^\d{4}-\d{2}-\d{2}(?:$|T)/.test(text)) return null;
+      timestamp = Date.parse(text);
+      const dayPart = text.slice(0, 10);
+      const dayTimestamp = Date.parse(dayPart + "T00:00:00.000Z");
+      if (!Number.isFinite(timestamp) || !Number.isFinite(dayTimestamp) ||
+        new Date(dayTimestamp).toISOString().slice(0, 10) !== dayPart) return null;
+    }
   }
   if (!Number.isFinite(timestamp)) return null;
   try { return new Date(timestamp).toISOString().slice(0, 10); }
@@ -926,7 +931,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
 
         window.testIndices.forEach(function (index, position) {
           const row = rows[index];
-          const ridgePrediction = predictRidge(rows, ridgeModel, row.candidateVector);
+          const ridgePrediction = predictRidge(rows, ridgeModel, row.trainingVector);
           const additiveResult = predictRating(row.candidate, additiveProfile);
           const baselinePrediction = clampRating(Number.isFinite(additiveResult && additiveResult.score)
             ? additiveResult.score : additiveProfile.average);
