@@ -18,6 +18,18 @@ Prisma DEBE poder funcionar sin credencial de TMDB. Cuando el usuario configura 
 - CUANDO se prueba la conexión desde Ajustes
 - ENTONCES Prisma guarda la credencial en este navegador y muestra éxito sin presentar un error de JavaScript posterior
 
+#### Scenario: Desconexión confirmada
+
+- DADO que existe una credencial TMDB guardada y la persona confirma su eliminación
+- CUANDO se ejecuta la desconexión desde Ajustes
+- ENTONCES Prisma borra la credencial del almacenamiento local, vacía los resultados y reinicia la caché de géneros
+
+#### Scenario: Desconexión cancelada
+
+- DADO que existe una credencial TMDB guardada y la persona cancela la confirmación
+- CUANDO se intenta eliminarla
+- ENTONCES Prisma conserva la credencial y sus datos en caché sin cambios
+
 ### Requirement: Enriquecimiento de metadatos
 
 Prisma DEBE actualizar metadatos cinematográficos desde TMDB cuando la persona usuaria solicita una función de enriquecimiento disponible, sin convertir las puntuaciones públicas en valoraciones personales.
