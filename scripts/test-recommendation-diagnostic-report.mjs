@@ -148,6 +148,11 @@ for (const forbidden of [
 }
 assert.equal(Object.prototype.hasOwnProperty.call(detailed, "ratings"), false);
 assert.equal(Object.prototype.hasOwnProperty.call(detailed, "movies"), false);
+const repeatedSerialized = JSON.stringify(detailed.evaluation.ridgeExperiment.repeatedValidation).toLowerCase();
+for (const forbidden of ["about time", "tmdbid", "tmdb_id", "title", "ratingentry", "watchedat"]) {
+  assert.equal(repeatedSerialized.includes(forbidden), false,
+    "La validación repetida solo debe exportar agregados; no debe incluir " + forbidden);
+}
 
 const unavailable = buildRecommendationDiagnosticReport({
   ratedCount: 2,
