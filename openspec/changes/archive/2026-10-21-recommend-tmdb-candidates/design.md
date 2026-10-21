@@ -1,7 +1,7 @@
 # Diseño: candidatas temporales de TMDB para el recomendador
 
 ## Arquitectura
-`js/tmdb/browser-actions.js` conserva un array efímero de películas populares consultadas en esta sesión. Solo las respuestas de `/movie/popular` alimentan ese array; `/search/movie` se mantiene como una búsqueda explícita independiente. La paginación añade elementos al pool popular, y una nueva carga de populares lo reinicia.
+`js/tmdb/browser-actions.js` conserva un array efímero de películas populares consultadas en esta sesión. Solo las respuestas de `/movie/popular` alimentan ese array; `/search/movie` se mantiene como una búsqueda explícita independiente. La paginación añade elementos al pool popular, y una respuesta válida de una nueva primera página sustituye el pool anterior. Si la petición falla o queda invalidada por una consulta concurrente, se conservan las candidatas válidas ya disponibles.
 
 `js/recommendations/ranking.js` combina el catálogo local con el pool temporal y aplica la deduplicación ya existente antes de calcular predicciones. El catálogo local va primero para preservar los metadatos enriquecidos que ya posee; una película duplicada por ID TMDB aparece una sola vez. Se conservan las reglas actuales de exclusión y los mismos modos de ordenamiento.
 

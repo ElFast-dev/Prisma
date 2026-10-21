@@ -21,3 +21,9 @@ Prisma DEBE combinar las candidatas válidas del catálogo local con las pelícu
 - DADO que no hay credencial TMDB disponible
 - CUANDO se calcula la lista recomendada
 - ENTONCES solo se puntúan las candidatas locales y el ranking continúa funcionando
+
+#### Scenario: Fallo al actualizar películas populares
+
+- DADO que ya existe un pool válido de candidatas y falla una nueva consulta de películas populares
+- CUANDO termina la petición fallida
+- ENTONCES Prisma conserva las candidatas anteriores en memoria y mantiene disponible el ranking, sin crear ni persistir registros nuevos

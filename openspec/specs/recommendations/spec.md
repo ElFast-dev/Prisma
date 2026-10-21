@@ -354,3 +354,10 @@ Prisma DEBE combinar candidatas válidas del catálogo local con resultados popu
 - DADO que una candidata remota o local está valorada, vista, pendiente u oculta
 - CUANDO se construye la lista final
 - ENTONCES se excluye en todos los modos de ranking
+
+
+#### Scenario: Fallo al actualizar películas populares
+
+- DADO que ya existe un pool válido de candidatas y falla una nueva consulta de películas populares
+- CUANDO termina la petición fallida
+- ENTONCES Prisma conserva las candidatas anteriores en memoria y mantiene disponible el ranking, sin crear ni persistir registros nuevos
