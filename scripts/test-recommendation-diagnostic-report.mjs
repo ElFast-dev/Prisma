@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { buildRecommendationDiagnosticReport } from "../js/diagnostics/recommendation-report.js";
 
 const profile = {
@@ -90,4 +91,19 @@ assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
 assert.equal(unavailable.evaluation.rankingQuality.unavailableReason, "Muestra insuficiente");
 assert.equal(unavailable.sample.ratingsWithoutFeatures, 2);
 
-console.log("Informe de diagnóstico correcto: métricas reales agregadas, detalles opcionales de señales y exclusión de registros individuales.");
+const [appSource, pageViewsSource, eventHandlersSource, reportSource] = await Promise.all([
+  readFile("app.js", "utf8"),
+  readFile("js/ui/page-views.js", "utf8"),
+  readFile("js/app/event-handlers.js", "utf8"),
+  readFile("js/diagnostics/recommendation-report.js", "utf8")
+]);
+assert.match(appSource, /buildRecommendationDiagnosticReport/);
+assert.match(appSource, /navigator\.clipboard\.writeText/);
+assert.match(pageViewsSource, /data-action="copy-recommendation-diagnostics"/);
+assert.match(pageViewsSource, /No incluye títulos de películas, IDs TMDB/);
+assert.match(pageViewsSource, /Incluir hasta 40 nombres de señales agregadas/);
+assert.match(eventHandlersSource, /action === "copy-recommendation-diagnostics"/);
+assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
+  "El constructor del informe debe ser puro: sin DOM, persistencia, red ni portapapeles");
+
+console.log("Informe de diagnóstico correcto: métricas reales agregadas, detalles opcionales de señales, privacidad y flujo de copia.");

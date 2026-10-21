@@ -146,9 +146,10 @@ function ratingEvaluation(source) {
 }
 
 function rankingEvaluation(source) {
-  const ranking = source || {};
+  const wrapper = source || {};
+  const ranking = wrapper.ranking || wrapper;
   const modes = Array.isArray(ranking.modes) ? ranking.modes : [];
-  const diversity = Array.isArray(source && source.diversity) ? source.diversity : [];
+  const diversity = Array.isArray(wrapper.diversity) ? wrapper.diversity : [];
   return {
     ranking: {
       available: Boolean(ranking.available),
@@ -197,7 +198,7 @@ export function buildRecommendationDiagnosticReport(input) {
   const features = profile.features;
   const weights = source.signalWeights || {};
   const ratingCount = nonNegativeInteger(source.ratedCount == null ? ratings.length : source.ratedCount);
-  const metadataCount = Math.min(ratingCount, nonNegativeInteger(profile.withMetadata));
+  const metadataCount = Math.min(ratings.length, nonNegativeInteger(profile.withMetadata));
   const featureCount = features && typeof features.size === "number" ? nonNegativeInteger(features.size) : 0;
   const quality = rankingEvaluation(source.recommendationQuality);
 
@@ -225,9 +226,10 @@ export function buildRecommendationDiagnosticReport(input) {
     },
     sample: {
       ratedEntries: ratingCount,
+      validRatingCount: ratings.length,
       ratingsWithFeatures: metadataCount,
       ratingsWithoutFeatures: Math.max(0, ratings.length - metadataCount),
-      metadataCoverage: ratingCount ? rounded(metadataCount / ratingCount, 4) : 0,
+      metadataCoverage: ratings.length ? rounded(metadataCount / ratings.length, 4) : 0,
       catalogEntries: nonNegativeInteger(source.catalogCount),
       collectionCounts: collectionCounts(source.collectionCounts),
       ratingDistribution: ratingHistogram(ratings)
