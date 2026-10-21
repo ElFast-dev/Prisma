@@ -2,7 +2,7 @@ name: Prisma UI screenshots
 
 on:
   workflow_run:
-    workflows: ["Deploy Prisma to GitHub Pages"]
+    workflows: ["SDD and static quality"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -31,8 +33,8 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
-      - name: Serve the pull request build for browser tests
-        if: github.event_name == 'pull_request'
+      - name: Serve the tested commit for browser tests
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_run'
         run: |
           python3 -m http.server 8765 --directory . > /tmp/prisma-preview.log 2>&1 &
           for attempt in $(seq 1 20); do
@@ -44,7 +46,7 @@ jobs:
 
       - name: Capture the site and verify UI flows
         env:
-          PRISMA_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8765/' || 'https://elfast-dev.github.io/Prisma/' }}
+          PRISMA_URL: ${{ github.event_name != 'workflow_dispatch' && 'http://127.0.0.1:8765/' || 'https://elfast-dev.github.io/Prisma/' }}
         run: |
           mkdir -p artifacts
           node <<'NODE'
