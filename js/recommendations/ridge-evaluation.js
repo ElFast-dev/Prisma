@@ -527,6 +527,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const baselineErrors = [];
     const maeFoldDeltas = [];
     const rankingTotals = Object.create(null);
+    const selectedAlphaCounts = Object.create(null);
+    ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
     RANKING_MODES.forEach(function (mode) {
       rankingTotals[mode] = {
         baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0,
@@ -538,6 +540,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
       result.ridgeErrors.forEach(function (value) { ridgeErrors.push(value); });
       result.baselineErrors.forEach(function (value) { baselineErrors.push(value); });
       result.foldMaeDeltas.forEach(function (value) { maeFoldDeltas.push(value); });
+      Object.keys(result.selectedAlphaCounts).forEach(function (alpha) {
+        selectedAlphaCounts[alpha] = (selectedAlphaCounts[alpha] || 0) + result.selectedAlphaCounts[alpha];
+      });
       RANKING_MODES.forEach(function (mode) {
         const source = result.rankingTotals[mode];
         const target = rankingTotals[mode];
@@ -564,6 +569,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         mae: mae,
         baselineMae: baselineMae,
         deltaBaseMinusRidge: baselineMae - mae,
+        selectedAlphaCounts: result.selectedAlphaCounts,
         foldStability: summarizeMaeFoldStability(result.foldMaeDeltas),
         rankingQuality: result.rankingQuality
       };
@@ -581,6 +587,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       mae: mae,
       baselineMae: baselineMae,
       deltaBaseMinusRidge: baselineMae - mae,
+      selectedAlphaCounts: selectedAlphaCounts,
       foldStability: summarizeMaeFoldStability(maeFoldDeltas),
       rankingQuality: repeatedRanking,
       repeatSummaries: repeatSummaries,
