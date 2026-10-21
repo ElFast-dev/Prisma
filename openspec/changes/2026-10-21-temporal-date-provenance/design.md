@@ -12,7 +12,7 @@ Al mezclar un historial importado explícito con un registro antiguo sin procede
 
 La evaluación conserva la posibilidad de calcular métricas con todas las marcas sintácticamente válidas, pero clasifica cada fila. Si existe una fecha explícita en cualquier registro de la misma identidad, prevalece sobre la fecha heredada sin fuente. Si solo hay una fecha heredada o de acción, se usa únicamente como timestamp exploratorio. Si no existe fecha válida, la fila se excluye.
 
-Los agregados son `explicitDateCount`, `unverifiedDateCount` y `missingDateCount`. El estado es `verified` solo si todas las fechas participantes son explícitas y `exploratory` si al menos una carece de procedencia fiable. Esto certifica la forma del dato, no la veracidad externa de la fecha importada.
+Los agregados son `explicitDateCount`, `unverifiedDateCount` y `missingDateCount`. El estado es `explicit` solo si todas las fechas participantes provienen de campos explícitos o confirmados y `exploratory` si al menos una carece de procedencia fiable. El estado no certifica que la fuente externa haya fechado correctamente el visionado. Esto certifica la forma del dato, no la veracidad externa de la fecha importada.
 
 ## Interfaz e informe
 
