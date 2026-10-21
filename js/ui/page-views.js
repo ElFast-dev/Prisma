@@ -363,7 +363,7 @@ export function createPageViews(ctx) {
       '<p class="appearance-description">' + description + '</p>' +
       estimate +
       action +
-      '<p class="metric-note">La persistencia no sustituye las copias de seguridad y no impide borrar manualmente los datos del sitio. Exporta una copia desde esta pantalla; las sesiones privadas pueden tener reglas de almacenamiento propias.</p>' +
+      '<p class="metric-note">La persistencia no sustituye las copias de seguridad y no impide borrar manualmente los datos del sitio. Exporta una copia de seguridad desde esta pantalla; las sesiones privadas pueden tener reglas de almacenamiento propias.</p>' +
       '</section>';
   }
 
