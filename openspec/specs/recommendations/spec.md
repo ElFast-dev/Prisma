@@ -453,3 +453,24 @@ El experimento Ridge DEBE resumir cuántos pliegues externos favorecen a Ridge, 
 - CUANDO incluye estabilidad por pliegue
 - ENTONCES únicamente serializa recuentos agregados y conserva la advertencia de que estos resultados no prueban significación estadística
 
+### Requirement: Validación Ridge repetida para evaluar sensibilidad a particiones
+
+El Laboratorio DEBE poder evaluar Ridge en tres repeticiones deterministas de cinco pliegues externos y selección anidada de alpha mediante tres pliegues internos. DEBE conservar la evaluación histórica de cinco pliegues separada. Los resultados repetidos DEBEN incluir métricas agregadas globales y resúmenes agregados por repetición, con MAE, nDCG@5 por modo y recuentos de victorias/empates/derrotas. La interfaz DEBE explicar que son análisis de sensibilidad del mismo historial, no pruebas de significación estadística. El experimento NO DEBE alterar automáticamente las recomendaciones activas ni exportar resultados por película.
+
+#### Scenario: Repeticiones con particiones distintas
+
+- DADO que hay al menos 30 películas únicas valoradas con características
+- CUANDO se ejecuta la validación repetida
+- ENTONCES se evalúan tres pasadas deterministas de cinco pliegues y alpha se selecciona únicamente con el entrenamiento interno de cada pliegue externo
+
+#### Scenario: Agregados comparables
+
+- DADO que termina el experimento repetido
+- CUANDO se presentan sus resultados
+- ENTONCES se muestran MAE y nDCG@5 globales y por repetición, y los modelos comparados usan las mismas películas retenidas por pliegue
+
+#### Scenario: Límites de interpretación y privacidad
+
+- DADO que el informe incluye resultados de varias repeticiones
+- CUANDO se exporta el diagnóstico
+- ENTONCES contiene solo métricas agregadas, sin errores o predicciones individuales, y aclara que las repeticiones no son muestras independientes

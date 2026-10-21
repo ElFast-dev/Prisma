@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v3";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v4";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -191,6 +191,55 @@ function ridgeFoldStabilityEvaluation(source) {
   };
 }
 
+function ridgeAlphaCounts(source) {
+  const counts = {};
+  const raw = source && typeof source === "object" ? source : {};
+  Object.keys(raw).sort(function (left, right) { return Number(left) - Number(right); }).forEach(function (alpha) {
+    const numericAlpha = Number(alpha);
+    const count = nonNegativeInteger(raw[alpha]);
+    if (Number.isFinite(numericAlpha) && numericAlpha > 0 && count > 0) counts[String(numericAlpha)] = count;
+  });
+  return counts;
+}
+
+function ridgeRepeatedValidationEvaluation(source) {
+  const evaluation = source && typeof source === "object" ? source : null;
+  const available = Boolean(evaluation && evaluation.available);
+  const repeatSummaries = evaluation && Array.isArray(evaluation.repeatSummaries)
+    ? evaluation.repeatSummaries : [];
+  return {
+    executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
+    available: available,
+    sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
+    repeats: nonNegativeInteger(evaluation && evaluation.repeats),
+    foldsPerRepeat: nonNegativeInteger(evaluation && evaluation.foldsPerRepeat),
+    foldsEvaluated: nonNegativeInteger(evaluation && evaluation.foldsEvaluated),
+    innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
+    selectedAlphaCounts: ridgeAlphaCounts(evaluation && evaluation.selectedAlphaCounts),
+    mae: available ? rounded(evaluation.mae, 4) : null,
+    baselineMaeSameFolds: available ? rounded(evaluation.baselineMae, 4) : null,
+    deltaBaselineMinusRidge: available ? rounded(evaluation.deltaBaseMinusRidge, 4) : null,
+    foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
+    rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
+    repeatSummaries: repeatSummaries.map(function (repeat) {
+      const repeatAvailable = repeat && typeof repeat === "object";
+      return {
+        repeat: nonNegativeInteger(repeat && repeat.repeat),
+        sampleCount: nonNegativeInteger(repeat && repeat.sampleCount),
+        foldsEvaluated: nonNegativeInteger(repeat && repeat.foldsEvaluated),
+        selectedAlphaCounts: ridgeAlphaCounts(repeat && repeat.selectedAlphaCounts),
+        mae: repeatAvailable ? rounded(repeat.mae, 4) : null,
+        baselineMaeSameFolds: repeatAvailable ? rounded(repeat.baselineMae, 4) : null,
+        deltaBaselineMinusRidge: repeatAvailable ? rounded(repeat.deltaBaseMinusRidge, 4) : null,
+        foldStability: ridgeFoldStabilityEvaluation(repeat && repeat.foldStability),
+        rankingQuality: ridgeRankingEvaluation(repeat && repeat.rankingQuality)
+      };
+    }),
+    unavailableReason: available ? null : (evaluation && typeof evaluation.unavailableReason === "string"
+      ? evaluation.unavailableReason : (evaluation ? "La validación Ridge repetida no está disponible." : "La validación Ridge repetida no se ha ejecutado."))
+  };
+}
+
 function ridgeEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
@@ -219,6 +268,7 @@ function ridgeEvaluation(source) {
     selectedAlphaCounts: alphaCounts,
     foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
+    repeatedValidation: ridgeRepeatedValidationEvaluation(evaluation && evaluation.repeatedValidation),
     unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
       ? evaluation.reason : (evaluation ? "El experimento Ridge no está disponible." : "El experimento Ridge no se ha ejecutado."))
   };
@@ -291,7 +341,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Recuentos agregados de valoraciones, catálogo y colecciones",
         "Distribución de puntuaciones por valor",
         "Cobertura y señales agregadas del perfil",
-        "Pesos del algoritmo y resultados agregados disponibles de MAE, Ridge, nDCG@5 por modo y diversidad"
+        "Pesos del algoritmo y resultados agregados de MAE, Ridge, validación repetida, nDCG@5 por modo y diversidad"
       ],
       excludes: [
         "Títulos y títulos originales de películas",

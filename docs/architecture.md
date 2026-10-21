@@ -16,10 +16,10 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/core/storage-protection.js` | Consulta persistencia/cuota del almacenamiento y solicita persistencia solo tras una acción explícita. |
 | `js/recommendations/features.js` | Extracción de géneros, etiquetas y década de estreno si existe un año válido. |
 | `js/recommendations/engine.js` | Perfil de preferencias, predicción, evaluación leave-one-out con ablación de década y experimento diagnóstico opcional de regularización de temas poco respaldados; la variante experimental no altera las recomendaciones activas. |
-| `js/recommendations/ridge-evaluation.js` | Experimento puro y bajo demanda de regresión Ridge con validación cruzada anidada; compara el MAE con la base aditiva en los mismos pliegues externos sin alterar las recomendaciones activas. |
+| `js/recommendations/ridge-evaluation.js` | Experimento local y bajo demanda de regresión Ridge con validación cruzada anidada; conserva una evaluación histórica de cinco pliegues y añade tres repeticiones deterministas de cinco pliegues, con MAE y nDCG@5 agregados por repetición, progreso entre pasadas y sin alterar las recomendaciones activas. |
 | `js/recommendations/evaluation.js` | Evaluación offline de nDCG@5 por modo sobre pliegues y candidatas comunes, además de diversidad de géneros en las listas actuales; no ajusta automáticamente el recomendador. |
 | `js/recommendations/ranking.js` | Puntúa y diversifica candidatas de catálogo local y el pool efímero de películas populares ya consultadas en TMDB; excluye la colección y no persiste candidatas remotas. |
-| `js/diagnostics/recommendation-report.js` | Construye un informe JSON agregado del Laboratorio, con etiquetas de señales opcionales y sin serializar registros individuales ni acceder al DOM, almacenamiento o red. |
+| `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v4 del Laboratorio, con señales opcionales y métricas de validación Ridge repetida por pasada; no serializa registros individuales ni accede al DOM, almacenamiento o red. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |

@@ -374,3 +374,19 @@ El Laboratorio DEBE ofrecer una acción explícita para calcular Ridge y mostrar
 - DADO que se modifican las valoraciones guardadas durante la sesión
 - CUANDO vuelve a renderizarse el Laboratorio
 - ENTONCES los resultados Ridge anteriores se invalidan
+
+### Requirement: Acción explícita para validación Ridge repetida
+
+El Laboratorio DEBE ofrecer una acción separada para ejecutar la validación cruzada repetida de Ridge y presentar métricas agregadas por repetición y globales. El cálculo NO DEBE ocurrir al abrir o renderizar el Laboratorio ni alterar Descubrir.
+
+#### Scenario: Evaluación repetida bajo demanda
+
+- DADO que el Laboratorio ya muestra los resultados Ridge estándar
+- CUANDO se solicita la validación repetida
+- ENTONCES Prisma ejecuta el protocolo local 3 × 5, informa el estado del cálculo y presenta los agregados cuando termina
+
+#### Scenario: Separación de la recomendación activa
+
+- DADO que se completa la validación repetida
+- CUANDO el usuario vuelve a Descubrir
+- ENTONCES el ranking activo sigue siendo aditivo y no se modifican las preferencias ni los datos personales

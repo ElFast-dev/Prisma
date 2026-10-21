@@ -95,8 +95,10 @@ const modules = [
   ['js/ui/theme-controller.js', themeController]
 ];
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
-assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261021-3"),
+assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261021-4"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
+assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261021-2"),
+  "El informe de diagnóstico v4 debe quedar versionado y disponible en la caché de la aplicación.");
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {
     const resolvedPath = './' + posix.normalize(posix.join(posix.dirname(filename), match[1])).replace(/^\.\//, '');

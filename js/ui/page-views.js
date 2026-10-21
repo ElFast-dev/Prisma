@@ -231,12 +231,17 @@ export function createPageViews(ctx) {
   function renderRidgeExperimentPanel() {
     const result = ctx.ridgeEvaluationResult || null;
     const busy = Boolean(ctx.ridgeEvaluationBusy);
-    const buttonLabel = busy ? "Calculando Ridge…" : (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge");
+    const progress = ctx.ridgeEvaluationProgress || null;
+    const completedRepeats = Number(progress && progress.completedRepeats || 0);
+    const totalRepeats = Number(progress && progress.totalRepeats || 3);
+    const buttonLabel = busy ? "Ridge " + completedRepeats + "/" + totalRepeats + "…" :
+      (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge");
     let body = "";
     if (busy) {
-      body = '<p class="metric-note" aria-live="polite">Calculando con datos locales. La aplicación no enviará ni guardará datos nuevos.</p>';
+      body = '<p class="metric-note" aria-live="polite">Validación repetida en curso: ' + completedRepeats + ' de ' +
+        totalRepeats + ' repeticiones completadas. Cada repetición evalúa cinco pliegues externos y selecciona alpha en tres pliegues internos. El cálculo es local; no se envían ni guardan datos nuevos.</p>';
     } else if (!result) {
-      body = '<p class="metric-note" aria-live="polite">Esta prueba no se ejecuta automáticamente. Usa validación cruzada anidada para elegir la regularización sin consultar las notas retenidas al evaluar.</p>';
+      body = '<p class="metric-note" aria-live="polite">Esta prueba no se ejecuta automáticamente. Ejecuta validación anidada repetida (3 × 5 pliegues) para elegir alpha sin consultar las notas retenidas al evaluar.</p>';
     } else if (!result.available) {
       body = '<p class="metric-note" aria-live="polite">' + ctx.escapeHTML(result.reason || "No hay una muestra suficiente para evaluar Ridge.") + '</p>';
     } else {
@@ -280,6 +285,76 @@ export function createPageViews(ctx) {
           Number(stability.ridgeMaeWins || 0) + ', empata en ' + Number(stability.ties || 0) + ' y la base mejora en ' +
           Number(stability.baselineMaeWins || 0) + '. Recuento descriptivo, no prueba de significación estadística.</p>'
         : '';
+      const repeated = result.repeatedValidation || null;
+      let repeatedMarkup = '';
+      if (repeated && repeated.available) {
+        const repeatedRanking = repeated.rankingQuality || {};
+        const repeatedModeMarkup = (repeatedRanking.modes || []).map(function (mode) {
+          if (!mode.available) return '';
+          const baseline = Number(mode.baselineNdcgAt5);
+          const ridge = Number(mode.ridgeNdcgAt5);
+          const deltaMode = Number(mode.deltaRidgeMinusBaseline);
+          if (!Number.isFinite(baseline) || !Number.isFinite(ridge) || !Number.isFinite(deltaMode)) return '';
+          return '<p class="metric-note"><strong>' + ctx.escapeHTML(rankingModeNames[mode.mode] || mode.mode) +
+            ':</strong> aditivo ' + baseline.toFixed(4).replace('.', ',') + ' · Ridge ' +
+            ridge.toFixed(4).replace('.', ',') + ' · cambio ' + (deltaMode > 0 ? '+' : '') +
+            deltaMode.toFixed(4).replace('.', ',') + ' · Ridge gana ' + Number(mode.foldsRidgeWins || 0) +
+            ', empata ' + Number(mode.foldsRidgeTies || 0) + ', pierde ' + Number(mode.foldsRidgeLosses || 0) +
+            ' de ' + Number(mode.foldsEvaluated || 0) + ' pliegues válidos.</p>';
+        }).join('');
+        const repeatedAlphaCounts = Object.keys(repeated.selectedAlphaCounts || {}).filter(function (alpha) {
+          return Number(repeated.selectedAlphaCounts[alpha]) > 0;
+        }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+          return alpha + ': ' + Number(repeated.selectedAlphaCounts[alpha]);
+        }).join(' · ');
+        const repeatedFoldStability = repeated.foldStability || {};
+        const repeatMarkup = (repeated.repeatSummaries || []).map(function (repeat) {
+          const repeatDelta = Number(repeat.deltaBaseMinusRidge);
+          const repeatAlphaCounts = Object.keys(repeat.selectedAlphaCounts || {}).filter(function (alpha) {
+            return Number(repeat.selectedAlphaCounts[alpha]) > 0;
+          }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+            return alpha + ': ' + Number(repeat.selectedAlphaCounts[alpha]);
+          }).join(' · ');
+          const repeatModes = repeat.rankingQuality && Array.isArray(repeat.rankingQuality.modes)
+            ? repeat.rankingQuality.modes : [];
+          const modeDeltaText = repeatModes.filter(function (mode) {
+            return mode.available && Number.isFinite(Number(mode.deltaRidgeMinusBaseline));
+          }).map(function (mode) {
+            const deltaMode = Number(mode.deltaRidgeMinusBaseline);
+            return (rankingModeNames[mode.mode] || mode.mode) + ' ' +
+              (deltaMode > 0 ? '+' : '') + deltaMode.toFixed(3).replace('.', ',');
+          }).join(' · ');
+          return '<p class="metric-note"><strong>Repetición ' + Number(repeat.repeat || 0) + ':</strong> MAE Ridge ' +
+            Number(repeat.mae).toFixed(4).replace('.', ',') + ' · base ' +
+            Number(repeat.baselineMae).toFixed(4).replace('.', ',') + ' · base − Ridge ' +
+            (repeatDelta > 0 ? '+' : '') + repeatDelta.toFixed(4).replace('.', ',') +
+            (repeatAlphaCounts ? ' · alpha: ' + ctx.escapeHTML(repeatAlphaCounts) : '') +
+            (modeDeltaText ? ' · delta nDCG@5: ' + ctx.escapeHTML(modeDeltaText) : '') + '.</p>';
+        }).join('');
+        repeatedMarkup = '<section class="ridge-repeated-validation" aria-label="Validación Ridge repetida">' +
+          '<h4>Validación repetida · ' + Number(repeated.repeats || 0) + ' × ' +
+          Number(repeated.foldsPerRepeat || 0) + ' pliegues</h4>' +
+          '<p class="metric-note">Resultado agrupado de ' + Number(repeated.foldsEvaluated || 0) +
+          ' pliegues externos: MAE Ridge ' + Number(repeated.mae).toFixed(4).replace('.', ',') +
+          ' · base ' + Number(repeated.baselineMae).toFixed(4).replace('.', ',') +
+          ' · base − Ridge ' + (Number(repeated.deltaBaseMinusRidge) > 0 ? '+' : '') +
+          Number(repeated.deltaBaseMinusRidge).toFixed(4).replace('.', ',') + '.</p>' +
+          '<p class="metric-note">Alpha elegido en los pliegues de las repeticiones (recuento agregado): ' +
+          ctx.escapeHTML(repeatedAlphaCounts || 'sin datos') + '.</p>' +
+          (repeatedFoldStability.available
+            ? '<p class="metric-note">Estabilidad de MAE en 15 pliegues: Ridge mejora en ' +
+              Number(repeatedFoldStability.ridgeMaeWins || 0) + ', empata en ' +
+              Number(repeatedFoldStability.ties || 0) + ' y la base mejora en ' +
+              Number(repeatedFoldStability.baselineMaeWins || 0) + '.</p>'
+            : '') +
+          '<h5>nDCG@5 agrupado por modo</h5>' + (repeatedModeMarkup || '<p class="metric-note">nDCG@5 no disponible con esta muestra.</p>') +
+          '<h5>Resultados por repetición</h5>' + repeatMarkup +
+          '<p class="metric-note">Estas repeticiones reutilizan el mismo historial y no constituyen muestras independientes ni una prueba de significación estadística. El ranking activo sigue usando el modelo aditivo.</p>' +
+          '</section>';
+      } else if (repeated && !repeated.available) {
+        repeatedMarkup = '<p class="metric-note">Validación repetida no disponible: ' +
+          ctx.escapeHTML(repeated.unavailableReason || 'no hay suficientes datos.') + '</p>';
+      }
       body = '<div class="metrics-grid">' +
         ctx.metric("MAE Ridge", ridgeMae.toFixed(4).replace(".", ","), result.count + " películas · " + result.foldsEvaluated + "/" + result.outerFolds + " pliegues") +
         ctx.metric("MAE aditivo emparejado", baseMae.toFixed(4).replace(".", ","), "Mismas películas externas") +
@@ -290,6 +365,7 @@ export function createPageViews(ctx) {
           ctx.escapeHTML(alphaCounts || "sin datos") + '.</p>' +
         foldStabilityMarkup +
         rankingMarkup +
+        repeatedMarkup +
         '<p class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo aditivo. nDCG@5 mide el orden de películas valoradas retenidas y no garantiza satisfacción futura ni significación estadística.</p>';
     }
     return '<section class="panel ridge-experiment-panel" aria-labelledby="ridge-experiment-heading">' +

@@ -4,15 +4,15 @@ import { createStorageProtection } from "./js/core/storage-protection.js";
 import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
-import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-3";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-1";
+import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-4";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-2";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261020-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261020-1";
-import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-7";
+import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-8";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261021-2";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261020-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
@@ -56,6 +56,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let recommendationDiagnosticFeatureLabelsIncluded = false;
   let ridgeEvaluationResult = null;
   let ridgeEvaluationBusy = false;
+  let ridgeEvaluationProgress = null;
+  let ridgeEvaluationRunId = 0;
   const recommendationPreferences = createRecommendationPreferences(function () { return window.localStorage; });
   let recommendationMode = recommendationPreferences.getMode();
   let currentPage = "home";
@@ -193,6 +195,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get evaluateRecommendationQuality() { return evaluateRecommendationQuality; },
     get ridgeEvaluationResult() { return ridgeEvaluationResult; },
     get ridgeEvaluationBusy() { return ridgeEvaluationBusy; },
+    get ridgeEvaluationProgress() { return ridgeEvaluationProgress; },
     get runRidgeExperiment() { return runRidgeExperiment; }
   });
   const { movieCard, ratedMetadataCount, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp } = pageViews;
@@ -436,7 +439,10 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { logEvent, persistState: persistStateToStorage, toast } = appRuntime;
 
   function persistState() {
+    ridgeEvaluationRunId += 1;
     ridgeEvaluationResult = null;
+    ridgeEvaluationBusy = false;
+    ridgeEvaluationProgress = null;
     return persistStateToStorage();
   }
 
@@ -510,25 +516,42 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
 
   async function runRidgeExperiment() {
     if (ridgeEvaluationBusy) return;
+    const runId = ++ridgeEvaluationRunId;
     ridgeEvaluationBusy = true;
+    ridgeEvaluationProgress = { completedRepeats: 0, totalRepeats: 3, foldsPerRepeat: 5 };
     if (currentPage === "lab") renderApp();
     await new Promise(function (resolve) {
       if (window && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(resolve);
       else window.setTimeout(resolve, 0);
     });
     try {
-      ridgeEvaluationResult = ridgeRecommendationExperiment.evaluate();
+      const evaluationResult = await ridgeRecommendationExperiment.evaluateAsync(function (progress) {
+        if (runId !== ridgeEvaluationRunId) return false;
+        if (progress.phase !== "starting") {
+          ridgeEvaluationProgress = progress;
+          if (currentPage === "lab") renderApp();
+        }
+        return true;
+      });
+      if (runId !== ridgeEvaluationRunId) return;
+      ridgeEvaluationResult = evaluationResult;
       toast(ridgeEvaluationResult.available
-        ? "Experimento Ridge terminado. Revisa el MAE y nDCG@5 en el Laboratorio."
+        ? "Validación Ridge terminada: se evaluaron 3 repeticiones de 5 pliegues. Revisa los agregados en el Laboratorio."
         : (ridgeEvaluationResult.reason || "No se pudo evaluar Ridge con esta muestra."), !ridgeEvaluationResult.available);
     } catch (_) {
+      if (runId !== ridgeEvaluationRunId) return;
       ridgeEvaluationResult = { available: false, count: 0, mae: null, baselineMae: null,
         deltaBaseMinusRidge: null, outerFolds: 5, foldsEvaluated: 0, innerFolds: 3,
-        selectedAlphaCounts: {}, reason: "No se pudo completar el experimento Ridge de forma estable." };
+        selectedAlphaCounts: {}, repeatedValidation: { available: false, repeats: 3, foldsPerRepeat: 5,
+          foldsEvaluated: 0, repeatSummaries: [], unavailableReason: "No se pudo completar la validación Ridge repetida." },
+        reason: "No se pudo completar el experimento Ridge de forma estable." };
       toast("No se pudo completar el experimento Ridge de forma estable.", true);
     } finally {
-      ridgeEvaluationBusy = false;
-      if (currentPage === "lab") renderApp();
+      if (runId === ridgeEvaluationRunId) {
+        ridgeEvaluationBusy = false;
+        ridgeEvaluationProgress = null;
+        if (currentPage === "lab") renderApp();
+      }
     }
   }
 

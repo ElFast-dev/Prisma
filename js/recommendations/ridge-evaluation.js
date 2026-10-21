@@ -1,5 +1,6 @@
 const OUTER_FOLDS = 5;
 const INNER_FOLDS = 3;
+const REPEATED_VALIDATION_RUNS = 3;
 const MIN_RECORDS = 30;
 const MIN_RANKING_RECORDS = 50;
 const MIN_RELEVANT_RECORDS = 10;
@@ -216,13 +217,13 @@ function dcgAt5(rows) {
     return sum + row.gain / Math.log2(index + 2);
   }, 0);
 }
-function unavailableRankingQuality(count, relevantCount, reason) {
+function unavailableRankingQuality(count, relevantCount, reason, foldCount) {
   let unavailableReason = reason || "";
   if (!unavailableReason && count < MIN_RANKING_RECORDS) unavailableReason = "Se necesitan al menos " + MIN_RANKING_RECORDS + " películas únicas con características para comparar nDCG@5.";
   if (!unavailableReason && relevantCount < MIN_RELEVANT_RECORDS) unavailableReason = "Se necesitan al menos " + MIN_RELEVANT_RECORDS + " valoraciones de 7 o más para comparar nDCG@5.";
   if (!unavailableReason) unavailableReason = "No se pudo calcular una comparación de ranking estable.";
   return {
-    available: false, count: count, relevantCount: relevantCount, folds: OUTER_FOLDS,
+    available: false, count: count, relevantCount: relevantCount, folds: foldCount || OUTER_FOLDS,
     foldsEvaluated: 0, cutoff: RANKING_CUTOFF, relevantThreshold: RELEVANT_RATING_THRESHOLD,
     reason: unavailableReason,
     modes: RANKING_MODES.map(function (mode) {
@@ -248,9 +249,9 @@ function summarizeMaeFoldStability(deltas) {
     baselineMaeWins: baselineMaeWins
   };
 }
-function completeRankingQuality(count, relevantCount, totals) {
+function completeRankingQuality(count, relevantCount, totals, foldCount) {
   if (count < MIN_RANKING_RECORDS || relevantCount < MIN_RELEVANT_RECORDS) {
-    return unavailableRankingQuality(count, relevantCount);
+    return unavailableRankingQuality(count, relevantCount, null, foldCount);
   }
   const modes = RANKING_MODES.map(function (mode) {
     const total = totals[mode];
@@ -271,12 +272,12 @@ function completeRankingQuality(count, relevantCount, totals) {
   });
   const usable = modes.filter(function (mode) { return mode.available; });
   if (!usable.length) return unavailableRankingQuality(count, relevantCount,
-    "No hubo suficientes valoraciones relevantes distribuidas en los pliegues externos.");
+    "No hubo suficientes valoraciones relevantes distribuidas en los pliegues externos.", foldCount);
   return {
     available: true,
     count: count,
     relevantCount: relevantCount,
-    folds: OUTER_FOLDS,
+    folds: foldCount || OUTER_FOLDS,
     foldsEvaluated: Math.min.apply(null, usable.map(function (mode) { return mode.foldsEvaluated; })),
     cutoff: RANKING_CUTOFF,
     relevantThreshold: RELEVANT_RATING_THRESHOLD,
@@ -300,7 +301,26 @@ function rankingCandidate(row, prediction, fallbackScore, token) {
   };
 }
 
-function unavailableResult(count, reason, rankingQuality) {
+function unavailableRepeatedValidation(count, relevantCount, reason) {
+  const totalFolds = REPEATED_VALIDATION_RUNS * OUTER_FOLDS;
+  return {
+    available: false,
+    sampleCount: Number.isInteger(count) && count >= 0 ? count : 0,
+    repeats: REPEATED_VALIDATION_RUNS,
+    foldsPerRepeat: OUTER_FOLDS,
+    foldsEvaluated: 0,
+    innerFolds: INNER_FOLDS,
+    mae: null,
+    baselineMae: null,
+    deltaBaseMinusRidge: null,
+    foldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
+    rankingQuality: unavailableRankingQuality(count, relevantCount, null, totalFolds),
+    repeatSummaries: [],
+    unavailableReason: reason || "La validación Ridge repetida no está disponible."
+  };
+}
+
+function unavailableResult(count, reason, rankingQuality, relevantCount) {
   return {
     available: false,
     count: Number.isInteger(count) && count >= 0 ? count : 0,
@@ -315,6 +335,7 @@ function unavailableResult(count, reason, rankingQuality) {
     predictionMin: null,
     predictionMax: null,
     foldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
+    repeatedValidation: unavailableRepeatedValidation(count, relevantCount || 0, reason),
     rankingQuality: rankingQuality || unavailableRankingQuality(count, 0),
     reason: reason || "No hay suficientes valoraciones únicas con características."
   };
@@ -362,8 +383,11 @@ export function createRidgeRecommendationExperiment(dependencies) {
     return rows;
   }
 
-  function selectAlpha(rows, kernel, outerTraining, outerFold) {
-    const folds = foldIndices(outerTraining, rows, INNER_FOLDS, "ridge-inner-" + outerFold);
+  function selectAlpha(rows, kernel, outerTraining, outerFold, repetitionIndex) {
+    const innerSalt = repetitionIndex === 0
+      ? "ridge-inner-" + outerFold
+      : "ridge-inner-repeat-" + repetitionIndex + "-" + outerFold;
+    const folds = foldIndices(outerTraining, rows, INNER_FOLDS, innerSalt);
     let bestAlpha = null;
     let bestMae = Infinity;
     ALPHAS.forEach(function (alpha) {
@@ -389,127 +413,290 @@ export function createRidgeRecommendationExperiment(dependencies) {
     return bestAlpha;
   }
 
+  function evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount) {
+    const repeatSalt = repetitionIndex === 0 ? "" : "-repeat-" + repetitionIndex;
+    const outerSalt = repetitionIndex === 0 ? "ridge-outer" : "ridge-outer" + repeatSalt;
+    const outer = foldIndices(indices, rows, OUTER_FOLDS, outerSalt);
+    const ridgeErrors = [];
+    const baselineErrors = [];
+    const foldMaeDeltas = [];
+    const selectedAlphaCounts = Object.create(null);
+    ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
+    const rankingTotals = Object.create(null);
+    RANKING_MODES.forEach(function (mode) {
+      rankingTotals[mode] = {
+        baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0,
+        foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0
+      };
+    });
+    const canCompareRanking = rows.length >= MIN_RANKING_RECORDS && relevantCount >= MIN_RELEVANT_RECORDS;
+    let predictionMin = Infinity;
+    let predictionMax = -Infinity;
+
+    outer.forEach(function (testIndices, outerFold) {
+      const testSet = new Set(testIndices);
+      const trainingIndices = indices.filter(function (index) { return !testSet.has(index); });
+      const alpha = selectAlpha(rows, kernel, trainingIndices, outerFold, repetitionIndex);
+      selectedAlphaCounts[String(alpha)] += 1;
+      const ridgeModel = trainRidge(rows, kernel, trainingIndices, alpha);
+      const trainingRatings = trainingIndices.map(function (index) { return rows[index].entry; });
+      const additiveProfile = buildProfile(trainingRatings);
+      const baselineCandidates = [];
+      const ridgeCandidates = [];
+      const gains = new Map();
+      const ridgeFoldErrors = [];
+      const baselineFoldErrors = [];
+
+      testIndices.forEach(function (index, position) {
+        const row = rows[index];
+        const ridgePrediction = predictRidge(rows, ridgeModel, row.trainingVector);
+        const additiveResult = predictRating(row.candidate, additiveProfile);
+        const additivePrediction = clampRating(Number.isFinite(additiveResult && additiveResult.score)
+          ? additiveResult.score : additiveProfile.average);
+        const ridgeError = Math.abs(ridgePrediction - row.rating);
+        const baselineError = Math.abs(additivePrediction - row.rating);
+        ridgeErrors.push(ridgeError);
+        baselineErrors.push(baselineError);
+        ridgeFoldErrors.push(ridgeError);
+        baselineFoldErrors.push(baselineError);
+        predictionMin = Math.min(predictionMin, ridgePrediction);
+        predictionMax = Math.max(predictionMax, ridgePrediction);
+        if (canCompareRanking) {
+          const token = "candidate-" + position;
+          const baselinePrediction = Object.assign({}, additiveResult || {}, { score: additivePrediction });
+          const ridgePredictionExplained = Object.assign({}, additiveResult || {}, { score: ridgePrediction });
+          baselineCandidates.push(rankingCandidate(row, baselinePrediction, additivePrediction, token));
+          ridgeCandidates.push(rankingCandidate(row, ridgePredictionExplained, ridgePrediction, token));
+          gains.set(token, relevanceGain(row.rating));
+        }
+      });
+
+      foldMaeDeltas.push(meanAbsoluteError(baselineFoldErrors) - meanAbsoluteError(ridgeFoldErrors));
+      if (canCompareRanking) {
+        const ideal = testIndices.map(function (_, position) {
+          const token = "candidate-" + position;
+          return { gain: gains.get(token) || 0, token: token };
+        }).sort(function (left, right) {
+          return right.gain - left.gain || left.token.localeCompare(right.token);
+        });
+        const idealDcg = dcgAt5(ideal);
+        if (idealDcg > 0) {
+          RANKING_MODES.forEach(function (mode) {
+            const baselineTop = rankRows(baselineCandidates, mode);
+            const ridgeTop = rankRows(ridgeCandidates, mode);
+            const baselineDcg = dcgAt5(baselineTop.map(function (candidate) {
+              return { gain: gains.get(candidate.evaluationToken) || 0 };
+            }));
+            const ridgeDcg = dcgAt5(ridgeTop.map(function (candidate) {
+              return { gain: gains.get(candidate.evaluationToken) || 0 };
+            }));
+            const foldDelta = (ridgeDcg - baselineDcg) / idealDcg;
+            if (foldDelta > 1e-10) rankingTotals[mode].foldsRidgeWins += 1;
+            else if (foldDelta < -1e-10) rankingTotals[mode].foldsRidgeLosses += 1;
+            else rankingTotals[mode].foldsRidgeTies += 1;
+            rankingTotals[mode].baselineDcg += baselineDcg;
+            rankingTotals[mode].ridgeDcg += ridgeDcg;
+            rankingTotals[mode].idealDcg += idealDcg;
+            rankingTotals[mode].foldsEvaluated += 1;
+          });
+        }
+      }
+    });
+
+    return {
+      repetitionIndex: repetitionIndex,
+      ridgeErrors: ridgeErrors,
+      baselineErrors: baselineErrors,
+      foldMaeDeltas: foldMaeDeltas,
+      selectedAlphaCounts: selectedAlphaCounts,
+      predictionMin: predictionMin,
+      predictionMax: predictionMax,
+      outerFoldsEvaluated: outer.length,
+      rankingTotals: rankingTotals,
+      rankingQuality: canCompareRanking
+        ? completeRankingQuality(rows.length, relevantCount, rankingTotals, OUTER_FOLDS)
+        : unavailableRankingQuality(rows.length, relevantCount)
+    };
+  }
+
+  function summarizeRepeatedValidation(foldSets, sampleCount, relevantCount) {
+    const totalFolds = foldSets.reduce(function (sum, result) {
+      return sum + result.outerFoldsEvaluated;
+    }, 0);
+    const ridgeErrors = [];
+    const baselineErrors = [];
+    const maeFoldDeltas = [];
+    const rankingTotals = Object.create(null);
+    const selectedAlphaCounts = Object.create(null);
+    ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
+    RANKING_MODES.forEach(function (mode) {
+      rankingTotals[mode] = {
+        baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0,
+        foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0
+      };
+    });
+
+    foldSets.forEach(function (result) {
+      result.ridgeErrors.forEach(function (value) { ridgeErrors.push(value); });
+      result.baselineErrors.forEach(function (value) { baselineErrors.push(value); });
+      result.foldMaeDeltas.forEach(function (value) { maeFoldDeltas.push(value); });
+      Object.keys(result.selectedAlphaCounts).forEach(function (alpha) {
+        selectedAlphaCounts[alpha] = (selectedAlphaCounts[alpha] || 0) + result.selectedAlphaCounts[alpha];
+      });
+      RANKING_MODES.forEach(function (mode) {
+        const source = result.rankingTotals[mode];
+        const target = rankingTotals[mode];
+        target.baselineDcg += source.baselineDcg;
+        target.ridgeDcg += source.ridgeDcg;
+        target.idealDcg += source.idealDcg;
+        target.foldsEvaluated += source.foldsEvaluated;
+        target.foldsRidgeWins += source.foldsRidgeWins;
+        target.foldsRidgeTies += source.foldsRidgeTies;
+        target.foldsRidgeLosses += source.foldsRidgeLosses;
+      });
+    });
+
+    const repeatedRanking = sampleCount >= MIN_RANKING_RECORDS && relevantCount >= MIN_RELEVANT_RECORDS
+      ? completeRankingQuality(sampleCount, relevantCount, rankingTotals, totalFolds)
+      : unavailableRankingQuality(sampleCount, relevantCount, null, totalFolds);
+    const repeatSummaries = foldSets.map(function (result) {
+      const mae = meanAbsoluteError(result.ridgeErrors);
+      const baselineMae = meanAbsoluteError(result.baselineErrors);
+      return {
+        repeat: result.repetitionIndex + 1,
+        sampleCount: sampleCount,
+        foldsEvaluated: result.outerFoldsEvaluated,
+        mae: mae,
+        baselineMae: baselineMae,
+        deltaBaseMinusRidge: baselineMae - mae,
+        selectedAlphaCounts: result.selectedAlphaCounts,
+        foldStability: summarizeMaeFoldStability(result.foldMaeDeltas),
+        rankingQuality: result.rankingQuality
+      };
+    });
+
+    const mae = meanAbsoluteError(ridgeErrors);
+    const baselineMae = meanAbsoluteError(baselineErrors);
+    return {
+      available: true,
+      sampleCount: sampleCount,
+      repeats: foldSets.length,
+      foldsPerRepeat: OUTER_FOLDS,
+      foldsEvaluated: totalFolds,
+      innerFolds: INNER_FOLDS,
+      mae: mae,
+      baselineMae: baselineMae,
+      deltaBaseMinusRidge: baselineMae - mae,
+      selectedAlphaCounts: selectedAlphaCounts,
+      foldStability: summarizeMaeFoldStability(maeFoldDeltas),
+      rankingQuality: repeatedRanking,
+      repeatSummaries: repeatSummaries,
+      unavailableReason: null
+    };
+  }
+
+  function completedEvaluation(rows, repeatedRuns, relevantCount) {
+    const primary = repeatedRuns[0];
+    const mae = meanAbsoluteError(primary.ridgeErrors);
+    const baselineMae = meanAbsoluteError(primary.baselineErrors);
+    return {
+      available: true,
+      count: rows.length,
+      mae: mae,
+      baselineMae: baselineMae,
+      deltaBaseMinusRidge: baselineMae - mae,
+      outerFolds: OUTER_FOLDS,
+      foldsEvaluated: primary.outerFoldsEvaluated,
+      innerFolds: INNER_FOLDS,
+      alphaGrid: ALPHAS.slice(),
+      selectedAlphaCounts: primary.selectedAlphaCounts,
+      predictionMin: primary.predictionMin,
+      predictionMax: primary.predictionMax,
+      foldStability: summarizeMaeFoldStability(primary.foldMaeDeltas),
+      rankingQuality: primary.rankingQuality,
+      repeatedValidation: summarizeRepeatedValidation(repeatedRuns, rows.length, relevantCount),
+      reason: null
+    };
+  }
+
+  function unavailableEvaluation(rows, relevantCount) {
+    const reason = "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.";
+    return unavailableResult(rows.length, reason,
+      unavailableRankingQuality(rows.length, relevantCount,
+        "La comparación Ridge de ranking no se completó porque el ajuste no terminó."),
+      relevantCount);
+  }
+
   function evaluate() {
     const rows = mappedRows();
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
     if (rows.length < MIN_RECORDS) {
       const reason = "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.";
-      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount));
+      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
     }
     try {
       const kernel = buildKernel(rows);
       const indices = rows.map(function (_, index) { return index; });
-      const outer = foldIndices(indices, rows, OUTER_FOLDS, "ridge-outer");
-      const ridgeErrors = [];
-      const baselineErrors = [];
-      const maeFoldDeltas = [];
-      const selectedAlphaCounts = Object.create(null);
-      ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
-      const rankingTotals = Object.create(null);
-      RANKING_MODES.forEach(function (mode) {
-        rankingTotals[mode] = {
-          baselineDcg: 0, ridgeDcg: 0, idealDcg: 0, foldsEvaluated: 0,
-          foldsRidgeWins: 0, foldsRidgeTies: 0, foldsRidgeLosses: 0
-        };
-      });
-      const canCompareRanking = rows.length >= MIN_RANKING_RECORDS && relevantCount >= MIN_RELEVANT_RECORDS;
-      let predictionMin = Infinity;
-      let predictionMax = -Infinity;
-
-      outer.forEach(function (testIndices, outerFold) {
-        const testSet = new Set(testIndices);
-        const trainingIndices = indices.filter(function (index) { return !testSet.has(index); });
-        const alpha = selectAlpha(rows, kernel, trainingIndices, outerFold);
-        selectedAlphaCounts[String(alpha)] += 1;
-        const ridgeModel = trainRidge(rows, kernel, trainingIndices, alpha);
-        const trainingRatings = trainingIndices.map(function (index) { return rows[index].entry; });
-        const additiveProfile = buildProfile(trainingRatings);
-        const baselineCandidates = [];
-        const ridgeCandidates = [];
-        const gains = new Map();
-        const ridgeFoldErrors = [];
-        const baselineFoldErrors = [];
-        testIndices.forEach(function (index, position) {
-          const row = rows[index];
-          const ridgePrediction = predictRidge(rows, ridgeModel, row.trainingVector);
-          const additiveResult = predictRating(row.candidate, additiveProfile);
-          const additivePrediction = clampRating(Number.isFinite(additiveResult && additiveResult.score)
-            ? additiveResult.score : additiveProfile.average);
-          const ridgeError = Math.abs(ridgePrediction - row.rating);
-          const baselineError = Math.abs(additivePrediction - row.rating);
-          ridgeErrors.push(ridgeError);
-          baselineErrors.push(baselineError);
-          ridgeFoldErrors.push(ridgeError);
-          baselineFoldErrors.push(baselineError);
-          predictionMin = Math.min(predictionMin, ridgePrediction);
-          predictionMax = Math.max(predictionMax, ridgePrediction);
-          if (canCompareRanking) {
-            const token = "candidate-" + position;
-            const baselinePrediction = Object.assign({}, additiveResult || {}, { score: additivePrediction });
-            const ridgePredictionExplained = Object.assign({}, additiveResult || {}, { score: ridgePrediction });
-            baselineCandidates.push(rankingCandidate(row, baselinePrediction, additivePrediction, token));
-            ridgeCandidates.push(rankingCandidate(row, ridgePredictionExplained, ridgePrediction, token));
-            gains.set(token, relevanceGain(row.rating));
-          }
-        });
-        maeFoldDeltas.push(meanAbsoluteError(baselineFoldErrors) - meanAbsoluteError(ridgeFoldErrors));
-        if (canCompareRanking) {
-          const ideal = testIndices.map(function (_, position) {
-            const token = "candidate-" + position;
-            return { gain: gains.get(token) || 0, token: token };
-          }).sort(function (left, right) {
-            return right.gain - left.gain || left.token.localeCompare(right.token);
-          });
-          const idealDcg = dcgAt5(ideal);
-          if (idealDcg > 0) {
-            RANKING_MODES.forEach(function (mode) {
-              const baselineTop = rankRows(baselineCandidates, mode);
-              const ridgeTop = rankRows(ridgeCandidates, mode);
-              const baselineDcg = dcgAt5(baselineTop.map(function (candidate) {
-                return { gain: gains.get(candidate.evaluationToken) || 0 };
-              }));
-              const ridgeDcg = dcgAt5(ridgeTop.map(function (candidate) {
-                return { gain: gains.get(candidate.evaluationToken) || 0 };
-              }));
-              const foldDelta = (ridgeDcg - baselineDcg) / idealDcg;
-              if (foldDelta > 1e-10) rankingTotals[mode].foldsRidgeWins += 1;
-              else if (foldDelta < -1e-10) rankingTotals[mode].foldsRidgeLosses += 1;
-              else rankingTotals[mode].foldsRidgeTies += 1;
-              rankingTotals[mode].baselineDcg += baselineDcg;
-              rankingTotals[mode].ridgeDcg += ridgeDcg;
-              rankingTotals[mode].idealDcg += idealDcg;
-              rankingTotals[mode].foldsEvaluated += 1;
-            });
-          }
-        }
-      });
-
-      const mae = meanAbsoluteError(ridgeErrors);
-      const baselineMae = meanAbsoluteError(baselineErrors);
-      return {
-        available: true,
-        count: rows.length,
-        mae: mae,
-        baselineMae: baselineMae,
-        deltaBaseMinusRidge: baselineMae - mae,
-        outerFolds: OUTER_FOLDS,
-        foldsEvaluated: outer.length,
-        innerFolds: INNER_FOLDS,
-        alphaGrid: ALPHAS.slice(),
-        selectedAlphaCounts: selectedAlphaCounts,
-        predictionMin: predictionMin,
-        predictionMax: predictionMax,
-        foldStability: summarizeMaeFoldStability(maeFoldDeltas),
-        rankingQuality: canCompareRanking ? completeRankingQuality(rows.length, relevantCount, rankingTotals) :
-          unavailableRankingQuality(rows.length, relevantCount),
-        reason: null
-      };
+      const repeatedRuns = [];
+      for (let repetitionIndex = 0; repetitionIndex < REPEATED_VALIDATION_RUNS; repetitionIndex += 1) {
+        repeatedRuns.push(evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount));
+      }
+      return completedEvaluation(rows, repeatedRuns, relevantCount);
     } catch (_) {
-      const reason = "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.";
-      return unavailableResult(rows.length, reason,
-        unavailableRankingQuality(rows.length, relevantCount, "La comparación Ridge de ranking no se completó porque el ajuste no terminó."));
+      return unavailableEvaluation(rows, relevantCount);
     }
   }
 
-  return { evaluate: evaluate };
+  async function evaluateAsync(onProgress) {
+    const rows = mappedRows();
+    const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
+    if (rows.length < MIN_RECORDS) {
+      const reason = "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.";
+      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
+    }
+    try {
+      const kernel = buildKernel(rows);
+      const indices = rows.map(function (_, index) { return index; });
+      const repeatedRuns = [];
+      for (let repetitionIndex = 0; repetitionIndex < REPEATED_VALIDATION_RUNS; repetitionIndex += 1) {
+        if (repetitionIndex > 0 && typeof onProgress === "function") {
+          const canStart = onProgress({
+            completedRepeats: repetitionIndex,
+            totalRepeats: REPEATED_VALIDATION_RUNS,
+            foldsPerRepeat: OUTER_FOLDS,
+            phase: "starting"
+          });
+          if (canStart === false) {
+            const reason = "La validación Ridge repetida se canceló porque cambiaron los datos personales durante el cálculo.";
+            return unavailableResult(rows.length, reason,
+              unavailableRankingQuality(rows.length, relevantCount, reason, REPEATED_VALIDATION_RUNS * OUTER_FOLDS),
+              relevantCount);
+          }
+        }
+        repeatedRuns.push(evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount));
+        if (typeof onProgress === "function") {
+          const shouldContinue = onProgress({
+            completedRepeats: repetitionIndex + 1,
+            totalRepeats: REPEATED_VALIDATION_RUNS,
+            foldsPerRepeat: OUTER_FOLDS,
+            phase: "completed"
+          });
+          if (shouldContinue === false) {
+            const reason = "La validación Ridge repetida se canceló porque cambiaron los datos personales durante el cálculo.";
+            return unavailableResult(rows.length, reason,
+              unavailableRankingQuality(rows.length, relevantCount, reason, REPEATED_VALIDATION_RUNS * OUTER_FOLDS),
+              relevantCount);
+          }
+        }
+        if (repetitionIndex + 1 < REPEATED_VALIDATION_RUNS) {
+          await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        }
+      }
+      return completedEvaluation(rows, repeatedRuns, relevantCount);
+    } catch (_) {
+      return unavailableEvaluation(rows, relevantCount);
+    }
+  }
+
+  return { evaluate: evaluate, evaluateAsync: evaluateAsync };
 }
