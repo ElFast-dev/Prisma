@@ -76,7 +76,9 @@ export function createPageViews(ctx) {
     const truncated = results.length > cap;
     target.innerHTML = results.length ?
       movieGrid(results.slice(0, cap)) + (truncated ? '<p class="kicker result-cap">Mostrando 80 de ' + results.length.toLocaleString("es-PA") + ' resultados. Refina la búsqueda para ver menos.</p>' : "") :
-      '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No encontramos esa película</h3><p>Prueba con otro título o conecta TMDB para ampliar la búsqueda.</p><button class="btn btn-secondary" type="button" data-action="import-catalog">Importar CSV</button></div>';
+      (!ctx.catalog.length && !ctx.catalogQuery.trim()
+        ? '<div class="empty-state"><div class="empty-icon">⌕</div><h3>Tu catálogo personal está vacío</h3><p>Prisma no carga películas de muestra. Explora títulos reales en TMDB; solo se añadirán a tu colección cuando tú lo decidas.</p></div>'
+        : '<div class="empty-state"><div class="empty-icon">⌕</div><h3>No encontramos esa película</h3><p>Prueba otro título o consulta los resultados de TMDB.</p><button class="btn btn-secondary" type="button" data-action="import-catalog">Importar CSV</button></div>');
     const count = ctx.$("#catalogCount");
     if (count) count.textContent = results.length.toLocaleString("es-PA") + " películas";
   }
@@ -106,12 +108,18 @@ export function createPageViews(ctx) {
     const recommendationTitle = hasPersonalizedSignals ? "Recomendadas para ti" : "Empieza a descubrir";
     const recommendationIntro = hasPersonalizedSignals ? recommendationModeCopy :
       "Cuando tengas valoraciones con géneros o temas enlazados, Prisma podrá adaptar estas sugerencias a tus gustos.";
+    const recommendationEmptyState = ctx.catalog.length
+      ? '<div class="empty-inline"><strong>No hay recomendaciones disponibles</strong><button class="btn btn-secondary btn-small" type="button" data-nav="library">Abrir colección</button></div>'
+      : (!ctx.tmdbCredential || !ctx.tmdbCredential.value
+        ? '<div class="empty-inline"><strong>Tu espacio empieza vacío</strong><span>Conecta TMDB desde Ajustes / Datos para explorar películas reales. No se añadirá ninguna película a tu colección automáticamente.</span><button class="btn btn-secondary btn-small" type="button" data-nav="data">Conectar TMDB</button></div>'
+        : '<div class="empty-inline"><strong>Aún no hay recomendaciones personales</strong><span>Explora las películas de TMDB y añade las que te interesen. Prisma podrá adaptar las sugerencias cuando haya valoraciones propias.</span></div>');
     const searchCaption = ctx.catalogQuery.trim() ? 'Resultados para «' + ctx.escapeHTML(ctx.catalogQuery.trim()) + '»' : "Catálogo";
-    return '<section class="page-heading discover-heading"><h1>Descubrir</h1>' + ctx.infoButton("discover","Información sobre Descubrir") + '<span class="discover-count">' + ctx.catalog.length.toLocaleString("es-PA") + ' títulos</span></section>' +
+    const personalCatalogCount = ctx.catalog.length.toLocaleString("es-PA") + (ctx.catalog.length === 1 ? " título personal" : " títulos personales");
+    return '<section class="page-heading discover-heading"><h1>Descubrir</h1>' + ctx.infoButton("discover","Información sobre Descubrir") + '<span class="discover-count">' + personalCatalogCount + '</span></section>' +
       '<section class="discover-recommendations"><div class="section-head"><h2>' + recommendationTitle + '</h2>' + ctx.infoButton("recommendations","Cómo funcionan las recomendaciones") + '</div>' +
       '<div class="recommendation-controls" role="group" aria-label="Enfoque de recomendaciones">' + recommendationModes + '</div>' +
       '<p class="recommendation-mode-copy" aria-live="polite">' + ctx.escapeHTML(recommendationIntro) + '</p>' +
-      (recs.length ? '<div class="movie-grid poster-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie,{posterOnly:true}); }).join("") + '</div>' : '<div class="empty-inline"><strong>No hay recomendaciones disponibles</strong><button class="btn btn-secondary btn-small" type="button" data-nav="library">Abrir colección</button></div>') +
+      (recs.length ? '<div class="movie-grid poster-grid featured-recommendations">' + recs.map(function (movie) { return movieCard(movie,{posterOnly:true}); }).join("") + '</div>' : recommendationEmptyState) +
       '</section>' +
       '<section class="panel tmdb-browser discover-tmdb"><div class="panel-head"><h3>Explorar TMDB</h3>' + ctx.infoButton("tmdb","Información sobre TMDB") + '</div><div id="tmdbStatus" class="kicker"></div><div id="tmdbResults" class="tmdb-results"></div></section>' +
       '<section class="local-catalog-section"><div class="section-head"><h2 id="catalogSearchTitle">' + searchCaption + '</h2><span id="catalogCount">Cargando…</span><button class="btn btn-secondary btn-small" type="button" data-action="import-catalog" aria-label="Importar catálogo CSV">＋ CSV</button></div><div class="chip-row catalog-genre-chips">' + genreChips + '</div><div id="localCatalogResults"></div></section>';

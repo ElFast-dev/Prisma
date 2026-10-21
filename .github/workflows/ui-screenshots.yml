@@ -100,7 +100,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261021-22") &&
-                  lastUI.appSrc.includes("v=ui-20261021-46") &&
+                  lastUI.appSrc.includes("v=ui-20261021-47") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -147,7 +147,32 @@ jobs:
                   await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ genres: [] }) });
                   return;
                 }
-                if (url.pathname === "/3/movie/popular" || url.pathname === "/3/search/movie") {
+                if (url.pathname === "/3/movie/popular") {
+                  await route.fulfill({
+                    status: 200,
+                    contentType: "application/json",
+                    body: JSON.stringify({
+                      page: 1,
+                      results: [{
+                        id: 990901,
+                        title: "About Time",
+                        original_title: "About Time",
+                        release_date: "2013-08-08",
+                        genre_ids: [10749, 35, 18],
+                        overview: "Ficha sintética devuelta por la API TMDB simulada en Playwright.",
+                        poster_path: null,
+                        backdrop_path: null,
+                        vote_average: 7.8,
+                        vote_count: 1234,
+                        popularity: 55.5
+                      }],
+                      total_pages: 1,
+                      total_results: 1
+                    })
+                  });
+                  return;
+                }
+                if (url.pathname === "/3/search/movie") {
                   await route.fulfill({
                     status: 200,
                     contentType: "application/json",
@@ -177,6 +202,10 @@ jobs:
                 if (onboardingTitle !== "Empieza a construir tu perfil") {
                   throw new Error(name + ": first-run guidance was not shown with the expected title");
                 }
+                const firstRunMovieCards = await page.locator("#appRoot .movie-card, #appRoot .recent-movie").count();
+                if (firstRunMovieCards !== 0) {
+                  throw new Error(name + ": a fresh personal profile must not contain default movie cards: " + firstRunMovieCards);
+                }
                 const onboardingDestinations = await onboarding.locator(".progress-onboarding-actions [data-nav]")
                   .evaluateAll(nodes => nodes.map(node => node.getAttribute("data-nav")));
                 if (JSON.stringify(onboardingDestinations) !== JSON.stringify(["catalog", "data"])) {
@@ -185,6 +214,20 @@ jobs:
                 await page.screenshot({ path: "artifacts/" + name + "-home.png", fullPage: false, animations: "disabled" });
                 await onboarding.locator(".progress-onboarding-actions [data-nav='catalog']").click();
                 await page.locator(".discover-heading h1").waitFor({ state: "visible", timeout: 10000 });
+                const emptyDiscover = await page.evaluate(() => ({
+                  discoverCount: document.querySelector(".discover-count")?.innerText.trim() || "",
+                  catalogCount: document.querySelector("#catalogCount")?.innerText.trim() || "",
+                  localCards: document.querySelectorAll("#localCatalogResults .movie-card").length,
+                  recommendationCards: document.querySelectorAll(".featured-recommendations .movie-poster-trigger").length,
+                  defaultAboutTimeCards: document.querySelectorAll("#localCatalogResults [data-title='About Time'], .featured-recommendations [data-title='About Time']").length
+                }));
+                if (emptyDiscover.discoverCount !== "0 títulos personales" ||
+                    emptyDiscover.catalogCount !== "0 películas" ||
+                    emptyDiscover.localCards !== 0 ||
+                    emptyDiscover.recommendationCards !== 0 ||
+                    emptyDiscover.defaultAboutTimeCards !== 0) {
+                  throw new Error(name + ": a new install must have an empty local catalog and no default About Time: " + JSON.stringify(emptyDiscover));
+                }
                 const recommendedMovies = await page.locator(".featured-recommendations .movie-poster-trigger").evaluateAll(nodes =>
                   nodes.map(node => ({
                     id: node.getAttribute("data-tmdb-id") || "",
@@ -252,8 +295,19 @@ jobs:
                   throw new Error(name + ": TMDB connection success was replaced by an application error: " + tmdbConnectionToast);
                 }
 
+                // Verify that a real TMDB result is discoverable without polluting the personal catalog.
+                await page.locator(".bottom-nav [data-nav='catalog']").click();
+                await page.locator(".tmdb-browser").waitFor({ state: "visible", timeout: 10000 });
+                const tmdbAboutTime = page.locator("#tmdbResults .movie-card [data-action='details'][data-tmdb-id='990901']");
+                await tmdbAboutTime.waitFor({ state: "visible", timeout: 10000 });
+                if (await page.locator("#tmdbResults [data-tmdb-id='990901']").count() !== 1 ||
+                    await page.locator("#localCatalogResults [data-title='About Time']").count() !== 0) {
+                  throw new Error(name + ": About Time must appear once from TMDB and not as a default local card");
+                }
+
                 // Keep the following catalogue/import checks isolated from this synthetic credential.
                 await page.evaluate(() => { window.confirm = () => true; });
+                await page.locator(".topbar [data-nav='data']").click();
                 await page.locator('[data-action="remove-tmdb"]').click();
                 await page.waitForFunction(() => {
                   const badge = document.querySelector(".tmdb-settings .badge");
@@ -351,8 +405,22 @@ jobs:
                 await page.locator("[data-action='close-sheet']").click();
                 await page.locator(".collection-mode-switch [data-mode='lists']").click();
                 await page.locator(".system-lists-grid").waitFor({ state: "visible", timeout: 10000 });
+                // Detail-page coverage uses an explicitly imported fixture now that defaults are removed.
+                await page.locator(".topbar [data-nav='data']").click();
+                await page.locator("#catalogImportInput").setInputFiles({
+                  name: "prisma-detail-fixture.csv",
+                  mimeType: "text/csv",
+                  buffer: Buffer.from("title,year,tmdb_id,genres\nPrisma UI Fixture,2024,990902,Drama")
+                });
+                await page.waitForFunction(
+                  () => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 1 títulos importados"),
+                  null,
+                  { timeout: 10000 }
+                );
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
-                await page.locator(".local-catalog-section .movie-card [data-action='details']").first().click();
+                const localDetailTrigger = page.locator(".local-catalog-section .movie-card [data-action='details']").first();
+                await localDetailTrigger.waitFor({ state: "visible", timeout: 10000 });
+                await localDetailTrigger.click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 await page.screenshot({ path: "artifacts/" + name + "-film-detail.png", fullPage: false, animations: "disabled" });
                 await page.locator(".detail-action-strip [data-action='rate']").click();

@@ -76,6 +76,9 @@ jobs:
       - name: Test CSV import identity
         run: node scripts/test-catalog-import.mjs
 
+      - name: Test empty first launch and saved-data preservation
+        run: node scripts/test-empty-first-run.mjs
+
       - name: Test rating-source transparency
         run: node scripts/test-movie-rating-sources.mjs
 

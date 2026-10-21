@@ -1,5 +1,4 @@
 export function createCatalogModel(dependencies) {
-  const getSeedCatalog = dependencies.getSeedCatalog;
   const getCustomCatalog = dependencies.getCustomCatalog;
   const getState = dependencies.getState;
   const getCatalog = dependencies.getCatalog;
@@ -32,7 +31,7 @@ function mergeCatalogFields(target, source) {
   function combineMovies() {
     const grouped = new Map();
     const state = getState();
-    const baseRecords = getSeedCatalog().concat(getCustomCatalog(), state.watched || [], state.watchlist || [], state.hidden || []);
+    const baseRecords = getCustomCatalog().concat(state.watched || [], state.watchlist || [], state.hidden || []);
     const baseIdentities = new Set();
     function collect(raw, isBase) {
       const movie = normalizeMovie(raw);

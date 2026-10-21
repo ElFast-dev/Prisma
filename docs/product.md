@@ -9,13 +9,13 @@ Prisma es una aplicación web personal para organizar películas vistas, valorac
 - Una persona usuaria, con perfil individual guardado en el navegador.
 - Uso prioritario desde Android y pantallas móviles; la interfaz está en español.
 - Publicación estática mediante GitHub Pages, sin un servidor propio.
-- El catálogo inicial es una muestra ampliable mediante importación local y, de forma opcional, TMDB.
+- El catálogo personal comienza vacío; la exploración remota usa TMDB tras configurar una credencial, y la importación de datos es siempre una acción explícita.
 
 ## Capacidades observadas en la versión de referencia
 
 1. Importación local de un historial JSON y de catálogos CSV/TSV.
 2. Colecciones separadas para valoraciones, películas vistas, pendientes y elementos ocultos.
-3. Fichas y búsqueda de películas, con metadatos disponibles en el catálogo o TMDB.
+3. Fichas y búsqueda con metadatos de TMDB cuando la fuente está conectada, además de datos locales incorporados explícitamente por la persona.
 4. Recomendaciones basadas en señales explicables, con mayor influencia de los géneros que de etiquetas dispersas, reducción hacia la media cuando faltan señales aprendidas y confianza acorde con la cobertura.
 5. Laboratorio con estadísticas descriptivas y evaluación experimental del recomendador, comparando el MAE con una referencia basada en la media de entrenamiento.
 6. Copia de seguridad y restauración local.
@@ -28,7 +28,7 @@ La lista describe el código inspeccionado como base de partida; no afirma que c
 - Sincronización entre dispositivos o cuentas.
 - Backend, autenticación de usuarios o almacenamiento remoto del perfil.
 - Presentar las predicciones como certeza o como un modelo científicamente validado.
-- Afirmar que el catálogo inicial contiene todas las películas existentes.
+- Cargar o mostrar películas de muestra antes de que la persona añada sus propios datos.
 - Descargar, incorporar o redistribuir catálogos sin respetar sus licencias.
 
 ## Objetivos de calidad

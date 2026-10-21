@@ -20,5 +20,5 @@ jobs:
         run: |
           node --check app.js
           node --check sw.js
-      - name: Validate catalog JSON
-        run: node -e "JSON.parse(require('fs').readFileSync('data/catalog.json', 'utf8')); JSON.parse(require('fs').readFileSync('manifest.webmanifest', 'utf8'));"
+      - name: Validate manifest JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest', 'utf8'));"

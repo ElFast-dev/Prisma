@@ -17,18 +17,13 @@ export function createAppLifecycle(ctx) {
   async function init() {
     try {
       const results = await Promise.all([
-        ctx.fetch("./data/catalog.json").then(function (response) {
-          if (!response.ok) throw new Error("No se pudo cargar el catálogo de muestra.");
-          return response.json();
-        }),
         ctx.dbGet(ctx.STATE_KEY),
         ctx.dbGet(ctx.CATALOG_KEY),
         ctx.dbGet(ctx.TMDB_CREDENTIAL_KEY)
       ]);
-      ctx.seedCatalog = Array.isArray(results[0]) ? results[0].map(ctx.normalizeMovie).filter(Boolean) : [];
-      ctx.state = ctx.ensureState(results[1]);
-      ctx.customCatalog = Array.isArray(results[2]) ? results[2].map(ctx.normalizeMovie).filter(Boolean) : [];
-      ctx.tmdbCredential = results[3] && results[3].value ? results[3] : null;
+      ctx.state = ctx.ensureState(results[0]);
+      ctx.customCatalog = Array.isArray(results[1]) ? results[1].map(ctx.normalizeMovie).filter(Boolean) : [];
+      ctx.tmdbCredential = results[2] && results[2].value ? results[2] : null;
       ctx.pruneTMDBCache();
       ctx.combineMovies();
       ctx.renderApp();
