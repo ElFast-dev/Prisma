@@ -223,11 +223,19 @@ export function createPageViews(ctx) {
       : (Math.abs(evaluation.improvementPct) < 0.05
         ? '<div class="metric-note">Rendimiento igual a la referencia.</div>'
         : '<div class="metric-note">' + (evaluation.improvementPct > 0 ? 'Mejora relativa del ' : 'Error relativo mayor en ') + Math.abs(evaluation.improvementPct).toFixed(1).replace(".",",") + '% respecto a la referencia.</div>');
+    const decadeEvaluationMarkup = evaluation.decadeImprovement == null
+      ? '<div class="metric-note">Se necesitan al menos 5 valoraciones evaluadas con año válido para medir la señal de década · n=' + (evaluation.decadeExamples || 0) + '</div>'
+      : '<div class="metric-note">Sin señal de década: ' + evaluation.withoutDecadeMae.toFixed(2).replace(".",",") + ' MAE</div>' +
+        '<div class="metric-note">' + (Math.abs(evaluation.decadeImprovement) < 0.005
+          ? 'La década no cambia el MAE en esta muestra.'
+          : (evaluation.decadeImprovement > 0
+            ? 'Con década, el MAE baja ' : 'Con década, el MAE sube ') +
+              Math.abs(evaluation.decadeImprovement).toFixed(2).replace(".",",") + ' puntos frente a la variante sin década.') + '</div>';
     const evaluationMarkup = evaluation.available ?
       '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".",",") + '</div>' +
       '<div class="metric-note">MAE del modelo · n=' + evaluation.count + '</div>' +
       '<div class="metric-note">Referencia (media de entrenamiento): ' + evaluation.baselineMae.toFixed(2).replace(".",",") + '</div>' +
-      evaluationComparison :
+      evaluationComparison + decadeEvaluationMarkup :
       '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>';
     return '<section class="page-heading"><h1>Laboratorio</h1>' + ctx.infoButton("lab","Información sobre el Laboratorio") + '</section>' +
       '<div class="metrics-grid">' + ctx.metric("Historial enlazado",profile.withMetadata + "/" + stats.total,"") + ctx.metric("Señales",String(profile.features.size),"") + ctx.metric("Nota media",overall.toFixed(1).replace(".",","),"") + '</div>' +

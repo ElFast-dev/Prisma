@@ -7,12 +7,12 @@ Prisma es una aplicación web estática, mobile-first y en español, pensada par
 ## Funciones del MVP
 - Importar el JSON personal de valoraciones de Prisma/tu app de seguimiento (las series se ignoran).
 - Catálogo personal inicialmente vacío, exploración de películas en TMDB tras configurar una credencial, fichas, pendientes y puntuación del 1 al 10.
-- Recomendador de contenido explicable que aprovecha géneros y etiquetas disponibles.
+- Recomendador de contenido explicable que aprovecha géneros y etiquetas disponibles, y usa la década de estreno como señal contextual secundaria cuando existe un año fiable.
 - Perfil, métricas y evaluación experimental del modelo.
 - Importación local de CSV de catálogo (incluido el formato `movies.csv` de MovieLens), exportación de copia de seguridad y PWA básica.
 - Perfil y colección guardados localmente, sin servidor; conexión a TMDB configurada desde la aplicación.
 
-> Prisma no incluye películas de muestra: una instalación nueva comienza con el perfil y el catálogo personal vacíos. Descubrir consulta datos reales de TMDB cuando conectas la credencial, pero no añade esos títulos a tu colección automáticamente. El motor solo puede aprender características que existan en los metadatos; una valoración sin géneros/etiquetas enlazados no revela por sí sola qué te gustó de la película.
+> Prisma no incluye películas de muestra: una instalación nueva comienza con el perfil y el catálogo personal vacíos. Descubrir consulta datos reales de TMDB cuando conectas la credencial, pero no añade esos títulos a tu colección automáticamente. El motor solo puede aprender características que existan en los metadatos; una valoración sin metadatos enlazados útiles no revela por sí sola qué te gustó de la película.
 
 ## Publicar gratis en GitHub Pages
 1. Abre **Settings → Pages** en este repositorio.
@@ -42,7 +42,7 @@ Puedes importar un CSV con columnas como `title`, `year`, `genres`, `tags`, `ove
 - Las valoraciones y emociones se guardan en el almacenamiento local de tu navegador (IndexedDB/localStorage de respaldo).
 - Borrar los datos del sitio puede borrar tu perfil. Exporta copias periódicamente.
 - No se precargan películas. La importación CSV es opcional y explícita; conecta TMDB para buscar títulos y cargar metadatos cinematográficos.
-- El recomendador es una primera línea base personal y explicable, no un modelo validado científicamente. Las estimaciones son aproximaciones; el laboratorio muestra cuántas películas tienen metadatos suficientes y evita presentar una métrica sin muestra útil.
+- El recomendador es una primera línea base personal y explicable, no un modelo validado científicamente. Las estimaciones son aproximaciones; el laboratorio compara el MAE con la media y evalúa por separado la contribución de la década frente a una variante sin esa señal, siempre sobre las mismas muestras y solo si hay cinco años válidos.
 
 ## Desarrollo
 No hay dependencias npm. Es HTML, CSS y JavaScript nativo, por lo que puedes editarlo desde un navegador/entorno de desarrollo en Android y publicarlo como archivos estáticos.

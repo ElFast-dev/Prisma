@@ -171,3 +171,36 @@ Prisma DEBE ofrecer Equilibrado como modo predeterminado y permitir elegir Más 
 - DADO que una candidata pertenece a vistas, valoradas, pendientes u ocultas
 - CUANDO se generan recomendaciones con cualquiera de los tres modos
 - ENTONCES esa candidata no aparece como nuevo descubrimiento
+
+
+### Requirement: Señal de década de estreno de influencia secundaria
+
+Prisma DEBE usar la década de estreno como señal contextual débil cuando el año sea válido y esté disponible. Su influencia directa DEBE ser inferior a la de género y etiqueta; la ausencia o invalidez del año NO DEBE producir una época inventada. La explicación DEBE describir la década en lenguaje legible y la señal por sí sola NO DEBE elevar la confianza a moderada.
+
+#### Scenario: Característica temporal válida
+
+- DADO un registro de película con año o fecha de estreno fiable
+- CUANDO se extraen características para el recomendador
+- ENTONCES Prisma genera una única señal de década y le asigna una influencia inferior a las de género y etiqueta
+
+#### Scenario: Fecha ausente
+
+- DADO un registro sin año o fecha de estreno válido
+- CUANDO se calculan características
+- ENTONCES Prisma no produce una señal temporal ni deduce la época de la fecha en que se vio la película
+
+### Requirement: Evaluación aislada de la señal de década
+
+El Laboratorio DEBE comparar la predicción completa con una variante que excluye década, usando las mismas muestras retenidas y el mismo pliegue de entrenamiento. El efecto específico de la década DEBE mostrarse solo cuando al menos cinco muestras evaluadas tengan año válido; Prisma NO DEBE autoajustar pesos a partir de esta evaluación experimental.
+
+#### Scenario: Comparación por ablación
+
+- DADO un historial con al menos cinco películas evaluables y años válidos
+- CUANDO se ejecuta la evaluación leave-one-out
+- ENTONCES Prisma informa de si incluir la década reduce, mantiene o aumenta el MAE frente a la misma variante sin década
+
+#### Scenario: Años insuficientes para medir el efecto
+
+- DADO un historial con menos de cinco películas evaluadas con año válido
+- CUANDO se renderiza el Laboratorio
+- ENTONCES se explica que faltan datos para valorar por separado la señal de década y no se presenta un efecto numérico
