@@ -495,6 +495,7 @@ jobs:
                 const ratingStars = await page.locator(".rating-sheet .rating-star").count();
                 if (ratingStars !== 10) throw new Error(name + ": expected ten tappable rating stars, found " + ratingStars);
                 await page.screenshot({ path: "artifacts/" + name + "-rating-sheet.png", fullPage: false, animations: "disabled" });
+                await page.locator(".rating-sheet .rating-memories > summary").click();
                 const emotionChip = page.locator(".rating-sheet [data-action='emotion'][data-emotion='Asombro']");
                 await emotionChip.click();
                 if (!(await emotionChip.getAttribute("class")).includes("selected")) {
@@ -519,6 +520,7 @@ jobs:
 
                 // Reopen the editor to verify that the selected emotion survived saving.
                 await page.locator(".detail-action-strip [data-action='rate']").click();
+                await page.locator(".rating-sheet .rating-memories > summary").click();
                 const persistedEmotion = page.locator(".rating-sheet [data-action='emotion'][data-emotion='Asombro']");
                 await persistedEmotion.waitFor({ state: "visible", timeout: 10000 });
                 if (!(await persistedEmotion.getAttribute("class")).includes("selected")) {
