@@ -2,7 +2,7 @@
 
 ## Contexto de la referencia
 
-Describe el catálogo local, su normalización y las fuentes observadas. No afirma que el catálogo de muestra sea exhaustivo.
+Describe la normalización de registros personales y el origen de los metadatos. Prisma no incluye un catálogo de películas predeterminado; los resultados remotos de TMDB se mantienen como contenido de exploración hasta que la persona realice una acción explícita.
 
 ## Requirements
 
@@ -24,13 +24,19 @@ Prisma DEBE normalizar los registros de película disponibles a una estructura c
 
 ### Requirement: Fuentes del catálogo
 
-Prisma DEBE poder combinar el catálogo incluido, el catálogo personalizado importado y registros personales enriquecidos, manteniendo la procedencia necesaria para no tratar un dato de historial como descubrimiento nuevo.
+Prisma DEBE combinar registros personales, historial y catálogos que la persona haya incorporado explícitamente, manteniendo su procedencia para no tratar un dato del historial como descubrimiento nuevo. Los resultados consultados en TMDB DEBEN mantenerse separados del catálogo personal hasta que la persona guarde uno mediante una acción explícita.
 
 #### Scenario: Catálogo personalizado
 
 - DADO un catálogo de usuario importado correctamente
 - CUANDO se vuelve a renderizar la aplicación
 - ENTONCES sus títulos forman parte del catálogo disponible en ese navegador
+
+#### Scenario: Resultados remotos de TMDB
+
+- DADO que TMDB devuelve películas para explorar
+- CUANDO se muestran en Descubrir
+- ENTONCES esas películas no se agregan automáticamente a valoraciones, historial, pendientes, ocultos ni catálogo personal
 
 ### Requirement: Identidad de películas con ID TMDB disponible
 
@@ -63,3 +69,20 @@ Cuando dos registros normalizados tienen IDs TMDB positivos diferentes, Prisma D
 ## Limitaciones conocidas
 
 Las filas CSV sin un ID TMDB explícito y válido continúan usando el título normalizado como fallback de deduplicación. Por ello, no se garantiza distinguir todos los remakes u homónimos cuando la fuente no proporciona una identidad TMDB fiable. Los IDs genéricos de origen no deben interpretarse como IDs TMDB.
+
+
+### Requirement: Inicio sin películas predeterminadas
+
+Prisma DEBE empezar con el perfil personal y el catálogo local vacíos cuando no haya datos guardados, y NO DEBE cargar títulos de muestra desde archivos publicados.
+
+#### Scenario: Instalación nueva
+
+- DADO un navegador sin estado ni catálogo personalizados
+- CUANDO Prisma inicia
+- ENTONCES el catálogo combinado contiene cero títulos y el perfil sigue vacío
+
+#### Scenario: Usuario existente tras actualizar
+
+- DADO un navegador con valoraciones o un catálogo importado guardados
+- CUANDO se actualiza la aplicación
+- ENTONCES los datos existentes se conservan y no se mezclan películas de muestra
