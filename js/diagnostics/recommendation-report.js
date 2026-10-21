@@ -196,6 +196,18 @@ function ridgeFoldStabilityEvaluation(source) {
   };
 }
 
+function hybridFoldStabilityEvaluation(source) {
+  const stability = source && typeof source === "object" ? source : {};
+  const available = Boolean(stability.available);
+  return {
+    available: available,
+    foldsEvaluated: nonNegativeInteger(stability.foldsEvaluated),
+    hybridMaeWins: nonNegativeInteger(stability.hybridMaeWins),
+    ties: nonNegativeInteger(stability.ties),
+    baselineMaeWins: nonNegativeInteger(stability.baselineMaeWins)
+  };
+}
+
 function ridgeAlphaCounts(source) {
   const counts = {};
   const raw = source && typeof source === "object" ? source : {};
@@ -227,7 +239,7 @@ function ridgeRepeatedValidationEvaluation(source) {
     hybridMae: available ? rounded(evaluation.hybridMae, 4) : null,
     deltaBaselineMinusHybrid: available ? rounded(evaluation.deltaBaseMinusHybrid, 4) : null,
     foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
-    hybridFoldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
+    hybridFoldStability: hybridFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     repeatSummaries: repeatSummaries.map(function (repeat) {
       const repeatAvailable = repeat && typeof repeat === "object";
@@ -242,7 +254,7 @@ function ridgeRepeatedValidationEvaluation(source) {
         hybridMae: repeatAvailable ? rounded(repeat.hybridMae, 4) : null,
         deltaBaselineMinusHybrid: repeatAvailable ? rounded(repeat.deltaBaseMinusHybrid, 4) : null,
         foldStability: ridgeFoldStabilityEvaluation(repeat && repeat.foldStability),
-        hybridFoldStability: ridgeFoldStabilityEvaluation(repeat && repeat.hybridFoldStability),
+        hybridFoldStability: hybridFoldStabilityEvaluation(repeat && repeat.hybridFoldStability),
         rankingQuality: ridgeRankingEvaluation(repeat && repeat.rankingQuality)
       };
     }),
@@ -280,7 +292,7 @@ function ridgeEvaluation(source) {
     alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; }),
     selectedAlphaCounts: alphaCounts,
     foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
-    hybridFoldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
+    hybridFoldStability: hybridFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     repeatedValidation: ridgeRepeatedValidationEvaluation(evaluation && evaluation.repeatedValidation),
     unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
