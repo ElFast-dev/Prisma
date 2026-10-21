@@ -18,6 +18,7 @@ const requiredFiles = [
   'openspec/changes/2026-10-21-modal-actions-release-gate/specs/interface/spec.md',
   'openspec/changes/2026-10-21-modal-actions-release-gate/specs/release-process/spec.md',
   'scripts/test-modal-event-handlers.mjs',
+  'scripts/test-modal-controller.mjs',
   'scripts/test-release-gating.mjs',
   'openspec/changes/archive/2026-10-21-temporal-date-provenance/proposal.md',
   'openspec/changes/archive/2026-10-21-temporal-date-provenance/design.md',
