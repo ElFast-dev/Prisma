@@ -129,6 +129,34 @@ jobs:
                 serviceWorkers: "block"
               });
               const page = await context.newPage();
+              await page.route("https://api.themoviedb.org/**", async route => {
+                const url = new URL(route.request().url());
+                if (url.pathname === "/3/configuration") {
+                  const authorization = route.request().headers().authorization || "";
+                  if (authorization !== "Bearer prisma-fixture-read-token") {
+                    failures.push(name + ": TMDB connection test did not send the expected read-token Authorization header");
+                  }
+                  await route.fulfill({
+                    status: 200,
+                    contentType: "application/json",
+                    body: JSON.stringify({ images: { base_url: "https://image.tmdb.org/t/p/" } })
+                  });
+                  return;
+                }
+                if (url.pathname === "/3/genre/movie/list") {
+                  await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ genres: [] }) });
+                  return;
+                }
+                if (url.pathname === "/3/movie/popular" || url.pathname === "/3/search/movie") {
+                  await route.fulfill({
+                    status: 200,
+                    contentType: "application/json",
+                    body: JSON.stringify({ page: 1, results: [], total_pages: 1, total_results: 0 })
+                  });
+                  return;
+                }
+                await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+              });
               page.on("pageerror", error => {
                 const detail = name + " pageerror: " + (error.stack || error.message);
                 failures.push(detail);
@@ -208,6 +236,22 @@ jobs:
                     darkTheme.accent !== "#8197b2" || darkTheme.persisted !== "dark") {
                   throw new Error(name + ": dark theme tokens or persistence are incorrect: " + JSON.stringify(darkTheme));
                 }
+
+                // Verify the real settings flow with a synthetic credential and a mocked TMDB API.
+                await page.locator("#tmdbCredentialInput").fill("prisma-fixture-read-token");
+                await page.locator('[data-action="test-tmdb"]').click();
+                await page.waitForFunction(
+                  () => (document.querySelector("#toastRoot")?.innerText || "").includes("Conexión con TMDB correcta"),
+                  null,
+                  { timeout: 10000 }
+                );
+                await page.waitForTimeout(150);
+                const tmdbConnectionToast = (await page.locator("#toastRoot").innerText()).trim();
+                if (!tmdbConnectionToast.includes("Conexión con TMDB correcta") ||
+                    /ReferenceError|currentPage|loadTMDBPage/.test(tmdbConnectionToast)) {
+                  throw new Error(name + ": TMDB connection success was replaced by an application error: " + tmdbConnectionToast);
+                }
+
                 await page.locator(".bottom-nav [data-nav='home']").click();
                 await page.locator(".progress-onboarding").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
