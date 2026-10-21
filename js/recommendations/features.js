@@ -1,4 +1,4 @@
-import { uniqueStrings } from "../core/movie-utils.js";
+import { normalizeGenreKey, uniqueStrings } from "../core/movie-utils.js";
 
 const MIN_RELEASE_YEAR = 1888;
 const MAX_RELEASE_YEAR = 2100;
@@ -39,7 +39,7 @@ export function movieFeatures(movie, ratingEntry, options) {
   const entry = ratingEntry || {};
   const genres = entry.genres && entry.genres.length ? entry.genres : (movie && movie.genres) || [];
   const tags = entry.tags && entry.tags.length ? entry.tags : (movie && movie.tags) || [];
-  const features = genres.map(function (genre) { return "género: " + String(genre).toLowerCase(); })
+  const features = genres.map(function (genre) { return "género: " + normalizeGenreKey(genre); })
     .concat(tags.map(function (tag) { return "tema: " + String(tag).toLowerCase(); }));
 
   if (!options || options.includeDecade !== false) {
