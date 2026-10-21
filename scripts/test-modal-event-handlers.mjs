@@ -1,5 +1,15 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { registerAppEvents } from "../js/app/event-handlers.js";
+
+const appSource = await readFile(new URL("../app.js", import.meta.url), "utf8");
+const registrationStart = appSource.indexOf("  registerAppEvents({");
+const registrationEnd = appSource.indexOf("\n  });\n\n  init().then", registrationStart);
+assert.ok(registrationStart >= 0 && registrationEnd > registrationStart,
+  "Debe existir el contexto real de registro de eventos en app.js.");
+const eventContextSource = appSource.slice(registrationStart, registrationEnd);
+assert.match(eventContextSource, /get modalDraft\(\)\s*\{\s*return modalDraft;\s*\}/,
+  "app.js debe inyectar modalDraft en el contexto real que recibe registerAppEvents.");
 
 const movie = { title: "Prisma Synthetic Modal Movie", tmdbId: "987654" };
 
