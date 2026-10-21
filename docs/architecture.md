@@ -15,6 +15,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/core/storage.js` | IndexedDB y fallback a localStorage. |
 | `js/recommendations/features.js` | Extracción de géneros, etiquetas y década de estreno si existe un año válido. |
 | `js/recommendations/engine.js` | Perfil de preferencias, predicción y evaluación leave-one-out con una ablación de la señal de década, mediante dependencias explícitas. |
+| `js/recommendations/evaluation.js` | Evaluación offline de nDCG@5 por modo sobre pliegues y candidatas comunes, además de diversidad de géneros en las listas actuales; no ajusta automáticamente el recomendador. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
@@ -31,7 +32,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/tmdb/browser-actions.js` | Consultas TMDB para explorar el catálogo y completar características de películas de forma diferida. |
 | `js/tmdb/movie-details.js` | Carga y persistencia de fichas de película, personas y metadatos relacionados. |
 | `js/ui/modal-controller.js` | Estado de interacción para fichas, puntuaciones y paneles auxiliares. |
-| `js/recommendations/ranking.js` | Orden y diversificación de recomendaciones, además de estadísticas por género. |
+| `js/recommendations/ranking.js` | Orden y diversificación de recomendaciones, estadísticas por género y función pura `rankCandidates`, reutilizada por la evaluación offline. |
 | `js/app/runtime.js` | Eventos de actividad, persistencia principal y notificaciones breves. |
 | `js/app/lifecycle.js` | Navegación, inicialización del perfil local y coordinación del registro del service worker. |
 | `js/app/pwa-update.js` | Detección de cambios de controlador PWA y aviso accesible para recargar sin interrumpir ni borrar datos personales. |

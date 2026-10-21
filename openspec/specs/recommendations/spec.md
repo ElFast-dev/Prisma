@@ -244,3 +244,32 @@ Prisma DEBE describir la diversidad por géneros de las listas top cinco de Equi
 - DADO que hay menos de dos películas con géneros comparables en la lista
 - CUANDO se calcula el diagnóstico de diversidad
 - ENTONCES la métrica se muestra como no disponible e informa que faltan metadatos comparables
+
+
+### Requirement: Comparación offline de los modos de ranking
+
+Prisma DEBE calcular nDCG@5 por separado para Equilibrado, Más afines y Más variedad con el mismo conjunto de candidatas retenidas y la misma partición determinista de cinco pliegues. Cada perfil de entrenamiento DEBE excluir todas las valoraciones de su pliegue de prueba. La diversidad de géneros de las recomendaciones del catálogo actual DEBE presentarse como un diagnóstico separado, no como parte del nDCG.
+
+#### Scenario: Comparación justa entre modos
+
+- DADO un historial con suficientes películas valoradas y características enlazadas
+- CUANDO el Laboratorio compara los tres modos
+- ENTONCES cada modo recibe las mismas candidatas de cada pliegue de prueba y presenta su nDCG@5 por separado
+
+#### Scenario: Sin fuga de valoraciones retenidas
+
+- DADO un pliegue de evaluación con notas personales retenidas
+- CUANDO se entrena el perfil para predecir su orden
+- ENTONCES ninguna de las notas retenidas participa en la construcción de ese perfil
+
+#### Scenario: Datos insuficientes
+
+- DADO que el historial no cumple los mínimos de observaciones y relevancia
+- CUANDO el Laboratorio calcula el ranking offline
+- ENTONCES los tres modos indican que la métrica no está disponible, sin sustituirla por cero ni cambiar sus pesos
+
+#### Scenario: Separación entre calidad y diversidad
+
+- DADO que los tres modos tienen nDCG@5 calculado y listas actuales de recomendación
+- CUANDO se muestran los diagnósticos
+- ENTONCES nDCG@5 describe el orden entre candidatas valoradas retenidas y Jaccard describe por separado la diversidad de géneros en las listas actuales

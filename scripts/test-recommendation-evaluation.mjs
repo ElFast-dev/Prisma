@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createRecommendationEvaluation } from "../js/recommendations/evaluation.js";
+import { createRecommendationRanking } from "../js/recommendations/ranking.js";
 
 function createDataset({ count = 60, reverse = false, lowRatings = false } = {}) {
   const ratings = [];
@@ -48,6 +49,13 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
     return { score: reverse ? 11 - learned : learned };
   }
 
+  const productionRanking = createRecommendationRanking({});
+  const rankingCalls = [];
+  function rankCandidates(candidates, limit, mode) {
+    rankingCalls.push({ mode, identities: candidates.map(candidate => candidate.evaluationIdentity) });
+    return productionRanking.rankCandidates(candidates, limit, mode);
+  }
+
   const diversityLists = {
     balanced: [
       { title: "D1", genres: ["Drama"] }, { title: "D2", genres: ["Drama"] },
@@ -73,10 +81,11 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
     buildProfile,
     predictRating,
     getRecommendations: (limit, mode) => (diversityLists[mode] || []).slice(0, limit),
+    rankCandidates,
     movieTmdbId: entry => entry && entry.tmdbId && Number(entry.tmdbId) > 0 ? String(entry.tmdbId) : "",
     titleKey: value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
   });
-  return { evaluation, ratings, movies };
+  return { evaluation, ratings, movies, rankingCalls };
 }
 
 const ideal = createDataset();
@@ -86,16 +95,32 @@ assert.equal(idealResult.count, 60);
 assert.equal(idealResult.relevantCount, 24);
 assert.equal(idealResult.folds, 5);
 assert.equal(idealResult.foldsEvaluated, 5);
-assert.ok(Math.abs(idealResult.ndcgAt5 - 1) < 1e-12,
-  "Un ranking que coloca primero las notas relevantes debe alcanzar nDCG@5 = 1.");
+assert.equal(idealResult.modes.length, 3);
+assert.deepEqual(idealResult.modes.map(item => item.mode), ["balanced", "affinity", "variety"]);
+assert.ok(idealResult.modes.every(item => item.available && item.ndcgAt5 >= 0 && item.ndcgAt5 <= 1));
+const idealAffinity = idealResult.modes.find(item => item.mode === "affinity");
+assert.ok(Math.abs(idealAffinity.ndcgAt5 - 1) < 1e-12,
+  "El modo por afinidad que prioriza las notas relevantes debe alcanzar nDCG@5 = 1 en este conjunto sintético.");
 assert.deepEqual(idealResult, ideal.evaluation.evaluateRankingQuality(),
   "Los pliegues y resultados deben repetirse de forma determinista.");
+
+const evaluatedFoldCount = idealResult.foldsEvaluated;
+assert.equal(ideal.rankingCalls.length, evaluatedFoldCount * 3 * 2,
+  "Cada pasada debe puntuar tres modos por pliegue con señal relevante.");
+for (let i = 0; i < evaluatedFoldCount * 3; i += 3) {
+  assert.deepEqual(ideal.rankingCalls[i].identities.slice().sort(), ideal.rankingCalls[i + 1].identities.slice().sort(),
+    "Afinidad debe recibir las mismas candidatas retenidas que Equilibrado.");
+  assert.deepEqual(ideal.rankingCalls[i].identities.slice().sort(), ideal.rankingCalls[i + 2].identities.slice().sort(),
+    "Variedad debe recibir las mismas candidatas retenidas que Equilibrado.");
+  assert.deepEqual(ideal.rankingCalls.slice(i, i + 3).map(call => call.mode), ["balanced", "affinity", "variety"]);
+}
 
 const reversed = createDataset({ reverse: true });
 const reversedResult = reversed.evaluation.evaluateRankingQuality();
 assert.equal(reversedResult.available, true);
-assert.ok(reversedResult.ndcgAt5 < idealResult.ndcgAt5,
-  "El nDCG debe distinguir un orden degradado de un orden ideal.");
+const reversedAffinity = reversedResult.modes.find(item => item.mode === "affinity");
+assert.ok(reversedAffinity.ndcgAt5 < idealAffinity.ndcgAt5,
+  "El nDCG por afinidad debe distinguir un orden degradado de un orden ideal.");
 
 const tooSmall = createDataset({ count: 49 });
 const smallResult = tooSmall.evaluation.evaluateRankingQuality();
@@ -151,4 +176,4 @@ const shortList = createRecommendationEvaluation({
 assert.equal(shortList.evaluateDiversityModes()[0].score, null,
   "Una lista de un solo título no tiene pares con los que medir diversidad.");
 
-console.log("Evaluación de recomendaciones correcta: nDCG@5, pliegues sin fuga de notas, umbrales, determinismo y diversidad Jaccard.");
+console.log("Evaluación de recomendaciones correcta: nDCG@5 por modo con las mismas candidatas, pliegues sin fuga de notas, umbrales, determinismo y diversidad Jaccard.");

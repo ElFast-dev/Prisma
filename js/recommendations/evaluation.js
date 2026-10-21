@@ -13,6 +13,7 @@ export function createRecommendationEvaluation(dependencies) {
   const buildProfile = dependencies.buildProfile;
   const predictRating = dependencies.predictRating;
   const getRecommendations = dependencies.getRecommendations;
+  const rankCandidates = dependencies.rankCandidates;
   const movieTmdbId = dependencies.movieTmdbId;
   const titleKey = dependencies.titleKey;
 
@@ -54,7 +55,9 @@ export function createRecommendationEvaluation(dependencies) {
     return {
       available: false,
       reason: reason,
-      ndcgAt5: null,
+      modes: RECOMMENDATION_MODES.map(function (mode) {
+        return { mode: mode, available: false, ndcgAt5: null, foldsEvaluated: 0 };
+      }),
       count: count,
       relevantCount: relevantCount,
       folds: RANKING_FOLDS,
@@ -94,67 +97,91 @@ export function createRecommendationEvaluation(dependencies) {
     }).length;
     if (rows.length < MIN_RANKING_RECORDS) {
       return unavailableRanking(
-        "Se necesitan al menos " + MIN_RANKING_RECORDS + " películas únicas valoradas con características para evaluar nDCG@5.",
+        "Se necesitan al menos " + MIN_RANKING_RECORDS + " películas únicas valoradas con características para comparar el nDCG@5 de los modos.",
         rows.length,
         relevantCount
       );
     }
     if (relevantCount < MIN_RELEVANT_RECORDS) {
       return unavailableRanking(
-        "Se necesitan al menos " + MIN_RELEVANT_RECORDS + " valoraciones de " + RELEVANT_RATING_THRESHOLD + " o más para medir el orden.",
+        "Se necesitan al menos " + MIN_RELEVANT_RECORDS + " valoraciones de " + RELEVANT_RATING_THRESHOLD + " o más para comparar el orden.",
         rows.length,
         relevantCount
       );
     }
 
+    // Every mode shares fixed folds, test candidates and its fold's training profile.
     const ordered = rows.slice().sort(function (a, b) {
       return stableHash(a.identity) - stableHash(b.identity) || a.identity.localeCompare(b.identity);
     });
     const folds = Array.from({ length: RANKING_FOLDS }, function () { return []; });
     ordered.forEach(function (row, index) { folds[index % RANKING_FOLDS].push(row); });
 
-    let totalDcg = 0;
-    let totalIdealDcg = 0;
-    let foldsEvaluated = 0;
+    const totals = Object.create(null);
+    RECOMMENDATION_MODES.forEach(function (mode) {
+      totals[mode] = { dcg: 0, idealDcg: 0, foldsEvaluated: 0 };
+    });
+
     folds.forEach(function (testRows) {
       const testIdentities = new Set(testRows.map(function (row) { return row.identity; }));
       const trainingRatings = rows.filter(function (row) {
         return !testIdentities.has(row.identity);
       }).map(function (row) { return row.entry; });
       const profile = buildProfile(trainingRatings);
-      const ranked = testRows.map(function (row) {
+      const candidates = testRows.map(function (row) {
         const candidate = candidateFor(row);
         const prediction = predictRating(candidate, profile);
-        return {
-          identity: row.identity,
-          score: Number.isFinite(prediction && prediction.score) ? prediction.score : profile.average,
-          gain: relevanceGain(row.rating)
-        };
-      }).sort(function (a, b) {
-        return b.score - a.score || a.identity.localeCompare(b.identity);
+        const score = Number.isFinite(prediction && prediction.score) ? prediction.score : profile.average;
+        return Object.assign(candidate, {
+          evaluationIdentity: row.identity,
+          evaluationGain: relevanceGain(row.rating),
+          prediction: Object.assign({}, prediction || {}, { score: score })
+        });
       });
-      const ideal = ranked.slice().sort(function (a, b) {
+      const ideal = candidates.map(function (candidate) {
+        return { identity: candidate.evaluationIdentity, gain: candidate.evaluationGain };
+      }).sort(function (a, b) {
         return b.gain - a.gain || a.identity.localeCompare(b.identity);
       });
-      const dcg = dcgAt5(ranked);
       const idealDcg = dcgAt5(ideal);
       if (idealDcg <= 0) return;
-      totalDcg += dcg;
-      totalIdealDcg += idealDcg;
-      foldsEvaluated += 1;
+
+      RECOMMENDATION_MODES.forEach(function (mode) {
+        const rankedCandidates = rankCandidates(candidates, RANKING_CUTOFF, mode) || [];
+        const ranked = rankedCandidates.slice(0, RANKING_CUTOFF).map(function (candidate) {
+          return { identity: candidate.evaluationIdentity, gain: candidate.evaluationGain };
+        });
+        totals[mode].dcg += dcgAt5(ranked);
+        totals[mode].idealDcg += idealDcg;
+        totals[mode].foldsEvaluated += 1;
+      });
     });
 
-    if (totalIdealDcg <= 0) {
-      return unavailableRanking("No hay suficientes valoraciones relevantes distribuidas en los pliegues de prueba.", rows.length, relevantCount);
+    const modes = RECOMMENDATION_MODES.map(function (mode) {
+      const total = totals[mode];
+      const available = total.idealDcg > 0 && total.foldsEvaluated > 0;
+      return {
+        mode: mode,
+        available: available,
+        ndcgAt5: available ? Math.max(0, Math.min(1, total.dcg / total.idealDcg)) : null,
+        foldsEvaluated: total.foldsEvaluated
+      };
+    });
+    if (!modes.some(function (mode) { return mode.available; })) {
+      return unavailableRanking(
+        "No hay suficientes valoraciones relevantes distribuidas en los pliegues de prueba.",
+        rows.length,
+        relevantCount
+      );
     }
     return {
       available: true,
       reason: "",
-      ndcgAt5: Math.max(0, Math.min(1, totalDcg / totalIdealDcg)),
+      modes: modes,
       count: rows.length,
       relevantCount: relevantCount,
       folds: RANKING_FOLDS,
-      foldsEvaluated: foldsEvaluated,
+      foldsEvaluated: Math.min.apply(null, modes.map(function (mode) { return mode.foldsEvaluated; })),
       cutoff: RANKING_CUTOFF,
       relevantThreshold: RELEVANT_RATING_THRESHOLD
     };
