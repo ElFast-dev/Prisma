@@ -25,8 +25,9 @@ function fixtures(count) {
   });
 }
 
-function harness(records, allMovies, watchedRecords) {
+function harness(records, allMovies, watchedRecords, temporalAudit) {
   const movieById = new Map(allMovies.map(movie => [String(movie.tmdbId), movie]));
+  const latestDayByProfile = new WeakMap();
   const watchedSource = watchedRecords || records;
   const watched = watchedSource.map(record => ({
     title: record.title, tmdbId: record.tmdbId, year: record.year, watchedAt: record.watchedAt
@@ -46,8 +47,24 @@ function harness(records, allMovies, watchedRecords) {
       (allMovies.find(movie => movie.title === title) || null),
     movieFeatures,
     ratingValue,
-    buildProfile: engine.buildProfile,
-    predictRating: engine.predictRating,
+    buildProfile: function (trainingRatings) {
+      const profile = engine.buildProfile(trainingRatings);
+      if (temporalAudit) {
+        const days = trainingRatings.map(record => String(record.watchedAt || "").slice(0, 10))
+          .filter(day => /^\\d{4}-\\d{2}-\\d{2}$/.test(day)).sort();
+        latestDayByProfile.set(profile, days.length ? days[days.length - 1] : null);
+      }
+      return profile;
+    },
+    predictRating: function (candidate, profile) {
+      if (temporalAudit) {
+        const candidateDay = String(candidate && candidate.watchedAt || "").slice(0, 10);
+        const latestTrainingDay = latestDayByProfile.get(profile);
+        if (!candidateDay || !latestTrainingDay || latestTrainingDay >= candidateDay) temporalAudit.violations += 1;
+        temporalAudit.predictions += 1;
+      }
+      return engine.predictRating(candidate, profile);
+    },
     movieTmdbId,
     titleKey,
     rankCandidates: (candidates, limit, mode) => {
@@ -284,15 +301,21 @@ assert.match(viewsSource, /baselineFavorableRepeats/);
 assert.match(viewsSource, /summary\.ties/);
 
 
-const temporalRecords = fixtures(120);
-const temporalExperiment = harness(temporalRecords, temporalRecords);
+const temporalAudit = { violations: 0, predictions: 0 };
+const temporalRecords = fixtures(120).map(function (record, index) {
+  return Object.assign({}, record, {
+    watchedAt: new Date(Date.UTC(2020, 0, 1 + Math.floor(index / 10))).toISOString()
+  });
+});
+const temporalExperiment = harness(temporalRecords, temporalRecords, null, temporalAudit);
 const temporalProgress = [];
 const temporalResult = await temporalExperiment.evaluateTemporalAsync(progress => temporalProgress.push(progress));
 assert.equal(temporalResult.available, true, "Una muestra sintética fechada y suficiente debe habilitar walk-forward.");
 assert.equal(temporalResult.sampleCount, 120);
 assert.equal(temporalResult.timestampedFeatureCount, 120);
 assert.equal(temporalResult.missingDateCount, 0);
-assert.equal(temporalResult.distinctDayCount, 120);
+assert.equal(temporalResult.distinctDayCount, 12,
+  "Los registros del mismo día deben agruparse como una única unidad temporal.");
 assert.equal(temporalResult.windowsPlanned, 5);
 assert.equal(temporalResult.windowsEvaluated, 5);
 assert.equal(temporalResult.innerWindows, 3);
@@ -309,6 +332,9 @@ assert.equal(temporalResult.windowStability.ridgeMaeWins + temporalResult.window
   temporalResult.windowStability.baselineMaeWins, 5);
 assert.deepEqual(temporalProgress.filter(item => item.phase === "completed").map(item => item.completedWindows),
   [1, 2, 3, 4, 5]);
+assert.equal(temporalAudit.violations, 0,
+  "Cada predicción debe entrenarse únicamente con visionados estrictamente anteriores al día de prueba.");
+assert.ok(temporalAudit.predictions > 0);
 const temporalRepeat = await temporalExperiment.evaluateTemporalAsync();
 assert.deepEqual({
   mae: temporalRepeat.mae,
