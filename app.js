@@ -23,12 +23,15 @@ import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261020-1";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
+import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
 (function () {
   "use strict";
 
   const $ = function (selector, root) { return (root || document).querySelector(selector); };
   const $$ = function (selector, root) { return Array.from((root || document).querySelectorAll(selector)); };
+  const themeController = createThemeController({ document: document, window: window });
+  themeController.initialize();
   const STATE_KEY = "state";
   const CATALOG_KEY = "catalogCustom";
   const TMDB_CREDENTIAL_KEY = "tmdbCredential";
@@ -122,6 +125,7 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 
   const pageViews = createPageViews({
     get $() { return $; },
+    get theme() { return themeController.getTheme(); },
     get $$() { return $$; },
     get cardColor() { return cardColor; },
     get state() { return state; },
@@ -564,7 +568,8 @@ import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
     get renderCatalogResults() { return renderCatalogResults; },
     get importPersonalJSON() { return importPersonalJSON; },
     get importCatalogCSV() { return importCatalogCSV; },
-    get toast() { return toast; }
+    get toast() { return toast; },
+    get setTheme() { return themeController.setTheme; }
   });
 
   init();

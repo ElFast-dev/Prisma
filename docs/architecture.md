@@ -20,6 +20,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
 | `js/ui/presentation-utils.js` | Utilidades puras de presentación: fechas, formatos, enlaces externos y fragmentos HTML reutilizables. |
 | `js/ui/page-views.js` | Renderizadores de Progreso, Descubrir, Colección, Laboratorio, Ajustes y componentes de catálogo. |
+| `js/ui/theme-controller.js` | Aplica y persiste la preferencia de tema oscuro/claro localmente, sin mezclarla con el perfil cinematográfico. |
 | `js/ui/modal-views.js` | Renderizadores de fichas de película/persona, diálogo de puntuación y paneles auxiliares. |
 | `js/app/movie-actions.js` | Acciones de dominio para valorar, borrar notas, marcar vistas, gestionar pendientes y ocultar películas. |
 | `js/import-export/actions.js` | Orquestación de las importaciones JSON/CSV, copias de seguridad, restauración y restablecimiento local. |
@@ -45,7 +46,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `styles/catalog.css` | Tarjetas poster-first de Descubrir. |
 | `styles/collection-content.css` | Jerarquía del contenido de colección. |
 | `styles/movie-details.css` | Ajustes de ficha y puntuaciones externas. |
-| `styles/prisma-design-system.css` | Tokens visuales finales, estados de marca y respeto global del movimiento reducido. |
+| `styles/prisma-design-system.css` | Tokens neutros para el modo negro predeterminado y el modo claro, estados de interacción y movimiento reducido. |
 | `data/catalog.json` | Catálogo de muestra. |
 | `assets/prisma.svg` | Identidad gráfica. |
 | `manifest.webmanifest` | Metadatos PWA. |

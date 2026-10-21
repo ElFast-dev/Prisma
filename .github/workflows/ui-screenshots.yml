@@ -82,6 +82,7 @@ jobs:
                     cssHref: link && link.href,
                     appSrc: (document.querySelector('script[src*="app.js"]') || {}).src || "",
                     rootBg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
+                    themeMode: document.documentElement.dataset.theme || "",
                     rootAccent: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().toLowerCase(),
                     headlineFont: getComputedStyle(heading).fontFamily,
                     brandFavicon: (document.querySelector('link[rel="icon"]') || {}).href || "",
@@ -98,12 +99,13 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261020-19") &&
-                  lastUI.appSrc.includes("v=ui-20261020-41") &&
-                  lastUI.rootBg === "#080c12" &&
-                  lastUI.rootAccent === "#c4b5fd" &&
-                  lastUI.brandFavicon.includes("brand-20261020-1") &&
-                  lastUI.brandLogo.includes("brand-20261020-1") &&
+                  lastUI.cssHref.includes("v=ui-20261020-20") &&
+                  lastUI.appSrc.includes("v=ui-20261020-42") &&
+                  lastUI.rootBg === "#050505" &&
+                  lastUI.rootAccent === "#8197b2" &&
+                  lastUI.themeMode === "dark" &&
+                  lastUI.brandFavicon.includes("brand-20261020-2") &&
+                  lastUI.brandLogo.includes("brand-20261020-2") &&
                   lastUI.headlineFont.includes("Inter") &&
                   lastUI.navItems === 3 &&
                   lastUI.topSearch &&
@@ -170,6 +172,42 @@ jobs:
                 }
                 await page.locator(".topbar [data-nav='data']").click();
                 await page.locator(".settings-grid").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".appearance-panel").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator('[data-action="set-theme"][data-theme="light"]').click();
+                await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+                const lightTheme = await page.evaluate(() => ({
+                  mode: document.documentElement.dataset.theme,
+                  bg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
+                  accent: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(),
+                  persisted: localStorage.getItem("prisma:theme")
+                }));
+                if (lightTheme.mode !== "light" || lightTheme.bg !== "#f4f5f7" ||
+                    lightTheme.accent !== "#486b94" || lightTheme.persisted !== "light") {
+                  throw new Error(name + ": light theme tokens or persistence are incorrect: " + JSON.stringify(lightTheme));
+                }
+                await page.reload({ waitUntil: "networkidle" });
+                await page.locator("main h1").waitFor({ state: "visible", timeout: 15000 });
+                await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+                if (await page.evaluate(() => localStorage.getItem("prisma:theme")) !== "light") {
+                  throw new Error(name + ": light theme preference was not restored after reload");
+                }
+                await page.locator(".topbar [data-nav='data']").click();
+                await page.locator(".appearance-panel").waitFor({ state: "visible", timeout: 10000 });
+                if (await page.locator('[data-action="set-theme"][data-theme="light"]').getAttribute("aria-pressed") !== "true") {
+                  throw new Error(name + ": light theme selector does not expose its selected state");
+                }
+                await page.locator('[data-action="set-theme"][data-theme="dark"]').click();
+                await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+                const darkTheme = await page.evaluate(() => ({
+                  mode: document.documentElement.dataset.theme,
+                  bg: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
+                  accent: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(),
+                  persisted: localStorage.getItem("prisma:theme")
+                }));
+                if (darkTheme.mode !== "dark" || darkTheme.bg !== "#050505" ||
+                    darkTheme.accent !== "#8197b2" || darkTheme.persisted !== "dark") {
+                  throw new Error(name + ": dark theme tokens or persistence are incorrect: " + JSON.stringify(darkTheme));
+                }
                 await page.locator(".bottom-nav [data-nav='home']").click();
                 await page.locator(".progress-onboarding").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();

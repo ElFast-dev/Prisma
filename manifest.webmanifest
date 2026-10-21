@@ -6,11 +6,11 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#080c12",
-  "theme_color": "#080c12",
+  "background_color": "#050505",
+  "theme_color": "#050505",
   "icons": [
     {
-      "src": "./assets/prisma.svg?v=brand-20261020-1",
+      "src": "./assets/prisma.svg?v=brand-20261020-2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

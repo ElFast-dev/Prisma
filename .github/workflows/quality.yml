@@ -39,6 +39,7 @@ jobs:
           node --check js/collection/collection-model.js
           node --check js/ui/presentation-utils.js
           node --check js/ui/page-views.js
+          node --check js/ui/theme-controller.js
           node --check js/ui/modal-views.js
           node --check js/app/movie-actions.js
           node --check js/import-export/actions.js
@@ -82,6 +83,9 @@ jobs:
 
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs
+
+      - name: Test theme preference persistence
+        run: node scripts/test-theme-controller.mjs
 
       - name: Test brand icon and PWA asset versions
         run: node scripts/test-brand-assets.mjs

@@ -213,6 +213,24 @@ export function createPageViews(ctx) {
   }
 
 
+  function renderAppearanceSettings() {
+    const activeTheme = ctx.theme === "light" ? "light" : "dark";
+    return '<section class="panel appearance-panel" aria-labelledby="appearance-heading">' +
+      '<div class="panel-head"><div><h3 id="appearance-heading">Apariencia</h3><p class="appearance-description">Oscuro por defecto. Tu elección se guarda en este dispositivo.</p></div></div>' +
+      '<div class="theme-options" role="group" aria-label="Elegir tema de Prisma">' +
+      '<button class="theme-choice" type="button" data-action="set-theme" data-theme="dark" aria-pressed="' + (activeTheme === "dark" ? "true" : "false") + '">' +
+        '<span class="theme-preview theme-preview-dark" aria-hidden="true"><i></i><b></b></span>' +
+        '<span class="theme-choice-copy"><strong>Oscuro</strong><small>Negro y azul acero</small></span>' +
+        '<span class="theme-choice-mark" aria-hidden="true">✓</span>' +
+      '</button>' +
+      '<button class="theme-choice" type="button" data-action="set-theme" data-theme="light" aria-pressed="' + (activeTheme === "light" ? "true" : "false") + '">' +
+        '<span class="theme-preview theme-preview-light" aria-hidden="true"><i></i><b></b></span>' +
+        '<span class="theme-choice-copy"><strong>Claro</strong><small>Blanco y gris suave</small></span>' +
+        '<span class="theme-choice-mark" aria-hidden="true">✓</span>' +
+      '</button>' +
+      '</div></section>';
+  }
+
   function renderTMDBSettings() {
     const kind = ctx.tmdbCredential && ctx.tmdbCredential.kind === "apiKey" ? "apiKey" : "readToken";
     const connected = Boolean(ctx.tmdbCredential && ctx.tmdbCredential.value);
@@ -226,6 +244,7 @@ export function createPageViews(ctx) {
   function renderData() {
     const stats = ctx.summaryStats();
     return '<section class="page-heading"><h1>Ajustes</h1>' + ctx.infoButton("privacy","Información sobre privacidad y datos") + '</section>' +
+      renderAppearanceSettings() +
       renderTMDBSettings() +
       '<div class="data-metadata-host">' + ctx.renderTMDBHistoryPanel() + '</div>' +
       '<div class="settings-grid settings-grid-clean">' +
