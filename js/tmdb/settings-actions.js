@@ -35,18 +35,21 @@ export function createTMDBSettingsActions(ctx) {
       if (input) input.value = "";
       ctx.renderApp();
       ctx.toast("Conexión con TMDB correcta. Ya puedes buscar películas.");
-      if (currentPage === "catalog") loadTMDBPage(1, catalogQuery.trim().length >= 2 ? "search" : "popular", false);
+      if (ctx.currentPage === "catalog") {
+        const mode = ctx.catalogQuery.trim().length >= 2 ? "search" : "popular";
+        await ctx.loadTMDBPage(1, mode, false);
+      }
     } catch (error) {
       ctx.toast(error.message || "No se pudo conectar con TMDB.", true);
     }
   }
 
   async function removeTMDBCredential() {
-    if (!window.confirm("¿Eliminar la credencial de TMDB guardada en este navegador?")) return;
+    if (!ctx.confirm("¿Eliminar la credencial de TMDB guardada en este navegador?")) return;
     ctx.tmdbCredential = null;
     await ctx.dbSet(ctx.TMDB_CREDENTIAL_KEY, null);
-    tmdbResults = [];
-    tmdbClient.resetGenres();
+    ctx.tmdbResults = [];
+    ctx.resetTMDBGenres();
     ctx.renderApp();
     ctx.toast("Credencial eliminada de este navegador.");
   }

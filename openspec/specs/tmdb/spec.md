@@ -4,13 +4,31 @@
 
 ### Requirement: Credencial opcional configurada por el usuario
 
-Prisma DEBE poder funcionar sin credencial de TMDB. Cuando el usuario configura una, se guarda localmente y se usa para las solicitudes que requieren autenticación.
+Prisma DEBE poder funcionar sin credencial de TMDB. Cuando el usuario configura una, se guarda localmente y se usa para las solicitudes que requieren autenticación. La prueba de conexión DEBE reflejar el resultado real de `/configuration` y no generar un error de aplicación después de una respuesta correcta.
 
 #### Scenario: Uso sin credencial
 
 - DADO que no existe una credencial TMDB configurada
 - CUANDO se usa el catálogo local
 - ENTONCES las capacidades locales continúan disponibles sin afirmar que se han cargado resultados remotos
+
+#### Scenario: Verificación correcta de conexión
+
+- DADO que se introduce una credencial válida y TMDB responde correctamente a `/configuration`
+- CUANDO se prueba la conexión desde Ajustes
+- ENTONCES Prisma guarda la credencial en este navegador y muestra éxito sin presentar un error de JavaScript posterior
+
+#### Scenario: Desconexión confirmada
+
+- DADO que existe una credencial TMDB guardada y la persona confirma su eliminación
+- CUANDO se ejecuta la desconexión desde Ajustes
+- ENTONCES Prisma borra la credencial del almacenamiento local, vacía los resultados y reinicia la caché de géneros
+
+#### Scenario: Desconexión cancelada
+
+- DADO que existe una credencial TMDB guardada y la persona cancela la confirmación
+- CUANDO se intenta eliminarla
+- ENTONCES Prisma conserva la credencial y sus datos en caché sin cambios
 
 ### Requirement: Enriquecimiento de metadatos
 
