@@ -2,12 +2,12 @@
 
 - [x] R1. Analizar los datos agregados y el cálculo actual de soporte/pesos de tema.
 - [x] R2. Definir en SDD la hipótesis, el comparador y la regla de no cambiar el modelo activo.
-- [ ] R3. Añadir la opción de atenuación por soporte para temas, desactivada por defecto.
-- [ ] R4. Calcular una comparación MAE emparejada usando las mismas particiones leave-one-out.
-- [ ] R5. Mostrar la métrica experimental en Laboratorio y en el diagnóstico agregado.
-- [ ] R6. Cubrir el efecto sobre temas de un solo caso, pesos no temáticos, muestra insuficiente, fuga de información y privacidad.
-- [ ] R7. Actualizar las especificaciones permanentes, arquitectura y versiones PWA.
-- [ ] R8. Ejecutar todas las pruebas de calidad, SDD, inicio vacío, motor de recomendaciones, caché y Playwright.
+- [x] R3. Añadir la opción de atenuación por soporte para temas, desactivada por defecto.
+- [x] R4. Calcular una comparación MAE emparejada usando las mismas particiones leave-one-out.
+- [x] R5. Mostrar la métrica experimental en Laboratorio y en el diagnóstico agregado.
+- [x] R6. Cubrir el efecto sobre temas de un solo caso, pesos no temáticos, muestra insuficiente, fuga de información y privacidad.
+- [x] R7. Actualizar las especificaciones permanentes, arquitectura y versiones PWA.
+- [x] R8. Ejecutar todas las pruebas de calidad, SDD, inicio vacío, motor de recomendaciones, caché y Playwright.
 - [ ] R9. Integrar y archivar el expediente solo cuando todas las comprobaciones pasen.
 
 ## Criterios de aceptación
