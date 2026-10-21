@@ -20,7 +20,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/recommendations/repeated-validation-summary.js` | Resumen puro de dirección y rango mínimo–máximo de las métricas agregadas por repetición; no produce intervalos de confianza ni modifica el modelo. |
 | `js/recommendations/evaluation.js` | Evaluación offline de nDCG@5 por modo sobre pliegues y candidatas comunes, además de diversidad de géneros en las listas actuales; no ajusta automáticamente el recomendador. |
 | `js/recommendations/ranking.js` | Puntúa y diversifica candidatas de catálogo local y el pool efímero de películas populares ya consultadas en TMDB; excluye la colección y no persiste candidatas remotas. |
-| `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v7 del Laboratorio, con métricas de validación Ridge, comparación híbrida fija 50/50, validación repetida y temporal walk-forward y recuentos de procedencia de fechas; no serializa fechas exactas, registros individuales ni accede al DOM, almacenamiento o red. |
+| `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v8 del Laboratorio, con métricas de validación Ridge, comparación híbrida fija 50/50, validación repetida y temporal walk-forward y recuentos de procedencia de fechas; no serializa fechas exactas, registros individuales ni accede al DOM, almacenamiento o red. |
 | `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
