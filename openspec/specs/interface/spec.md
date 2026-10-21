@@ -22,6 +22,28 @@ Prisma DEBE mantener accesibles las vistas principales de progreso, descubrimien
 - CUANDO se activa el control correspondiente
 - ENTONCES se renderiza la vista solicitada y el estado de navegación se actualiza
 
+#### Scenario: Vista activa anunciada
+
+- DADO que Prisma muestra Progreso, Descubrir o Colección
+- CUANDO se actualiza la navegación tras renderizar la vista
+- ENTONCES exactamente un destino principal expone `aria-current="page"` y coincide con la vista seleccionada
+
+### Requirement: Objetivos táctiles cómodos
+
+Prisma DEBE presentar controles frecuentes con objetivos táctiles adecuados en pantallas móviles: al menos 48 píxeles CSS de alto para los destinos de la barra inferior y al menos 44 × 44 píxeles CSS para las acciones de icono de la cabecera. Las pulsaciones táctiles NO DEBEN depender de hover ni de una animación de escala.
+
+#### Scenario: Navegación desde un móvil
+
+- DADO que Prisma se muestra en un viewport de hasta 760 píxeles CSS
+- CUANDO aparecen la barra inferior y las acciones de icono de la cabecera
+- ENTONCES los destinos principales ofrecen al menos 48 píxeles de altura y cada acción de icono ofrece al menos 44 × 44 píxeles CSS
+
+#### Scenario: Pulsación sin animación de escala
+
+- DADO un dispositivo con puntero táctil
+- CUANDO la persona pulsa un destino de la barra inferior
+- ENTONCES el control responde sin reducirse mediante una transformación de escala
+
 ### Requirement: Estados interactivos consistentes
 
 Prisma DEBE comunicar de manera consistente los estados hover, activo y foco de los controles de colección, sin cambios de geometría inesperados ni decoración que distraiga del contenido cinematográfico.
@@ -201,7 +223,7 @@ La sección Puntuaciones DEBE usar tarjetas de tamaño compacto, cuya altura est
 
 ### Requirement: Sistema visual cinematográfico
 
-Prisma DEBE definir tokens visuales compartidos y usarlos en la navegación, los botones principales, los filtros seleccionados, los campos enfocados y los controles de película. El acento de marca DEBE ser violeta suave sobre una base oscura; los colores semánticos de puntuación, éxito y error DEBEN conservar su significado. Los estados principales NO DEBEN depender de hover.
+Prisma DEBE definir tokens visuales compartidos y usarlos en la navegación, los botones principales, los filtros seleccionados, los campos enfocados y los controles de película. El acento de marca DEBE ser un azul acero discreto sobre fondo negro predeterminado, con un modo claro opcional; los colores semánticos de puntuación, éxito y error DEBEN conservar su significado. Los estados principales NO DEBEN depender de hover.
 
 #### Scenario: La interfaz muestra estados de marca
 
