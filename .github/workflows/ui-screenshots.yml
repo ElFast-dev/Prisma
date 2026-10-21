@@ -221,7 +221,7 @@ jobs:
                   recommendationCards: document.querySelectorAll(".featured-recommendations .movie-poster-trigger").length,
                   defaultAboutTimeCards: document.querySelectorAll("#localCatalogResults [data-title='About Time'], .featured-recommendations [data-title='About Time']").length
                 }));
-                if (emptyDiscover.discoverCount !== "0 títulos" ||
+                if (emptyDiscover.discoverCount !== "0 títulos personales" ||
                     emptyDiscover.catalogCount !== "0 películas" ||
                     emptyDiscover.localCards !== 0 ||
                     emptyDiscover.recommendationCards !== 0 ||
