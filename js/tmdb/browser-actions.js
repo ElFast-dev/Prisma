@@ -10,10 +10,7 @@ export function createTMDBBrowserActions(ctx) {
     ctx.tmdbMode = safeMode;
     ctx.tmdbLoading = true;
     ctx.tmdbError = "";
-    if (!append) {
-      ctx.tmdbResults = [];
-      if (safeMode === "popular") ctx.recommendationCandidates = [];
-    }
+    if (!append) ctx.tmdbResults = [];
     ctx.renderTMDBResults();
     try {
       try { await ctx.ensureTMDBGenres(); } catch (_) {

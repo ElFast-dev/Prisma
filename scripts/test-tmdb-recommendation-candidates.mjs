@@ -11,6 +11,7 @@ let totalPages = 3;
 let loading = false;
 let query = "";
 let requestSerial = 0;
+let failRequest = false;
 let rerenders = 0;
 let resultsRenders = 0;
 const requests = [];
@@ -56,6 +57,7 @@ const ctx = {
   async ensureTMDBGenres() {},
   async tmdbRequest(path, params) {
     requests.push({ path, params: { ...params } });
+    if (failRequest) throw new Error("Fallo sintético");
     if (path === "/genre/movie/list") return { genres: [] };
     const key = (path === "/movie/popular" ? "popular" : "search") + ":" + params.page;
     return { page: params.page, total_pages: totalPages, results: apiMovies[key] || [] };
@@ -88,12 +90,21 @@ assert.deepEqual(candidates.map(movie => movie.tmdbId), ["201", "11", "90", "92"
 assert.equal(candidates.filter(movie => movie.tmdbId === "201").length, 1);
 assert.equal(rerenders, 2);
 
+const candidatesBeforeFailure = candidates.map(movie => movie.tmdbId);
+failRequest = true;
+await browser.loadTMDBPage(1, "popular", false);
+failRequest = false;
+assert.deepEqual(candidates.map(movie => movie.tmdbId), candidatesBeforeFailure,
+  "Si falla una recarga popular, deben conservarse las candidatas anteriores en lugar de vaciar el ranking.");
+assert.match(ctx.tmdbError, /Fallo sintético/);
+assert.equal(rerenders, 3);
+
 query = "Duna";
 await browser.loadTMDBPage(1, "search", false);
 assert.deepEqual(candidates.map(movie => movie.tmdbId), ["201", "11", "90", "92", "202", "93", "96"],
   "Una búsqueda manual no debe reemplazar el pool genérico de películas populares.");
 assert.deepEqual(results.map(movie => movie.tmdbId), ["999"]);
-assert.equal(rerenders, 3);
+assert.equal(rerenders, 4);
 assert.ok(requests.some(item => item.path === "/movie/popular"));
 assert.ok(requests.some(item => item.path === "/search/movie" && item.params.query === "Duna"));
 
