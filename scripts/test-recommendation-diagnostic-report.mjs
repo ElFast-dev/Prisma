@@ -117,6 +117,33 @@ const baseInput = {
     ],
     unavailableReason: null
   },
+  influenceNormalizationEvaluation: {
+    available: true,
+    executionStatus: "completed",
+    sampleCount: 60,
+    relevantRatingsCount: 30,
+    folds: 5,
+    foldsEvaluated: 5,
+    cutoff: 5,
+    relevantRatingThreshold: 7,
+    baselineMethod: "mean",
+    methods: [
+      { method: "mean", available: true, mae: 1.2, deltaMaeVsMean: 0,
+        maeFoldStability: { available: true, foldsEvaluated: 5, variantWins: 0, ties: 5, meanWins: 0 },
+        rankingModes: [{ mode: "balanced", available: true, ndcgAt5: 0.61, deltaNdcgVsMean: 0, foldsEvaluated: 5, foldsWins: 0, foldsTies: 5, foldsLosses: 0 }],
+        title: "Private normalization title", tmdbId: "123456", watchedAt: "2030-05-13" },
+      { method: "coverage-sqrt", available: true, mae: 1.08, deltaMaeVsMean: 0.12,
+        maeFoldStability: { available: true, foldsEvaluated: 5, variantWins: 4, ties: 0, meanWins: 1 },
+        rankingModes: [
+          { mode: "balanced", available: true, ndcgAt5: 0.68, deltaNdcgVsMean: 0.07, foldsEvaluated: 5, foldsWins: 4, foldsTies: 0, foldsLosses: 1 },
+          { mode: "affinity", available: true, ndcgAt5: 0.65, deltaNdcgVsMean: 0.01, foldsEvaluated: 5, foldsWins: 3, foldsTies: 0, foldsLosses: 2 },
+          { mode: "variety", available: false, ndcgAt5: null, deltaNdcgVsMean: null, foldsEvaluated: 0, foldsWins: 0, foldsTies: 0, foldsLosses: 0 }
+        ] },
+      { method: "matched-only", available: true, mae: 1.3, deltaMaeVsMean: -0.1,
+        maeFoldStability: { available: true, foldsEvaluated: 5, variantWins: 1, ties: 0, meanWins: 4 },
+        rankingModes: [] }
+    ]
+  },
   recommendationQuality: {
     ranking: {
       available: true, count: 60, relevantCount: 15, folds: 5,
@@ -134,7 +161,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v7");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v8");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -202,6 +229,13 @@ assert.equal(compact.evaluation.temporalRidgeExperiment.dateProvenanceStatus, "e
 assert.equal(compact.evaluation.temporalRidgeExperiment.missingDateCount, 2);
 assert.equal(compact.evaluation.temporalRidgeExperiment.mae, 0.91);
 assert.equal(compact.evaluation.temporalRidgeExperiment.deltaBaselineMinusRidge, 0.17);
+assert.equal(compact.evaluation.influenceNormalizationExperiment.executionStatus, "completed");
+assert.equal(compact.evaluation.influenceNormalizationExperiment.sampleCount, 60);
+assert.equal(compact.evaluation.influenceNormalizationExperiment.methods.length, 3);
+assert.equal(compact.evaluation.influenceNormalizationExperiment.methods[1].deltaMaeVsMean, 0.12);
+assert.equal(compact.evaluation.influenceNormalizationExperiment.methods[1].rankingModes[0].deltaNdcgVsMean, 0.07);
+assert.equal(compact.evaluation.influenceNormalizationExperiment.methods[1].rankingModes[2].available, false);
+assert.equal(compact.evaluation.influenceNormalizationExperiment.methods[1].rankingModes[2].ndcgAt5, null);
 assert.equal(compact.evaluation.temporalRidgeExperiment.windowSummaries.length, 2);
 assert.equal(compact.evaluation.temporalRidgeExperiment.windowSummaries[0].trainingCount, 29);
 assert.equal(Object.prototype.hasOwnProperty.call(compact.evaluation.temporalRidgeExperiment.windowSummaries[0], "watchedAt"), false);
@@ -232,6 +266,11 @@ for (const forbidden of ["watchedat", "2030-05-", "private temporal title", "tmd
   assert.equal(temporalSerialized.includes(forbidden), false,
     "La evaluación temporal solo debe exportar agregados; no debe incluir " + forbidden);
 }
+const normalizationSerialized = JSON.stringify(detailed.evaluation.influenceNormalizationExperiment).toLowerCase();
+for (const forbidden of ["private normalization title", "tmdbid", "watchedat", "2030-05-", "123456"]) {
+  assert.equal(normalizationSerialized.includes(forbidden), false,
+    "La calibración solo debe exportar agregados; no debe incluir " + forbidden);
+}
 const repeatedSerialized = JSON.stringify(detailed.evaluation.ridgeExperiment.repeatedValidation).toLowerCase();
 for (const forbidden of ["about time", "tmdbid", "tmdb_id", "title", "ratingentry", "watchedat"]) {
   assert.equal(repeatedSerialized.includes(forbidden), false,
@@ -252,6 +291,8 @@ assert.equal(unavailable.evaluation.ridgeExperiment.repeatedValidation.execution
 assert.equal(unavailable.evaluation.temporalRidgeExperiment.executionStatus, "not-run");
 assert.equal(unavailable.evaluation.temporalRidgeExperiment.mae, null);
 assert.equal(unavailable.evaluation.temporalRidgeExperiment.dateProvenanceStatus, "unavailable");
+assert.equal(unavailable.evaluation.influenceNormalizationExperiment.executionStatus, "not-run");
+assert.equal(unavailable.evaluation.influenceNormalizationExperiment.available, false);
 assert.equal(unavailable.evaluation.ratingPrediction.unavailableReason,
   "Se necesitan al menos cinco valoraciones válidas con características enlazadas.");
 assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
