@@ -6,7 +6,7 @@
 - [x] RQ4. Presentar resultados por modo en el Laboratorio y diagnóstico compartible.
 - [x] RQ5. Probar determinismo, umbrales, deltas y privacidad con datos sintéticos.
 - [x] RQ6. Actualizar esquema del informe, versionado/caché PWA y contratos automáticos.
-- [ ] RQ7. Ejecutar CI, Playwright y comprobar despliegue; archivar solo con todos los checks verdes.
+- [x] RQ7. Ejecutar CI, Playwright y comprobar despliegue; archivar solo con todos los checks verdes.
 
 ## Evidencia de cierre
 
@@ -23,4 +23,4 @@
 - Despliegue de GitHub Pages: [Deploy Prisma to GitHub Pages](https://github.com/ElFast-dev/Prisma/actions/runs/39637724031).
 - Pruebas de navegador sobre el PR: [Prisma UI screenshots](https://github.com/ElFast-dev/Prisma/actions/runs/39637462047).
 
-RQ7 queda pendiente hasta confirmar también la prueba del sitio publicado.
+- Prueba de navegador del sitio publicado tras el despliegue: [Prisma UI screenshots](https://github.com/ElFast-dev/Prisma/actions/runs/39637878971).
