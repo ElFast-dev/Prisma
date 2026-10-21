@@ -242,7 +242,11 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-20-refine-ui-interactions/proposal.md',
   'openspec/changes/archive/2026-10-20-refine-ui-interactions/design.md',
   'openspec/changes/archive/2026-10-20-refine-ui-interactions/tasks.md',
-  'openspec/changes/archive/2026-10-20-refine-ui-interactions/specs/interface/spec.md'
+  'openspec/changes/archive/2026-10-20-refine-ui-interactions/specs/interface/spec.md',
+  'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/proposal.md',
+  'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/design.md',
+  'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/tasks.md',
+  'openspec/changes/archive/2026-10-21-hybrid-ridge-diagnostics/specs/recommendations/spec.md'
 ];
 
 const errors = [];
