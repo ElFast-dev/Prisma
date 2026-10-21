@@ -410,9 +410,13 @@ jobs:
                 await page.locator("#catalogImportInput").setInputFiles({
                   name: "prisma-detail-fixture.csv",
                   mimeType: "text/csv",
-                  buffer: Buffer.from("title,year,tmdb_id,genres\\nPrisma UI Fixture,2024,990902,Drama")
+                  buffer: Buffer.from("title,year,tmdb_id,genres\nPrisma UI Fixture,2024,990902,Drama")
                 });
-                await page.waitForTimeout(250);
+                await page.waitForFunction(
+                  () => (document.querySelector("#toastRoot")?.innerText || "").includes("Catálogo ampliado: 1 títulos importados"),
+                  null,
+                  { timeout: 10000 }
+                );
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
                 const localDetailTrigger = page.locator(".local-catalog-section .movie-card [data-action='details']").first();
                 await localDetailTrigger.waitFor({ state: "visible", timeout: 10000 });
