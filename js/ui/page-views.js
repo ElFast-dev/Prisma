@@ -317,11 +317,62 @@ export function createPageViews(ctx) {
       '</section>';
   }
 
+
+  function formatStorageBytes(value) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return "";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let amount = value;
+    let unit = 0;
+    while (amount >= 1024 && unit < units.length - 1) {
+      amount /= 1024;
+      unit += 1;
+    }
+    return amount.toLocaleString("es-PA", { maximumFractionDigits: unit === 0 ? 0 : 1 }) + " " + units[unit];
+  }
+
+  function renderStorageProtectionSettings() {
+    const snapshot = ctx.storageProtectionSnapshot || {};
+    let statusLabel = "Comprobando…";
+    let description = "Consultando si el navegador ofrece almacenamiento persistente.";
+    let badgeClass = "";
+
+    if (snapshot.persisted === true) {
+      statusLabel = "Persistencia concedida";
+      description = "El navegador informa de que el almacenamiento de este sitio es persistente, lo que reduce el riesgo de expulsión automática por presión de almacenamiento. No impide borrar los datos del sitio.";
+      badgeClass = " badge-mint";
+    } else if (snapshot.supported === false) {
+      statusLabel = "Solicitud no disponible";
+      description = "Este navegador no permite solicitar persistencia desde Prisma. La aplicación seguirá funcionando normalmente.";
+    } else if (snapshot.supported === true && snapshot.persisted === false) {
+      statusLabel = "Aún no concedida";
+      description = "El navegador puede denegar esta solicitud. Si no concede persistencia, el almacenamiento todavía podría retirarse automáticamente bajo presión.";
+    } else if (snapshot.supported === true) {
+      statusLabel = "Estado no confirmado";
+      description = "Prisma no pudo confirmar el estado de persistencia. Puedes volver a solicitarla si el navegador lo permite.";
+    }
+
+    const estimate = typeof snapshot.usage === "number" && typeof snapshot.quota === "number"
+      ? '<p class="metric-note">Uso estimado de este sitio: ' + formatStorageBytes(snapshot.usage) + ' de una cuota estimada de ' + formatStorageBytes(snapshot.quota) + '.</p>'
+      : "";
+    const action = snapshot.supported === true && snapshot.persisted !== true
+      ? '<div class="hero-actions"><button class="btn btn-secondary" type="button" data-action="protect-storage"' + (ctx.storageProtectionBusy ? ' disabled' : '') + '>' + (ctx.storageProtectionBusy ? 'Solicitando…' : 'Proteger datos locales') + '</button></div>'
+      : "";
+
+    return '<section class="panel storage-protection-panel" aria-labelledby="storage-protection-heading">' +
+      '<div class="panel-head"><div><h3 id="storage-protection-heading">Protección de datos locales</h3><p class="metric-note">Estado del almacenamiento del navegador</p></div><span class="badge' + badgeClass + '">' + statusLabel + '</span></div>' +
+      '<p class="appearance-description">' + description + '</p>' +
+      estimate +
+      action +
+      '<p class="metric-note">La persistencia no sustituye las copias de seguridad y no impide borrar manualmente los datos del sitio. Exporta una copia desde esta pantalla; las sesiones privadas pueden tener reglas de almacenamiento propias.</p>' +
+      '</section>';
+  }
+
   function renderData() {
     const stats = ctx.summaryStats();
     return '<section class="page-heading"><h1>Ajustes</h1>' + ctx.infoButton("privacy","Información sobre privacidad y datos") + '</section>' +
       renderAppearanceSettings() +
       renderTMDBSettings() +
+      renderStorageProtectionSettings() +
       '<div class="data-metadata-host">' + ctx.renderTMDBHistoryPanel() + '</div>' +
       '<div class="settings-grid settings-grid-clean">' +
       '<section class="panel"><div class="panel-head"><h3>Importar historial JSON</h3>' + ctx.infoButton("import","Qué importa el JSON") + '</div><button class="btn btn-primary" type="button" data-action="import-json">Importar JSON</button></section>' +

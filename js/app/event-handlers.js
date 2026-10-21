@@ -51,6 +51,7 @@ export function registerAppEvents(ctx) {
     if (!button) return;
     const action = button.dataset.action;
     try {
+      if (action === "protect-storage") { await ctx.requestStorageProtection(); return; }
       if (action === "set-theme") {
         ctx.setTheme(button.dataset.theme);
         ctx.renderApp();
