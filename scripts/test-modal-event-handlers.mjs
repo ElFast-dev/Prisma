@@ -94,7 +94,7 @@ const controller = createModalController({
   get utilitySheet() { return controllerState.utilitySheet; },
   set utilitySheet(value) { controllerState.utilitySheet = value; },
   $() { return controllerState.modalRoot; },
-  renderModal() { controllerState.renderCalls += 1; }
+  renderMovieDetails() { controllerState.renderCalls += 1; }
 });
 controller.closeModal();
 assert.equal(controllerState.modalDraft, null,
