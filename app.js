@@ -211,8 +211,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
     get influenceNormalizationEvaluationResult() { return influenceNormalizationEvaluationResult; },
     get influenceNormalizationEvaluationBusy() { return influenceNormalizationEvaluationBusy; },
-    get ridgeEvaluationBusy() { return ridgeEvaluationBusy; },
-    get temporalRidgeEvaluationBusy() { return temporalRidgeEvaluationBusy; },
     get runInfluenceNormalizationExperiment() { return runInfluenceNormalizationExperiment; }
   });
   const { movieCard, ratedMetadataCount, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp } = pageViews;
