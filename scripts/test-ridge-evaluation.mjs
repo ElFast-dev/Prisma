@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
+import { summarizeRepeatedRidgeStability } from "../js/recommendations/repeated-validation-summary.js";
 import { createRecommendationEngine } from "../js/recommendations/engine.js";
 import { createRecommendationRanking } from "../js/recommendations/ranking.js";
 import { movieFeatures } from "../js/recommendations/features.js";
@@ -210,4 +211,44 @@ assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequ
   "El constructor de diagnósticos no debe tener efectos secundarios.");
 assert.match(engineSource, /function buildProfile/);
 
-console.log("Ridge verificado: validación anidada determinista, MAE y nDCG@5 emparejados, alpha interno, privacidad y clipping 1–10.");
+const consistency = summarizeRepeatedRidgeStability({
+  available: true,
+  repeatSummaries: [
+    { deltaBaseMinusRidge: 0.0934, rankingQuality: { available: true, modes: [
+      { mode: "balanced", available: true, deltaRidgeMinusBaseline: 0.0088 },
+      { mode: "affinity", available: true, deltaRidgeMinusBaseline: 0.0079 },
+      { mode: "variety", available: true, deltaRidgeMinusBaseline: 0.1272 }
+    ] } },
+    { deltaBaseMinusRidge: 0.1043, rankingQuality: { available: true, modes: [
+      { mode: "balanced", available: true, deltaRidgeMinusBaseline: 0.0273 },
+      { mode: "affinity", available: true, deltaRidgeMinusBaseline: 0.0939 },
+      { mode: "variety", available: true, deltaRidgeMinusBaseline: 0.1130 }
+    ] } },
+    { deltaBaseMinusRidge: 0.0934, rankingQuality: { available: true, modes: [
+      { mode: "balanced", available: true, deltaRidgeMinusBaseline: 0.0032 },
+      { mode: "affinity", available: true, deltaRidgeMinusBaseline: -0.00000000001 },
+      { mode: "variety", available: true, deltaRidgeMinusBaseline: 0.1348 }
+    ] } }
+  ]
+});
+assert.equal(consistency.mae.ridgeFavorableRepeats, 3);
+assert.equal(consistency.mae.repeatsEvaluated, 3);
+assert.equal(consistency.mae.minDelta, 0.0934);
+assert.equal(consistency.mae.maxDelta, 0.1043);
+assert.equal(consistency.rankingModes.find(mode => mode.mode === "balanced").ridgeFavorableRepeats, 3);
+assert.equal(consistency.rankingModes.find(mode => mode.mode === "balanced").minDelta, 0.0032);
+assert.equal(consistency.rankingModes.find(mode => mode.mode === "affinity").ties, 1,
+  "Las diferencias dentro de la tolerancia deben contarse como empates.");
+assert.equal(consistency.rankingModes.find(mode => mode.mode === "variety").ridgeFavorableRepeats, 3);
+assert.equal(summarizeRepeatedRidgeStability({ available: false, repeatSummaries: [] }).available, false,
+  "Sin validación repetida no se debe fabricar un resumen.");
+assert.equal(summarizeRepeatedRidgeStability({ available: true, repeatSummaries: [] }).mae.available, false,
+  "Sin repeticiones la métrica debe permanecer no disponible.");
+
+const [viewsSource] = await Promise.all([
+  import("node:fs/promises").then(fs => fs.readFile("js/ui/page-views.js", "utf8"))
+]);
+assert.match(viewsSource, /Consistencia por repetición/);
+assert.match(viewsSource, /intervalo de confianza/);
+
+console.log("Ridge verificado: validación anidada determinista, MAE y nDCG@5 emparejados, consistencia por repetición, privacidad y clipping 1–10.");
