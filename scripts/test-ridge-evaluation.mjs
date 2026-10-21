@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
 import { createRecommendationEngine } from "../js/recommendations/engine.js";
+import { createRecommendationRanking } from "../js/recommendations/ranking.js";
 import { movieFeatures } from "../js/recommendations/features.js";
 import { ratingValue, movieTmdbId, titleKey } from "../js/core/movie-utils.js";
 
@@ -24,6 +25,7 @@ function fixtures(count) {
 
 function harness(records, allMovies) {
   const movieById = new Map(allMovies.map(movie => [String(movie.tmdbId), movie]));
+  const productionRanking = createRecommendationRanking({});
   const engine = createRecommendationEngine({
     getRatings: () => records,
     findMovie: (title, id) => id != null ? (movieById.get(String(id)) || null) :
@@ -40,7 +42,15 @@ function harness(records, allMovies) {
     buildProfile: engine.buildProfile,
     predictRating: engine.predictRating,
     movieTmdbId,
-    titleKey
+    titleKey,
+    rankCandidates: (candidates, limit, mode) => {
+      assert.ok(candidates.every(candidate => !("rating" in candidate) &&
+        !("userRating" in candidate) && !("personalRating" in candidate)),
+      "El ranker Ridge no debe recibir notas retenidas ni campos de valoraciones personales.");
+      assert.ok(candidates.every(candidate => !("tmdbId" in candidate)),
+        "El ranker experimental no debe recibir IDs TMDB.");
+      return productionRanking.rankCandidates(candidates, limit, mode);
+    }
   });
 }
 
@@ -49,6 +59,9 @@ const experiment = harness(records, records);
 const result = experiment.evaluate();
 assert.equal(result.available, true, "Una muestra sintética de 36 películas debe ser suficiente.");
 assert.equal(result.count, 36);
+assert.equal(result.rankingQuality.available, false,
+  "nDCG requiere 50 películas aunque Ridge permita medir MAE con 30.");
+assert.match(result.rankingQuality.reason, /al menos 50/);
 assert.equal(result.outerFolds, 5);
 assert.equal(result.foldsEvaluated, 5);
 assert.equal(result.innerFolds, 3);
@@ -66,6 +79,30 @@ const repeated = experiment.evaluate();
 assert.equal(repeated.mae, result.mae, "La evaluación debe ser determinista.");
 assert.equal(repeated.baselineMae, result.baselineMae, "La referencia emparejada debe ser determinista.");
 assert.deepEqual(repeated.selectedAlphaCounts, result.selectedAlphaCounts);
+assert.deepEqual(repeated.rankingQuality, result.rankingQuality,
+  "Disponibilidad y motivo de nDCG deben ser deterministas.");
+
+const rankingRecords = fixtures(60);
+const rankingResult = harness(rankingRecords, rankingRecords).evaluate();
+assert.equal(rankingResult.available, true);
+assert.equal(rankingResult.rankingQuality.available, true,
+  "nDCG está disponible cuando hay suficientes películas y notas relevantes.");
+assert.equal(rankingResult.rankingQuality.count, 60);
+assert.equal(rankingResult.rankingQuality.relevantCount,
+  rankingRecords.filter(record => record.rating >= 7).length);
+assert.equal(rankingResult.rankingQuality.folds, 5);
+assert.equal(rankingResult.rankingQuality.foldsEvaluated, 5);
+assert.deepEqual(rankingResult.rankingQuality.modes.map(item => item.mode),
+  ["balanced", "affinity", "variety"]);
+assert.ok(rankingResult.rankingQuality.modes.every(item =>
+  item.available && item.foldsEvaluated === 5 &&
+  item.baselineNdcgAt5 >= 0 && item.baselineNdcgAt5 <= 1 &&
+  item.ridgeNdcgAt5 >= 0 && item.ridgeNdcgAt5 <= 1 &&
+  Math.abs(item.deltaRidgeMinusBaseline - (item.ridgeNdcgAt5 - item.baselineNdcgAt5)) < 1e-10),
+"Los tres modos comparan nDCG de ambos modelos sobre idénticos pliegues.");
+assert.deepEqual(rankingResult.rankingQuality,
+  harness(rankingRecords, rankingRecords).evaluate().rankingQuality,
+  "nDCG@5 debe ser determinista.");
 
 const insufficient = harness(records.slice(0, 29), records).evaluate();
 assert.equal(insufficient.available, false);
@@ -95,4 +132,4 @@ assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequ
   "El constructor de diagnósticos no debe tener efectos secundarios.");
 assert.match(engineSource, /function buildProfile/);
 
-console.log("Ridge verificado: validación anidada determinista, métricas emparejadas, alpha interno, muestra mínima, identidad TMDB y clipping 1–10.");
+console.log("Ridge verificado: validación anidada determinista, MAE y nDCG@5 emparejados, alpha interno, privacidad y clipping 1–10.");
