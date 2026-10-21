@@ -251,7 +251,7 @@ function summarizeMaeFoldStability(deltas) {
 }
 function completeRankingQuality(count, relevantCount, totals, foldCount) {
   if (count < MIN_RANKING_RECORDS || relevantCount < MIN_RELEVANT_RECORDS) {
-    return unavailableRankingQuality(count, relevantCount);
+    return unavailableRankingQuality(count, relevantCount, null, foldCount);
   }
   const modes = RANKING_MODES.map(function (mode) {
     const total = totals[mode];
@@ -272,7 +272,7 @@ function completeRankingQuality(count, relevantCount, totals, foldCount) {
   });
   const usable = modes.filter(function (mode) { return mode.available; });
   if (!usable.length) return unavailableRankingQuality(count, relevantCount,
-    "No hubo suficientes valoraciones relevantes distribuidas en los pliegues externos.");
+    "No hubo suficientes valoraciones relevantes distribuidas en los pliegues externos.", foldCount);
   return {
     available: true,
     count: count,
@@ -320,7 +320,7 @@ function unavailableRepeatedValidation(count, relevantCount, reason) {
   };
 }
 
-function unavailableResult(count, reason, rankingQuality) {
+function unavailableResult(count, reason, rankingQuality, relevantCount) {
   return {
     available: false,
     count: Number.isInteger(count) && count >= 0 ? count : 0,
@@ -335,7 +335,7 @@ function unavailableResult(count, reason, rankingQuality) {
     predictionMin: null,
     predictionMax: null,
     foldStability: { available: false, foldsEvaluated: 0, ridgeMaeWins: 0, ties: 0, baselineMaeWins: 0 },
-    repeatedValidation: unavailableRepeatedValidation(count, 0, reason),
+    repeatedValidation: unavailableRepeatedValidation(count, relevantCount || 0, reason),
     rankingQuality: rankingQuality || unavailableRankingQuality(count, 0),
     reason: reason || "No hay suficientes valoraciones únicas con características."
   };
@@ -593,7 +593,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
     if (rows.length < MIN_RECORDS) {
       const reason = "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.";
-      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount));
+      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
     }
     try {
       const kernel = buildKernel(rows);
@@ -626,7 +626,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
     } catch (_) {
       const reason = "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.";
       return unavailableResult(rows.length, reason,
-        unavailableRankingQuality(rows.length, relevantCount, "La comparación Ridge de ranking no se completó porque el ajuste no terminó."));
+        unavailableRankingQuality(rows.length, relevantCount, "La comparación Ridge de ranking no se completó porque el ajuste no terminó."),
+        relevantCount);
     }
   }
 
