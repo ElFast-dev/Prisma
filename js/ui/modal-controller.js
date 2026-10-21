@@ -8,6 +8,7 @@ export function createModalController(ctx) {
       ctx.modalDraft = {
         movie: movie,
         mode: "rate",
+        returnMovieDetail: ctx.movieDetail || null,
         rating: existing ? ctx.ratingValue(existing) : 7,
         emotions: existing && Array.isArray(existing.emotions) ? existing.emotions.slice() : [],
         note: existing && existing.note ? existing.note : ""
@@ -59,10 +60,14 @@ export function createModalController(ctx) {
   }
 
   function closeModal() {
-    if (ctx.modalDraft && ctx.modalDraft.mode === "rate" && ctx.movieDetail) {
-      // A live detail sheet is sufficient evidence for returning; do not let a stale
-      // ratingReturnDetail flag close and discard the underlying movie detail.
-      ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.renderModal(); return;
+    if (ctx.modalDraft && ctx.modalDraft.mode === "rate") {
+      // Keep an explicit return target: rating state and detail UI are different layers,
+      // and the detail may temporarily be cleared by a render/state transition.
+      const returnMovieDetail = ctx.movieDetail || ctx.modalDraft.returnMovieDetail || null;
+      if (returnMovieDetail) {
+        ctx.movieDetail = returnMovieDetail;
+        ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.renderModal(); return;
+      }
     }
     ctx.modalDraft = null; ctx.ratingReturnDetail = false; ctx.movieDetail = null; ctx.personDetail = null; ctx.utilitySheet = null;
     const root = ctx.$("#modalRoot");
