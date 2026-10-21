@@ -56,20 +56,37 @@ export function createRecommendationEngine(dependencies) {
 
   function predictRating(movie, profile, options) {
     const features = movieFeatures(movie, null, options);
-    const matches = features.map(function (feature) {
+    const matchingFeatures = features.map(function (feature) {
       const item = profile.features.get(feature);
       if (!item) return null;
       const signalWeight = signalWeightForFeature(feature);
       return {
         name: featureLabel(feature),
         weight: item.weight,
-        influence: item.weight * signalWeight / Math.max(1, features.length),
+        rawInfluence: item.weight * signalWeight,
         signalWeight: signalWeight,
         count: item.count,
         mean: item.mean,
         raw: feature
       };
     }).filter(Boolean);
+    const normalizationMode = options && options.influenceNormalization;
+    const featureCount = Math.max(1, features.length);
+    const matchedCount = Math.max(1, matchingFeatures.length);
+    let denominator = featureCount;
+    if (normalizationMode === "coverage-sqrt") {
+      // Intermediate hypothesis: attenuate less than 1/N while retaining an explicit coverage penalty.
+      denominator = Math.sqrt(featureCount * matchedCount);
+    } else if (normalizationMode === "matched-only") {
+      // Diagnostic upper bound only: ignores unknown feature coverage and must never be the production default.
+      denominator = matchedCount;
+    }
+    const matches = matchingFeatures.map(function (item) {
+      return Object.assign({}, item, {
+        influence: item.rawInfluence / denominator
+      });
+    });
+    matches.forEach(function (item) { delete item.rawInfluence; });
     const coverage = features.length ? matches.length / features.length : 0;
     const weighted = features.length
       ? matches.reduce(function (sum, item) { return sum + item.influence; }, 0)
