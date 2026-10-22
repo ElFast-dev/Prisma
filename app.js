@@ -1,7 +1,7 @@
 import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js";
 import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { createStorageProtection } from "./js/core/storage-protection.js";
-import { emptyState, ensureState } from "./js/core/state-model.js";
+import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-1";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261022-9";
@@ -13,7 +13,7 @@ import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261022-2";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261022-1";
-import { createPageViews } from "./js/ui/page-views.js?v=core-20261022-17";
+import { createPageViews } from "./js/ui/page-views.js?v=core-20261022-18";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261021-3";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261021-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
@@ -27,7 +27,7 @@ import { createModalController } from "./js/ui/modal-controller.js?v=core-202610
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
-import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-3";
+import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-4";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 

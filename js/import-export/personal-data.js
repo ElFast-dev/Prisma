@@ -1,5 +1,6 @@
 import { movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
 import { dateOnlyInTimeZone } from "../core/date-utils.js";
+import { createConfirmedWatchStreakRecord } from "../core/watch-streak.js";
 
 const CONFIRMED_STREAK_START_DAY = "2026-01-15";
 const CONFIRMED_STREAK_START_TITLE = "source code";
@@ -43,6 +44,7 @@ export function extractPersonalCollections(root) {
         titleKey(raw.t || raw.title || raw.name || "") === CONFIRMED_STREAK_START_TITLE;
       return isStartMovie && dateOnlyInTimeZone(raw.a) === CONFIRMED_STREAK_START_DAY;
     }));
+  const confirmedWatchStreak = currentStreakExport ? createConfirmedWatchStreakRecord() : null;
   function findArray(names) {
     for (let i = 0; i < names.length; i += 1) {
       const key = Object.keys(scope || {}).find(function (candidate) { return candidate.toLowerCase() === names[i].toLowerCase(); });
@@ -113,7 +115,13 @@ export function extractPersonalCollections(root) {
   const watchlist = pendingRaw.map(function (raw) { return convert(raw, "pending"); }).filter(Boolean);
   const hidden = hiddenRaw.map(function (raw) { return convert(raw, "hidden"); }).filter(Boolean);
   const records = mergeMovieListByTitle([], watched.concat(watchlist, hidden));
-  return { watched:watched, watchlist:watchlist, hidden:hidden, records:records };
+  return {
+    watched:watched,
+    watchlist:watchlist,
+    hidden:hidden,
+    records:records,
+    confirmedWatchStreak:confirmedWatchStreak
+  };
 }
 
 export function hasImportedCollection(collection) {

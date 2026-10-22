@@ -56,6 +56,41 @@ export function dateOnlyInTimeZone(raw, timeZone = PANAMA_TIME_ZONE) {
   }
 }
 
+export function listDateOnlyRange(startValue, endValue) {
+  const start = validDateOnly(startValue);
+  const end = validDateOnly(endValue);
+  if (!start || !end) return [];
+  const startTimestamp = Date.parse(start + "T00:00:00.000Z");
+  const endTimestamp = Date.parse(end + "T00:00:00.000Z");
+  const dayCount = Math.floor((endTimestamp - startTimestamp) / 86400000) + 1;
+  if (!Number.isFinite(dayCount) || dayCount < 1 || dayCount > 4000) return [];
+  return Array.from({ length: dayCount }, function (_, index) {
+    return new Date(startTimestamp + index * 86400000).toISOString().slice(0, 10);
+  });
+}
+
+export function formatDateOnlyLong(raw) {
+  const day = validDateOnly(raw);
+  if (!day) return null;
+  return new Intl.DateTimeFormat("es-PA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC"
+  }).format(new Date(day + "T12:00:00.000Z"));
+}
+
+export function formatDateOnlyMonth(raw) {
+  const day = validDateOnly(raw);
+  if (!day) return null;
+  const month = new Intl.DateTimeFormat("es-PA", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC"
+  }).format(new Date(day + "T12:00:00.000Z"));
+  return month.charAt(0).toLocaleUpperCase("es-PA") + month.slice(1);
+}
+
 export function formatPanamaDateMDY(raw) {
   const day = dateOnlyInTimeZone(raw, PANAMA_TIME_ZONE);
   if (!day) return null;

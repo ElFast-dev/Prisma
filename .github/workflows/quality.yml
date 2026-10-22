@@ -31,6 +31,7 @@ jobs:
           node --check app.js
           node --check js/core/movie-utils.js
           node --check js/core/date-utils.js
+          node --check js/core/watch-streak.js
           node --check js/core/storage.js
           node --check js/core/storage-protection.js
           node --check js/diagnostics/recommendation-report.js
@@ -91,6 +92,9 @@ jobs:
 
       - name: Test Panama-local calendar dates
         run: node scripts/test-panama-date-utils.mjs
+
+      - name: Test confirmed daily watch streak
+        run: node scripts/test-confirmed-watch-streak.mjs
 
       - name: Test empty first launch and saved-data preservation
         run: node scripts/test-empty-first-run.mjs

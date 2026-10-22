@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -41,7 +41,8 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/ui/theme-controller.js', 'utf8'),
   readFile('js/recommendations/preferences.js', 'utf8'),
   readFile('js/app/pwa-update.js', 'utf8'),
-  readFile('js/core/date-utils.js', 'utf8')
+  readFile('js/core/date-utils.js', 'utf8'),
+  readFile('js/core/watch-streak.js', 'utf8')
 ]);
 
 function singleMatch(regex, source, label) {
@@ -98,15 +99,20 @@ const modules = [
   ['js/import-export/personal-data.js', personalData],
   ['js/tmdb/client.js', tmdbClient],
   ['js/ui/theme-controller.js', themeController],
-  ['js/core/date-utils.js', dateUtils]
+  ['js/core/date-utils.js', dateUtils],
+  ['js/core/watch-streak.js', watchStreak]
 ];
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
 assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-17"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-18"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
+assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-1"),
+  "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
+assert.ok(cached.has("./js/core/watch-streak.js"),
+  "La lógica de racha confirmada debe quedar disponible en la caché.");
 assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261022-1"),
   "El informe de diagnóstico v10 debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),

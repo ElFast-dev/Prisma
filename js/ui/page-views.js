@@ -1,4 +1,6 @@
 import { summarizeRepeatedRidgeStability } from "../recommendations/repeated-validation-summary.js?v=core-20261021-1";
+import { formatDateOnlyLong, formatDateOnlyMonth } from "../core/date-utils.js";
+import { buildConfirmedWatchStreakDays } from "../core/watch-streak.js";
 
 export function createPageViews(ctx) {
   function movieCard(movie, options) {
@@ -27,6 +29,65 @@ export function createPageViews(ctx) {
     return ctx.buildProfile().withMetadata;
   }
 
+  function renderConfirmedWatchStreakPanel() {
+    const streak = ctx.state && ctx.state.confirmedWatchStreak;
+    if (!streak) return "";
+    const days = buildConfirmedWatchStreakDays(streak, ctx.state.watched);
+    if (!days.length) return "";
+
+    const byMonth = new Map();
+    days.forEach(function (day) {
+      const monthKey = day.date.slice(0, 7);
+      if (!byMonth.has(monthKey)) byMonth.set(monthKey, []);
+      byMonth.get(monthKey).push(day);
+    });
+    const weekdays = [
+      ["L", "Lunes"], ["M", "Martes"], ["X", "Miércoles"], ["J", "Jueves"],
+      ["V", "Viernes"], ["S", "Sábado"], ["D", "Domingo"]
+    ];
+    const monthMarkup = Array.from(byMonth.entries()).map(function (monthEntry) {
+      const monthDays = monthEntry[1];
+      const first = monthDays[0].date;
+      const weekday = (new Date(first + "T00:00:00.000Z").getUTCDay() + 6) % 7;
+      const emptyCells = Array.from({ length: weekday }, function () {
+        return '<span class="watch-streak-calendar-empty" aria-hidden="true"></span>';
+      }).join("");
+      const dayCells = monthDays.map(function (day) {
+        const label = formatDateOnlyLong(day.date) || day.date;
+        const movieLabel = day.title
+          ? "Película conservada: " + day.title
+          : "El día queda confirmado, aunque el título de la película no esté conservado en la colección";
+        const extraLabel = day.additionalMovieCount
+          ? " Hay " + day.additionalMovieCount + " película(s) adicional(es) registrada(s), pero la racha cuenta un solo día."
+          : "";
+        const accessible = label + ". Un día cumplido de la racha. " + movieLabel + "." + extraLabel;
+        return '<div class="watch-streak-day ' + (day.title ? "has-movie" : "title-missing") +
+          '" role="listitem" data-watch-streak-date="' + day.date +
+          '" aria-label="' + ctx.escapeHTML(accessible) + '" title="' + ctx.escapeHTML(accessible) + '">' +
+          '<span class="watch-streak-day-number">' + String(Number(day.date.slice(8))) + '</span>' +
+          '<span class="watch-streak-day-check" aria-hidden="true">✓</span></div>';
+      }).join("");
+      return '<section class="watch-streak-month" aria-label="' + ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '">' +
+        '<h3 class="watch-streak-month-title">' + ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '</h3>' +
+        '<div class="watch-streak-weekdays" aria-hidden="true">' +
+        weekdays.map(function (weekdayItem) {
+          return '<span title="' + weekdayItem[1] + '">' + weekdayItem[0] + '</span>';
+        }).join("") + '</div>' +
+        '<div class="watch-streak-days" role="list" aria-label="Días confirmados de ' +
+        ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '">' + emptyCells + dayCells + '</div></section>';
+    }).join("");
+
+    return '<section class="panel watch-streak-panel" aria-labelledby="confirmed-watch-streak-title">' +
+      '<div class="watch-streak-summary"><div class="watch-streak-heading">' +
+      '<p class="watch-streak-eyebrow">Racha personal</p><h2 id="confirmed-watch-streak-title">15 de enero de 2026 – 21 de octubre de 2026</h2>' +
+      '<p class="metric-note">Un objetivo diario: 1 película cada día, sin saltos.</p></div>' +
+      '<div class="watch-streak-total"><strong>' + streak.totalDays.toLocaleString("es-PA") + '</strong><span>días seguidos</span></div></div>' +
+      '<p class="watch-streak-explanation">La racha que confirmaste se conserva por fecha, independientemente de que la app anterior haya perdido alguna película. Cada casilla representa un día —nunca dos— y Prisma no inventa títulos para películas que ya no estén en tu colección.</p>' +
+      '<div class="watch-streak-months">' + monthMarkup + '</div>' +
+      '<p class="watch-streak-legend"><span aria-hidden="true">✓</span> Día de racha confirmado · pasa el cursor o enfoca un día para ver el título conservado, si lo hay.</p>' +
+      '</section>';
+  }
+
   function renderHome() {
     const stats = ctx.summaryStats();
     const history = ctx.getCollectionItems("history").sort(function (a,b) { return ctx.dateScore(b.watchedAt)-ctx.dateScore(a.watchedAt); });
@@ -42,6 +103,7 @@ export function createPageViews(ctx) {
       '</section>' : "";
     return '<section class="page-heading"><h1>Progreso</h1>' + ctx.infoButton("progress","Información sobre Progreso") + '<button class="btn btn-secondary btn-small page-heading-action" type="button" data-nav="lab">Laboratorio ↗</button></section>' +
       onboarding +
+      renderConfirmedWatchStreakPanel() +
       '<div class="metrics-grid progress-metrics">' +
       ctx.metric("Vistas",String(history.length),"") +
       ctx.metric("Valoradas",String(stats.total),"") +
@@ -831,5 +893,5 @@ export function createPageViews(ctx) {
 
 
 
-  return { movieCard, ratedMetadataCount, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp };
+  return { movieCard, ratedMetadataCount, renderConfirmedWatchStreakPanel, renderHome, movieGrid, filterCatalog, renderCatalogResults, renderCatalog, recentPoster, collectionRow, collectionCompactCard, renderCollectionContent, refreshCollectionContent, renderLibrary, renderLab, renderTMDBSettings, renderData, renderApp };
 }

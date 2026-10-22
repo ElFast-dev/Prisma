@@ -1,7 +1,18 @@
 import { ratingValue, splitList } from "./movie-utils.js";
+import { normalizeConfirmedWatchStreak } from "./watch-streak.js";
 
 export function emptyState() {
-  return { version: 2, rated: [], watched: [], watchlist: [], hidden: [], events: [], updatedAt: null, importedAt: null };
+  return {
+    version: 2,
+    rated: [],
+    watched: [],
+    watchlist: [],
+    hidden: [],
+    events: [],
+    updatedAt: null,
+    importedAt: null,
+    confirmedWatchStreak: null
+  };
 }
 
 export function ensureState(value) {
@@ -18,6 +29,7 @@ export function ensureState(value) {
     watched: validList("watched"),
     watchlist: validList("watchlist"),
     hidden: validList("hidden"),
-    events: Array.isArray(incoming.events) ? incoming.events.slice(0, 80) : []
+    events: Array.isArray(incoming.events) ? incoming.events.slice(0, 80) : [],
+    confirmedWatchStreak: normalizeConfirmedWatchStreak(incoming.confirmedWatchStreak)
   });
 }
