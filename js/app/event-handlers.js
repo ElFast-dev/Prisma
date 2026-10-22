@@ -108,7 +108,10 @@ export function registerAppEvents(ctx) {
         const movie = (ctx.movieDetail && inDetail ? ctx.movieDetail.movie : null) ||
           (requestedId ? ctx.tmdbResults.find(function (item) { return ctx.movieTmdbId(item) === requestedId; }) : null) ||
           ctx.findMovie(button.dataset.title || (ctx.movieDetail && ctx.movieDetail.movie.title),requestedId) || (ctx.movieDetail && ctx.movieDetail.movie);
-        if (movie) ctx.openModal(movie,"rate");
+        if (movie) {
+          ctx.openModal(movie,"rate");
+          if (typeof ctx.enrichTMDBMovie === "function") void ctx.enrichTMDBMovie(movie);
+        }
         return;
       }
       if (action === "rating-star") { ctx.updateRatingPreview(button.dataset.rating); return; }
