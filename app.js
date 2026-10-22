@@ -4,20 +4,20 @@ import { createStorageProtection } from "./js/core/storage-protection.js";
 import { emptyState, ensureState } from "./js/core/state-model.js";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
-import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-7";
+import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261021-8";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-6";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261021-7";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261020-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261020-1";
-import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-14";
+import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-15";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261021-3";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261021-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
-import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-5";
+import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-6";
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-3";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
 import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
@@ -27,7 +27,7 @@ import { createModalController } from "./js/ui/modal-controller.js?v=core-202610
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
-import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261021-1";
+import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261021-2";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
@@ -63,6 +63,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let temporalRidgeEvaluationBusy = false;
   let temporalRidgeEvaluationProgress = null;
   let temporalRidgeEvaluationRunId = 0;
+  let temporalUseCollectionAddedAtProxy = false;
   let influenceNormalizationEvaluationResult = null;
   let influenceNormalizationEvaluationBusy = false;
   let influenceNormalizationEvaluationRunId = 0;
@@ -208,7 +209,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get temporalRidgeEvaluationResult() { return temporalRidgeEvaluationResult; },
     get temporalRidgeEvaluationBusy() { return temporalRidgeEvaluationBusy; },
     get temporalRidgeEvaluationProgress() { return temporalRidgeEvaluationProgress; },
+    get temporalUseCollectionAddedAtProxy() { return temporalUseCollectionAddedAtProxy; },
     get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
+    get toggleTemporalAddedAtProxy() { return toggleTemporalAddedAtProxy; },
     get influenceNormalizationEvaluationResult() { return influenceNormalizationEvaluationResult; },
     get influenceNormalizationEvaluationBusy() { return influenceNormalizationEvaluationBusy; },
     get runInfluenceNormalizationExperiment() { return runInfluenceNormalizationExperiment; }
@@ -520,6 +523,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     predictRating: predictRating,
     movieTmdbId: movieTmdbId,
     titleKey: titleKey,
+    getUseCollectionAddedAtProxy: function () { return temporalUseCollectionAddedAtProxy; },
     rankCandidates: recommendationRanking.rankCandidates
   });
 
@@ -623,6 +627,18 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
         if (currentPage === "lab") renderApp();
       }
     }
+  }
+
+  function toggleTemporalAddedAtProxy() {
+    if (temporalRidgeEvaluationBusy || ridgeEvaluationBusy) return;
+    temporalUseCollectionAddedAtProxy = !temporalUseCollectionAddedAtProxy;
+    temporalRidgeEvaluationRunId += 1;
+    temporalRidgeEvaluationResult = null;
+    temporalRidgeEvaluationProgress = null;
+    toast(temporalUseCollectionAddedAtProxy
+      ? "Proxy exploratorio activado: la fecha de incorporación a la lista podrá usarse solo en la evaluación temporal."
+      : "Proxy desactivado: la evaluación temporal usará solo las fechas watchedAt disponibles.");
+    if (currentPage === "lab") renderApp();
   }
 
   async function runTemporalRidgeExperiment() {
@@ -894,6 +910,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get clearRecommendationDiagnosticReport() { return clearRecommendationDiagnosticReport; },
     get runRidgeExperiment() { return runRidgeExperiment; },
     get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
+    get toggleTemporalAddedAtProxy() { return toggleTemporalAddedAtProxy; },
     get runInfluenceNormalizationExperiment() { return runInfluenceNormalizationExperiment; },
     get setRecommendationDiagnosticFeatureLabelsIncluded() { return function (value) { recommendationDiagnosticFeatureLabelsIncluded = Boolean(value); }; },
     get setTheme() { return themeController.setTheme; }

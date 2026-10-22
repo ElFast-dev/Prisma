@@ -57,6 +57,12 @@ export function extractPersonalCollections(root) {
     movie.source = "imported-json";
     movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
     if (type === "watched") {
+      if (movie.addedAt) {
+        // Preserve this as provenance for an opt-in exploratory proxy; never promote it to watchedAt.
+        movie.addedAtSource = "imported-collection";
+      } else {
+        delete movie.addedAtSource;
+      }
       const explicitWatchedAt = raw.watchedAt != null ? raw.watchedAt : raw.watched_at;
       if (explicitWatchedAt != null && explicitWatchedAt !== "") {
         movie.watchedAt = explicitWatchedAt;

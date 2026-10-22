@@ -218,8 +218,7 @@ function identityFor(entry, movie, dependencies) {
 }
 
 
-function watchedDayFor(record) {
-  const raw = record && (record.watchedAt != null ? record.watchedAt : record.watched_at);
+function dayForDateValue(raw) {
   if (raw == null || raw === "") return null;
   let timestamp;
   if (typeof raw === "number" && Number.isFinite(raw)) {
@@ -241,6 +240,17 @@ function watchedDayFor(record) {
   if (!Number.isFinite(timestamp)) return null;
   try { return new Date(timestamp).toISOString().slice(0, 10); }
   catch (_) { return null; }
+}
+
+function watchedDayFor(record) {
+  const raw = record && (record.watchedAt != null ? record.watchedAt : record.watched_at);
+  return dayForDateValue(raw);
+}
+
+function collectionAddedDayFor(record) {
+  if (!record || record.addedAtSource !== "imported-collection") return null;
+  const raw = record.addedAt != null ? record.addedAt : record.added_at;
+  return dayForDateValue(raw);
 }
 
 function groupIndicesByWatchedDay(rows, indices) {
@@ -858,9 +868,19 @@ export function createRidgeRecommendationExperiment(dependencies) {
   }
 
 
+  function collectionAddedAtProxyEnabled() {
+    return typeof dependencies.getUseCollectionAddedAtProxy === "function" &&
+      Boolean(dependencies.getUseCollectionAddedAtProxy());
+  }
+
+  function temporalDateSourceMode() {
+    return collectionAddedAtProxyEnabled() ? "collection-added-proxy" : "watchedAt-only";
+  }
+
   function temporalRows() {
     const baseRows = mappedRows();
     const watchedDayByIdentity = new Map();
+    const useCollectionAddedAtProxy = collectionAddedAtProxyEnabled();
     const isExplicitDate = function (entry) {
       return Boolean(entry && (entry.watchedAtSource === "imported-explicit" ||
         entry.watchedAtSource === "user-confirmed") && watchedDayFor(entry));
@@ -869,9 +889,12 @@ export function createRidgeRecommendationExperiment(dependencies) {
       if (!entry || !entry.title) return;
       const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
       const identity = identityFor(entry, movie, dependencies);
-      const day = watchedDayFor(entry);
+      const watchedDay = watchedDayFor(entry);
+      const explicit = isExplicitDate(entry);
+      const addedProxyDay = useCollectionAddedAtProxy && !explicit ? collectionAddedDayFor(entry) : null;
+      const day = explicit ? watchedDay : (addedProxyDay || watchedDay);
       if (!identity || !day) return;
-      const explicitDay = isExplicitDate(entry) ? day : null;
+      const explicitDay = explicit ? watchedDay : null;
       const previous = watchedDayByIdentity.get(identity);
       if (!previous) {
         watchedDayByIdentity.set(identity, { day: day, explicitDay: explicitDay });
@@ -899,6 +922,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
       } else if (history && history.explicitDay) {
         day = history.explicitDay;
         dateProvenance = "explicit";
+      } else if (useCollectionAddedAtProxy && history && history.day) {
+        day = history.day;
+        dateProvenance = "unverified";
       } else if (entryDay) {
         day = entryDay;
         dateProvenance = "unverified";
@@ -926,7 +952,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
       featureRowCount: baseRows.length,
       missingDateCount: missingDateCount,
       explicitDateCount: explicitDateCount,
-      unverifiedDateCount: unverifiedDateCount
+      unverifiedDateCount: unverifiedDateCount,
+      dateSourceMode: useCollectionAddedAtProxy ? "collection-added-proxy" : "watchedAt-only"
     };
   }
 
@@ -941,6 +968,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       unverifiedDateCount: nonNegativeInteger(unverifiedDateCount),
       dateProvenanceStatus: nonNegativeInteger(unverifiedDateCount) > 0 ? "exploratory" :
         (nonNegativeInteger(datedRowCount) > 0 ? "explicit" : "unavailable"),
+      dateSourceMode: temporalDateSourceMode(),
       missingDateCount: nonNegativeInteger(missingDateCount),
       distinctDayCount: nonNegativeInteger(dayGroupCount),
       warmupCount: 0,
@@ -1154,6 +1182,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         explicitDateCount: prepared.explicitDateCount,
         unverifiedDateCount: prepared.unverifiedDateCount,
         dateProvenanceStatus: prepared.unverifiedDateCount > 0 ? "exploratory" : "explicit",
+        dateSourceMode: prepared.dateSourceMode,
         missingDateCount: prepared.missingDateCount,
         distinctDayCount: groups.length,
         warmupCount: schedule.warmupIndices.length,

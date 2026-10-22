@@ -6,9 +6,27 @@ const addedOnly = extractPersonalCollections({
 });
 assert.equal(addedOnly.watched.length, 1);
 assert.equal(addedOnly.watched[0].addedAt, "2018-03-04T00:00:00.000Z");
+assert.equal(addedOnly.watched[0].addedAtSource, "imported-collection",
+  "La procedencia de la incorporación debe conservarse por separado para un proxy opcional.");
 assert.equal(Object.prototype.hasOwnProperty.call(addedOnly.watched[0], "watchedAt"), false,
   "El campo a/addedAt no debe convertirse en watchedAt.");
 assert.equal(Object.prototype.hasOwnProperty.call(addedOnly.watched[0], "watchedAtSource"), false);
+
+const previouslyImported = {
+  title: "Synthetic Existing Collection Movie",
+  tmdbId: "771120",
+  addedAt: "2018-03-04T00:00:00.000Z"
+};
+const reimported = mergeMovieEntries(previouslyImported, {
+  title: "Synthetic Existing Collection Movie",
+  tmdbId: "771120",
+  addedAt: "2018-03-04T00:00:00.000Z",
+  addedAtSource: "imported-collection"
+});
+assert.equal(reimported.addedAtSource, "imported-collection",
+  "Volver a importar debe incorporar el marcador de procedencia a una fecha añadida ya existente.");
+assert.equal(Object.prototype.hasOwnProperty.call(reimported, "watchedAt"), false,
+  "La reimportación no debe convertir la fecha añadida en watchedAt.");
 
 const explicitDate = "2021-08-09T14:25:00.000Z";
 const explicit = extractPersonalCollections({

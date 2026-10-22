@@ -517,11 +517,25 @@ export function createPageViews(ctx) {
     const result = ctx.temporalRidgeEvaluationResult || null;
     const busy = Boolean(ctx.temporalRidgeEvaluationBusy);
     const ridgeBusy = Boolean(ctx.ridgeEvaluationBusy);
+    const useCollectionAddedAtProxy = Boolean(ctx.temporalUseCollectionAddedAtProxy);
     const progress = ctx.temporalRidgeEvaluationProgress || null;
     const completedWindows = Number(progress && progress.completedWindows || 0);
     const totalWindows = Number(progress && progress.totalWindows || 5);
     const buttonLabel = busy ? "Ventana " + completedWindows + "/" + totalWindows + "…" :
       (ridgeBusy ? "Validación Ridge en curso…" : (result ? "Volver a evaluar" : "Evaluar historial temporal"));
+    const dateSourceMode = result && result.dateSourceMode
+      ? result.dateSourceMode
+      : (useCollectionAddedAtProxy ? "collection-added-proxy" : "watchedAt-only");
+    const dateSourceDescription = dateSourceMode === "collection-added-proxy"
+      ? "Proxy exploratorio activado: se usará la fecha de incorporación a la lista de vistas solo si no hay una fecha watchedAt más fiable. Esa fecha no confirma el día real del visionado y se contará como no verificada."
+      : "Modo normal: se usarán las fechas watchedAt disponibles. El importador no convierte automáticamente a/addedAt ni rA/ratedAt en fechas de visionado.";
+    const dateProxyControl = '<div class="temporal-date-proxy-control">' +
+      '<button class="btn btn-secondary btn-small" type="button" data-action="toggle-temporal-added-date-proxy" aria-pressed="' +
+      (useCollectionAddedAtProxy ? "true" : "false") + '"' +
+      (busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' +
+      (useCollectionAddedAtProxy ? "Proxy de fecha añadida: activado" : "Activar proxy de fecha añadida") + '</button>' +
+      '<p class="metric-note">' + dateSourceDescription + '</p>' +
+      '<p class="metric-note">La elección es temporal y local. No modifica watchedAt, las fechas guardadas ni las recomendaciones activas.</p></div>';
     const modeNames = { balanced: "Equilibrado", affinity: "Más afines", variety: "Más variedad" };
     let body = "";
     if (busy) {
@@ -530,10 +544,11 @@ export function createPageViews(ctx) {
     } else if (ridgeBusy) {
       body = '<p class="metric-note" aria-live="polite">El experimento temporal se ejecutará cuando termine la validación Ridge estándar.</p>';
     } else if (!result) {
-      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha de visionado válida, repartidas en 12 días distintos. Usa el campo explícito <strong>watchedAt</strong> o <strong>watched_at</strong>. La fecha de añadido (<strong>a</strong>/<strong>addedAt</strong>) y la edición de una nota no son fechas de visionado.</p>';
+      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha utilizable, repartidas en 12 días distintos. Usa watchedAt/watched_at por defecto. Si tu JSON solo contiene la fecha de incorporación a la lista, puedes activar el proxy anterior para hacer una comparación exploratoria.</p>';
     } else if (!result.available) {
       body = '<p class="metric-note" aria-live="polite">Evaluación temporal no disponible: ' +
         ctx.escapeHTML(result.unavailableReason || "faltan suficientes valoraciones fechadas.") + '</p>' +
+        '<p class="metric-note">' + dateSourceDescription + '</p>' +
         '<p class="metric-note">Con características: ' + Number(result.featureRowCount || 0) +
         ' · con fecha: ' + Number(result.timestampedFeatureCount || 0) +
         ' · campo watchedAt explícito: ' + Number(result.explicitDateCount || 0) +
@@ -577,9 +592,10 @@ export function createPageViews(ctx) {
         ' · campo watchedAt explícito: ' + Number(result.explicitDateCount || 0) +
         ' · procedencia no verificable: ' + Number(result.unverifiedDateCount || 0) +
         ' · sin fecha: ' + Number(result.missingDateCount || 0) + '.</p>' +
+        '<p class="metric-note">' + dateSourceDescription + '</p>' +
         (result.dateProvenanceStatus === "exploratory"
-          ? '<p class="metric-note">Resultado <strong>exploratorio</strong>: algunas fechas usadas no tienen procedencia verificable. Las marcas heredadas o generadas al registrar una acción no garantizan el día real del visionado. Reimporta un historial que incluya campos watchedAt explícitos para mejorar la trazabilidad.</p>'
-          : '<p class="metric-note">Las fechas usadas tienen un campo de visionado explícito o confirmado. Este marcador describe la procedencia del dato, no verifica de forma independiente que el día importado sea correcto.</p>') +
+          ? '<p class="metric-note">Resultado <strong>exploratorio</strong>: algunas fechas no tienen procedencia de visionado verificable. No interpretes la fecha de incorporación a una lista como el día confirmado en que viste la película. Los resultados no son evidencia concluyente.</p>'
+          : '<p class="metric-note">Las fechas usadas tienen procedencia explícita o confirmada. Este marcador describe la procedencia del dato, no verifica de forma independiente que la fecha de origen sea correcta.</p>') +
         '<p class="metric-note">Alpha se eligió en tres ventanas internas ordenadas dentro del pasado disponible: ' +
         ctx.escapeHTML(alphaCounts || "sin datos") + '.</p>' +
         (stability.available
@@ -598,7 +614,8 @@ export function createPageViews(ctx) {
       '<p class="metric-note">Entrenar con el pasado; probar con visionados posteriores</p></div>' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="run-temporal-ridge-experiment"' +
       (busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
-      body + '<p class="metric-note">Cautela con historiales antiguos: algunas versiones anteriores pudieron guardar ciertas fechas de visionado a partir de la edición de una nota. Las fechas <strong>watchedAt</strong> ya existentes no siempre permiten verificar esa procedencia; interpreta estos resultados de forma descriptiva. Las nuevas ediciones sin fecha fiable ya no crean <strong>watchedAt</strong> desde <strong>updatedAt</strong>.</p>' +
+      dateProxyControl + body +
+      '<p class="metric-note">Cautela con historiales antiguos: algunas versiones anteriores pudieron guardar ciertas fechas a partir de la edición de una nota. Las fechas watchedAt ya existentes no siempre permiten verificar esa procedencia. Las ediciones sin fecha fiable no crean watchedAt desde updatedAt.</p>' +
       '</section>';
   }
 
