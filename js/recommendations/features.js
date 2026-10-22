@@ -1,4 +1,4 @@
-import { normalizeGenreKey, uniqueStrings } from "../core/movie-utils.js?v=core-20261022-2";
+import { normalizeGenreKey, uniqueStrings } from "../core/movie-utils.js";
 
 const MIN_RELEASE_YEAR = 1888;
 const MAX_RELEASE_YEAR = 2100;
