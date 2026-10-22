@@ -98,8 +98,14 @@ export function createTMDBBrowserActions(ctx) {
     try {
       const details = await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "credits,keywords" });
       const enriched = ctx.fromTMDB(details);
-      if (ctx.modalDraft && ctx.titleKey(ctx.modalDraft.movie.title) === ctx.titleKey(movie.title)) {
-        ctx.modalDraft.movie = Object.assign({}, ctx.modalDraft.movie, enriched, { key: ctx.titleKey(enriched.title) });
+      const draftMovie = ctx.modalDraft && ctx.modalDraft.movie;
+      const draftId = String(draftMovie && (draftMovie.tmdbId || draftMovie.tmId) || "");
+      const requestedId = String(id);
+      const matchesDraft = draftId && requestedId
+        ? draftId === requestedId
+        : Boolean(draftMovie && ctx.titleKey(draftMovie.title) === ctx.titleKey(movie.title));
+      if (draftMovie && matchesDraft) {
+        ctx.modalDraft.movie = Object.assign({}, draftMovie, enriched, { key: ctx.titleKey(enriched.title) });
         ctx.renderModal();
       }
     } catch (error) {
