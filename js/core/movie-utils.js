@@ -70,46 +70,71 @@ export function sameMovieRecord(left, right) {
   if (!left || !right) return false;
   const leftId = movieTmdbId(left);
   const rightId = movieTmdbId(right);
-  if (leftId && rightId) return leftId === rightId;
+  // Pairwise equality is strict: a missing ID can only be reconciled contextually.
+  if (leftId || rightId) return Boolean(leftId && rightId && leftId === rightId);
   const leftTitle = titleKey(left.title);
   const rightTitle = titleKey(right.title);
   if (!leftTitle || leftTitle !== rightTitle) return false;
   const leftYear = movieYear(left);
   const rightYear = movieYear(right);
   if (leftYear || rightYear) return Boolean(leftYear && rightYear && leftYear === rightYear);
-  return !leftId && !rightId;
+  return true;
 }
 
+/** Discovery can merge a legacy row with another identity only when this pair is unambiguous. */
 export function sameDiscoveryMovie(left, right) {
-  return sameMovieRecord(left, right);
+  return Boolean(findMovieRecordMatch(left, [right]));
 }
 
 /**
- * Resolve a record against a collection. A missing ID/year may be reconciled
- * only when the title has a single unambiguous candidate in that collection.
+ * Resolve a record against a collection. IDs are authoritative; records missing
+ * an ID/year are reconciled only when title, known year, and the full candidate
+ * set leave a single non-conflicting match.
  */
 export function findMovieRecordMatch(entry, records) {
   if (!entry || !titleKey(entry.title)) return null;
-  const list = (records || []).filter(function (record) {
-    return record && titleKey(record.title);
-  });
-  const exact = list.find(function (record) { return sameMovieRecord(entry, record); });
-  if (exact) return exact;
-
   const title = titleKey(entry.title);
-  const sameTitle = list.filter(function (record) { return titleKey(record.title) === title; });
-  if (sameTitle.length !== 1) return null;
+  const sameTitle = (records || []).filter(function (record) {
+    return record && titleKey(record.title) === title;
+  });
+  if (!sameTitle.length) return null;
 
-  const candidate = sameTitle[0];
   const entryId = movieTmdbId(entry);
-  const candidateId = movieTmdbId(candidate);
-  if (entryId && candidateId && entryId !== candidateId) return null;
-
   const entryYear = movieYear(entry);
-  const candidateYear = movieYear(candidate);
-  if (entryYear && candidateYear) return entryYear === candidateYear ? candidate : null;
-  // Only known year conflicts are disqualifying once title uniqueness and ID checks pass.
-  return candidate;
+
+  if (entryId) {
+    const exactId = sameTitle.find(function (record) { return movieTmdbId(record) === entryId; });
+    if (exactId) return exactId;
+
+    const untagged = sameTitle.filter(function (record) {
+      if (movieTmdbId(record)) return false;
+      const year = movieYear(record);
+      return !(entryYear && year && entryYear !== year);
+    });
+    if (untagged.length !== 1) return null;
+    const candidate = untagged[0];
+    const candidateYear = movieYear(candidate);
+    const conflictingIdentity = sameTitle.some(function (record) {
+      const id = movieTmdbId(record);
+      if (!id || id === entryId) return false;
+      const year = movieYear(record);
+      // Another known identity at the same or unknown year makes the legacy row ambiguous.
+      return !(entryYear && year && entryYear !== year) &&
+        !(candidateYear && year && candidateYear !== year);
+    });
+    return conflictingIdentity ? null : candidate;
+  }
+
+  if (entryYear) {
+    const compatible = sameTitle.filter(function (record) {
+      const year = movieYear(record);
+      return !year || year === entryYear;
+    });
+    return compatible.length === 1 ? compatible[0] : null;
+  }
+
+  // Without ID or year, only a single title candidate is safe to resolve.
+  return sameTitle.length === 1 ? sameTitle[0] : null;
 }
 
 function discoveryMetadataScore(movie) {
