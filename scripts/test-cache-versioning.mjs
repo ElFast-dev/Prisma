@@ -107,7 +107,7 @@ assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-18"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-19"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-1"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
