@@ -54,7 +54,7 @@ export function createModalViews(ctx) {
   function renderMovieDetails() {
     const root = ctx.$("#modalRoot");
     if (!root || !ctx.movieDetail) return;
-    const movie = ctx.movieDetail.movie, data = ctx.movieDetail.data, rating = ctx.ratingFor(movie.title,movie.tmdbId);
+    const movie = ctx.movieDetail.movie, data = ctx.movieDetail.data, rating = ctx.ratingFor(movie.title,movie.tmdbId,movie.year);
     const seen = ctx.isInHistory(movie.title,movie.tmdbId), pending = ctx.isInWatchlist(movie.title,movie.tmdbId), hidden = ctx.isHidden(movie.title,movie.tmdbId);
     const backdrop = movie.backdropUrl || movie.posterUrl || "";
     const genreChips = (movie.genres || []).slice(0,6).map(function (genre) { return '<span class="detail-chip">' + ctx.escapeHTML(ctx.displayGenre(genre)) + '</span>'; }).join("");
@@ -201,7 +201,7 @@ export function createModalViews(ctx) {
     if (!ctx.modalDraft) return;
     const root = ctx.$("#modalRoot");
     if (!root) return;
-    const movie = ctx.modalDraft.movie, rating = ctx.ratingFor(movie.title, movie.tmdbId);
+    const movie = ctx.modalDraft.movie, rating = ctx.ratingFor(movie.title, movie.tmdbId,movie.year);
     const stars = Array.from({ length: 10 }, function (_, index) {
       const value = index + 1;
       return '<button type="button" class="rating-star ' + (value <= ctx.modalDraft.rating ? "active" : "") + '" data-action="rating-star" data-rating="' + value + '" aria-label="Puntuar ' + value + ' de 10" aria-pressed="' + (value === ctx.modalDraft.rating) + '">★</button>';
