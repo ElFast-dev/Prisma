@@ -1,4 +1,4 @@
-import { ratingValue, splitList } from "./movie-utils.js";
+import { ratingValue, splitList } from "./movie-utils.js?v=core-20261022-2";
 import { normalizeConfirmedWatchStreak } from "./watch-streak.js";
 
 export function emptyState() {
