@@ -86,6 +86,25 @@ assert.equal(confirmedMerge.watchedAt, confirmed.watchedAt,
   "Una fecha confirmada por la persona debe prevalecer sobre una importación posterior.");
 assert.equal(confirmedMerge.watchedAtSource, "user-confirmed");
 
+const confirmedChallengeImport = {
+  title: "Synthetic Merge Movie",
+  tmdbId: "771122",
+  watchedAt: "2026-10-20T06:20:00.000Z",
+  watchedAtSource: "imported-explicit",
+  watchDateConfidence: "streak-confirmed"
+};
+const correctedChallengeMerge = mergeMovieEntries({
+  title: "Synthetic Merge Movie",
+  tmdbId: "771122",
+  watchedAt: "2026-10-21T12:00:00.000Z",
+  watchedAtSource: "user-confirmed",
+  watchDateConfidence: "user-confirmed"
+}, confirmedChallengeImport);
+assert.equal(correctedChallengeMerge.watchedAt, confirmedChallengeImport.watchedAt,
+  "La reimportación de una fecha de reto verificada debe corregir un día local obsoleto guardado antes.");
+assert.equal(correctedChallengeMerge.watchedAtSource, "imported-explicit");
+assert.equal(correctedChallengeMerge.watchDateConfidence, "streak-confirmed");
+
 const challengeExport = {
   platform: "android",
   version: 2,
