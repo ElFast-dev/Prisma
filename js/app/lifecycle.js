@@ -1,4 +1,5 @@
 import { createPWAUpdateController } from "./pwa-update.js?v=core-20261021-1";
+import { normalizeConfirmedWatchStreak } from "../core/watch-streak.js";
 
 export function createAppLifecycle(ctx) {
   const pwaUpdateController = createPWAUpdateController({
@@ -28,12 +29,23 @@ export function createAppLifecycle(ctx) {
         ctx.dbGet(ctx.CATALOG_KEY),
         ctx.dbGet(ctx.TMDB_CREDENTIAL_KEY)
       ]);
-      ctx.state = ctx.ensureState(results[0]);
+      const savedState = results[0];
+      const hadConfirmedStreak = Boolean(savedState && normalizeConfirmedWatchStreak(savedState.confirmedWatchStreak));
+      ctx.state = ctx.ensureState(savedState);
+      const recoveredConfirmedStreak = Boolean(ctx.state.confirmedWatchStreak && !hadConfirmedStreak);
+      if (recoveredConfirmedStreak) {
+        // Persist the one-time recovery so the profile and backups stay corrected after this launch.
+        ctx.state.updatedAt = new Date().toISOString();
+        await ctx.dbSet(ctx.STATE_KEY, ctx.state);
+      }
       ctx.customCatalog = Array.isArray(results[1]) ? results[1].map(ctx.normalizeMovie).filter(Boolean) : [];
       ctx.tmdbCredential = results[2] && results[2].value ? results[2] : null;
       ctx.pruneTMDBCache();
       ctx.combineMovies();
       ctx.renderApp();
+      if (recoveredConfirmedStreak && typeof ctx.toast === "function") {
+        ctx.toast("Recuperé automáticamente tu racha de 280 días y corregí las fechas que aún estaban guardadas.");
+      }
       if (ctx.tmdbCredential && ctx.tmdbCredential.value) ctx.window.setTimeout(function () { ctx.enrichRatedHistoryWithTMDB(); },350);
       pwaUpdateController.register();
     } catch (error) {
