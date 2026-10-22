@@ -1,3 +1,5 @@
+import { findMovieRecordMatch } from "../core/movie-utils.js";
+
 export function createCollectionModel(dependencies) {
   const getState = dependencies.getState;
   const getCollectionTab = dependencies.getCollectionTab;
@@ -34,8 +36,9 @@ function dateScore(value) {
     });
     if (!Array.isArray(result.genres) || !result.genres.length) result.genres = known.genres || [];
     if (!Array.isArray(result.tags) || !result.tags.length) result.tags = known.tags || [];
-    if (stored.watchDateConfidence === "pre-streak-unverified" &&
-      stored.watchedAtSource !== "user-confirmed") {
+    if (stored.watchedAtSource === "action-time" ||
+      (stored.watchDateConfidence === "pre-streak-unverified" &&
+        stored.watchedAtSource !== "user-confirmed")) {
       delete result.watchedAt;
     } else {
       result.watchedAt = stored.watchedAt || null;
@@ -54,33 +57,42 @@ function dateScore(value) {
     const key = tab || collectionTab;
     let items = [];
     if (key === "history") {
-      const map = new Map();
+      const historyItems = [];
       (state.watched || []).forEach(function (entry) {
-        if (entry && entry.title) map.set(movieIdentityKey(entry),enrichCollectionMovie(entry));
-      });
-      state.rated.forEach(function (entry) {
         if (!entry || !entry.title) return;
-        const identity = movieIdentityKey(entry);
-        const prior = map.get(identity) || {};
-        const combinedConfidence = entry.watchDateConfidence || prior.watchDateConfidence || "";
+        const matched = findMovieRecordMatch(entry,historyItems);
+        if (matched) {
+          const index = historyItems.indexOf(matched);
+          historyItems[index] = enrichCollectionMovie(Object.assign({},matched,entry));
+        } else {
+          historyItems.push(enrichCollectionMovie(entry));
+        }
+      });
+      (state.rated || []).forEach(function (entry) {
+        if (!entry || !entry.title) return;
+        const prior = findMovieRecordMatch(entry,historyItems);
+        const priorIndex = prior ? historyItems.indexOf(prior) : -1;
+        const combinedConfidence = entry.watchDateConfidence || (prior && prior.watchDateConfidence) || "";
         const confirmedDate = [prior, entry].some(function (record) {
           return record && record.watchedAt && record.watchedAtSource === "user-confirmed";
         });
-        const combined = Object.assign({},prior,entry,{ rating:ratingValue(entry) });
+        const combined = Object.assign({},prior || {},entry,{ rating:ratingValue(entry) });
         if (combinedConfidence) combined.watchDateConfidence = combinedConfidence;
         if (combinedConfidence === "pre-streak-unverified" && !confirmedDate) {
           delete combined.watchedAt;
         } else {
-          combined.watchedAt = prior.watchedAt || entry.watchedAt || null;
+          combined.watchedAt = (prior && prior.watchedAt) || entry.watchedAt || null;
         }
-        map.set(identity,enrichCollectionMovie(combined));
+        const enriched = enrichCollectionMovie(combined);
+        if (priorIndex >= 0) historyItems[priorIndex] = enriched;
+        else historyItems.push(enriched);
       });
-      items = Array.from(map.values()).filter(function (item) {
-        return !(state.hidden || []).some(function (hidden) { return sameMovieRecord(hidden,item); });
+      items = historyItems.filter(function (item) {
+        return !findMovieRecordMatch(item,state.hidden || []);
       });
     } else if (key === "pending") {
       items = (state.watchlist || []).map(enrichCollectionMovie).filter(function (item) {
-        return !(state.hidden || []).some(function (hidden) { return sameMovieRecord(hidden,item); });
+        return !findMovieRecordMatch(item,state.hidden || []);
       });
     } else {
       items = (state.hidden || []).map(enrichCollectionMovie);
@@ -123,20 +135,20 @@ function dateScore(value) {
   function isInHistory(title, tmdbId) {
     const state = getState();
     const target = {title:title,tmdbId:tmdbId};
-    return state.rated.some(function (entry) { return sameMovieRecord(entry,target); }) ||
-      (state.watched || []).some(function (entry) { return sameMovieRecord(entry,target); });
+    return Boolean(findMovieRecordMatch(target,state.rated || []) ||
+      findMovieRecordMatch(target,state.watched || []));
   }
 
   function isHidden(title, tmdbId) {
     const state = getState();
     const target = {title:title,tmdbId:tmdbId};
-    return (state.hidden || []).some(function (entry) { return sameMovieRecord(entry,target); });
+    return Boolean(findMovieRecordMatch(target,state.hidden || []));
   }
 
   function isInWatchlist(title, tmdbId) {
     const state = getState();
     const target = {title:title,tmdbId:tmdbId};
-    return (state.watchlist || []).some(function (entry) { return sameMovieRecord(entry,target); });
+    return Boolean(findMovieRecordMatch(target,state.watchlist || []));
   }
 
   function isMovieInCollection(title, tmdbId) {
