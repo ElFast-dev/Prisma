@@ -49,14 +49,24 @@ function mergeCatalogFields(target, source) {
     const combined = [];
     grouped.forEach(function (items) {
       const byTmdb = new Map();
-      let noId = null;
-      let noIdHasBase = false;
+      const noIdGroups = new Map();
+      const knownYears = new Set(items.map(function (record) {
+        return Number(record.movie.year) || 0;
+      }).filter(Boolean));
+
       items.forEach(function (record) {
         const movie = record.movie;
         const tmdbId = movieTmdbId(movie);
         if (!tmdbId) {
-          noId = noId ? mergeCatalogFields(noId,movie) : Object.assign({},movie);
-          noIdHasBase = noIdHasBase || record.isBase;
+          const year = Number(movie.year) || 0;
+          const key = year ? "year:" + year : "unknown-year";
+          const prior = noIdGroups.get(key);
+          if (prior) {
+            mergeCatalogFields(prior.movie,movie);
+            prior.isBase = prior.isBase || record.isBase;
+          } else {
+            noIdGroups.set(key,{movie:Object.assign({},movie),isBase:record.isBase});
+          }
           return;
         }
         if (byTmdb.has(tmdbId)) {
@@ -68,19 +78,28 @@ function mergeCatalogFields(target, source) {
         }
       });
 
-      if (!byTmdb.size) {
-        if (noId) {
+      noIdGroups.forEach(function (noIdRecord) {
+        const noId = noIdRecord.movie;
+        const noIdYear = Number(noId.year) || 0;
+        const candidates = Array.from(byTmdb.values()).filter(function (record) {
+          const candidateYear = Number(record.movie.year) || 0;
+          if (noIdYear && candidateYear) return noIdYear === candidateYear;
+          // An unknown year may be reconciled only if the title has no competing
+          // known year and only one TMDB identity; otherwise it may be a remake.
+          if (byTmdb.size !== 1 || knownYears.size > 1) return false;
+          return true;
+        });
+
+        if (candidates.length === 1) {
+          mergeCatalogFields(candidates[0].movie,noId);
+          candidates[0].isBase = candidates[0].isBase || noIdRecord.isBase;
+        } else {
           noId.key = movieIdentityKey(noId);
-          if (!noIdHasBase) noId.source = "history";
+          if (!noIdRecord.isBase) noId.source = "history";
           combined.push(noId);
         }
-        return;
-      }
-      if (byTmdb.size === 1 && noId) {
-        const only = Array.from(byTmdb.values())[0];
-        mergeCatalogFields(only.movie,noId);
-        only.isBase = only.isBase || noIdHasBase;
-      }
+      });
+
       byTmdb.forEach(function (record) {
         const movie = record.movie;
         movie.key = movieIdentityKey(movie);
