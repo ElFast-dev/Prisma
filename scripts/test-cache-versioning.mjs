@@ -125,13 +125,13 @@ assert.ok(cached.has("./js/tmdb/history-sync.js?v=core-20261022-3"),
   "La sincronización del historial debe utilizar metadatos enriquecidos.");
 assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-3"),
   "El enriquecimiento temporal de candidatas debe estar versionado.");
-assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-4"),
+assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-5"),
   "El registro de notas sin emociones debe estar versionado.");
 assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-19"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-20"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261021-4"),
   "El ranking debe usar búsqueda de perfil con identidad y año fiables.");
@@ -143,9 +143,9 @@ assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261022-
   "El informe de diagnóstico v11 debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
-assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261022-7"),
+assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261022-8"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
-assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-7"),
+assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-8"),
   "La vista del modal debe quedar versionada al corregir las fechas de visionado.");
 assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261022-1"),
   "El helper de filmografía debe quedar versionado y precargado en la caché.");
@@ -158,7 +158,7 @@ assert.ok(cached.has(actionsImportUrl),
   "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
 assert.ok(!cached.has("./js/import-export/actions.js?v=core-20261020-1"),
   "La caché PWA no debe conservar la URL antigua del módulo de importación.");
-assert.ok(cached.has("./js/ui/modal-controller.js?v=core-20261022-5"),
+assert.ok(cached.has("./js/ui/modal-controller.js?v=core-20261022-6"),
   "El controlador del modal debe quedar versionado tras corregir su función de renderizado local.");
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {
