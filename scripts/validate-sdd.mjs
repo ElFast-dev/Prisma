@@ -259,7 +259,11 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-21-temporal-added-date-proxy/proposal.md',
   'openspec/changes/archive/2026-10-21-temporal-added-date-proxy/design.md',
   'openspec/changes/archive/2026-10-21-temporal-added-date-proxy/tasks.md',
-  'openspec/changes/archive/2026-10-21-temporal-added-date-proxy/specs/recommendations/spec.md'
+  'openspec/changes/archive/2026-10-21-temporal-added-date-proxy/specs/recommendations/spec.md',
+  'openspec/changes/archive/2026-10-21-clarify-temporal-proxy-labels/proposal.md',
+  'openspec/changes/archive/2026-10-21-clarify-temporal-proxy-labels/design.md',
+  'openspec/changes/archive/2026-10-21-clarify-temporal-proxy-labels/tasks.md',
+  'openspec/changes/archive/2026-10-21-clarify-temporal-proxy-labels/specs/recommendations/spec.md'
 ];
 
 const errors = [];
