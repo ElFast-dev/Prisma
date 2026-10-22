@@ -89,7 +89,7 @@ assert.equal(collectionModel.getCollectionItems("history")[0].watchedAt, null,
   "La fecha de incorporación y la fecha de valoración no deben convertirse en un visionado.");
 collectionState.watched[0].watchedAt = "2026-10-20T06:31:00Z";
 collectionState.watched[0].watchedAtSource = "action-time";
-assert.equal(collectionModel.getCollectionItems("history")[0].watchedAt, null,
+assert.ok(collectionModel.getCollectionItems("history")[0].watchedAt == null,
   "El historial debe ocultar la fecha automática de guardar una valoración.");
 collectionState.watched[0].watchedAtSource = "imported-explicit";
 assert.equal(collectionModel.getCollectionItems("history")[0].watchedAt, "2026-10-20T06:31:00Z",
