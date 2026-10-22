@@ -27,6 +27,7 @@ const files = [
   'js/ui/page-views.js',
   'js/ui/theme-controller.js',
   'js/ui/modal-views.js',
+  'js/ui/person-filmography.js',
   'js/app/movie-actions.js',
   'js/import-export/actions.js',
   'js/app/event-handlers.js',
