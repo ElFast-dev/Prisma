@@ -147,7 +147,8 @@ export function mergeMovieEntries(existing, incoming) {
       (record.watchedAtSource === "imported-explicit" || record.watchedAtSource === "user-confirmed") &&
       Number.isFinite(Date.parse(record.watchedAt)));
   };
-  if (isExplicitDate(fresh) && (!isExplicitDate(old) || old.watchedAtSource !== "user-confirmed")) {
+  const freshChallengeDate = fresh.watchDateConfidence === "streak-confirmed" && isExplicitDate(fresh);
+  if (freshChallengeDate || (isExplicitDate(fresh) && (!isExplicitDate(old) || old.watchedAtSource !== "user-confirmed"))) {
     merged.watchedAt = fresh.watchedAt;
     merged.watchedAtSource = fresh.watchedAtSource;
   } else if (isExplicitDate(old)) {
@@ -160,7 +161,9 @@ export function mergeMovieEntries(existing, incoming) {
     merged.watchedAt = fresh.watchedAt;
     merged.watchedAtSource = fresh.watchedAtSource;
   }
-  if (old.watchedAtSource === "user-confirmed" && old.watchedAt) {
+  if (freshChallengeDate) {
+    merged.watchDateConfidence = "streak-confirmed";
+  } else if (old.watchedAtSource === "user-confirmed" && old.watchedAt) {
     merged.watchDateConfidence = "user-confirmed";
   } else if (fresh.watchDateConfidence === "pre-streak-unverified") {
     delete merged.watchedAt;
