@@ -1,5 +1,14 @@
 import { formatPanamaDateMDY } from "../core/date-utils.js";
 
+/** Resolve only explicit watch timestamps; a rating update is not a watch date. */
+export function resolveExplicitWatchedAt(watchedRecord, ratingRecord) {
+  const candidates = [watchedRecord && watchedRecord.watchedAt, ratingRecord && ratingRecord.watchedAt];
+  for (const value of candidates) {
+    if (value != null && value !== "" && Number.isFinite(Date.parse(value))) return value;
+  }
+  return null;
+}
+
 export function createPresentationUtils(dependencies) {
   const escapeHTML = dependencies.escapeHTML;
 
