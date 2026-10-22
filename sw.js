@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v90"
+const CACHE_NAME = "prisma-shell-v91"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -12,10 +12,10 @@ const APP_ASSETS = [
   "./styles/catalog.css?v=ui-20261021-24",
   "./styles/collection-content.css?v=ui-20261021-24",
   "./styles/movie-details.css?v=ui-20261021-24",
-  "./styles/watch-streak.css?v=ui-20261021-24",
+  "./styles/watch-streak.css?v=ui-20261022-25",
   "./styles/prisma-design-system.css?v=ui-20261021-24",
 
-  "./app.js?v=ui-20261022-79",
+  "./app.js?v=ui-20261022-80",
   "./js/tmdb/client.js",
   "./js/core/movie-utils.js",
   "./js/core/date-utils.js",
@@ -34,7 +34,7 @@ const APP_ASSETS = [
   "./js/catalog/catalog-model.js?v=core-20261021-1",
   "./js/collection/collection-model.js?v=core-20261022-3",
   "./js/ui/presentation-utils.js?v=core-20261022-2",
-  "./js/ui/page-views.js?v=core-20261022-18",
+  "./js/ui/page-views.js?v=core-20261022-19",
   "./js/ui/theme-controller.js?v=theme-20261020-1",
   "./js/ui/modal-views.js?v=core-20261022-4",
   "./js/app/movie-actions.js?v=core-20261021-1",
@@ -51,7 +51,7 @@ const APP_ASSETS = [
   "./js/app/runtime.js?v=core-20261020-1",
   "./js/app/lifecycle.js?v=core-20261021-2",
   "./js/app/pwa-update.js?v=core-20261021-1",
-  "./js/import-export/personal-data.js?v=core-20261022-5",
+  "./js/import-export/personal-data.js?v=core-20261022-6",
   "./manifest.webmanifest?v=ui-20261020-15",
   "./assets/prisma.svg?v=brand-20261020-2"
 ];
