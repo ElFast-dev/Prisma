@@ -138,7 +138,7 @@ export function createImportExportActions(ctx) {
     await ctx.dbSet(ctx.CATALOG_KEY, ctx.customCatalog);
     ctx.combineMovies();
     ctx.renderApp();
-    ctx.toast("Perfil local restablecido. El catálogo de muestra permanece disponible.");
+    ctx.toast("Perfil y catálogo personal restablecidos. Conecta TMDB o importa tu catálogo para empezar de nuevo.");
   }
 
   return { importPersonalJSON, importCatalogCSV, exportBackup, restoreBackup, resetAll };
