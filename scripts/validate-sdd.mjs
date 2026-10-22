@@ -251,7 +251,11 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/design.md',
   'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/tasks.md',
   'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/specs/recommendations/spec.md',
-  'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/specs/catalog/spec.md'
+  'openspec/changes/archive/2026-10-21-canonical-genre-feature-keys/specs/catalog/spec.md',
+  'openspec/changes/archive/2026-10-21-calibrate-feature-influence-normalization/proposal.md',
+  'openspec/changes/archive/2026-10-21-calibrate-feature-influence-normalization/design.md',
+  'openspec/changes/archive/2026-10-21-calibrate-feature-influence-normalization/tasks.md',
+  'openspec/changes/archive/2026-10-21-calibrate-feature-influence-normalization/specs/recommendations/spec.md'
 ];
 
 const errors = [];
