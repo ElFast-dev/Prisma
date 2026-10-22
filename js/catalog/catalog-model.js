@@ -17,7 +17,7 @@ function mergeCatalogFields(target, source) {
     ["genres","tags","productionCountries","spokenLanguages","productionCompanies","cast","directors","writers","composers"].forEach(function (field) {
       target[field] = uniqueStrings((target[field] || []).concat(source[field] || []));
     });
-    ["year","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","originalLanguage","collectionName","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
+    ["year","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","originalLanguage","collectionName","imdbId","tmdbCreditsFetchedAt","tmdbKeywordsFetchedAt","tmdbFetchedAt","metadataSource"].forEach(function (field) {
       const current = target[field];
       const empty = current == null || current === "" || (Array.isArray(current) && current.length === 0);
       const incoming = source[field];
