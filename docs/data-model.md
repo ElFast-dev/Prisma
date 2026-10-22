@@ -27,7 +27,7 @@ El normalizador unifica variantes comunes de nombre de campos —por ejemplo, t�
 
 Los metadatos públicos incluyen voteAverage y voteCount cuando la fuente TMDB entrega esos campos. voteCount conserva el recuento de votos externo, no la cantidad de valoraciones personales. Las marcas técnicas `tmdbCreditsFetchedAt` y `tmdbKeywordsFetchedAt` distinguen una ficha con póster y géneros de otra cuyos créditos y palabras clave ya se obtuvieron; la fecha general de TMDB no debe interpretarse como evidencia de que se cargaron todas las familias de metadatos. La ficha solo presenta una puntuación numérica como TMDB cuando la procedencia está confirmada; las búsquedas de otras fuentes se identifican como enlaces externos.
 
-La aplicación tiene una identidad basada en identificadores de TMDB positivos cuando existen y usa un título normalizado como alternativa cuando faltan. Aun así, algunas rutas de importación agrupan o deduplican por título normalizado. Esto significa que la preservación de remakes y películas homónimas necesita pruebas específicas para cada origen de datos; no se debe asumir que cualquier columna CSV llamada id sea automáticamente un TMDB ID.
+La aplicación prioriza IDs TMDB positivos; cuando faltan, usa el título normalizado y el año fiable disponible. Las búsquedas contextuales solo asocian un registro incompleto si existe una correspondencia única y no hay conflicto con IDs o años conocidos. Las rutas de aprendizaje y evaluación deben pasar el año al resolver metadatos; no deben atribuir las características de un remake a otro. No se debe asumir que cualquier columna CSV llamada `id` sea automáticamente un TMDB ID.
 
 ## Persistencia
 
