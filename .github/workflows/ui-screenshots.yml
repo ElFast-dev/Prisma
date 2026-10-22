@@ -109,7 +109,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261021-24") &&
-                  lastUI.appSrc.includes("v=ui-20261022-80") &&
+                  lastUI.appSrc.includes("v=ui-20261022-81") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -295,7 +295,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v10" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v11" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||
@@ -509,36 +509,27 @@ jobs:
                 const ratingStars = await page.locator(".rating-sheet .rating-star").count();
                 if (ratingStars !== 10) throw new Error(name + ": expected ten tappable rating stars, found " + ratingStars);
                 await page.screenshot({ path: "artifacts/" + name + "-rating-sheet.png", fullPage: false, animations: "disabled" });
-                await page.locator(".rating-sheet .rating-memories > summary").click();
-                const emotionChip = page.locator(".rating-sheet [data-action='emotion'][data-emotion='Asombro']");
-                await emotionChip.click();
-                if (!(await emotionChip.getAttribute("class")).includes("selected")) {
-                  throw new Error(name + ": clicking an emotion did not select it in the rating draft");
+                const ratingPanelText = (await page.locator(".rating-sheet").innerText()).trim();
+                if (/¿Qué emociones recuerdas|¿Qué fue lo que más te hizo sentir|Añadir recuerdos|sentimientos/i.test(ratingPanelText)) {
+                  throw new Error(name + ": the rating panel still asks for emotions or personal feelings");
                 }
-                await emotionChip.click();
-                if ((await emotionChip.getAttribute("class")).includes("selected")) {
-                  throw new Error(name + ": clicking a selected emotion did not remove it from the rating draft");
-                }
-                await emotionChip.click();
-                if (!(await emotionChip.getAttribute("class")).includes("selected")) {
-                  throw new Error(name + ": an emotion could not be selected again after being removed");
-                }
-                const emotionToast = (await page.locator("#toastRoot").innerText()).trim();
-                if (/modalDraft is not defined|ReferenceError/.test(emotionToast)) {
-                  throw new Error(name + ": emotion action emitted a runtime error: " + emotionToast);
+                if (!(await page.locator(".rating-only-hint").count())) {
+                  throw new Error(name + ": the rating-only guidance is missing");
                 }
                 await page.locator(".rating-sheet .rating-star[data-rating='8']").click();
                 await page.locator(".rating-sheet [data-action='save-rating']").click();
                 await page.locator(".detail-sheet").waitFor({ state: "visible", timeout: 10000 });
                 if (!(await page.locator(".detail-action-strip").innerText()).includes("8/10")) throw new Error(name + ": the saved rating did not return to the film detail.");
 
-                // Reopen the editor to verify that the selected emotion survived saving.
+                // Reopen the editor to verify the numeric rating persists without emotional fields.
                 await page.locator(".detail-action-strip [data-action='rate']").click();
-                await page.locator(".rating-sheet .rating-memories > summary").click();
-                const persistedEmotion = page.locator(".rating-sheet [data-action='emotion'][data-emotion='Asombro']");
-                await persistedEmotion.waitFor({ state: "visible", timeout: 10000 });
-                if (!(await persistedEmotion.getAttribute("class")).includes("selected")) {
-                  throw new Error(name + ": the selected emotion was not persisted with the rating");
+                await page.locator(".rating-sheet .rating-star[data-rating='8']").waitFor({ state: "visible", timeout: 10000 });
+                const activeRating = await page.locator(".rating-sheet .rating-star[data-rating='8']").getAttribute("aria-pressed");
+                if (activeRating !== "true") {
+                  throw new Error(name + ": the saved numeric rating was not restored in the editor");
+                }
+                if (await page.locator(".rating-sheet .rating-memories, .rating-sheet [data-action='emotion']").count()) {
+                  throw new Error(name + ": emotion controls should not exist in the rating-only panel");
                 }
                 await page.locator(".rating-sheet [data-action='close-modal']").click();
                 await page.waitForTimeout(150);

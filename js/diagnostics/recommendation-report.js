@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v10";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v11";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -22,6 +22,17 @@ function featureParts(name) {
   const prefixes = [
     ["genre", "género: "],
     ["theme", "tema: "],
+    ["synopsis", "trama: "],
+    ["actor", "actor: "],
+    ["director", "director: "],
+    ["writer", "guionista: "],
+    ["composer", "compositor: "],
+    ["company", "productora: "],
+    ["country", "país: "],
+    ["language", "idioma original: "],
+    ["spokenLanguage", "idioma hablado: "],
+    ["collection", "saga: "],
+    ["runtime", "duración: "],
     ["decade", "década: "]
   ];
   for (const [type, prefix] of prefixes) {
@@ -490,7 +501,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Emociones, notas libres y textos personales",
         "Credenciales, datos de almacenamiento y copias de seguridad"
       ],
-      caution: "Las estadísticas agregadas de géneros o temas, si se incluyen sus nombres, pueden revelar parte de las preferencias personales. Revisa el informe antes de compartirlo."
+      caution: "Las estadísticas agregadas de géneros, temas, reparto o equipo creativo, si se incluyen sus nombres, pueden revelar parte de las preferencias personales. Revisa el informe antes de compartirlo."
     },
     sample: {
       ratedEntries: ratingCount,
@@ -512,6 +523,17 @@ export function buildRecommendationDiagnosticReport(input) {
       signalWeights: {
         genre: rounded(weights.genre, 4),
         theme: rounded(weights.theme, 4),
+        director: rounded(weights.director, 4),
+        collection: rounded(weights.collection, 4),
+        actor: rounded(weights.actor, 4),
+        writer: rounded(weights.writer, 4),
+        composer: rounded(weights.composer, 4),
+        synopsis: rounded(weights.synopsis, 4),
+        company: rounded(weights.company, 4),
+        country: rounded(weights.country, 4),
+        language: rounded(weights.language, 4),
+        spokenLanguage: rounded(weights.spokenLanguage, 4),
+        runtime: rounded(weights.runtime, 4),
         decade: rounded(weights.decade, 4)
       },
       featureAggregates: summarizeFeatures(features, Boolean(source.includeFeatureLabels))

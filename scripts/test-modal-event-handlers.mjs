@@ -60,17 +60,13 @@ function createHarness(action, emotion) {
   return { ctx, calls, errors, click };
 }
 
-const emotion = createHarness("emotion", "Asombro");
-await emotion.click();
-assert.deepEqual(emotion.ctx.modalDraft.emotions, ["Asombro"]);
-assert.equal(emotion.ctx.modalDraft.memoriesExpanded, true,
-  "El contexto debe conservar abierto el panel de emociones al volver a pintar el modal.");
-assert.equal(emotion.calls.renderModal, 1);
-await emotion.click();
-assert.deepEqual(emotion.ctx.modalDraft.emotions, [],
-  "Volver a pulsar una emoción debe quitarla del borrador.");
-assert.equal(emotion.calls.renderModal, 2);
-assert.deepEqual(emotion.errors, [], "No debe aparecer el ReferenceError modalDraft is not defined.");
+const obsoleteEmotionAction = createHarness("emotion", "Asombro");
+await obsoleteEmotionAction.click();
+assert.deepEqual(obsoleteEmotionAction.ctx.modalDraft.emotions, [],
+  "La antigua acción emocional ya no debe modificar la nota personal.");
+assert.equal(obsoleteEmotionAction.calls.renderModal, 0,
+  "La calificación no necesita gestionar emociones.");
+assert.deepEqual(obsoleteEmotionAction.errors, []);
 
 const detail = { ...movie };
 const controllerState = {
@@ -142,4 +138,4 @@ for (const [action, expected] of cases) {
     action + " debe cerrar la hoja de gestión después de actuar.");
 }
 
-console.log("Acciones de modal correctas: emociones, pendientes, historial y ocultación usan el contexto inyectado.");
+console.log("Acciones de modal correctas: calificación numérica, pendientes, historial y ocultación usan el contexto inyectado.");

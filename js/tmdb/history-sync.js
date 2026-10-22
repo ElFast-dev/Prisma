@@ -54,7 +54,7 @@ export function createTMDBHistorySync(ctx) {
     const id = historyTMDBId(entry);
     if (id) {
       try {
-        return await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "keywords" });
+        return await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "credits,keywords" });
       } catch (error) {
         // Si el ID guardado ya no existe, busca el título por nombre y año.
       }
@@ -76,7 +76,7 @@ export function createTMDBHistorySync(ctx) {
     }
     if (!selected && candidates.length === 1) selected = candidates[0];
     if (!selected) return null;
-    return await ctx.tmdbRequest("/movie/" + encodeURIComponent(selected.id), { language: "es-ES", append_to_response: "keywords" });
+    return await ctx.tmdbRequest("/movie/" + encodeURIComponent(selected.id), { language: "es-ES", append_to_response: "credits,keywords" });
   }
 
   function applyTMDBDetailsToRating(entry, enriched) {
@@ -94,7 +94,11 @@ export function createTMDBHistorySync(ctx) {
     entry.backdropUrl = enriched.backdropUrl || entry.backdropUrl || "";
     entry.tagline = enriched.tagline || entry.tagline || "";
     entry.status = enriched.status || entry.status || "";
-    entry.productionCountries = (enriched.productionCountries && enriched.productionCountries.length) ? enriched.productionCountries : (entry.productionCountries || []);
+    ["productionCountries","productionCompanies","spokenLanguages","cast","directors","writers","composers"].forEach(function (field) {
+      entry[field] = ctx.uniqueStrings((enriched[field] || []).concat(entry[field] || []));
+    });
+    entry.originalLanguage = enriched.originalLanguage || entry.originalLanguage || "";
+    entry.collectionName = enriched.collectionName || entry.collectionName || "";
     entry.imdbId = enriched.imdbId || entry.imdbId || "";
     entry.tmdbFetchedAt = enriched.tmdbFetchedAt || new Date().toISOString();
     entry.metadataSource = "tmdb";
@@ -120,6 +124,15 @@ export function createTMDBHistorySync(ctx) {
       year: rating.year || enriched.year,
       genres: ctx.uniqueStrings((rating.genres || []).concat(enriched.genres || [])),
       tags: ctx.uniqueStrings((rating.tags || []).concat(enriched.tags || [])),
+      productionCountries: ctx.uniqueStrings((rating.productionCountries || []).concat(enriched.productionCountries || [])),
+      productionCompanies: ctx.uniqueStrings((rating.productionCompanies || []).concat(enriched.productionCompanies || [])),
+      spokenLanguages: ctx.uniqueStrings((rating.spokenLanguages || []).concat(enriched.spokenLanguages || [])),
+      cast: ctx.uniqueStrings((rating.cast || []).concat(enriched.cast || [])),
+      directors: ctx.uniqueStrings((rating.directors || []).concat(enriched.directors || [])),
+      writers: ctx.uniqueStrings((rating.writers || []).concat(enriched.writers || [])),
+      composers: ctx.uniqueStrings((rating.composers || []).concat(enriched.composers || [])),
+      originalLanguage: rating.originalLanguage || enriched.originalLanguage || "",
+      collectionName: rating.collectionName || enriched.collectionName || "",
       overview: rating.overview || enriched.overview || "",
       posterPath: rating.posterPath || enriched.posterPath || "",
       posterUrl: rating.posterUrl || enriched.posterUrl || "",
@@ -138,6 +151,15 @@ export function createTMDBHistorySync(ctx) {
         title: ctx.customCatalog[index].title || stored.title,
         genres: ctx.uniqueStrings((ctx.customCatalog[index].genres || []).concat(stored.genres || [])),
         tags: ctx.uniqueStrings((ctx.customCatalog[index].tags || []).concat(stored.tags || [])),
+        productionCountries: ctx.uniqueStrings((ctx.customCatalog[index].productionCountries || []).concat(stored.productionCountries || [])),
+        productionCompanies: ctx.uniqueStrings((ctx.customCatalog[index].productionCompanies || []).concat(stored.productionCompanies || [])),
+        spokenLanguages: ctx.uniqueStrings((ctx.customCatalog[index].spokenLanguages || []).concat(stored.spokenLanguages || [])),
+        cast: ctx.uniqueStrings((ctx.customCatalog[index].cast || []).concat(stored.cast || [])),
+        directors: ctx.uniqueStrings((ctx.customCatalog[index].directors || []).concat(stored.directors || [])),
+        writers: ctx.uniqueStrings((ctx.customCatalog[index].writers || []).concat(stored.writers || [])),
+        composers: ctx.uniqueStrings((ctx.customCatalog[index].composers || []).concat(stored.composers || [])),
+        originalLanguage: stored.originalLanguage || ctx.customCatalog[index].originalLanguage || "",
+        collectionName: stored.collectionName || ctx.customCatalog[index].collectionName || "",
         overview: stored.overview || ctx.customCatalog[index].overview || "",
         posterUrl: stored.posterUrl || ctx.customCatalog[index].posterUrl || ""
       });

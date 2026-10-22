@@ -69,4 +69,45 @@ assert.deepEqual(movieFeatures({ title: "Solo década", year: 1987 }, null, { in
   "La variante de evaluación debe poder excluir completamente la década.");
 assert.deepEqual(movieFeatures({ title: "Fecha aislada", year: 1887 }), [],
   "Un año anterior al límite de datos cinematográficos plausibles se trata como ausente.");
-console.log("Características de recomendación correctas: décadas válidas, prioridad de registro, fechas ISO, ausencia y ablación.");
+
+const richMetadata = {
+  title: "Expedición del tiempo",
+  year: 2021,
+  genres: ["Ciencia ficción", "Misterio"],
+  tags: ["Bucle temporal", "Identidad"],
+  overview: "A detective investigates a mystery and travels through time. The mystery changes her investigation.",
+  cast: ["Actriz Principal", "Actor Secundario"],
+  directors: ["Directora Principal"],
+  writers: ["Guionista Uno"],
+  composers: ["Compositor Uno"],
+  productionCompanies: ["Estudio Norte"],
+  productionCountries: ["Canadá"],
+  originalLanguage: "en",
+  spokenLanguages: ["English"],
+  collectionName: "Crónicas del tiempo",
+  runtime: 126
+};
+const normalizedRichMetadata = normalizeMovie(richMetadata);
+assert.deepEqual(normalizedRichMetadata.cast, richMetadata.cast);
+assert.deepEqual(normalizedRichMetadata.directors, richMetadata.directors);
+assert.deepEqual(normalizedRichMetadata.writers, richMetadata.writers);
+assert.deepEqual(normalizedRichMetadata.composers, richMetadata.composers);
+assert.deepEqual(normalizedRichMetadata.productionCompanies, richMetadata.productionCompanies);
+assert.deepEqual(normalizedRichMetadata.spokenLanguages, richMetadata.spokenLanguages);
+assert.equal(normalizedRichMetadata.collectionName, richMetadata.collectionName);
+assert.equal(normalizedRichMetadata.originalLanguage, richMetadata.originalLanguage);
+const richFeatures = movieFeatures(normalizedRichMetadata);
+for (const expected of [
+  "tema: bucle temporal", "actor: actriz principal", "director: directora principal",
+  "guionista: guionista uno", "compositor: compositor uno", "productora: estudio norte",
+  "país: canada", "idioma original: en", "idioma hablado: english",
+  "saga: cronicas del tiempo", "duración: larga", "trama: mystery", "década: 2020"
+]) {
+  assert.ok(richFeatures.includes(expected), "Falta la característica cinematográfica " + expected);
+}
+assert.deepEqual(
+  movieFeatures(null, { title: "Solo datos personales", rating: 10, emotions: ["Asombro"], note: "Texto personal" }),
+  [],
+  "Las emociones y los comentarios personales heredados nunca se convierten en características."
+);
+console.log("Características correctas: señales cinematográficas ampliadas, décadas válidas y exclusión de campos emocionales.");

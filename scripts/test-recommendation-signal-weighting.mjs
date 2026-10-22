@@ -60,4 +60,39 @@ assert.ok(engineSource.includes('item.weight * signalWeight'));
 assert.ok(engineSource.includes('matches.length >= 2 && coverage >= 0.6'));
 assert.ok(rankingSource.includes('ctx.predictRating(movie, profile)'));
 assert.ok(appSource.includes('createRecommendationRanking('));
-console.log('Pruebas de recomendación correctas: API modular, señales, cobertura, confianza, explicaciones y límites 1–10.');
+
+const seedFeatures = [
+  "género: ciencia ficción", "tema: bucle temporal", "director: directora principal",
+  "actor: actriz principal", "trama: misterio"
+];
+const seedMovie = { title: "Película favorita", features: seedFeatures };
+const oneHighRating = createRecommendationEngine({
+  getRatings: () => [{ title: "Película favorita", rating: 10, tmdbId: "100" }],
+  findMovie: () => seedMovie,
+  movieFeatures,
+  ratingValue
+});
+const highProfile = oneHighRating.buildProfile();
+assert.equal(highProfile.count, 1);
+assert.ok(highProfile.average < 10 && highProfile.average > 6.5,
+  "Con una sola nota alta, la base debe suavizarse en vez de saturarse en 10.");
+assert.ok(highProfile.features.get("género: ciencia ficción").weight > 0,
+  "La primera nota alta ya debe aportar una señal positiva.");
+const closeCandidate = oneHighRating.predictRating({ features: seedFeatures }, highProfile);
+const distantCandidate = oneHighRating.predictRating({ features: ["género: terror", "director: otro director"] }, highProfile);
+assert.ok(closeCandidate.score > distantCandidate.score,
+  "Con una sola nota ya se deben priorizar candidatas con metadatos afines.");
+
+const oneLowRating = createRecommendationEngine({
+  getRatings: () => [{ title: "Película no afín", rating: 1, tmdbId: "101" }],
+  findMovie: () => ({ title: "Película no afín", features: seedFeatures }),
+  movieFeatures,
+  ratingValue
+});
+const lowProfile = oneLowRating.buildProfile();
+assert.ok(lowProfile.features.get("género: ciencia ficción").weight < 0,
+  "La primera nota baja debe aportar una señal negativa desde el inicio.");
+assert.ok(oneLowRating.predictRating({ features: seedFeatures }, lowProfile).score <
+  oneLowRating.predictRating({ features: ["género: terror"] }, lowProfile).score,
+  "Las candidatas que comparten características con una película mal valorada no deben salir favorecidas.");
+console.log('Pruebas correctas: señales, cobertura, límites 1–10 y aprendizaje desde la primera nota alta o baja.');

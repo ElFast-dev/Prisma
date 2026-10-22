@@ -198,21 +198,15 @@ export function createModalViews(ctx) {
   }
 
   function renderRatingSheet() {
+    if (!ctx.modalDraft) return;
     const root = ctx.$("#modalRoot");
-    if (!root || !ctx.modalDraft) return;
-    const movie = ctx.modalDraft.movie, rating = ctx.ratingFor(movie.title,movie.tmdbId);
-    const emotionChips = ctx.EMOTIONS.map(function (emotion) {
-      return '<button type="button" class="emotion-chip ' + (ctx.modalDraft.emotions.indexOf(emotion) >= 0 ? "selected" : "") + '" data-action="emotion" data-emotion="' + ctx.escapeHTML(emotion) + '">' + ctx.escapeHTML(emotion) + '</button>';
-    }).join("");
-    const stars = Array.from({length:10},function (_,i) {
-      const value = i + 1;
+    if (!root) return;
+    const movie = ctx.modalDraft.movie, rating = ctx.ratingFor(movie.title, movie.tmdbId);
+    const stars = Array.from({ length: 10 }, function (_, index) {
+      const value = index + 1;
       return '<button type="button" class="rating-star ' + (value <= ctx.modalDraft.rating ? "active" : "") + '" data-action="rating-star" data-rating="' + value + '" aria-label="Puntuar ' + value + ' de 10" aria-pressed="' + (value === ctx.modalDraft.rating) + '">★</button>';
     }).join("");
-    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal rating-sheet" role="dialog" aria-modal="true" aria-labelledby="ratingTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><h2 id="ratingTitle">Calificar</h2><p>' + ctx.escapeHTML(movie.title) + '</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="Cerrar">✕</button></div><div class="rating-score-large"><strong id="ratingPreview">' + ctx.modalDraft.rating + '</strong><span>/ 10</span></div><div class="rating-stars" aria-label="Selecciona una nota">' + stars + '</div><input id="ratingInput" type="hidden" value="' + ctx.modalDraft.rating + '">' +
-      '<details class="rating-memories" ' + (ctx.modalDraft.memoriesExpanded ? "open" : "") + '><summary>Añadir recuerdos (opcional)</summary><div class="form-field"><span class="field-label">¿Qué emociones recuerdas?</span><div class="emotion-grid">' + emotionChips + '</div></div><div class="form-field"><label class="field-label" for="ratingNote">¿Qué fue lo que más te hizo sentir?</label><textarea class="field" id="ratingNote" rows="3" placeholder="Una frase basta; también puedes dejarlo vacío.">' + ctx.escapeHTML(ctx.modalDraft.note) + '</textarea></div></details>' +
-      '<div class="rating-sheet-actions">' + (rating ? '<button class="btn btn-danger-outline" type="button" data-action="delete-rating" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '">Eliminar</button>' : '<button class="btn btn-danger-outline" type="button" data-action="close-modal">Cancelar</button>') + '<button class="btn btn-primary" type="button" data-action="save-rating">Calificar</button></div></section></div>';
-    const note = ctx.$("#ratingNote");
-    if (note) note.addEventListener("input", function (event) { ctx.modalDraft.note = event.target.value; });
+    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal rating-sheet" role="dialog" aria-modal="true" aria-labelledby="ratingTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><h2 id="ratingTitle">Calificar</h2><p>' + ctx.escapeHTML(movie.title) + '</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="Cerrar">✕</button></div><div class="rating-score-large"><strong id="ratingPreview">' + ctx.modalDraft.rating + '</strong><span>/ 10</span></div><div class="rating-stars" aria-label="Selecciona una nota del 1 al 10">' + stars + '</div><input id="ratingInput" type="hidden" value="' + ctx.modalDraft.rating + '"><p class="rating-only-hint">Tu nota es suficiente. Prisma analizará los metadatos de la película para personalizar tus recomendaciones.</p><div class="rating-sheet-actions">' + (rating ? '<button class="btn btn-danger-outline" type="button" data-action="delete-rating" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '">Eliminar</button>' : '<button class="btn btn-danger-outline" type="button" data-action="close-modal">Cancelar</button>') + '<button class="btn btn-primary" type="button" data-action="save-rating">Guardar nota</button></div></section></div>';
   }
 
   return { renderUtilitySheet, renderMovieDetails, renderPersonDetails, renderRatingSheet };

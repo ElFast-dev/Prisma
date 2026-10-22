@@ -1,5 +1,9 @@
 # Modelo de datos observado
 
+## Señales del recomendador
+
+La señal personal principal de aprendizaje es una nota numérica del 1 al 10 vinculada a la identidad de una película. Prisma deriva características de géneros, palabras clave, sinopsis, reparto, equipo creativo, compañías, países, idiomas, franquicia, duración y año/fecha de estreno fiable. Los campos heredados `emotions` y `note` pueden existir en exportaciones antiguas y preservarse al editar una valoración por compatibilidad, pero no se solicitan en el flujo de calificación ni se usan para construir perfiles o recomendaciones.
+
 ## Estado principal
 
 La función de inicialización usa una estructura versionada con estos campos de nivel superior:

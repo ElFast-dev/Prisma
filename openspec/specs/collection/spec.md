@@ -28,6 +28,22 @@ Prisma DEBE conservar en la colección de valoraciones únicamente registros con
 - CUANDO el estado se normaliza
 - ENTONCES el registro no se incluye como valoración válida
 
+### Requirement: Calificación personal solo numérica
+
+El flujo habitual para puntuar una película DEBE permitir seleccionar una nota entera del 1 al 10 y guardar sin pedir emociones, sentimientos o comentarios. Los campos históricos de esos tipos PUEDEN conservarse al editar una valoración antigua para evitar pérdidas, pero NO DEBEN solicitarse ni alimentar el recomendador.
+
+#### Scenario: Calificación rápida
+
+- DADO que la persona abre el panel Calificar de una película
+- CUANDO elige una nota entre 1 y 10 y la guarda
+- ENTONCES Prisma persiste la nota y los metadatos conocidos de la película sin pedir campos adicionales
+
+#### Scenario: Compatibilidad con datos antiguos
+
+- DADO que una valoración importada contiene campos heredados `emotions` o `note`
+- CUANDO se actualiza la nota numérica
+- ENTONCES esos campos se conservan sin mostrarse como preguntas ni usarse para recomendar
+
 ### Requirement: Protección de campos personales
 
 Los cambios de metadatos externos DEBEN preservar la nota personal, las emociones, la valoración y las fechas personales que ya existan, salvo que la acción solicitada indique explícitamente que se están editando esos campos.

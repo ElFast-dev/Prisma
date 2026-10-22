@@ -2,6 +2,34 @@
 
 ## Requirements
 
+### Requirement: Aprendizaje desde notas y metadatos cinematográficos, sin emociones
+
+Prisma DEBE aprender de las notas personales del 1 al 10 y de características cinematográficas verificables. Puede utilizar géneros, palabras clave, sinopsis, reparto, dirección, guion, música, productoras, países, idiomas, franquicia, duración y década cuando existan metadatos fiables. NO DEBE usar emociones, sentimientos, análisis de sentimientos ni comentarios personales como señales de recomendación.
+
+#### Scenario: Primera película valorada positivamente
+
+- DADO un perfil vacío y una primera película con nota 10 y metadatos enlazados
+- CUANDO Prisma construye el perfil y puntúa otras candidatas
+- ENTONCES las características compartidas aportan señales positivas, la base se mantiene suavizada y la confianza no se presenta como alta
+
+#### Scenario: Primera película valorada negativamente
+
+- DADO un perfil vacío y una primera película con nota 1 y metadatos enlazados
+- CUANDO Prisma construye el perfil y puntúa otras candidatas
+- ENTONCES sus características aportan señales negativas respecto a candidatas sin esas coincidencias
+
+#### Scenario: Características cinematográficas adicionales
+
+- DADO que TMDB proporciona créditos, palabras clave o detalles técnicos
+- CUANDO Prisma normaliza la ficha
+- ENTONCES utiliza solo los campos recibidos y no inventa datos ausentes
+
+#### Scenario: Campos emocionales antiguos
+
+- DADO que una importación contiene los campos heredados `emotions` o `note`
+- CUANDO se construye el perfil o se predice una candidata
+- ENTONCES estos campos no generan características ni modifican la predicción
+
 ### Requirement: Perfil explicable basado en señales disponibles
 
 Prisma DEBE basar sus predicciones en señales que existan en los registros, como géneros y etiquetas, y mostrar una explicación que no atribuya al modelo información que no tiene.

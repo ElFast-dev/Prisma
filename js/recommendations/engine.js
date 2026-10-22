@@ -1,21 +1,51 @@
 export const THEME_SUPPORT_SHRINKAGE_PRIOR = 2;
+export const RECOMMENDATION_PRIOR_RATING = 6.5;
+export const RECOMMENDATION_PRIOR_STRENGTH = 3;
 
 export const RECOMMENDATION_SIGNAL_WEIGHTS = Object.freeze({
   genre: 1,
   theme: 0.35,
+  director: 0.45,
+  collection: 0.4,
+  actor: 0.28,
+  writer: 0.3,
+  composer: 0.18,
+  synopsis: 0.12,
+  company: 0.14,
+  country: 0.12,
+  language: 0.1,
+  spokenLanguage: 0.08,
+  runtime: 0.12,
   decade: 0.2
 });
 
 function signalWeightForFeature(feature) {
   if (feature.indexOf("tema: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.theme;
+  if (feature.indexOf("trama: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.synopsis;
+  if (feature.indexOf("actor: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.actor;
+  if (feature.indexOf("director: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.director;
+  if (feature.indexOf("guionista: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.writer;
+  if (feature.indexOf("compositor: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.composer;
+  if (feature.indexOf("productora: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.company;
+  if (feature.indexOf("país: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.country;
+  if (feature.indexOf("idioma original: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.language;
+  if (feature.indexOf("idioma hablado: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.spokenLanguage;
+  if (feature.indexOf("saga: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.collection;
+  if (feature.indexOf("duración: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.runtime;
   if (feature.indexOf("década: ") === 0) return RECOMMENDATION_SIGNAL_WEIGHTS.decade;
   return RECOMMENDATION_SIGNAL_WEIGHTS.genre;
 }
 
 function featureLabel(feature) {
-  return feature.replace(/^género: /, "")
-    .replace(/^tema: /, "")
-    .replace(/^década: /, "década de ");
+  const labels = [
+    ["género: ", "género "], ["tema: ", "tema "], ["trama: ", "tema narrativo "],
+    ["actor: ", "reparto "], ["director: ", "dirección "], ["guionista: ", "guion "],
+    ["compositor: ", "música "], ["productora: ", "productora "], ["país: ", "país "],
+    ["idioma original: ", "idioma original "], ["idioma hablado: ", "idioma hablado "],
+    ["saga: ", "saga "], ["duración: ", "duración "], ["década: ", "década de "]
+  ];
+  const match = labels.find(([prefix]) => feature.indexOf(prefix) === 0);
+  return match ? match[1] + feature.slice(match[0].length) : feature;
 }
 
 export function createRecommendationEngine(dependencies) {
@@ -27,7 +57,11 @@ export function createRecommendationEngine(dependencies) {
   function buildProfile(trainingRatings, options) {
     const ratings = trainingRatings || getRatings();
     const valid = ratings.filter(function (entry) { return ratingValue(entry) != null; });
-    const average = valid.length ? valid.reduce(function (sum, entry) { return sum + ratingValue(entry); }, 0) / valid.length : 6.5;
+    const ratingSum = valid.reduce(function (sum, entry) { return sum + ratingValue(entry); }, 0);
+    const personalAverage = valid.length ? ratingSum / valid.length : RECOMMENDATION_PRIOR_RATING;
+    // A smoothed prior keeps the first note informative without claiming strong confidence.
+    const average = (ratingSum + RECOMMENDATION_PRIOR_RATING * RECOMMENDATION_PRIOR_STRENGTH) /
+      (valid.length + RECOMMENDATION_PRIOR_STRENGTH);
     const features = new Map();
     let withMetadata = 0;
     valid.forEach(function (entry) {
@@ -51,7 +85,14 @@ export function createRecommendationEngine(dependencies) {
       }
       item.mean = item.sumRating / item.count;
     });
-    return { average: average, features: features, count: valid.length, withMetadata: withMetadata };
+    return {
+      average: average,
+      personalAverage: personalAverage,
+      priorStrength: RECOMMENDATION_PRIOR_STRENGTH,
+      features: features,
+      count: valid.length,
+      withMetadata: withMetadata
+    };
   }
 
   function predictRating(movie, profile, options) {
@@ -149,7 +190,8 @@ export function createRecommendationEngine(dependencies) {
       const candidate = movie || heldOut;
       const predicted = predictRating(candidate, profile).score;
       errors.push(Math.abs(predicted - ratingValue(heldOut)));
-      baselineErrors.push(Math.abs(profile.average - ratingValue(heldOut)));
+      // Keep the reference predictor equal to the unshrunk training mean, not the model's smoothed prior.
+      baselineErrors.push(Math.abs(profile.personalAverage - ratingValue(heldOut)));
 
       // Paired experiment: same held-out entry and training split; only theme weights shrink.
       const shrinkageProfile = buildProfile(training, { themeSupportShrinkage: true });

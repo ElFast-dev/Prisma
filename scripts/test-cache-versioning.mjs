@@ -105,23 +105,39 @@ const modules = [
   ['js/ui/person-filmography.js', personFilmography]
 ];
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
+assert.ok(cached.has("./js/recommendations/features.js?v=rec-20261022-1"),
+  "El extractor ampliado de características debe tener una URL versionada en caché.");
+assert.ok(cached.has("./js/recommendations/engine.js?v=rec-20261022-1"),
+  "El motor de recomendación actualizado debe estar versionado.");
+assert.ok(cached.has("./js/core/movie-utils.js"),
+  "El normalizador compartido debe estar disponible en la caché PWA renovada.");
+assert.ok(cached.has("./js/tmdb/client.js?v=core-20261022-2"),
+  "El cliente TMDB ampliado debe estar versionado.");
+assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-2"),
+  "El catálogo debe fusionar las nuevas familias de metadatos.");
+assert.ok(cached.has("./js/tmdb/history-sync.js?v=core-20261022-2"),
+  "La sincronización del historial debe utilizar metadatos enriquecidos.");
+assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-2"),
+  "El enriquecimiento temporal de candidatas debe estar versionado.");
+assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-2"),
+  "El registro de notas sin emociones debe estar versionado.");
 assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
 assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-18"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
-assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-1"),
+assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-2"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
 assert.ok(cached.has("./js/core/watch-streak.js"),
   "La lógica de racha confirmada debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261022-1"),
-  "El informe de diagnóstico v10 debe quedar versionado y disponible en la caché de la aplicación.");
+assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261022-2"),
+  "El informe de diagnóstico v11 debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
-assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261021-6"),
+assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261022-7"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
-assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-5"),
+assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-6"),
   "La vista del modal debe quedar versionada al corregir las fechas de visionado.");
 assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261022-1"),
   "El helper de filmografía debe quedar versionado y precargado en la caché.");
@@ -134,7 +150,7 @@ assert.ok(cached.has(actionsImportUrl),
   "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
 assert.ok(!cached.has("./js/import-export/actions.js?v=core-20261020-1"),
   "La caché PWA no debe conservar la URL antigua del módulo de importación.");
-assert.ok(cached.has("./js/ui/modal-controller.js?v=core-20261021-4"),
+assert.ok(cached.has("./js/ui/modal-controller.js?v=core-20261022-5"),
   "El controlador del modal debe quedar versionado tras corregir su función de renderizado local.");
 for (const [filename, source] of modules) {
   for (const match of source.matchAll(/from\s+["'](\.\/[^"']+)["']/g)) {

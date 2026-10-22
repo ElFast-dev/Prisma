@@ -445,21 +445,21 @@ El Laboratorio DEBE mostrar recuentos agregados de fechas explícitas, fechas no
 - CUANDO se presentan los resultados
 - ENTONCES la interfaz informa esos recuentos y explica que el campo explícito no demuestra de manera independiente que la fecha sea correcta.
 
-### Requirement: Acciones fiables en la ficha y la calificación
+### Requirement: Acciones fiables en la ficha y calificación numérica
 
-Prisma DEBE ejecutar las acciones de emoción, pendientes, historial y ocultación sobre el borrador o la película que corresponde al modal abierto. El manejador NO DEBE depender de variables globales o locales que no se hayan inyectado.
+Prisma DEBE ejecutar las acciones de pendientes, historial, ocultación y calificación sobre la película y la identidad que corresponden al modal abierto. El panel de calificación DEBE solicitar únicamente una nota entera del 1 al 10; NO DEBE pedir emociones, recuerdos ni comentarios. Los campos heredados de importaciones antiguas PUEDEN conservarse por compatibilidad, pero no forman parte del flujo nuevo ni de las señales del recomendador.
 
-#### Scenario: Seleccionar una emoción
+#### Scenario: Guardar una nota
 
-- DADO que el modal de calificación tiene un borrador válido y no hay una ficha independiente abierta
-- CUANDO el usuario pulsa una emoción
-- ENTONCES el estado seleccionado cambia y la interfaz lo refleja sin mostrar un error
+- DADO que existe una ficha de película con un borrador de calificación válido
+- CUANDO la persona elige una nota del 1 al 10 y la guarda
+- ENTONCES la valoración se guarda en la identidad de película correcta sin solicitar otros datos personales
 
-#### Scenario: Cambiar una emoción
+#### Scenario: Películas con título igual
 
-- DADO que una emoción está seleccionada en el borrador
-- CUANDO el usuario vuelve a pulsarla
-- ENTONCES la emoción se elimina del borrador y se actualiza la interfaz
+- DADO que hay dos películas con título igual y distintos ID TMDB
+- CUANDO se abre el panel de calificación desde una ficha o búsqueda
+- ENTONCES Prisma actualiza o crea la nota para la identidad TMDB exacta cuando está disponible
 
 #### Scenario: Gestionar una película desde un borrador sin ficha
 
@@ -467,12 +467,11 @@ Prisma DEBE ejecutar las acciones de emoción, pendientes, historial y ocultaci�
 - CUANDO se solicita añadir a pendientes, marcar como vista u ocultar
 - ENTONCES la acción utiliza el título e identidad del borrador, modifica la colección correcta y no lanza una excepción
 
-#### Scenario: Guardar emociones
+#### Scenario: Datos emocionales heredados
 
-- DADO que una emoción está seleccionada en el modal de calificación
-- CUANDO se guarda una nota válida
-- ENTONCES la valoración personal conserva esa emoción
-
+- DADO que un registro antiguo incluye emociones o comentario libre
+- CUANDO la persona cambia su nota numérica
+- ENTONCES el flujo no vuelve a mostrar preguntas emocionales y Prisma no usa esos campos para recomendar
 
 ### Requirement: Racha diaria confirmada independiente de los títulos guardados
 

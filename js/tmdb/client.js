@@ -94,6 +94,26 @@ export function createTMDBClient(dependencies) {
       productionCountries: Array.isArray(raw.production_countries)
         ? raw.production_countries.map(function (country) { return country.name || country.iso_3166_1; })
         : [],
+      productionCompanies: Array.isArray(raw.production_companies)
+        ? uniqueStrings(raw.production_companies.map(function (company) { return company && company.name; }))
+        : [],
+      originalLanguage: raw.original_language || "",
+      spokenLanguages: Array.isArray(raw.spoken_languages)
+        ? uniqueStrings(raw.spoken_languages.map(function (language) { return language && (language.english_name || language.name || language.iso_639_1); }))
+        : [],
+      collectionName: raw.belongs_to_collection && raw.belongs_to_collection.name || "",
+      cast: raw.credits && Array.isArray(raw.credits.cast)
+        ? uniqueStrings(raw.credits.cast.slice(0, 8).map(function (person) { return person && person.name; }))
+        : [],
+      directors: raw.credits && Array.isArray(raw.credits.crew)
+        ? uniqueStrings(raw.credits.crew.filter(function (person) { return person && person.job === "Director"; }).slice(0, 2).map(function (person) { return person.name; }))
+        : [],
+      writers: raw.credits && Array.isArray(raw.credits.crew)
+        ? uniqueStrings(raw.credits.crew.filter(function (person) { return person && /writer|screenplay|story|novel|adaptation/i.test(String(person.job || "")); }).slice(0, 4).map(function (person) { return person.name; }))
+        : [],
+      composers: raw.credits && Array.isArray(raw.credits.crew)
+        ? uniqueStrings(raw.credits.crew.filter(function (person) { return person && /composer|music/i.test(String(person.job || "")); }).slice(0, 3).map(function (person) { return person.name; }))
+        : [],
       imdbId: raw.imdb_id || "",
       tmdbFetchedAt: new Date().toISOString(),
       metadataSource: "tmdb",

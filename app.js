@@ -1,34 +1,34 @@
 import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js";
 import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { createStorageProtection } from "./js/core/storage-protection.js";
-import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-1";
-import { movieFeatures } from "./js/recommendations/features.js";
-import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
+import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
+import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1";
+import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261022-1";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261022-9";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261022-1";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261022-2";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
-import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
+import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261022-2";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261022-3";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261022-3";
 import { createPageViews } from "./js/ui/page-views.js?v=core-20261022-18";
-import { createModalViews } from "./js/ui/modal-views.js?v=core-20261022-5";
-import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261021-1";
+import { createModalViews } from "./js/ui/modal-views.js?v=core-20261022-6";
+import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261022-2";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261022-2";
-import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261021-6";
+import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261022-7";
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-3";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
-import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261020-1";
-import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261021-1";
-import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-20261020-1";
-import { createModalController } from "./js/ui/modal-controller.js?v=core-20261021-4";
+import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261022-2";
+import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261022-2";
+import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-20261022-2";
+import { createModalController } from "./js/ui/modal-controller.js?v=core-20261022-5";
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-5";
-import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
+import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js?v=core-20261022-2";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
 (function () {
@@ -42,7 +42,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const CATALOG_KEY = "catalogCustom";
   const TMDB_CREDENTIAL_KEY = "tmdbCredential";
   const TMDB_LOGO_URL = "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg";
-  const EMOTIONS = ["Asombro", "Alegría", "Tristeza", "Tensión", "Sorpresa", "Miedo", "Esperanza", "Curiosidad", "Empatía", "Nostalgia", "Frustración", "Alivio", "Ilusión", "Inquietud"];
  
 
   let customCatalog = [];
@@ -225,7 +224,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get personDetail() { return personDetail; },
     get personListFilter() { return personListFilter; },
     get state() { return state; },
-    get EMOTIONS() { return EMOTIONS; },
     get COLLECTION_GENRES() { return COLLECTION_GENRES; },
     get escapeHTML() { return escapeHTML; },
     get infoButton() { return infoButton; },
@@ -323,6 +321,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get currentPage() { return currentPage; },
     get catalogQuery() { return catalogQuery; },
     get loadTMDBPage() { return loadTMDBPage; },
+    get enrichTMDBMovie() { return enrichTMDBMovie; },
     get tmdbResults() { return tmdbResults; },
     set tmdbResults(value) { tmdbResults = value; },
     get recommendationCandidates() { return tmdbRecommendationCandidates; },
