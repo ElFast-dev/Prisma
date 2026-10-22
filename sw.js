@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v88"
+const CACHE_NAME = "prisma-shell-v89"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -33,10 +33,10 @@ const APP_ASSETS = [
   "./js/catalog/csv-parser.js",
   "./js/catalog/catalog-model.js?v=core-20261021-1",
   "./js/collection/collection-model.js?v=core-20261022-2",
-  "./js/ui/presentation-utils.js?v=core-20261022-1",
+  "./js/ui/presentation-utils.js?v=core-20261022-2",
   "./js/ui/page-views.js?v=core-20261022-18",
   "./js/ui/theme-controller.js?v=theme-20261020-1",
-  "./js/ui/modal-views.js?v=core-20261021-3",
+  "./js/ui/modal-views.js?v=core-20261022-4",
   "./js/app/movie-actions.js?v=core-20261021-1",
   "./js/import-export/actions.js?v=core-20261020-1",
   "./js/app/event-handlers.js?v=core-20261021-6",
