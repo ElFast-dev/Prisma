@@ -1,0 +1,131 @@
+import assert from "node:assert/strict";
+import {
+  findMovieRecordMatch, movieIdentityKey, movieTmdbId, normalizeMovie,
+  ratingValue, sameDiscoveryMovie, sameMovieRecord, titleKey, uniqueDiscoveryMovies,
+  uniqueStrings
+} from "../js/core/movie-utils.js";
+import { parseCatalogCSV } from "../js/catalog/csv-parser.js";
+import { createCatalogModel } from "../js/catalog/catalog-model.js";
+import { mergeMovieListByTitle } from "../js/import-export/personal-data.js";
+
+assert.notEqual(
+  movieIdentityKey({ title: "Prisma Identity Fixture", year: 1998 }),
+  movieIdentityKey({ title: "Prisma Identity Fixture", year: 2024 }),
+  "La identidad de fallback debe distinguir años cuando no hay ID TMDB."
+);
+assert.equal(
+  sameMovieRecord(
+    { title: "Prisma Identity Fixture", year: 1998 },
+    { title: "Prisma Identity Fixture", year: 2024, tmdbId: "990001" }
+  ),
+  false,
+  "Un registro sin ID de otra década no debe confundirse con un remake de TMDB."
+);
+assert.equal(
+  sameMovieRecord(
+    { title: "Prisma Identity Fixture", year: 1998, tmdbId: "990001" },
+    { title: "Prisma Identity Fixture", year: 2024, tmdbId: "990002" }
+  ),
+  false,
+  "IDs TMDB diferentes representan identidades distintas aunque compartan título."
+);
+assert.equal(
+  sameMovieRecord(
+    { title: "Prisma Identity Fixture", year: 1998 },
+    { title: "Prisma Identity Fixture", year: 1998, tmdbId: "990001" }
+  ),
+  true,
+  "El año permite asociar un registro legado sin ID a una identidad TMDB inequívoca."
+);
+assert.equal(sameDiscoveryMovie(
+  { title: "Prisma Discovery Fixture", year: 1998 },
+  { title: "Prisma Discovery Fixture", year: 2024 }
+), false);
+
+const singleTMDB = { title: "About Time", year: 2013, tmdbId: "122906" };
+assert.equal(
+  findMovieRecordMatch({ title: "About Time" }, [singleTMDB]),
+  singleTMDB,
+  "Un registro legado ambiguo solo por falta de datos puede asociarse si existe una única candidata."
+);
+const remakes = [
+  { title: "Same Name Fixture", year: 1998, tmdbId: "990101" },
+  { title: "Same Name Fixture", year: 2024, tmdbId: "990102" }
+];
+assert.equal(
+  findMovieRecordMatch({ title: "Same Name Fixture" }, remakes),
+  null,
+  "Un título sin ID ni año no debe elegir arbitrariamente entre remakes."
+);
+
+const discoveryUnique = uniqueDiscoveryMovies([
+  { title: "About Time", year: 2013, overview: "", genres: [] },
+  { title: "About Time", year: 2013, tmdbId: "122906", overview: "Sinopsis con metadatos TMDB", genres: ["Drama"] },
+  { title: "Same Name Fixture", year: 1998, tmdbId: "990101" },
+  { title: "Same Name Fixture", year: 2024, tmdbId: "990102" },
+  { title: "Same Name Fixture" }
+]);
+assert.equal(discoveryUnique.length, 4,
+  "Se unifica la fila vacía con el único registro TMDB posible y se conservan los homónimos ambiguos.");
+assert.equal(discoveryUnique.find(movie => movie.title === "About Time").tmdbId, "122906");
+assert.equal(discoveryUnique.find(movie => movie.title === "About Time").overview, "Sinopsis con metadatos TMDB");
+assert.equal(discoveryUnique.filter(movie => movie.title === "Same Name Fixture").length, 3,
+  "Dos remakes y un registro sin año ambiguo permanecen separados.");
+
+const csv = parseCatalogCSV([
+  "title,year,genres",
+  "Prisma CSV Identity Fixture,1998,Drama",
+  "Prisma CSV Identity Fixture,2024,Action",
+  "Prisma CSV Identity Fixture,1998,Comedy"
+].join("\n"));
+assert.equal(csv.length, 2, "CSV debe deduplicar el mismo título/año sin fusionar años distintos.");
+assert.deepEqual(csv.map(movie => movie.year).sort(), [1998, 2024]);
+
+const mergedSameYear = mergeMovieListByTitle([], [
+  { title: "Prisma Import Identity Fixture", year: 1998, genres: ["Drama"] },
+  { title: "Prisma Import Identity Fixture", year: 2024, genres: ["Action"] },
+  { title: "Prisma Import Identity Fixture", year: 1998, tmdbId: "990201", overview: "Metadatos" }
+]);
+assert.equal(mergedSameYear.length, 2, "La importación combina la fila del mismo año pero mantiene el remake.");
+assert.ok(mergedSameYear.some(movie => movie.tmdbId === "990201" && movie.year === 1998));
+assert.ok(mergedSameYear.some(movie => movie.year === 2024));
+
+function combinedCatalog(customCatalog, rated = []) {
+  let catalog = [];
+  let catalogByTitle = new Map();
+  const state = { watched: [], watchlist: [], hidden: [], rated };
+  const model = createCatalogModel({
+    getCustomCatalog: () => customCatalog,
+    getState: () => state,
+    getCatalog: () => catalog,
+    getCatalogByTitle: () => catalogByTitle,
+    setCatalog: value => { catalog = value; },
+    setCatalogByTitle: value => { catalogByTitle = value; },
+    normalizeMovie,
+    titleKey,
+    movieTmdbId,
+    movieIdentityKey,
+    uniqueStrings,
+    ratingValue,
+    movieFeatures: () => []
+  });
+  model.combineMovies();
+  return catalog;
+}
+
+const catalogRemakes = combinedCatalog([
+  { title: "Prisma Catalog Identity Fixture", year: 1998, genres: ["Drama"] },
+  { title: "Prisma Catalog Identity Fixture", year: 2024, tmdbId: "990301", genres: ["Action"] }
+]);
+assert.equal(catalogRemakes.length, 2,
+  "El catálogo combinado debe preservar un registro sin ID del año 1998 frente al remake TMDB de 2024.");
+
+const ambiguousCatalog = combinedCatalog([
+  { title: "Prisma Ambiguous Catalog Fixture", year: 1998, tmdbId: "990401" },
+  { title: "Prisma Ambiguous Catalog Fixture", year: 2024, tmdbId: "990402" },
+  { title: "Prisma Ambiguous Catalog Fixture" }
+]);
+assert.equal(ambiguousCatalog.length, 3,
+  "El catálogo no debe asignar una fila sin año al primer remake arbitrariamente.");
+
+console.log("Identidad cinematográfica correcta: ID TMDB prioritario, año en fallback, remakes conservados y asociación solo cuando es inequívoca.");
