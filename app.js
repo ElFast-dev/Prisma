@@ -824,6 +824,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get customCatalog() { return customCatalog; },
     set customCatalog(value) { customCatalog = value; },
     get catalog() { return catalog; },
+    get sameMovieRecord() { return sameMovieRecord; },
     get CATALOG_KEY() { return CATALOG_KEY; },
     get tmdbCredential() { return tmdbCredential; },
     get tmdbHistorySync() { return tmdbHistorySync; },
