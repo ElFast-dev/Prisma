@@ -22,7 +22,7 @@ const APP_ASSETS = [
   "./js/core/watch-streak.js",
   "./js/core/storage.js?v=core-20261020-1",
   "./js/core/storage-protection.js",
-  "./js/core/state-model.js?v=core-20261022-1",
+  "./js/core/state-model.js?v=core-20261022-2",
   "./js/recommendations/features.js?v=rec-20261022-1",
   "./js/recommendations/engine.js?v=rec-20261022-1",
   "./js/recommendations/ridge-evaluation.js?v=core-20261022-9",
