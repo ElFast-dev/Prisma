@@ -186,7 +186,7 @@ assert.equal((panel.match(/class="watch-streak-day /g) || []).length, 280,
   "La vista debe mostrar un único marcador para cada día del intervalo.");
 assert.equal((panel.match(/<details class="watch-streak-month"/g) || []).length, 10,
   "El calendario conserva un desplegable para cada mes de la racha.");
-assert.equal((panel.match(/<details class="watch-streak-month"[^>]*\\sopen>/g) || []).length, 1,
+assert.equal((panel.match(/<details class="watch-streak-month"[^>]*\sopen>/g) || []).length, 1,
   "Solo el mes más reciente debe aparecer desplegado inicialmente.");
 assert.equal(createPageViews({ state: emptyState(), escapeHTML }).renderConfirmedWatchStreakPanel(), "",
   "La racha personal no debe mostrarse a una instalación vacía ni a otra persona sin importación.");
