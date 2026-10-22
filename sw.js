@@ -17,7 +17,7 @@ const APP_ASSETS = [
 
   "./app.js?v=ui-20261022-81",
   "./js/tmdb/client.js?v=core-20261022-2",
-  "./js/core/movie-utils.js",
+  "./js/core/movie-utils.js?v=core-20261022-2",
   "./js/core/date-utils.js",
   "./js/core/watch-streak.js",
   "./js/core/storage.js?v=core-20261020-1",
