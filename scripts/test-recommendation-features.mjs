@@ -87,7 +87,16 @@ const richMetadata = {
   collectionName: "Crónicas del tiempo",
   runtime: 126
 };
-const richFeatures = movieFeatures(richMetadata);
+const normalizedRichMetadata = normalizeMovie(richMetadata);
+assert.deepEqual(normalizedRichMetadata.cast, richMetadata.cast);
+assert.deepEqual(normalizedRichMetadata.directors, richMetadata.directors);
+assert.deepEqual(normalizedRichMetadata.writers, richMetadata.writers);
+assert.deepEqual(normalizedRichMetadata.composers, richMetadata.composers);
+assert.deepEqual(normalizedRichMetadata.productionCompanies, richMetadata.productionCompanies);
+assert.deepEqual(normalizedRichMetadata.spokenLanguages, richMetadata.spokenLanguages);
+assert.equal(normalizedRichMetadata.collectionName, richMetadata.collectionName);
+assert.equal(normalizedRichMetadata.originalLanguage, richMetadata.originalLanguage);
+const richFeatures = movieFeatures(normalizedRichMetadata);
 for (const expected of [
   "tema: bucle temporal", "actor: actriz principal", "director: directora principal",
   "guionista: guionista uno", "compositor: compositor uno", "productora: estudio norte",
