@@ -1,7 +1,7 @@
 import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js";
 import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { createStorageProtection } from "./js/core/storage-protection.js";
-import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-1";
+import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
 import { movieFeatures } from "./js/recommendations/features.js";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261022-9";
@@ -26,7 +26,7 @@ import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-202610
 import { createModalController } from "./js/ui/modal-controller.js?v=core-20261021-4";
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
-import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
+import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261022-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-5";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
@@ -798,6 +798,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get navigator() { return navigator; },
     get fetch() { return window.fetch.bind(window); },
     get dbGet() { return dbGet; },
+    get dbSet() { return dbSet; },
     get STATE_KEY() { return STATE_KEY; },
     get CATALOG_KEY() { return CATALOG_KEY; },
     get TMDB_CREDENTIAL_KEY() { return TMDB_CREDENTIAL_KEY; },
@@ -806,6 +807,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get pruneTMDBCache() { return pruneTMDBCache; },
     get combineMovies() { return combineMovies; },
     get renderApp() { return renderApp; },
+    get toast() { return toast; },
     get enrichRatedHistoryWithTMDB() { return enrichRatedHistoryWithTMDB; },
     get loadTMDBPage() { return loadTMDBPage; },
     get catalogQuery() { return catalogQuery; },
