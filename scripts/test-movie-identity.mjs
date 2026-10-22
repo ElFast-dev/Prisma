@@ -128,4 +128,36 @@ const ambiguousCatalog = combinedCatalog([
 assert.equal(ambiguousCatalog.length, 3,
   "El catálogo no debe asignar una fila sin año al primer remake arbitrariamente.");
 
+let lookupCatalog = [
+  { title: "Prisma Lookup Identity Fixture", year: 1998, tmdbId: "990501", genres: ["Drama"] },
+  { title: "Prisma Lookup Identity Fixture", year: 2024, tmdbId: "990502", genres: ["Action"] }
+];
+const lookupRatings = [
+  { title: "Prisma Lookup Identity Fixture", year: 1998, rating: 4 },
+  { title: "Prisma Lookup Identity Fixture", year: 2024, tmdbId: "990502", rating: 9 }
+];
+const lookupModel = createCatalogModel({
+  getCustomCatalog: () => lookupCatalog,
+  getState: () => ({ watched: [], watchlist: [], hidden: [], rated: lookupRatings }),
+  getCatalog: () => lookupCatalog,
+  getCatalogByTitle: () => new Map(),
+  setCatalog: value => { lookupCatalog = value; },
+  setCatalogByTitle() {},
+  normalizeMovie,
+  titleKey,
+  movieTmdbId,
+  movieIdentityKey,
+  uniqueStrings,
+  ratingValue,
+  movieFeatures: () => []
+});
+assert.equal(lookupModel.findMovie("Prisma Lookup Identity Fixture", null, 2024).tmdbId, "990502",
+  "La búsqueda con año debe seleccionar el remake correcto.");
+assert.equal(lookupModel.findMovie("Prisma Lookup Identity Fixture", null, null), null,
+  "La búsqueda sin año no debe escoger entre dos remakes.");
+assert.equal(lookupModel.ratingFor("Prisma Lookup Identity Fixture", null, 1998).rating, 4,
+  "La nota personal debe resolverse usando el año correcto.");
+assert.equal(lookupModel.ratingFor("Prisma Lookup Identity Fixture", null, null), null,
+  "No se debe atribuir una nota a un título ambiguo sin ID ni año.");
+
 console.log("Identidad cinematográfica correcta: ID TMDB prioritario, año en fallback, remakes conservados y asociación solo cuando es inequívoca.");
