@@ -22,7 +22,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/recommendations/normalization-evaluation.js` | Experimento local, bajo demanda y emparejado que compara el denominador actual, una raíz de cobertura y un control sin penalización; informa MAE, estabilidad por pliegue y nDCG@5 sin cambiar el ranking activo. |
 | `js/recommendations/ranking.js` | Puntúa y diversifica candidatas de catálogo local y el pool efímero de películas populares ya consultadas en TMDB; excluye la colección y no persiste candidatas remotas. |
 | `js/diagnostics/recommendation-report.js` | Construye el informe JSON agregado v11 del Laboratorio, incluyendo el modo de fuente temporal elegido como agregado, métricas Ridge, comparación híbrida fija 50/50, calibración de normalización y validación repetida; no serializa fechas exactas, registros individuales ni accede al DOM, almacenamiento o red. |
-| `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV. |
+| `js/catalog/csv-parser.js` | Parseo determinista de CSV/TSV con campos entrecomillados multilínea, comillas escapadas y reconciliación de metadatos repetidos por identidad. |
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
 | `js/ui/presentation-utils.js` | Utilidades puras de presentación: fechas, formatos, enlaces externos y fragmentos HTML reutilizables. |

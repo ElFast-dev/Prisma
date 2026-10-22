@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v98"
+const CACHE_NAME = "prisma-shell-v99"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,7 @@ const APP_ASSETS = [
   "./styles/watch-streak.css?v=ui-20261021-24",
   "./styles/prisma-design-system.css?v=ui-20261021-24",
 
-  "./app.js?v=ui-20261022-87",
+  "./app.js?v=ui-20261022-88",
   "./js/tmdb/client.js?v=core-20261022-3",
   "./js/core/movie-utils.js",
   "./js/core/date-utils.js",

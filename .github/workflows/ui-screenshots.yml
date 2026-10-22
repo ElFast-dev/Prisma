@@ -109,7 +109,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261021-24") &&
-                  lastUI.appSrc.includes("v=ui-20261022-87") &&
+                  lastUI.appSrc.includes("v=ui-20261022-88") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -670,7 +670,8 @@ jobs:
                   mimeType: "text/csv",
                   buffer: Buffer.from(
                     "movieId,title,year,tmdb_id,genres,overview\n" +
-                    "50001,Prisma CSV Remake Fixture,1998,990001,Drama,\"" + ("La historia sigue a una investigadora que descubre un misterio en su ciudad. ").repeat(28) + "\"\n" +
+                    "50001,Prisma CSV Remake Fixture,1998,990001,Drama,\"" + ("La historia sigue a una investigadora que descubre un misterio en su ciudad. ").repeat(28) + "Primera línea, con coma.\n" +
+                    "Segunda línea de sinopsis con \"\"comillas escapadas\"\".\"\n" +
                     "50002,Prisma CSV Remake Fixture,2024,990002,Action,Una sinopsis breve\n" +
                     "60001,Prisma MovieLens Namespace Fixture (2001),2001,,Drama,Sinopsis auxiliar"
                   )
@@ -688,7 +689,7 @@ jobs:
                       request.onsuccess = () => {
                         resolve((request.result && Array.isArray(request.result.value) ? request.result.value : [])
                           .filter(movie => /Prisma (CSV Remake|MovieLens Namespace) Fixture/.test(movie.title))
-                          .map(movie => ({ title: movie.title, tmdbId: movie.tmdbId || null, id: movie.id, year: movie.year, genres: movie.genres || [] }))
+                          .map(movie => ({ title: movie.title, tmdbId: movie.tmdbId || null, id: movie.id, year: movie.year, genres: movie.genres || [], overview: movie.overview || "" }))
                         );
                         db.close();
                       };
@@ -701,6 +702,10 @@ jobs:
                 const tmdbIds = remakes.map(movie => movie.tmdbId).sort();
                 if (remakes.length !== 2 || JSON.stringify(tmdbIds) !== JSON.stringify(["990001", "990002"])) {
                   throw new Error(name + ": CSV import collapsed remakes with distinct TMDB IDs: " + JSON.stringify(importedFixture));
+                }
+                const multilineOverview = remakes.find(movie => movie.tmdbId === "990001")?.overview || "";
+                if (!multilineOverview.includes("Primera línea, con coma.\nSegunda línea de sinopsis con \"comillas escapadas\".")) {
+                  throw new Error(name + ": the CSV importer lost a quoted newline or escaped quotes inside the synopsis");
                 }
                 const movieLensRow = importedFixture.find(movie => movie.title === "Prisma MovieLens Namespace Fixture");
                 if (!movieLensRow || movieLensRow.tmdbId || String(movieLensRow.id) !== "60001") {
