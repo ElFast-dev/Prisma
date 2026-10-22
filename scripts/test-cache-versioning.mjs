@@ -111,15 +111,17 @@ assert.ok(cached.has("./js/recommendations/engine.js?v=rec-20261022-1"),
   "El motor de recomendación actualizado debe estar versionado.");
 assert.ok(cached.has("./js/core/movie-utils.js"),
   "El normalizador compartido debe estar disponible en la caché PWA renovada.");
-assert.ok(cached.has("./js/tmdb/client.js?v=core-20261022-2"),
+assert.ok(cached.has("./js/tmdb/client.js?v=core-20261022-3"),
   "El cliente TMDB ampliado debe estar versionado.");
-assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-2"),
+assert.ok(cached.has("./js/tmdb/movie-details.js?v=core-20261022-3"),
+  "Los detalles de película deben guardar los marcadores de créditos y keywords.");
+assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-3"),
   "El catálogo debe fusionar las nuevas familias de metadatos.");
-assert.ok(cached.has("./js/tmdb/history-sync.js?v=core-20261022-2"),
+assert.ok(cached.has("./js/tmdb/history-sync.js?v=core-20261022-3"),
   "La sincronización del historial debe utilizar metadatos enriquecidos.");
-assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-2"),
+assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-3"),
   "El enriquecimiento temporal de candidatas debe estar versionado.");
-assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-2"),
+assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-3"),
   "El registro de notas sin emociones debe estar versionado.");
 assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");

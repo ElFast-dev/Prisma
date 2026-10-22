@@ -16,6 +16,8 @@ export function createMovieActions(ctx) {
       voteAverage:movie.voteAverage || old.voteAverage || null,voteCount:movie.voteCount || old.voteCount || null,runtime:movie.runtime || old.runtime || null,
       overview:movie.overview || old.overview || "",releaseDate:movie.releaseDate || old.releaseDate || null,
       backdropPath:movie.backdropPath || old.backdropPath || "",backdropUrl:movie.backdropUrl || old.backdropUrl || "",
+      tmdbCreditsFetchedAt:movie.tmdbCreditsFetchedAt || old.tmdbCreditsFetchedAt || null,
+      tmdbKeywordsFetchedAt:movie.tmdbKeywordsFetchedAt || old.tmdbKeywordsFetchedAt || null,
       tmdbFetchedAt:movie.tmdbFetchedAt || old.tmdbFetchedAt || null,
       metadataSource:movie.metadataSource || old.metadataSource || (movie.source === "tmdb" ? "tmdb" : null),
       genres:ctx.uniqueStrings((old.genres || []).concat(movie.genres || [])),

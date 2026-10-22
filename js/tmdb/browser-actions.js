@@ -92,9 +92,14 @@ export function createTMDBBrowserActions(ctx) {
     if (!movie || !ctx.tmdbCredential || !ctx.tmdbCredential.value) return;
     const id = movie.tmdbId || (movie.source === "tmdb" ? movie.id : null);
     if (!id) return;
+    const now = Date.now();
     const fetchedAt = movie.tmdbFetchedAt ? new Date(movie.tmdbFetchedAt).getTime() : 0;
-    const cacheFresh = fetchedAt && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30;
-    if (cacheFresh && movie.tags && movie.tags.length) return;
+    const creditsFetchedAt = movie.tmdbCreditsFetchedAt ? new Date(movie.tmdbCreditsFetchedAt).getTime() : 0;
+    const keywordsFetchedAt = movie.tmdbKeywordsFetchedAt ? new Date(movie.tmdbKeywordsFetchedAt).getTime() : 0;
+    const cacheFresh = fetchedAt && now - fetchedAt >= 0 && now - fetchedAt < 1000 * 60 * 60 * 24 * 30;
+    const creditsFresh = creditsFetchedAt && now - creditsFetchedAt >= 0 && now - creditsFetchedAt < 1000 * 60 * 60 * 24 * 30;
+    const keywordsFresh = keywordsFetchedAt && now - keywordsFetchedAt >= 0 && now - keywordsFetchedAt < 1000 * 60 * 60 * 24 * 30;
+    if (cacheFresh && creditsFresh && keywordsFresh) return;
     try {
       const details = await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "credits,keywords" });
       const enriched = ctx.fromTMDB(details);

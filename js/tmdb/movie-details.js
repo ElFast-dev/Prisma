@@ -60,7 +60,7 @@ export function createTMDBMovieDetails(ctx) {
     if (!movie || !movie.title) return;
     const key = ctx.titleKey(movie.title);
     const metadata = {};
-    ["id","tmdbId","year","genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","productionCompanies","originalLanguage","spokenLanguages","collectionName","cast","directors","writers","composers","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (field) {
+    ["id","tmdbId","year","genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","productionCompanies","originalLanguage","spokenLanguages","collectionName","cast","directors","writers","composers","imdbId","tmdbCreditsFetchedAt","tmdbKeywordsFetchedAt","tmdbFetchedAt","metadataSource"].forEach(function (field) {
       if (movie[field] !== undefined && movie[field] !== null && movie[field] !== "") metadata[field] = movie[field];
     });
     function mergeMatching(list) {

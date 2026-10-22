@@ -8,7 +8,7 @@ export function createTMDBHistorySync(ctx) {
       return Number.isFinite(fetchedAt) && now - fetchedAt > limit;
     }
     function strip(entry) {
-      ["genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","imdbId","tmdbFetchedAt","metadataSource"].forEach(function (key) { delete entry[key]; });
+      ["genres","tags","overview","posterPath","posterUrl","voteAverage","voteCount","runtime","releaseDate","backdropPath","backdropUrl","tagline","status","productionCountries","productionCompanies","originalLanguage","spokenLanguages","collectionName","cast","directors","writers","composers","imdbId","tmdbFetchedAt","tmdbCreditsFetchedAt","tmdbKeywordsFetchedAt","metadataSource"].forEach(function (key) { delete entry[key]; });
       return entry;
     }
     let changed = false;
@@ -34,10 +34,16 @@ export function createTMDBHistorySync(ctx) {
 
 
   function historyNeedsTMDB(entry) {
+    const now = Date.now();
+    const freshnessWindow = 1000 * 60 * 60 * 24 * 179;
     const fetchedAt = entry && entry.tmdbFetchedAt ? new Date(entry.tmdbFetchedAt).getTime() : 0;
-    const isFresh = entry && entry.metadataSource === "tmdb" &&
-      Number.isFinite(fetchedAt) && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 179;
-    if (isFresh && (entry.posterUrl || entry.posterPath)) return false;
+    const creditsFetchedAt = entry && entry.tmdbCreditsFetchedAt ? new Date(entry.tmdbCreditsFetchedAt).getTime() : 0;
+    const keywordsFetchedAt = entry && entry.tmdbKeywordsFetchedAt ? new Date(entry.tmdbKeywordsFetchedAt).getTime() : 0;
+    const basicMetadataFresh = entry && entry.metadataSource === "tmdb" &&
+      Number.isFinite(fetchedAt) && now - fetchedAt >= 0 && now - fetchedAt < freshnessWindow;
+    const creditsFresh = Number.isFinite(creditsFetchedAt) && now - creditsFetchedAt >= 0 && now - creditsFetchedAt < freshnessWindow;
+    const keywordsFresh = Number.isFinite(keywordsFetchedAt) && now - keywordsFetchedAt >= 0 && now - keywordsFetchedAt < freshnessWindow;
+    if (basicMetadataFresh && creditsFresh && keywordsFresh && (entry.posterUrl || entry.posterPath)) return false;
     return Boolean(entry && entry.title);
   }
 
@@ -99,6 +105,8 @@ export function createTMDBHistorySync(ctx) {
     });
     entry.originalLanguage = enriched.originalLanguage || entry.originalLanguage || "";
     entry.collectionName = enriched.collectionName || entry.collectionName || "";
+    entry.tmdbCreditsFetchedAt = enriched.tmdbCreditsFetchedAt || entry.tmdbCreditsFetchedAt || null;
+    entry.tmdbKeywordsFetchedAt = enriched.tmdbKeywordsFetchedAt || entry.tmdbKeywordsFetchedAt || null;
     entry.imdbId = enriched.imdbId || entry.imdbId || "";
     entry.tmdbFetchedAt = enriched.tmdbFetchedAt || new Date().toISOString();
     entry.metadataSource = "tmdb";

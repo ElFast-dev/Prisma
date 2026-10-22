@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { movieFeatures } from "../js/recommendations/features.js";
 import { createTMDBClient } from "../js/tmdb/client.js";
+import { createTMDBHistorySync } from "../js/tmdb/history-sync.js";
 
 const [ratingUi, controller, actions, historySync, browserActions] = await Promise.all([
   readFile(new URL("../js/ui/modal-views.js", import.meta.url), "utf8"),
@@ -18,6 +19,12 @@ assert.match(controller, /ratingFor\(movie\.title, movie\.tmdbId\)/,
   "La valoración debe asociarse al ID TMDB correcto cuando está disponible.");
 assert.match(historySync, /append_to_response: "credits,keywords"/);
 assert.match(browserActions, /enrichRecommendationCandidates/);
+assert.match(browserActions, /tmdbCreditsFetchedAt/);
+assert.match(browserActions, /tmdbKeywordsFetchedAt/);
+assert.match(historySync, /tmdbCreditsFetchedAt/);
+assert.match(historySync, /tmdbKeywordsFetchedAt/);
+assert.match(browserActions, /if \(cacheFresh && creditsFresh && keywordsFresh\) return;/,
+  "La caché no debe omitir créditos solo porque una película tenga keywords antiguos.");
 assert.match(browserActions, /slice\(0, 6\)/,
   "La obtención de metadatos debe limitarse a una cantidad acotada de candidatas.");
 
@@ -57,6 +64,8 @@ assert.deepEqual(movie.productionCountries, ["Canadá"]);
 assert.deepEqual(movie.spokenLanguages, ["English"]);
 assert.equal(movie.originalLanguage, "en");
 assert.equal(movie.collectionName, "Crónicas");
+assert.ok(movie.tmdbCreditsFetchedAt, "La ficha detallada debe registrar que sus créditos fueron cargados.");
+assert.ok(movie.tmdbKeywordsFetchedAt, "La ficha detallada debe registrar que sus keywords fueron cargados.");
 
 const features = movieFeatures(movie);
 for (const prefix of [
@@ -71,4 +80,28 @@ assert.equal(
   0,
   "Los registros emocionales antiguos no se convierten en características."
 );
+
+const sync = createTMDBHistorySync({});
+const now = new Date().toISOString();
+const legacyWithFreshPoster = {
+  title: "Historial anterior",
+  metadataSource: "tmdb",
+  tmdbFetchedAt: now,
+  posterUrl: "https://image.tmdb.org/t/p/w500/example.jpg",
+  tags: ["misterio"]
+};
+assert.equal(sync.historyNeedsTMDB(legacyWithFreshPoster), true,
+  "Una valoración antigua con carátula reciente pero sin marcadores de créditos debe actualizarse una vez.");
+assert.equal(sync.historyNeedsTMDB({
+  ...legacyWithFreshPoster,
+  tmdbCreditsFetchedAt: now,
+  tmdbKeywordsFetchedAt: now
+}), false,
+  "Un registro con carátula, créditos y keywords recientes no debe descargarse repetidamente.");
+assert.equal(sync.historyNeedsTMDB({
+  ...legacyWithFreshPoster,
+  tmdbCreditsFetchedAt: "2020-01-01T00:00:00.000Z",
+  tmdbKeywordsFetchedAt: now
+}), true,
+  "Los marcadores de créditos antiguos deben volver a entrar en la cola de enriquecimiento.");
 console.log("Flujo de nota numérica y metadatos ricos de TMDB validado con datos sintéticos.");
