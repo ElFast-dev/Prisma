@@ -132,27 +132,29 @@ function dateScore(value) {
     return items;
   }
 
-  function isInHistory(title, tmdbId) {
+  function isInHistory(title, tmdbId, year) {
     const state = getState();
-    const target = {title:title,tmdbId:tmdbId};
+    const target = {title:title,tmdbId:tmdbId,year:year};
     return Boolean(findMovieRecordMatch(target,state.rated || []) ||
       findMovieRecordMatch(target,state.watched || []));
   }
 
-  function isHidden(title, tmdbId) {
+  function isHidden(title, tmdbId, year) {
     const state = getState();
-    const target = {title:title,tmdbId:tmdbId};
+    const target = {title:title,tmdbId:tmdbId,year:year};
     return Boolean(findMovieRecordMatch(target,state.hidden || []));
   }
 
-  function isInWatchlist(title, tmdbId) {
+  function isInWatchlist(title, tmdbId, year) {
     const state = getState();
-    const target = {title:title,tmdbId:tmdbId};
+    const target = {title:title,tmdbId:tmdbId,year:year};
     return Boolean(findMovieRecordMatch(target,state.watchlist || []));
   }
 
-  function isMovieInCollection(title, tmdbId) {
-    return isInHistory(title,tmdbId) || isInWatchlist(title,tmdbId) || isHidden(title,tmdbId);
+  function isMovieInCollection(title, tmdbId, year) {
+    return isInHistory(title,tmdbId,year) ||
+      isInWatchlist(title,tmdbId,year) ||
+      isHidden(title,tmdbId,year);
   }
 
   return {
