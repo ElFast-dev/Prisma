@@ -123,6 +123,13 @@ assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-4"),
   "La vista del modal debe quedar versionada al corregir las fechas de visionado.");
 assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-2"),
   "El formateador de fechas explícitas debe quedar versionado en la caché.");
+const actionsImportUrl = singleMatch(/from\s+["\'](\.\/js\/import-export\/actions\.js\?[^"\']+)["\']/g, app, "módulo de importación y exportación")[1];
+assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261022-2",
+  "La reconciliación del historial debe invalidar la URL de módulo obsoleta.");
+assert.ok(cached.has(actionsImportUrl),
+  "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
+assert.ok(!cached.has("./js/import-export/actions.js?v=core-20261020-1"),
+  "La caché PWA no debe conservar la URL antigua del módulo de importación.");
 assert.ok(cached.has("./js/ui/modal-controller.js?v=core-20261021-4"),
   "El controlador del modal debe quedar versionado tras corregir su función de renderizado local.");
 for (const [filename, source] of modules) {
