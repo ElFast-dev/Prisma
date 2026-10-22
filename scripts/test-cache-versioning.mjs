@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -42,7 +42,8 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/recommendations/preferences.js', 'utf8'),
   readFile('js/app/pwa-update.js', 'utf8'),
   readFile('js/core/date-utils.js', 'utf8'),
-  readFile('js/core/watch-streak.js', 'utf8')
+  readFile('js/core/watch-streak.js', 'utf8'),
+  readFile('js/ui/person-filmography.js', 'utf8')
 ]);
 
 function singleMatch(regex, source, label) {
@@ -100,7 +101,8 @@ const modules = [
   ['js/tmdb/client.js', tmdbClient],
   ['js/ui/theme-controller.js', themeController],
   ['js/core/date-utils.js', dateUtils],
-  ['js/core/watch-streak.js', watchStreak]
+  ['js/core/watch-streak.js', watchStreak],
+  ['js/ui/person-filmography.js', personFilmography]
 ];
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
 assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9"),
@@ -119,9 +121,11 @@ assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261021-6"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
-assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-4"),
+assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-5"),
   "La vista del modal debe quedar versionada al corregir las fechas de visionado.");
-assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-2"),
+assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261022-1"),
+  "El helper de filmografía debe quedar versionado y precargado en la caché.");
+assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-3"),
   "El formateador de fechas explícitas debe quedar versionado en la caché.");
 const actionsImportUrl = singleMatch(/from\s+["\'](\.\/js\/import-export\/actions\.js\?[^"\']+)["\']/g, app, "módulo de importación y exportación")[1];
 assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261022-2",

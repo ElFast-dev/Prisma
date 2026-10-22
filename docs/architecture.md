@@ -29,6 +29,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/page-views.js` | Renderizadores de Progreso, Descubrir, Colección, Laboratorio, Ajustes y componentes de catálogo; expone las diferencias descriptivas de nDCG por modo. |
 | `js/ui/theme-controller.js` | Aplica y persiste la preferencia de tema oscuro/claro localmente, sin mezclarla con el perfil cinematográfico. |
 | `js/ui/modal-views.js` | Renderizadores de fichas de película/persona, diálogo de puntuación y paneles auxiliares. |
+| `js/ui/person-filmography.js` | Deduplica créditos por ID TMDB, filtra la colección por identidad y agrupa filmografías por año. |
 | `js/app/movie-actions.js` | Acciones de dominio para valorar, borrar notas, marcar vistas, gestionar pendientes y ocultar películas. |
 | `js/import-export/actions.js` | Orquestación de las importaciones JSON/CSV, copias de seguridad, restauración y restablecimiento local. |
 | `js/app/event-handlers.js` | Listeners globales de click, input, errores de imágenes y selección de archivos, conectados mediante un contexto explícito. |

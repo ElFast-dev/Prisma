@@ -1,4 +1,4 @@
-import { formatPanamaDateMDY } from "../core/date-utils.js";
+import { dateOnlyInTimeZone, formatPanamaDateMDY } from "../core/date-utils.js";
 
 /** Resolve only explicit watch timestamps; a rating update is not a watch date. */
 export function resolveExplicitWatchedAt(watchedRecord, ratingRecord) {
@@ -37,11 +37,20 @@ export function createPresentationUtils(dependencies) {
     return '<div class="bar-row"><span class="bar-label" title="' + escapeHTML(label) + '">' + escapeHTML(label) + '</span><div class="bar-track"><div class="bar-fill" style="width:' + percent.toFixed(1) + '%"></div></div><span class="bar-value">' + escapeHTML(suffix || value) + '</span></div>';
   }
 
+
+  function calendarDateForDisplay(value) {
+    const day = dateOnlyInTimeZone(value);
+    if (!day) return null;
+    const date = new Date(day + "T12:00:00.000Z");
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
   function formatDate(value) {
-    if (!value) return "fecha no disponible";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "fecha no disponible";
-    return new Intl.DateTimeFormat("es-PA", { day: "numeric", month: "short", year: "numeric" }).format(date);
+    const date = calendarDateForDisplay(value);
+    if (!date) return "fecha no disponible";
+    return new Intl.DateTimeFormat("es-PA", {
+      day: "numeric", month: "short", year: "numeric", timeZone: "UTC"
+    }).format(date);
   }
 
   function niceRuntime(minutes) {
@@ -50,11 +59,14 @@ export function createPresentationUtils(dependencies) {
     return Math.floor(runtime / 60) + " h " + String(runtime % 60).padStart(2,"0") + " min";
   }
 
+
   function dateLabel(value) {
-    if (!value) return "Fecha desconocida";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return new Intl.DateTimeFormat("es-PA",{day:"numeric",month:"long",year:"numeric"}).format(date);
+    if (value == null || value === "") return "Fecha desconocida";
+    const date = calendarDateForDisplay(value);
+    if (!date) return String(value);
+    return new Intl.DateTimeFormat("es-PA", {
+      day: "numeric", month: "long", year: "numeric", timeZone: "UTC"
+    }).format(date);
   }
 
   function formatWatchedDate(value) {
