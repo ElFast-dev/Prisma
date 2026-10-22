@@ -14,7 +14,7 @@ El marcador de procedencia se combina con las entradas guardadas. Una entrada re
 
 ## Informe, caché y privacidad
 
-Los diagnósticos pasan al esquema v10 e incluyen la zona temporal aplicada (`America/Panama`) como un valor allowlisted. No incluyen timestamps ni títulos. Se renuevan las versiones de recursos de la aplicación y el shell PWA.
+Los diagnósticos pasan al esquema v10 e incluyen la zona temporal aplicada (`America/Panama`) como un valor allowlisted. No incluyen timestamps ni títulos. Se renuevan las versiones de recursos de la aplicación y el shell PWA. La reconciliación de fechas vive en `js/import-export/actions.js`; toda modificación de ese módulo debe renovar tanto su query de importación en `app.js` como su entrada en `sw.js`. La URL obsoleta `core-20261020-1` impedía que algunos clientes con caché ejecutaran la reconciliación nueva, por lo que se sube a `core-20261022-2`, se renueva la entrada de aplicación y el shell PWA, y una prueba de versionado exige que la URL importada y la precargada coincidan.
 
 ## Verificación
 
