@@ -115,13 +115,17 @@ assert.ok(cached.has("./js/tmdb/client.js?v=core-20261022-3"),
   "El cliente TMDB ampliado debe estar versionado.");
 assert.ok(cached.has("./js/tmdb/movie-details.js?v=core-20261022-3"),
   "Los detalles de película deben guardar los marcadores de créditos y keywords.");
-assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-3"),
+assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-4"),
   "El catálogo debe fusionar las nuevas familias de metadatos.");
+assert.ok(cached.has("./js/collection/collection-model.js?v=core-20261022-4"),
+  "El modelo de colección debe usar la identidad contextual y filtrar fechas automáticas.");
+assert.ok(cached.has("./js/import-export/personal-data.js?v=core-20261022-6"),
+  "La importación de datos personales debe usar la nueva reconciliación de identidades.");
 assert.ok(cached.has("./js/tmdb/history-sync.js?v=core-20261022-3"),
   "La sincronización del historial debe utilizar metadatos enriquecidos.");
 assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-3"),
   "El enriquecimiento temporal de candidatas debe estar versionado.");
-assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-3"),
+assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-4"),
   "El registro de notas sin emociones debe estar versionado.");
 assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
@@ -139,14 +143,14 @@ assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261022-7"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
-assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-6"),
+assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-7"),
   "La vista del modal debe quedar versionada al corregir las fechas de visionado.");
 assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261022-1"),
   "El helper de filmografía debe quedar versionado y precargado en la caché.");
-assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-3"),
+assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-4"),
   "El formateador de fechas explícitas debe quedar versionado en la caché.");
 const actionsImportUrl = singleMatch(/from\s+["\'](\.\/js\/import-export\/actions\.js\?[^"\']+)["\']/g, app, "módulo de importación y exportación")[1];
-assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261022-2",
+assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261022-3",
   "La reconciliación del historial debe invalidar la URL de módulo obsoleta.");
 assert.ok(cached.has(actionsImportUrl),
   "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
