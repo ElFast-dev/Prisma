@@ -25,13 +25,14 @@ function fixtures(count) {
   });
 }
 
-function harness(records, allMovies, watchedRecords, temporalAudit) {
+function harness(records, allMovies, watchedRecords, temporalAudit, useCollectionAddedAtProxy) {
   const movieById = new Map(allMovies.map(movie => [String(movie.tmdbId), movie]));
   const latestDayByProfile = new WeakMap();
   const watchedSource = watchedRecords || records;
   const watched = watchedSource.map(record => ({
     title: record.title, tmdbId: record.tmdbId, year: record.year,
-    watchedAt: record.watchedAt, watchedAtSource: record.watchedAtSource
+    watchedAt: record.watchedAt, watchedAtSource: record.watchedAtSource,
+    addedAt: record.addedAt, addedAtSource: record.addedAtSource
   }));
   const productionRanking = createRecommendationRanking({});
   const engine = createRecommendationEngine({
@@ -44,6 +45,7 @@ function harness(records, allMovies, watchedRecords, temporalAudit) {
   return createRidgeRecommendationExperiment({
     getRatings: () => records,
     getWatched: () => watched,
+    getUseCollectionAddedAtProxy: () => Boolean(useCollectionAddedAtProxy),
     findMovie: (title, id) => id != null ? (movieById.get(String(id)) || null) :
       (allMovies.find(movie => movie.title === title) || null),
     movieFeatures,
@@ -410,6 +412,37 @@ assert.equal(noDates.available, false);
 assert.equal(noDates.timestampedFeatureCount, 0);
 assert.equal(noDates.missingDateCount, 120);
 assert.equal(noDates.mae, null, "Sin fechas válidas no se debe presentar una métrica.");
+assert.equal(noDates.dateSourceMode, "watchedAt-only");
+
+const addedAtOnlyRecords = temporalRecords.map(function (record) {
+  const copy = Object.assign({}, record, {
+    addedAt: record.watchedAt,
+    addedAtSource: "imported-collection"
+  });
+  delete copy.watchedAt;
+  delete copy.watchedAtSource;
+  return copy;
+});
+const addedAtWithoutOptIn = await harness(undatedRecords, temporalRecords, addedAtOnlyRecords).evaluateTemporalAsync();
+assert.equal(addedAtWithoutOptIn.available, false,
+  "La fecha de incorporación no puede usarse sin que la persona active expresamente el modo exploratorio.");
+assert.equal(addedAtWithoutOptIn.timestampedFeatureCount, 0);
+assert.equal(addedAtWithoutOptIn.missingDateCount, 120);
+assert.equal(addedAtWithoutOptIn.dateSourceMode, "watchedAt-only");
+const addedAtProxy = await harness(undatedRecords, temporalRecords, addedAtOnlyRecords, null, true).evaluateTemporalAsync();
+assert.equal(addedAtProxy.available, true,
+  "Con el proxy activado, las fechas de la lista importada permiten evaluar 120 registros distribuidos en 12 días.");
+assert.equal(addedAtProxy.sampleCount, 120);
+assert.equal(addedAtProxy.timestampedFeatureCount, 120);
+assert.equal(addedAtProxy.explicitDateCount, 0);
+assert.equal(addedAtProxy.unverifiedDateCount, 120);
+assert.equal(addedAtProxy.missingDateCount, 0);
+assert.equal(addedAtProxy.distinctDayCount, 12);
+assert.equal(addedAtProxy.dateProvenanceStatus, "exploratory");
+assert.equal(addedAtProxy.dateSourceMode, "collection-added-proxy");
+assert.doesNotMatch(JSON.stringify(addedAtProxy.windowSummaries), /2020-|addedAt|watchedAt|tmdbId|Película de prueba/i,
+  "El resumen temporal no debe exportar fechas ni identidades individuales.");
+
 const sameDayRecords = temporalRecords.map(record => Object.assign({}, record, { watchedAt: "2020-02-01T10:00:00.000Z" }));
 const sameDay = await harness(sameDayRecords, sameDayRecords).evaluateTemporalAsync();
 assert.equal(sameDay.available, false, "Un solo día no debe dividirse artificialmente entre entrenamiento y prueba.");
