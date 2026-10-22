@@ -119,7 +119,7 @@ assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-4"),
   "El catálogo debe fusionar las nuevas familias de metadatos.");
 assert.ok(cached.has("./js/collection/collection-model.js?v=core-20261022-4"),
   "El modelo de colección debe usar la identidad contextual y filtrar fechas automáticas.");
-assert.ok(cached.has("./js/import-export/personal-data.js?v=core-20261022-7"),
+assert.ok(cached.has("./js/import-export/personal-data.js?v=core-20261022-8"),
   "La importación de datos personales debe usar la nueva reconciliación de identidades.");
 assert.ok(cached.has("./js/tmdb/history-sync.js?v=core-20261022-3"),
   "La sincronización del historial debe utilizar metadatos enriquecidos.");
@@ -131,7 +131,7 @@ assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-1
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-20"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-21"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261022-1"),
   "El ranking debe usar búsqueda de perfil con identidad y año fiables.");
