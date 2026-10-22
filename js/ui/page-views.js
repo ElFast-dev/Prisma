@@ -6,7 +6,7 @@ export function createPageViews(ctx) {
   function movieCard(movie, options) {
     const opts = options || {};
     const hue = ctx.cardColor(movie);
-    const rating = ctx.ratingFor(movie.title,movie.tmdbId);
+    const rating = ctx.ratingFor(movie.title,movie.tmdbId,movie.year);
     const actionLabel = rating ? "Editar nota" : "Calificar";
     const score = movie.prediction ? '<div class="movie-score">✦ ' + movie.prediction.score.toFixed(1).replace(".", ",") + '/10 estimado</div>' : (rating ? '<div class="movie-score">★ Tu nota: ' + ctx.ratingValue(rating) + '/10</div>' : "");
     const meta = [movie.year, (movie.genres || []).slice(0, 2).map(ctx.displayGenre).join(" · ")].filter(Boolean).join(" · ");
