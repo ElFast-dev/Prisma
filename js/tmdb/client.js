@@ -71,6 +71,11 @@ export function createTMDBClient(dependencies) {
     const keywordObject = raw.keywords || {};
     const keywords = keywordObject.keywords || keywordObject.results || [];
     const posterPath = raw.poster_path || "";
+    const metadataFetchedAt = new Date().toISOString();
+    const hasCompleteCredits = Boolean(raw.credits &&
+      Array.isArray(raw.credits.cast) && Array.isArray(raw.credits.crew));
+    const hasKeywordPayload = Boolean(raw.keywords &&
+      (Array.isArray(raw.keywords.keywords) || Array.isArray(raw.keywords.results)));
 
     return {
       id: String(raw.id),
@@ -115,7 +120,9 @@ export function createTMDBClient(dependencies) {
         ? uniqueStrings(raw.credits.crew.filter(function (person) { return person && /composer|music/i.test(String(person.job || "")); }).slice(0, 3).map(function (person) { return person.name; }))
         : [],
       imdbId: raw.imdb_id || "",
-      tmdbFetchedAt: new Date().toISOString(),
+      tmdbCreditsFetchedAt: hasCompleteCredits ? metadataFetchedAt : null,
+      tmdbKeywordsFetchedAt: hasKeywordPayload ? metadataFetchedAt : null,
+      tmdbFetchedAt: metadataFetchedAt,
       metadataSource: "tmdb",
       source: "tmdb"
     };
