@@ -15,7 +15,11 @@ const exportFixture = {
       { id: "source-code-record", tmId: 45612, t: "Source Code", a: "2026-01-15T05:56:02.305Z" },
       { id: "same-day-second-movie", tmId: 900001, t: "Otra película conservada", a: "2026-01-15T22:00:00.000Z" },
       { id: "later-movie", tmId: 900002, t: "Película posterior", a: "2026-07-09T04:56:59.336Z" },
-      { id: "retrospective-movie", tmId: 900003, t: "Película retrospectiva", a: "2025-11-06T00:22:23.302Z" }
+      { id: "retrospective-movie", tmId: 900003, t: "Película retrospectiva", a: "2025-11-06T00:22:23.302Z" },
+      { id: "edge-day-18", tmId: 900004, t: "Synthetic Watch Day Eighteen", a: "2026-10-18T05:20:00.000Z" },
+      { id: "edge-day-19", tmId: 900005, t: "Synthetic Watch Day Nineteen", a: "2026-10-19T07:15:00.000Z" },
+      { id: "edge-day-20", tmId: 900006, t: "Synthetic Challenge Date Repair", a: "2026-10-20T06:20:00.000Z" },
+      { id: "edge-day-21", tmId: 900007, t: "Synthetic Watch Day TwentyOne", a: "2026-10-22T04:10:00.000Z" }
     ],
     cW: [],
     cHid: [],
@@ -45,6 +49,14 @@ for (let i = 1; i < dateRange.length; i += 1) {
 assert.equal(dateOnlyInTimeZone("2026-07-09T04:56:59.336Z"), "2026-07-08");
 
 let state = emptyState();
+state.watched.push({
+  id: "stale-challenge-date",
+  tmdbId: "900006",
+  title: "Synthetic Challenge Date Repair",
+  watchedAt: "2026-10-21T12:00:00.000Z",
+  watchedAtSource: "user-confirmed",
+  watchDateConfidence: "user-confirmed"
+});
 const writes = [];
 let renderCount = 0;
 const ctx = {
@@ -73,7 +85,11 @@ await actions.importPersonalJSON({ text: async () => JSON.stringify(exportFixtur
 
 assert.equal(state.confirmedWatchStreak.totalDays, 280);
 assert.equal(state.confirmedWatchStreak.dailyTarget, 1);
-assert.equal(state.watched.length, 4);
+assert.equal(state.watched.length, 8,
+  "La reimportación corrige la fila con conflicto sin duplicar películas.");
+const repairedMovie = state.watched.find(movie => movie.tmdbId === "900006");
+assert.equal(repairedMovie.watchedAt, "2026-10-20T06:20:00.000Z");
+assert.equal(repairedMovie.watchDateConfidence, "streak-confirmed");
 assert.equal(writes.some(write => write.key === "catalogCustom"), true);
 assert.equal(renderCount, 1);
 
@@ -97,6 +113,11 @@ assert.equal(daily[0].additionalMovieCount, 1,
   "Dos películas el mismo día no deben convertirse en dos días de racha.");
 assert.equal(daily.find(day => day.date === "2026-07-08").title, "Película posterior",
   "El día se agrupa con la zona horaria de Panamá.");
+assert.equal(daily.find(day => day.date === "2026-10-18").title, "Synthetic Watch Day Eighteen");
+assert.equal(daily.find(day => day.date === "2026-10-19").title, "Synthetic Watch Day Nineteen");
+assert.equal(daily.find(day => day.date === "2026-10-20").title, "Synthetic Challenge Date Repair");
+assert.equal(daily.find(day => day.date === "2026-10-21").title, "Synthetic Watch Day TwentyOne",
+  "Un timestamp del 22 en UTC debe quedar en el día 21 de Panamá cuando corresponda.");
 assert.equal(daily.find(day => day.date === "2026-01-16").title, null,
   "Una fecha de racha puede quedar confirmada aunque se haya perdido la película.");
 
