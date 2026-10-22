@@ -1,4 +1,4 @@
-import { findMovieRecordMatch, movieIdentityKey, movieTmdbId, movieYear, normalizeMovie, ratingValue, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
+import { findMovieRecordMatch, movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
 import { dateOnlyInTimeZone } from "../core/date-utils.js";
 import { createConfirmedWatchStreakRecord } from "../core/watch-streak.js";
 
