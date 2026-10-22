@@ -10,7 +10,7 @@ No se aplica la regla específica a cualquier JSON genérico. El importador iden
 
 ## Reimportación y cronología
 
-El marcador de procedencia se combina con las entradas guardadas. Una entrada retrospectiva importada debe retirar timestamps de acción anteriores heredados, excepto cuando la persona tenga una fecha `user-confirmed`. El evaluador temporal agrupa todas las filas por el día panameño, no por el prefijo UTC de la cadena ISO. El proxy optativo no puede volver a admitir las filas con marcador `pre-streak-unverified`. La clasificación de días se basa en al menos una película ese día, de modo que dos películas en el mismo día no crean un día adicional.
+El marcador de procedencia se combina con las entradas guardadas. Una entrada retrospectiva importada debe retirar timestamps de acción anteriores heredados, excepto cuando la persona tenga una fecha `user-confirmed`. En cambio, si una exportación reconocida aporta una fecha fiable `streak-confirmed` durante el reto, su timestamp original es la fuente de verdad y debe corregir una fecha local conflictiva que proceda de una versión anterior, incluida una marca local confirmada antes de reconciliar ese archivo. Las entradas `pre-streak-unverified` nunca reemplazan fechas confirmadas manualmente. El evaluador temporal agrupa todas las filas por el día panameño, no por el prefijo UTC de la cadena ISO. El proxy optativo no puede volver a admitir las filas con marcador `pre-streak-unverified`. La clasificación de días se basa en al menos una película ese día, de modo que dos películas en el mismo día no crean un día adicional.
 
 ## Informe, caché y privacidad
 
