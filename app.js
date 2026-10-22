@@ -378,6 +378,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
     get currentPage() { return currentPage; },
     get renderApp() { return renderApp; },
+    get catalog() { return catalog; },
+    get sameMovieRecord() { return sameMovieRecord; },
     get tmdbPage() { return tmdbPage; },
     set tmdbPage(value) { tmdbPage = value; },
     get tmdbTotalPages() { return tmdbTotalPages; },
