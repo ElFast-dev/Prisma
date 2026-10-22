@@ -1,3 +1,5 @@
+import { findMovieRecordMatch } from "../core/movie-utils.js";
+
 export function createImportExportActions(ctx) {
   async function importPersonalJSON(file) {
     const text = await file.text();
@@ -20,18 +22,22 @@ export function createImportExportActions(ctx) {
       throw new Error("No encontré películas vistas, pendientes ni valoraciones reconocibles. Comprueba que el JSON contenga movies.cH, movies.cW o movies.rM.");
     }
 
-    const ratingMap = new Map(ctx.state.rated.map(function (entry) { return [ctx.movieIdentityKey(entry), entry]; }));
+    const ratingRows = (ctx.state.rated || []).slice();
     result.ratings.forEach(function (entry) {
-      const key = ctx.movieIdentityKey(entry);
-      const old = ratingMap.get(key);
+      const old = findMovieRecordMatch(entry,ratingRows);
       if (old && old.source === "manual") return;
-      const merged = ctx.mergeMovieEntries(old, entry);
+      const merged = ctx.mergeMovieEntries(old,entry);
       merged.rating = ctx.ratingValue(entry);
       merged.source = "imported";
       merged.updatedAt = entry.updatedAt || old && old.updatedAt || null;
-      ratingMap.set(key, merged);
+      if (old) {
+        const index = ratingRows.indexOf(old);
+        if (index >= 0) ratingRows[index] = merged;
+      } else {
+        ratingRows.push(merged);
+      }
     });
-    ctx.state.rated = Array.from(ratingMap.values()).filter(function (entry) { return ctx.ratingValue(entry) != null; });
+    ctx.state.rated = ratingRows.filter(function (entry) { return ctx.ratingValue(entry) != null; });
     ctx.state.watched = ctx.mergeMovieListByTitle(ctx.state.watched, collection.watched);
     ctx.state.watchlist = ctx.mergeMovieListByTitle(ctx.state.watchlist, collection.watchlist);
     ctx.state.hidden = ctx.mergeMovieListByTitle(ctx.state.hidden, collection.hidden);
@@ -64,11 +70,16 @@ export function createImportExportActions(ctx) {
 
   async function importCatalogCSV(file) {
     const parsed = ctx.parseCatalogCSV(await file.text());
-    const map = new Map(ctx.customCatalog.map(function (movie) { return [ctx.movieIdentityKey(movie), movie]; }));
+    const catalogRows = (ctx.customCatalog || []).slice();
     parsed.forEach(function (movie) {
-      const key = ctx.movieIdentityKey(movie);
-      const old = map.get(key);
-      map.set(key, old ? {
+      const old = findMovieRecordMatch(movie,catalogRows);
+      if (!old) {
+        catalogRows.push(movie);
+        return;
+      }
+      const index = catalogRows.indexOf(old);
+      if (index < 0) return;
+      catalogRows[index] = {
         id: old.id || movie.id,
         tmdbId: ctx.movieTmdbId(old) || ctx.movieTmdbId(movie) || null,
         title: old.title,
@@ -77,9 +88,9 @@ export function createImportExportActions(ctx) {
         tags: ctx.uniqueStrings((old.tags || []).concat(movie.tags || [])),
         overview: old.overview || movie.overview,
         source: "csv"
-      } : movie);
+      };
     });
-    ctx.customCatalog = Array.from(map.values());
+    ctx.customCatalog = catalogRows;
     await ctx.dbSet(ctx.CATALOG_KEY, ctx.customCatalog);
     ctx.logEvent("Catálogo ampliado", parsed.length.toLocaleString("es-PA") + " títulos leídos de " + file.name, "▦");
     ctx.combineMovies();
