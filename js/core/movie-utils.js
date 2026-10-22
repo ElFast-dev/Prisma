@@ -134,6 +134,8 @@ export function normalizeMovie(movie) {
     writers: uniqueStrings(Array.isArray(movie.writers) ? movie.writers : (movie.credits && Array.isArray(movie.credits.crew) ? movie.credits.crew.filter(function (person) { return person && /writer|screenplay|story|novel|adaptation/i.test(String(person.job || "")); }).slice(0, 4).map(function (person) { return person.name; }) : [])),
     composers: uniqueStrings(Array.isArray(movie.composers) ? movie.composers : (movie.credits && Array.isArray(movie.credits.crew) ? movie.credits.crew.filter(function (person) { return person && /composer|music/i.test(String(person.job || "")); }).slice(0, 3).map(function (person) { return person.name; }) : [])),
     imdbId: movie.imdbId || movie.imdb_id || "",
+    tmdbCreditsFetchedAt: movie.tmdbCreditsFetchedAt || null,
+    tmdbKeywordsFetchedAt: movie.tmdbKeywordsFetchedAt || null,
     tmdbFetchedAt: movie.tmdbFetchedAt || null,
     metadataSource: movie.metadataSource || null,
     source: movie.source || "catalog"
