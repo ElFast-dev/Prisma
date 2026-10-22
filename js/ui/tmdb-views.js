@@ -31,7 +31,7 @@ export function createTMDBViews(ctx) {
     }
     const label = ctx.tmdbMode === "search" ? "Resultados para «" + ctx.catalogQuery.trim() + "»" : "Películas populares en TMDB";
     const visibleResults = ctx.uniqueDiscoveryMovies(ctx.tmdbResults).filter(function (movie) {
-      return !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);
+      return !ctx.isInHistory(movie.title,movie.tmdbId,movie.year) && !ctx.isHidden(movie.title,movie.tmdbId,movie.year);
     });
     status.textContent = (ctx.tmdbLoading ? "Consultando TMDB…" : (ctx.tmdbError ? "No se pudo completar la consulta." : label)) +
       (ctx.tmdbResults.length && !ctx.tmdbLoading && !ctx.tmdbError ? " · " + visibleResults.length + " disponibles" : "");
