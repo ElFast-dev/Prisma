@@ -84,6 +84,7 @@ const baseInput = {
     explicitDateCount: 40,
     unverifiedDateCount: 18,
     dateProvenanceStatus: "exploratory",
+    dateSourceMode: "collection-added-proxy",
     sampleCount: 60,
     featureRowCount: 60,
     timestampedFeatureCount: 58,
@@ -161,7 +162,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v8");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v9");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -226,6 +227,7 @@ assert.equal(compact.evaluation.temporalRidgeExperiment.timestampedFeatureCount,
 assert.equal(compact.evaluation.temporalRidgeExperiment.explicitDateCount, 40);
 assert.equal(compact.evaluation.temporalRidgeExperiment.unverifiedDateCount, 18);
 assert.equal(compact.evaluation.temporalRidgeExperiment.dateProvenanceStatus, "exploratory");
+assert.equal(compact.evaluation.temporalRidgeExperiment.dateSourceMode, "collection-added-proxy");
 assert.equal(compact.evaluation.temporalRidgeExperiment.missingDateCount, 2);
 assert.equal(compact.evaluation.temporalRidgeExperiment.mae, 0.91);
 assert.equal(compact.evaluation.temporalRidgeExperiment.deltaBaselineMinusRidge, 0.17);
