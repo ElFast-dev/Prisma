@@ -192,7 +192,7 @@ await csvActions.importCatalogCSV({
     "Prisma CSV Ambiguous Fixture,,,Drama",
     "Prisma CSV Ambiguous Fixture,1998,990411,Drama",
     "Prisma CSV Ambiguous Fixture,2024,990412,Action"
-  ].join("\\n")
+  ].join("\n")
 });
 assert.equal(csvActions ? importEffects.length : 0, 1);
 const importedAmbiguous = importEffects[0].value.filter(movie => movie.title === "Prisma CSV Ambiguous Fixture");
