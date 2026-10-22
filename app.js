@@ -11,7 +11,7 @@ import { createRecommendationEvaluation } from "./js/recommendations/evaluation.
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
-import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261022-2";
+import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261022-3";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261022-2";
 import { createPageViews } from "./js/ui/page-views.js?v=core-20261022-18";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261022-4";
