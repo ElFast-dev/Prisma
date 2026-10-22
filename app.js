@@ -10,13 +10,13 @@ import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommenda
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
-import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261022-3";
-import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261022-3";
-import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261022-3";
+import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261022-4";
+import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261022-4";
+import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261022-4";
 import { createPageViews } from "./js/ui/page-views.js?v=core-20261022-18";
-import { createModalViews } from "./js/ui/modal-views.js?v=core-20261022-6";
-import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261022-3";
-import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261022-2";
+import { createModalViews } from "./js/ui/modal-views.js?v=core-20261022-7";
+import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261022-4";
+import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261022-3";
 import { registerAppEvents } from "./js/app/event-handlers.js?v=core-20261022-7";
 import { createTMDBSettingsActions } from "./js/tmdb/settings-actions.js?v=core-20261020-3";
 import { createTMDBViews } from "./js/ui/tmdb-views.js?v=core-20261020-1";
@@ -27,7 +27,7 @@ import { createModalController } from "./js/ui/modal-controller.js?v=core-202610
 import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261021-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
-import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-5";
+import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-6";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js?v=core-20261022-3";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
