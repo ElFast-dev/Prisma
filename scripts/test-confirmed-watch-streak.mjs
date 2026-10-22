@@ -132,7 +132,10 @@ assert.equal(state.confirmedWatchStreak.dailyTarget, 1);
 assert.equal(state.watched.length, 9,
   "La reimportación corrige la fila con conflicto sin duplicar películas.");
 for (const raw of exportFixture.movies.cH) {
-  const imported = state.watched.find(movie => String(movie.id) === String(raw.id));
+  const imported = state.watched.find(movie =>
+    raw.tmId != null
+      ? String(movie.tmdbId || movie.tmId || "") === String(raw.tmId)
+      : String(movie.id) === String(raw.id));
   assert.ok(imported, "Debe conservarse la película " + raw.t + ".");
   assert.equal(imported.watchedAt, raw.a,
     "La fecha del historial debe importarse para todas las películas, no solo para las que caen dentro de la racha: " + raw.t);
