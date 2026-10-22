@@ -1,3 +1,5 @@
+import { findMovieRecordMatch } from "../core/movie-utils.js";
+
 export function createCatalogModel(dependencies) {
   const getCustomCatalog = dependencies.getCustomCatalog;
   const getState = dependencies.getState;
@@ -122,10 +124,14 @@ function mergeCatalogFields(target, source) {
   }
 
   function findMovie(title, tmdbId, year) {
-    const id = movieTmdbId({tmdbId:tmdbId});
+    const target = {title:title,tmdbId:tmdbId,year:year};
     const catalog = getCatalog();
-    if (id) return catalog.find(function (movie) { return movieTmdbId(movie) === id; }) || null;
-    return getCatalogByTitle().get(titleKey(title)) || null;
+    const id = movieTmdbId(target);
+    if (id) {
+      const exact = catalog.find(function (movie) { return movieTmdbId(movie) === id; });
+      if (exact) return exact;
+    }
+    return findMovieRecordMatch(target,catalog);
   }
 
   function ratingFor(title, tmdbId) {
