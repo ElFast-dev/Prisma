@@ -6,6 +6,8 @@ const addedOnly = extractPersonalCollections({
 });
 assert.equal(addedOnly.watched.length, 1);
 assert.equal(addedOnly.watched[0].addedAt, "2018-03-04T00:00:00.000Z");
+assert.equal(addedOnly.watched[0].addedAtSource, "imported-collection",
+  "La procedencia de la incorporación debe conservarse por separado para un proxy opcional.");
 assert.equal(Object.prototype.hasOwnProperty.call(addedOnly.watched[0], "watchedAt"), false,
   "El campo a/addedAt no debe convertirse en watchedAt.");
 assert.equal(Object.prototype.hasOwnProperty.call(addedOnly.watched[0], "watchedAtSource"), false);
