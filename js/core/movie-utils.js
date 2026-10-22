@@ -83,6 +83,9 @@ export function sameMovieRecord(left, right) {
 
 /** Discovery can merge a legacy row with another identity only when this pair is unambiguous. */
 export function sameDiscoveryMovie(left, right) {
+  const leftId = movieTmdbId(left);
+  const rightId = movieTmdbId(right);
+  if (leftId && rightId) return leftId === rightId;
   return Boolean(findMovieRecordMatch(left, [right]));
 }
 
