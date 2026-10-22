@@ -56,11 +56,11 @@ const collectedFilmography = groupPersonFilmography(syntheticCredits, {
 assert.deepEqual(collectedFilmography.flatMap(group => group.items).map(item => String(item.id)), ['10', '14'],
   'El filtro Colección compara el ID TMDB en vez de aceptar cualquier título homónimo.');
 
-assert.ok(pageViewsSource.includes('return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
+assert.ok(pageViewsSource.includes('return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId,movie.year) && !ctx.isHidden(movie.title,movie.tmdbId,movie.year);'),
   'El catálogo de Descubrir debe ocultar películas vistas');
-assert.ok(rankingSource.includes('!ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history"'),
+assert.ok(rankingSource.includes('!ctx.isMovieInCollection(movie.title,movie.tmdbId,movie.year) && movie.source !== "history"'),
   'El recomendador debe excluir vistas, pendientes y ocultas');
-assert.ok(tmdbViewsSource.includes('return !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
+assert.ok(tmdbViewsSource.includes('return !ctx.isInHistory(movie.title,movie.tmdbId,movie.year) && !ctx.isHidden(movie.title,movie.tmdbId,movie.year);'),
   'Los resultados remotos de TMDB deben omitir películas ya vistas u ocultas');
 
 console.log('Pruebas de Descubrir y ficha correctas: identidades únicas, historial excluido y fecha sin hora.');
