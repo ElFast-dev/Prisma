@@ -107,7 +107,7 @@ const modules = [
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
 assert.ok(cached.has("./js/recommendations/features.js?v=rec-20261022-1"),
   "El extractor ampliado de características debe tener una URL versionada en caché.");
-assert.ok(cached.has("./js/recommendations/engine.js?v=rec-20261022-1"),
+assert.ok(cached.has("./js/recommendations/engine.js?v=rec-20261022-2"),
   "El motor de recomendación actualizado debe estar versionado.");
 assert.ok(cached.has("./js/core/movie-utils.js"),
   "El normalizador compartido debe estar disponible en la caché PWA renovada.");
@@ -127,13 +127,13 @@ assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-3"),
   "El enriquecimiento temporal de candidatas debe estar versionado.");
 assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-5"),
   "El registro de notas sin emociones debe estar versionado.");
-assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-9"),
+assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-10"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
 assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-20"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
-assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261021-4"),
+assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261022-1"),
   "El ranking debe usar búsqueda de perfil con identidad y año fiables.");
 assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-2"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
@@ -141,7 +141,7 @@ assert.ok(cached.has("./js/core/watch-streak.js"),
   "La lógica de racha confirmada debe quedar disponible en la caché.");
 assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261022-2"),
   "El informe de diagnóstico v11 debe quedar versionado y disponible en la caché de la aplicación.");
-assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),
+assert.ok(cached.has("./js/recommendations/normalization-evaluation.js?v=rec-20261022-2"),
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261022-8"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");

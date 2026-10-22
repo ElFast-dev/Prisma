@@ -35,12 +35,18 @@ assert.match(product, /combinar en una experiencia personal de cine/,
   "La misión elegida debe documentarse en la hoja de ruta.");
 assert.match(product, /Privacidad local primero[\s\S]*?exportación\/importación/,
   "La hoja de ruta debe preservar almacenamiento local y copias de seguridad.");
-assert.match(html, /app\.js\?v=ui-20261022-88/,
-  "index.html debe apuntar a la versión actualizada de la aplicación.");
-assert.match(app, /page-views\.js\?v=core-20261022-20/,
+
+const appScript = html.match(/<script\b[^>]*\bsrc=["']([^"']*app\.js\?v=[^"']+)["'][^>]*><\/script>/);
+assert.ok(appScript, "index.html debe cargar app.js con una versión explícita.");
+assert.ok(serviceWorker.includes('"' + appScript[1] + '"'),
+  "index.html y la caché PWA deben utilizar exactamente la misma URL versionada de app.js.");
+assert.match(app, /page-views\.js\?v=[^"']+/,
   "La aplicación debe cargar el módulo de vistas versionado.");
-assert.match(serviceWorker, /prisma-shell-v99/);
-assert.ok(serviceWorker.includes("./js/ui/page-views.js?v=core-20261022-20"),
-  "El shell PWA debe cachear exactamente el módulo de vistas activo.");
+const pageViewsImport = app.match(/from\s+["'](\.\/js\/ui\/page-views\.js\?[^"']+)["']/);
+assert.ok(pageViewsImport, "La aplicación debe importar page-views.js mediante una URL versionada.");
+assert.ok(serviceWorker.includes('"' + pageViewsImport[1] + '"'),
+  "La caché PWA debe incluir la misma URL versionada de page-views.js que usa app.js.");
+assert.match(serviceWorker, /const CACHE_NAME = ["']prisma-shell-v\d+["']/,
+  "El nombre de caché debe estar versionado y permitir invalidar versiones anteriores.");
 
 console.log("Navegación móvil verificada: objetivos táctiles, estado accesible, movimiento contenido y caché sincronizada.");

@@ -30,7 +30,7 @@ export function createRecommendationEvaluation(dependencies) {
     getRatings().forEach(function (entry) {
       const rating = ratingValue(entry);
       if (rating == null) return;
-      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
       const features = movieFeatures(movie, entry);
       if (!features.length) return;
       const identity = identityFor(entry, movie);

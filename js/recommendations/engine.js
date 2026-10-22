@@ -65,7 +65,7 @@ export function createRecommendationEngine(dependencies) {
     const features = new Map();
     let withMetadata = 0;
     valid.forEach(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId,entry.year || entry.releaseYear || entry.release_year);
       const names = movieFeatures(movie, entry, options);
       if (!names.length) return;
       withMetadata += 1;
@@ -163,11 +163,11 @@ export function createRecommendationEngine(dependencies) {
 
   function evaluateModel() {
     const mapped = getRatings().filter(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId,entry.year || entry.releaseYear || entry.release_year);
       return ratingValue(entry) != null && movieFeatures(movie, entry).length > 0;
     });
     const decadeExamples = mapped.filter(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId,entry.year || entry.releaseYear || entry.release_year);
       return movieFeatures(movie, entry).some(function (feature) { return feature.indexOf("década: ") === 0; });
     }).length;
     if (mapped.length < 5) {
@@ -186,7 +186,7 @@ export function createRecommendationEngine(dependencies) {
     mapped.forEach(function (heldOut, index) {
       const training = mapped.filter(function (_, i) { return i !== index; });
       const profile = buildProfile(training);
-      const movie = findMovie(heldOut.title,heldOut.tmdbId || heldOut.tmId);
+      const movie = findMovie(heldOut.title,heldOut.tmdbId || heldOut.tmId,heldOut.year || heldOut.releaseYear || heldOut.release_year);
       const candidate = movie || heldOut;
       const predicted = predictRating(candidate, profile).score;
       errors.push(Math.abs(predicted - ratingValue(heldOut)));

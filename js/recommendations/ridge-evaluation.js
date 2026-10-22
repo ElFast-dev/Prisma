@@ -473,7 +473,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     (getRatings() || []).forEach(function (entry) {
       const rating = ratingValue(entry);
       if (rating == null) return;
-      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
       const names = movieFeatures(movie, entry);
       if (!names || !names.length) return;
       const identity = identityFor(entry, movie, dependencies);
@@ -871,7 +871,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     };
     (typeof getWatched === "function" ? getWatched() || [] : []).forEach(function (entry) {
       if (!entry || !entry.title) return;
-      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
       const identity = identityFor(entry, movie, dependencies);
       if (!identity) return;
       const previous = watchedDayByIdentity.get(identity) || null;
