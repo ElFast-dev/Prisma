@@ -4,15 +4,15 @@
 
 ### Requirement: Procedencia de fechas en el historial Android v2
 
-Prisma DEBE reconocer la exportación de reto mediante su metadato Android v2 y la entrada inicial `Source Code` (TMDB 45612) el día local 15 de enero de 2026. Debe mantener `addedAt` y la marca temporal original, asignar por separado la confianza de la fecha de visionado y excluir las fechas anteriores al reto como fechas reales no confirmadas.
+Prisma DEBE reconocer la exportación de reto mediante su metadato Android v2 y la entrada inicial `Source Code` (TMDB 45612) el día local 15 de enero de 2026. Debe mantener `addedAt` y la marca temporal original, asignar por separado la confianza de fecha y conservar `watchedAt` para cada marca válida de `movies.cH`. Solo los registros dentro del intervalo de 280 días son `streak-confirmed`; las fechas explícitas anteriores y posteriores son `explicit-source` y no amplían la racha.
 
-#### Scenario: Reimportación con fechas previas retrospectivas
+#### Scenario: Reimportación con fechas explícitas anteriores a la racha
 
-- DADO un estado local con una marca `action-time` anterior y una nueva importación que la clasifica como `pre-streak-unverified`
-- CUANDO Prisma mezcla ambas entradas
-- ENTONCES retira la marca antigua de visionado, conserva el dato original de incorporación y respeta cualquier fecha `user-confirmed`
+- DADO un estado local con una marca `action-time` heredada y una nueva fila de `movies.cH` con fecha válida anterior a la racha
+- CUANDO Prisma importa el Android v2 reconocido
+- ENTONCES sustituye la marca heredada por la fecha explícita del historial, conserva el timestamp original y no cambia las 280 fechas confirmadas
 
-#### Scenario: Reimportación de una fecha fiable que corrige un dato local antiguo
+#### Scenario: Reimportación de una fecha dentro de la racha que corrige un dato local antiguo
 
 - DADO un estado local que contiene una fecha conflictiva para una película durante el reto
 - Y la exportación Android v2 reconocida contiene la marca original de esa película con confianza `streak-confirmed`
