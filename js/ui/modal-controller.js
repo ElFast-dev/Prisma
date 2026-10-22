@@ -1,7 +1,7 @@
 export function createModalController(ctx) {
   function openModal(movie, mode) {
     if (!movie) return;
-    const existing = ctx.ratingFor(movie.title);
+    const existing = ctx.ratingFor(movie.title, movie.tmdbId);
     const nextMode = mode || "details";
     if (nextMode === "rate") {
       const detailIsVisible = Boolean(ctx.$(".detail-sheet"));
@@ -12,9 +12,7 @@ export function createModalController(ctx) {
         movie: movie,
         mode: "rate",
         returnMovieDetail: returnMovieDetail,
-        rating: existing ? ctx.ratingValue(existing) : 7,
-        emotions: existing && Array.isArray(existing.emotions) ? existing.emotions.slice() : [],
-        note: existing && existing.note ? existing.note : ""
+        rating: existing ? ctx.ratingValue(existing) : 7
       };
       ctx.utilitySheet = null;
       renderModal();
