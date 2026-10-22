@@ -95,19 +95,26 @@ export function sameDiscoveryMovie(left, right) {
  * set leave a single non-conflicting match.
  */
 export function findMovieRecordMatch(entry, records) {
-  if (!entry || !titleKey(entry.title)) return null;
+  if (!entry) return null;
+  const list = (records || []).filter(function (record) {
+    return record && (movieTmdbId(record) || titleKey(record.title));
+  });
+  const entryId = movieTmdbId(entry);
+  if (entryId) {
+    const exactId = list.find(function (record) { return movieTmdbId(record) === entryId; });
+    if (exactId) return exactId;
+  }
+
   const title = titleKey(entry.title);
-  const sameTitle = (records || []).filter(function (record) {
-    return record && titleKey(record.title) === title;
+  if (!title) return null;
+  const sameTitle = list.filter(function (record) {
+    return titleKey(record.title) === title;
   });
   if (!sameTitle.length) return null;
 
-  const entryId = movieTmdbId(entry);
   const entryYear = movieYear(entry);
 
   if (entryId) {
-    const exactId = sameTitle.find(function (record) { return movieTmdbId(record) === entryId; });
-    if (exactId) return exactId;
 
     const untagged = sameTitle.filter(function (record) {
       if (movieTmdbId(record)) return false;
