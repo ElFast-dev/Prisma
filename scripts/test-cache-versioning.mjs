@@ -133,7 +133,7 @@ assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
 assert.ok(cached.has("./js/ui/page-views.js?v=core-20261022-20"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
-assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261021-4"),
+assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261022-1"),
   "El ranking debe usar búsqueda de perfil con identidad y año fiables.");
 assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-2"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
