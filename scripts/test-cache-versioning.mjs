@@ -152,7 +152,7 @@ assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261022-1"),
 assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-4"),
   "El formateador de fechas explícitas debe quedar versionado en la caché.");
 const actionsImportUrl = singleMatch(/from\s+["\'](\.\/js\/import-export\/actions\.js\?[^"\']+)["\']/g, app, "módulo de importación y exportación")[1];
-assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261022-3",
+assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261022-4",
   "La reconciliación del historial debe invalidar la URL de módulo obsoleta.");
 assert.ok(cached.has(actionsImportUrl),
   "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
