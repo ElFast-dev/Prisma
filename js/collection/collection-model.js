@@ -29,7 +29,7 @@ function dateScore(value) {
 
   function enrichCollectionMovie(entry) {
     const stored = entry || {};
-    const known = findMovie(stored.title,stored.tmdbId || stored.tmId) || {};
+    const known = findMovie(stored.title,stored.tmdbId || stored.tmId,stored.year) || {};
     const result = Object.assign({},known,stored);
     ["posterUrl","posterPath","overview","releaseDate","backdropUrl","runtime","voteAverage","voteCount","tmdbId","status","imdbId"].forEach(function (key) {
       if (!result[key]) result[key] = known[key] || (key === "posterUrl" ? "" : null);
