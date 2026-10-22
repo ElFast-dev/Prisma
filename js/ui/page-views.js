@@ -18,7 +18,7 @@ export function createPageViews(ctx) {
         '<button class="poster-art movie-poster-trigger" type="button" data-action="details" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '" data-year="' + ctx.escapeHTML(movie.year || "") + '" aria-label="Ver detalles de ' + ctx.escapeHTML(movie.title) + '" style="' + posterBackground + '">' +
         posterImage + posterFallback + '</button></article>';
     }
-    const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '">' + actionLabel + '</button></div>';
+    const detail = opts.compact ? "" : '<div class="movie-actions"><button class="btn btn-secondary" type="button" data-action="details" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '" data-year="' + ctx.escapeHTML(movie.year || "") + '">Detalles</button><button class="btn btn-primary" type="button" data-action="rate" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '" data-year="' + ctx.escapeHTML(movie.year || "") + '">' + actionLabel + '</button></div>';
     return '<article class="movie-card">' +
       '<div class="poster-art" role="img" aria-label="Tarjeta de ' + ctx.escapeHTML(movie.title) + '" style="' + posterBackground + '">' +
       posterImage + posterFallback + '</div>' +
@@ -191,7 +191,7 @@ export function createPageViews(ctx) {
 
 
   function recentPoster(item) {
-    return '<button class="recent-movie" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '">' +
+    return '<button class="recent-movie" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" data-year="' + ctx.escapeHTML(item.year || "") + '">' +
       (item.posterUrl ? '<img class="recent-poster-image" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" src="' + ctx.escapeHTML(item.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
       '<span class="recent-movie-meta">' + ctx.escapeHTML(item.year || "Película") + '</span><strong>' + ctx.escapeHTML(item.title) + '</strong></button>';
   }
@@ -208,7 +208,7 @@ export function createPageViews(ctx) {
     const stateLabel = tab === "hidden" ? '<span class="collection-row-state">Oculta</span>' :
       (tab === "pending" ? '<span class="collection-row-state pending-state">Pendiente</span>' : "");
     return '<div class="collection-row">' +
-      '<button class="collection-row-main" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '">' +
+      '<button class="collection-row-main" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" data-year="' + ctx.escapeHTML(item.year || "") + '">' +
       '<span class="collection-row-poster">' + (item.posterUrl ? '<img data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" src="' + ctx.escapeHTML(item.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<span class="poster-fallback">▣</span>') + '</span>' +
       '<span class="collection-row-copy"><span class="collection-release">' + ctx.escapeHTML(release) + '</span><strong>' + ctx.escapeHTML(item.title) + '</strong><span class="collection-synopsis">' + synopsis + '</span></span>' +
       '</button><span class="collection-row-side"><span class="collection-row-scores">' + personalRating + publicRating + '</span>' + stateLabel + '</span></div>';
