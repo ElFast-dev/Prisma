@@ -565,6 +565,12 @@ La evaluación temporal DEBE distinguir fechas de visionado importadas explícit
 - CUANDO la persona no activa el proxy
 - ENTONCES Prisma excluye esa fecha de la evaluación temporal y no crea un `watchedAt` derivado
 
+#### Scenario: Etiquetas de resultados según la fuente temporal
+
+- DADO que el proxy de fecha de incorporación está activo
+- CUANDO se muestra la evaluación temporal
+- ENTONCES Prisma etiqueta las ventanas, el conjunto de prueba y el nDCG como ordenados por fecha de incorporación, y no como fechas reales de visionado futuro
+
 #### Scenario: Importar fecha explícita de visionado
 
 - DADO un registro con el campo `watchedAt` o `watched_at` explícito
