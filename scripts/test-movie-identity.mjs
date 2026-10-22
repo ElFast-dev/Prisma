@@ -8,6 +8,7 @@ import { parseCatalogCSV } from "../js/catalog/csv-parser.js";
 import { createCatalogModel } from "../js/catalog/catalog-model.js";
 import { mergeMovieListByTitle } from "../js/import-export/personal-data.js";
 import { createImportExportActions } from "../js/import-export/actions.js";
+import { createRecommendationEngine } from "../js/recommendations/engine.js";
 
 assert.notEqual(
   movieIdentityKey({ title: "Prisma Identity Fixture", year: 1998 }),
@@ -237,5 +238,21 @@ assert.equal(lookupModel.ratingFor("Prisma Lookup Identity Fixture", null, 1998)
   "La nota personal debe resolverse usando el año correcto.");
 assert.equal(lookupModel.ratingFor("Prisma Lookup Identity Fixture", null, null), null,
   "No se debe atribuir una nota a un título ambiguo sin ID ni año.");
+
+const lookupEngine = createRecommendationEngine({
+  getRatings: () => lookupRatings,
+  findMovie: lookupModel.findMovie,
+  movieFeatures: movie => movie
+    ? (movie.genres || []).map(genre => "género: " + String(genre).toLowerCase())
+    : [],
+  ratingValue
+});
+const yearAwareProfile = lookupEngine.buildProfile();
+assert.equal(yearAwareProfile.withMetadata, 2,
+  "El perfil debe enlazar los metadatos de ambas películas homónimas mediante el año.");
+assert.ok(yearAwareProfile.features.get("género: drama").weight < 0,
+  "La nota de la película de 1998 debe aprender del género que realmente le corresponde.");
+assert.ok(yearAwareProfile.features.get("género: action").weight > 0,
+  "La nota de la película de 2024 debe aprender del género que realmente le corresponde.");
 
 console.log("Identidad cinematográfica correcta: ID TMDB prioritario, año en fallback, remakes conservados y asociación solo cuando es inequívoca.");
