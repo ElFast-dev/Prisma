@@ -66,6 +66,18 @@ assert.equal(
   "Un título sin ID ni año no debe elegir arbitrariamente entre remakes."
 );
 
+assert.equal(
+  findMovieRecordMatch(
+    { title: "Uncertain Year Fixture", year: 2024, tmdbId: "990123" },
+    [
+      { title: "Uncertain Year Fixture", year: 1998, tmdbId: "990122" },
+      { title: "Uncertain Year Fixture" }
+    ]
+  ),
+  null,
+  "Un registro legado sin año no se debe asignar cuando podría corresponder a otro ID TMDB."
+);
+
 const discoveryUnique = uniqueDiscoveryMovies([
   { title: "About Time", year: 2013, overview: "", genres: [] },
   { title: "About Time", year: 2013, tmdbId: "122906", overview: "Sinopsis con metadatos TMDB", genres: ["Drama"] },
