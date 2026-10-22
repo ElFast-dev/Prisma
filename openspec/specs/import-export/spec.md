@@ -45,31 +45,42 @@ La copia de seguridad DEBE excluir la credencial de TMDB para no propagar secret
 - ENTONCES la credencial no aparece en el archivo exportado
 
 
-### Requirement: Importación con procedencia del reto de visionado
+### Requirement: Fechas de visionado en el historial Android v2 reconocido
 
-Prisma DEBE detectar el formato Android v2 del historial personal y distinguir las marcas de visionado verificables del reto diario de las marcas anteriores añadidas retrospectivamente. La importación DEBE mantener el campo `a` original en `addedAt`, guardar la procedencia del visionado por separado y NO DEBE modificar el archivo JSON fuente. Al reimportar, Prisma DEBE actualizar los marcadores del estado local de forma idempotente, sin duplicar películas y sin eliminar fechas confirmadas manualmente.
+Prisma DEBE conservar la procedencia de las fechas y NO DEBE interpretar un campo de fecha ambiguo como visionado para formatos desconocidos. Para la exportación Android v2 reconocida (platform=android, version=2, movies.cH como colección de vistas), el campo "a" de cada fila de movies.cH DEBE importarse también como watchedAt explícito, sin restringirlo a la racha personal. Prisma DEBE conservar el instante original, mantener la compatibilidad del dato fuente en addedAt y NO DEBE modificar el JSON original. En movies.cW y movies.cHid, el campo "a" mantiene su significado propio de cada colección, no el de fecha de visionado. Al reimportar, Prisma DEBE combinar por identidad de película y actualizar las fechas explícitas de forma idempotente, sin duplicados ni pérdida de fechas confirmadas manualmente.
 
-#### Scenario: Importar el historial del reto
+#### Scenario: Reconocer la racha personal
 
-- DADO un archivo Android v2 que contiene `Source Code` (TMDB 45612) el 15 de enero de 2026 en la fecha local de Panamá
+- DADO un archivo Android v2 que contiene Source Code (TMDB 45612) el 15 de enero de 2026 en el día local de Panamá
 - CUANDO se importa el JSON
-- ENTONCES las marcas desde esa fecha se enlazan como visionados verificables, el instante UTC se conserva y `addedAt` sigue disponible por separado
+- ENTONCES se crea el registro de racha personal confirmada del 15 de enero al 21 de octubre de 2026, con 280 días consecutivos y una meta diaria
 
-#### Scenario: Importar marcas anteriores al reto
+#### Scenario: Importar fechas para todo el historial visto
 
-- DADO una película cuya marca del historial pertenece a un día anterior al 15 de enero de 2026
-- CUANDO se importa el JSON reconocido
-- ENTONCES la fecha se conserva como metadato original, pero no se usa como fecha real de visionado sin confirmación manual
+- DADO que movies.cH contiene películas con marcas "a" válidas anteriores, dentro o posteriores al intervalo de la racha
+- CUANDO se importa la exportación Android v2 reconocida
+- ENTONCES cada marca válida se guarda como watchedAt con su instante original y procedencia explícita; solo las marcas del intervalo de la racha reciben la etiqueta streak-confirmed
 
-#### Scenario: Corregir fechas obsoletas dentro del reto confirmado
+#### Scenario: No extender la racha con otras fechas
 
-- DADO un estado local cuya fecha para una película contradice la marca original de una exportación reconocida y fiable del reto
-- CUANDO se vuelve a importar esa exportación y la entrada recibe `watchDateConfidence=streak-confirmed`
-- ENTONCES prevalece la marca temporal del archivo de origen, se conserva su instante UTC, la interfaz calcula el día calendario en `America/Panama` y la película no se duplica
-- Y las entradas `pre-streak-unverified` siguen sin sobrescribir las fechas confirmadas manualmente
+- DADO que una película tiene una marca explícita antes del 15 de enero o después del 21 de octubre de 2026
+- CUANDO Prisma presenta el historial y calcula los días de la racha
+- ENTONCES muestra su fecha de visionado y puede usarla como fecha explícita del historial, pero no amplía ni modifica el registro de 280 días confirmados
+
+#### Scenario: Mantener la fecha independiente en otras colecciones y formatos
+
+- DADO que un JSON no corresponde al historial Android v2 reconocido, o que la fila pertenece a pendientes u ocultos
+- CUANDO se importa una marca "a"
+- ENTONCES Prisma no convierte ese campo en fecha de visionado, salvo que el registro incluya watchedAt o watched_at explícito
+
+#### Scenario: Corregir una fecha local obsoleta en la racha confirmada
+
+- DADO un estado local cuya fecha contradice la marca explícita del archivo Android v2 reconocido dentro de la racha
+- CUANDO se vuelve a importar el archivo
+- ENTONCES prevalece la fecha de la exportación para ese día confirmado, se conserva el instante UTC y la película no se duplica
 
 #### Scenario: No confundir la fecha de valoración con la fecha de visionado
 
-- DADO un registro que contiene una fecha de valoración (`rA` o `updatedAt`) distinta de la fecha explícita del visionado
+- DADO un registro que contiene una fecha de valoración (rA o updatedAt) distinta de la fecha explícita del visionado
 - CUANDO Prisma muestra la fecha dentro de la ficha o el historial
-- ENTONCES usa solo `watchedAt` explícito convertido al día local de Panamá y no sustituye una fecha ausente por la valoración o la incorporación
+- ENTONCES usa solo watchedAt explícito convertido al día local de Panamá y no sustituye una fecha ausente por la valoración
