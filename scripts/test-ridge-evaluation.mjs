@@ -488,7 +488,7 @@ assert.match(appSource, /runTemporalRidgeExperiment/);
 assert.match(appSource, /evaluateTemporalAsync/);
 assert.match(viewsSource, /data-action="run-temporal-ridge-experiment"/);
 assert.match(viewsSource, /data-action="toggle-temporal-added-date-proxy"/);
-assert.match(viewsSource, /no confirma el día real del visionado/i);
+assert.match(viewsSource, /no se tratan como fechas reales/i);
 assert.match(viewsSource, /Ventana por incorporación/);
 assert.match(viewsSource, /Orden temporal exploratorio por fecha de incorporación/);
 assert.match(viewsSource, /Calidad del orden por fecha de incorporación/);
