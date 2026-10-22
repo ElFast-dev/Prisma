@@ -6,6 +6,7 @@
 - [x] DP4. Adaptar las vistas de historial/detalle para no mostrar una fecha retrospectiva como fecha de visionado.
 - [x] DP5. Actualizar diagnóstico agregado a v10, documentación y versionado del shell PWA.
 - [x] DP6. Añadir regresiones sintéticas de zona horaria, importación, racha, reimportación y privacidad.
+- [ ] DP9. Verificar con pruebas la precedencia del timestamp fiable frente a una fecha local obsoleta y los días consecutivos cerca de medianoche UTC.
 - [ ] DP7. Ejecutar calidad/SDD/Playwright, fusionar la implementación y verificar el despliegue.
 - [ ] DP8. Archivar el cambio SDD con evidencia de la integración y los resultados CI.
 
