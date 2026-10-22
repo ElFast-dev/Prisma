@@ -87,6 +87,28 @@ Prisma DEBE empezar con el perfil personal y el catálogo local vacíos cuando n
 - CUANDO se actualiza la aplicación
 - ENTONCES los datos existentes se conservan y no se mezclan películas de muestra
 
+### Requirement: Completitud del enriquecimiento cinematográfico
+
+Prisma DEBE distinguir entre los metadatos básicos de TMDB y la obtención confirmada de créditos y palabras clave. Un registro antiguo con metadatos básicos recientes PERO sin marcadores actuales de créditos y palabras clave DEBE seguir siendo elegible para enriquecimiento. Al completar la actualización, Prisma DEBE preservar notas personales, fechas, listas y la identidad TMDB.
+
+#### Scenario: Carátula reciente pero sin créditos
+
+- DADO un registro con carátula TMDB reciente que no registra créditos o palabras clave obtenidos
+- CUANDO Prisma calcula la cola de enriquecimiento del historial
+- ENTONCES vuelve a incluir ese registro para obtener los datos que faltan
+
+#### Scenario: Detalles completos y recientes
+
+- DADO un registro que marca créditos y palabras clave como obtenidos dentro de la ventana de vigencia
+- CUANDO Prisma calcula la cola de enriquecimiento
+- ENTONCES no solicita repetidamente los mismos detalles
+
+#### Scenario: Actualizar metadatos sin alterar datos personales
+
+- DADO un registro antiguo con nota personal y fecha de visionado
+- CUANDO se cargan los créditos y las palabras clave que faltaban
+- ENTONCES se amplían los metadatos cinematográficos y se mantienen la nota, la fecha y la identidad de la película
+
 ### Requirement: Candidatas remotas temporales
 
 Prisma DEBE poder usar como candidatas los resultados populares consultados de TMDB y DEBE mantenerlos separados del catálogo personalizado persistente. El uso de una película para puntuarla NO DEBE guardarla por sí mismo en las valoraciones, historial, pendientes, ocultas, catálogo ni copias de seguridad.
