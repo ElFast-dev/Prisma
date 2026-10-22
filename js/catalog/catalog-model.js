@@ -134,18 +134,9 @@ function mergeCatalogFields(target, source) {
     return findMovieRecordMatch(target,catalog);
   }
 
-  function ratingFor(title, tmdbId) {
+  function ratingFor(title, tmdbId, year) {
     const state = getState();
-    const id = movieTmdbId({tmdbId:tmdbId});
-    const key = titleKey(title);
-    if (id) {
-      const exactMatch = state.rated.find(function (entry) { return movieTmdbId(entry) === id; });
-      if (exactMatch) return exactMatch;
-      const sameTitle = state.rated.filter(function (entry) { return titleKey(entry.title) === key; });
-      const noIdMatches = sameTitle.filter(function (entry) { return !movieTmdbId(entry); });
-      return sameTitle.length === 1 && noIdMatches.length === 1 ? noIdMatches[0] : null;
-    }
-    return state.rated.find(function (entry) { return titleKey(entry.title) === key; }) || null;
+    return findMovieRecordMatch({title:title,tmdbId:tmdbId,year:year},state.rated || []);
   }
 
 
@@ -160,7 +151,7 @@ function mergeCatalogFields(target, source) {
     const ratings = state.rated.map(ratingValue).filter(function (value) { return value != null; });
     const average = ratings.length ? ratings.reduce(function (sum, value) { return sum + value; }, 0) / ratings.length : null;
     const matched = state.rated.filter(function (entry) {
-      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title,entry.tmdbId || entry.tmId,entry.year);
       return movieFeatures(movie, entry).length > 0;
     }).length;
     return {
