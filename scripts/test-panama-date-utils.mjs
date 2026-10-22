@@ -9,6 +9,15 @@ assert.equal(dateOnlyInTimeZone("2026-10-22"), "2026-10-22",
   "Una fecha pura YYYY-MM-DD no debe desplazarse por conversión de zona.");
 assert.equal(formatPanamaDateMDY("2025-11-06T00:22:23.302Z"), "11/05/2025");
 assert.equal(formatPanamaDateMDY("2026-01-15T05:56:02.305Z"), "01/15/2026");
+assert.equal(dateOnlyInTimeZone("2026-10-18T05:20:00.000Z"), "2026-10-18");
+assert.equal(dateOnlyInTimeZone("2026-10-19T07:15:00.000Z"), "2026-10-19");
+assert.equal(dateOnlyInTimeZone("2026-10-20T06:20:00.000Z"), "2026-10-20");
+assert.equal(dateOnlyInTimeZone("2026-10-22T04:10:00.000Z"), "2026-10-21",
+  "Un timestamp UTC después de medianoche debe conservar el día anterior si aún es ese día en Panamá.");
+assert.equal(formatPanamaDateMDY("2026-10-18T05:20:00.000Z"), "10/18/2026");
+assert.equal(formatPanamaDateMDY("2026-10-19T07:15:00.000Z"), "10/19/2026");
+assert.equal(formatPanamaDateMDY("2026-10-20T06:20:00.000Z"), "10/20/2026");
+assert.equal(formatPanamaDateMDY("2026-10-22T04:10:00.000Z"), "10/21/2026");
 assert.equal(dateOnlyInTimeZone("2026-02-31T11:00:00.000Z"), null);
 assert.equal(dateOnlyInTimeZone(null), null);
 
