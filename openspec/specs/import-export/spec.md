@@ -60,3 +60,10 @@ Prisma DEBE detectar el formato Android v2 del historial personal y distinguir l
 - DADO una película cuya marca del historial pertenece a un día anterior al 15 de enero de 2026
 - CUANDO se importa el JSON reconocido
 - ENTONCES la fecha se conserva como metadato original, pero no se usa como fecha real de visionado sin confirmación manual
+
+#### Scenario: Corregir fechas obsoletas dentro del reto confirmado
+
+- DADO un estado local cuya fecha para una película contradice la marca original de una exportación reconocida y fiable del reto
+- CUANDO se vuelve a importar esa exportación y la entrada recibe `watchDateConfidence=streak-confirmed`
+- ENTONCES prevalece la marca temporal del archivo de origen, se conserva su instante UTC, la interfaz calcula el día calendario en `America/Panama` y la película no se duplica
+- Y las entradas `pre-streak-unverified` siguen sin sobrescribir las fechas confirmadas manualmente
