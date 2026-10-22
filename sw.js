@@ -29,7 +29,7 @@ const APP_ASSETS = [
   "./js/recommendations/repeated-validation-summary.js?v=core-20261021-1",
   "./js/recommendations/evaluation.js",
   "./js/recommendations/normalization-evaluation.js",
-  "./js/diagnostics/recommendation-report.js?v=core-20261022-1",
+  "./js/diagnostics/recommendation-report.js?v=core-20261022-2",
   "./js/catalog/csv-parser.js",
   "./js/catalog/catalog-model.js?v=core-20261022-2",
   "./js/collection/collection-model.js?v=core-20261022-3",
