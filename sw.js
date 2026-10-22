@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v90"
+const CACHE_NAME = "prisma-shell-v91"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -15,14 +15,14 @@ const APP_ASSETS = [
   "./styles/watch-streak.css?v=ui-20261021-24",
   "./styles/prisma-design-system.css?v=ui-20261021-24",
 
-  "./app.js?v=ui-20261022-79",
+  "./app.js?v=ui-20261022-80",
   "./js/tmdb/client.js",
   "./js/core/movie-utils.js",
   "./js/core/date-utils.js",
   "./js/core/watch-streak.js",
   "./js/core/storage.js?v=core-20261020-1",
   "./js/core/storage-protection.js",
-  "./js/core/state-model.js?v=core-20261022-1",
+  "./js/core/state-model.js?v=core-20261022-2",
   "./js/recommendations/features.js",
   "./js/recommendations/engine.js",
   "./js/recommendations/ridge-evaluation.js?v=core-20261022-9",
@@ -49,7 +49,7 @@ const APP_ASSETS = [
   "./js/recommendations/ranking.js?v=core-20261021-3",
   "./js/recommendations/preferences.js?v=core-20261021-1",
   "./js/app/runtime.js?v=core-20261020-1",
-  "./js/app/lifecycle.js?v=core-20261021-2",
+  "./js/app/lifecycle.js?v=core-20261022-2",
   "./js/app/pwa-update.js?v=core-20261021-1",
   "./js/import-export/personal-data.js?v=core-20261022-5",
   "./manifest.webmanifest?v=ui-20261020-15",
