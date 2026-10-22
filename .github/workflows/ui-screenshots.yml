@@ -295,7 +295,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v9" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v10" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||
