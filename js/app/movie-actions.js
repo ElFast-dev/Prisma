@@ -126,9 +126,12 @@ export function createMovieActions(ctx) {
 
   async function toggleWatchlist(title,tmdbId) {
     const movie = resolveMovieForAction(title,tmdbId);
-    const remove = ctx.isInWatchlist(movie.title,movie.tmdbId);
+    const pendingMatch = findMovieRecordMatch(movie,ctx.state.watchlist);
+    const remove = Boolean(pendingMatch) || ctx.isInWatchlist(movie.title,movie.tmdbId);
     if (remove) {
-      ctx.state.watchlist = ctx.state.watchlist.filter(function (entry) { return !ctx.sameMovieRecord(entry,movie); });
+      ctx.state.watchlist = ctx.state.watchlist.filter(function (entry) {
+        return entry !== pendingMatch && !ctx.sameMovieRecord(entry,movie);
+      });
       ctx.logEvent("Quitada de pendientes",title,"−");
       ctx.toast("Se quitó de tu lista.");
     } else {
@@ -160,7 +163,10 @@ export function createMovieActions(ctx) {
     }
     if (index >= 0) ctx.state.watched[index] = watched;
     else ctx.state.watched.unshift(watched);
-    ctx.state.watchlist = ctx.state.watchlist.filter(function (entry) { return !ctx.sameMovieRecord(entry,source); });
+    const pendingMatch = findMovieRecordMatch(source,ctx.state.watchlist);
+    ctx.state.watchlist = ctx.state.watchlist.filter(function (entry) {
+      return entry !== pendingMatch && !ctx.sameMovieRecord(entry,source);
+    });
     ctx.logEvent("Añadida al historial",title,"✓");
     await ctx.persistState();
     ctx.combineMovies();
@@ -173,9 +179,12 @@ export function createMovieActions(ctx) {
 
   async function toggleHidden(title,tmdbId) {
     const movie = resolveMovieForAction(title,tmdbId);
-    const remove = ctx.isHidden(movie.title,movie.tmdbId);
+    const hiddenMatch = findMovieRecordMatch(movie,ctx.state.hidden);
+    const remove = Boolean(hiddenMatch) || ctx.isHidden(movie.title,movie.tmdbId);
     if (remove) {
-      ctx.state.hidden = ctx.state.hidden.filter(function (entry) { return !ctx.sameMovieRecord(entry,movie); });
+      ctx.state.hidden = ctx.state.hidden.filter(function (entry) {
+        return entry !== hiddenMatch && !ctx.sameMovieRecord(entry,movie);
+      });
     } else {
       ctx.state.hidden.unshift(Object.assign({},movie,{hiddenAt:new Date().toISOString()}));
     }
