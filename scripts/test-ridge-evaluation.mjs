@@ -488,7 +488,7 @@ assert.match(appSource, /runTemporalRidgeExperiment/);
 assert.match(appSource, /evaluateTemporalAsync/);
 assert.match(viewsSource, /data-action="run-temporal-ridge-experiment"/);
 assert.match(viewsSource, /data-action="toggle-temporal-added-date-proxy"/);
-assert.match(viewsSource, /no se tratan como fechas reales/i);
+assert.match(viewsSource, /el reto de 280 días permanece limitado del 15 de enero al 21 de octubre de 2026/i);
 assert.match(viewsSource, /Ventana por incorporación/);
 assert.match(viewsSource, /Orden temporal exploratorio por fecha de incorporación/);
 assert.match(viewsSource, /Calidad del orden por fecha de incorporación/);
