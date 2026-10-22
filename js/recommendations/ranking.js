@@ -106,7 +106,7 @@ export function createRecommendationRanking(ctx) {
   function genreStats() {
     const stats = new Map();
     ctx.state.rated.forEach(function (entry) {
-      const movie = ctx.findMovie(entry.title,entry.tmdbId || entry.tmId);
+      const movie = ctx.findMovie(entry.title,entry.tmdbId || entry.tmId,entry.year);
       const rating = ctx.ratingValue(entry);
       if (rating == null) return;
       const genres = (entry.genres && entry.genres.length ? entry.genres : (movie && movie.genres)) || [];
