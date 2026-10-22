@@ -131,7 +131,7 @@ export function createMovieActions(ctx) {
   async function toggleWatchlist(title,tmdbId,year) {
     const movie = resolveMovieForAction(title,tmdbId,year);
     const pendingMatch = findMovieRecordMatch(movie,ctx.state.watchlist);
-    const remove = Boolean(pendingMatch) || ctx.isInWatchlist(movie.title,movie.tmdbId);
+    const remove = Boolean(pendingMatch) || ctx.isInWatchlist(movie.title,movie.tmdbId,movie.year);
     if (remove) {
       ctx.state.watchlist = ctx.state.watchlist.filter(function (entry) {
         return entry !== pendingMatch && !ctx.sameMovieRecord(entry,movie);
@@ -184,7 +184,7 @@ export function createMovieActions(ctx) {
   async function toggleHidden(title,tmdbId,year) {
     const movie = resolveMovieForAction(title,tmdbId,year);
     const hiddenMatch = findMovieRecordMatch(movie,ctx.state.hidden);
-    const remove = Boolean(hiddenMatch) || ctx.isHidden(movie.title,movie.tmdbId);
+    const remove = Boolean(hiddenMatch) || ctx.isHidden(movie.title,movie.tmdbId,movie.year);
     if (remove) {
       ctx.state.hidden = ctx.state.hidden.filter(function (entry) {
         return entry !== hiddenMatch && !ctx.sameMovieRecord(entry,movie);
