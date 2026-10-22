@@ -38,7 +38,7 @@ function dateScore(value) {
       stored.watchedAtSource !== "user-confirmed") {
       delete result.watchedAt;
     } else {
-      result.watchedAt = result.watchedAt || latestRecordDate(stored);
+      result.watchedAt = stored.watchedAt || null;
     }
     return result;
   }
@@ -71,7 +71,7 @@ function dateScore(value) {
         if (combinedConfidence === "pre-streak-unverified" && !confirmedDate) {
           delete combined.watchedAt;
         } else {
-          combined.watchedAt = prior.watchedAt || latestRecordDate(entry);
+          combined.watchedAt = prior.watchedAt || entry.watchedAt || null;
         }
         map.set(identity,enrichCollectionMovie(combined));
       });
