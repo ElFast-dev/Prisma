@@ -57,6 +57,12 @@ assert.equal(
   singleTMDB,
   "Un registro legado ambiguo solo por falta de datos puede asociarse si existe una única candidata."
 );
+const alternateTitleBySameId = { title: "Original Movie Title", year: 2012, tmdbId: "990099" };
+assert.equal(
+  findMovieRecordMatch({ title: "Título localizado alternativo", tmdbId: "990099" }, [alternateTitleBySameId]),
+  alternateTitleBySameId,
+  "El ID TMDB debe prevalecer aunque el título cambie entre fuentes."
+);
 const remakes = [
   { title: "Same Name Fixture", year: 1998, tmdbId: "990101" },
   { title: "Same Name Fixture", year: 2024, tmdbId: "990102" }
