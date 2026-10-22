@@ -5,7 +5,8 @@ import { emptyState, ensureState } from "../js/core/state-model.js";
 import { dateOnlyInTimeZone, listDateOnlyRange, formatPanamaDateMDY } from "../js/core/date-utils.js";
 import { resolveExplicitWatchedAt } from "../js/ui/presentation-utils.js";
 import { buildConfirmedWatchStreakDays, normalizeConfirmedWatchStreak } from "../js/core/watch-streak.js";
-import { movieIdentityKey, normalizeMovie, ratingValue } from "../js/core/movie-utils.js";
+import { createCollectionModel } from "../js/collection/collection-model.js";
+import { movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, sameMovieRecord, titleKey } from "../js/core/movie-utils.js";
 import { createPageViews } from "../js/ui/page-views.js";
 
 const exportFixture = {
@@ -59,6 +60,35 @@ assert.equal(resolveExplicitWatchedAt(null, { updatedAt: "2026-10-21T06:31:56.14
   "La fecha de una valoración no puede sustituir una fecha de visionado ausente.");
 assert.equal(resolveExplicitWatchedAt({ watchedAt: "2026-10-20T06:31:00Z" }, { updatedAt: "2026-10-21T06:31:56.141Z" }), "2026-10-20T06:31:00Z",
   "La fecha explícita de visionado debe prevalecer sobre la fecha de valoración.");
+
+const collectionState = {
+  watched: [{ id: "dictator", tmdbId: "76493", title: "The Dictator", addedAt: "2026-10-20T06:31:00Z" }],
+  rated: [{ id: "dictator", tmdbId: "76493", title: "The Dictator", rating: 6, updatedAt: "2026-10-21T06:31:56.141Z" }],
+  watchlist: [],
+  hidden: []
+};
+const collectionModel = createCollectionModel({
+  getState: () => collectionState,
+  getCollectionTab: () => "history",
+  getCollectionQuery: () => "",
+  getCollectionGenres: () => [],
+  getOnlyReleased: () => false,
+  getCollectionSort: () => "date",
+  getCollectionDirection: () => "desc",
+  findMovie: () => ({}),
+  titleKey,
+  displayGenre: value => value,
+  movieIdentityKey,
+  movieTmdbId,
+  ratingValue,
+  sameMovieRecord,
+  hasTrustedTMDBScore: () => false
+});
+assert.equal(collectionModel.getCollectionItems("history")[0].watchedAt, null,
+  "La fecha de incorporación y la fecha de valoración no deben convertirse en un visionado.");
+collectionState.watched[0].watchedAt = "2026-10-20T06:31:00Z";
+assert.equal(collectionModel.getCollectionItems("history")[0].watchedAt, "2026-10-20T06:31:00Z",
+  "El modelo de colección debe mantener una fecha de visionado explícita.");
 
 let state = emptyState();
 state.watched.push({
