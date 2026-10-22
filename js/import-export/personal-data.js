@@ -1,4 +1,4 @@
-import { findMovieRecordMatch, movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
+import { findMovieRecordMatch, movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, sameMovieRecord, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
 import { dateOnlyInTimeZone } from "../core/date-utils.js";
 import { createConfirmedWatchStreakRecord } from "../core/watch-streak.js";
 
@@ -173,18 +173,35 @@ export function mergeMovieEntries(existing, incoming) {
 }
 
 export function mergeMovieListByTitle(existing, incoming) {
+  // Exact identities are consolidated first, without using arrival order to
+  // guess which TMDB remake an incomplete row belongs to.
   const merged = [];
   (existing || []).concat(incoming || []).forEach(function (entry) {
     if (!entry || !entry.title) return;
-    const previous = findMovieRecordMatch(entry,merged);
-    if (!previous) {
+    const exact = merged.find(function (record) { return sameMovieRecord(record,entry); });
+    if (!exact) {
       merged.push(entry);
       return;
     }
-    const index = merged.indexOf(previous);
-    if (index >= 0) merged[index] = mergeMovieEntries(previous,entry);
+    const index = merged.indexOf(exact);
+    if (index >= 0) merged[index] = mergeMovieEntries(exact,entry);
   });
-  return merged;
+
+  const removed = new Set();
+  merged.forEach(function (entry) {
+    if (!entry || removed.has(entry) || movieTmdbId(entry)) return;
+    const candidates = merged.filter(function (record) {
+      return record && record !== entry && !removed.has(record);
+    });
+    const matched = findMovieRecordMatch(entry,candidates);
+    if (!matched || !movieTmdbId(matched)) return;
+    const index = merged.indexOf(matched);
+    if (index < 0) return;
+    merged[index] = mergeMovieEntries(matched,entry);
+    removed.add(entry);
+  });
+
+  return merged.filter(function (entry) { return !removed.has(entry); });
 }
 
 
