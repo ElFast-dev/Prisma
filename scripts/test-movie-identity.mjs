@@ -80,6 +80,16 @@ assert.equal(discoveryUnique.find(movie => movie.title === "About Time").overvie
 assert.equal(discoveryUnique.filter(movie => movie.title === "Same Name Fixture").length, 3,
   "Dos remakes y un registro sin año ambiguo permanecen separados.");
 
+const reverseOrder = uniqueDiscoveryMovies([
+  { title: "Order Fixture" },
+  { title: "Order Fixture", year: 1998, tmdbId: "990111" },
+  { title: "Order Fixture", year: 2024, tmdbId: "990112" }
+]);
+assert.equal(reverseOrder.length, 3,
+  "La deduplicación debe conservar una fila ambigua aunque llegue antes que las identidades TMDB.");
+assert.equal(reverseOrder.filter(movie => movie.title === "Order Fixture" && !movieTmdbId(movie)).length, 1,
+  "La fila sin ID no debe asignarse al primer remake por el orden de entrada.");
+
 const csv = parseCatalogCSV([
   "title,year,genres",
   "Prisma CSV Identity Fixture,1998,Drama",
