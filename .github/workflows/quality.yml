@@ -48,6 +48,7 @@ jobs:
           node --check js/ui/page-views.js
           node --check js/ui/theme-controller.js
           node --check js/ui/modal-views.js
+          node --check js/ui/person-filmography.js
           node --check js/app/movie-actions.js
           node --check js/import-export/actions.js
           node --check js/app/event-handlers.js
