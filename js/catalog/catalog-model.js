@@ -121,7 +121,7 @@ function mergeCatalogFields(target, source) {
     setCatalogByTitle(nextCatalogByTitle);
   }
 
-  function findMovie(title, tmdbId) {
+  function findMovie(title, tmdbId, year) {
     const id = movieTmdbId({tmdbId:tmdbId});
     const catalog = getCatalog();
     if (id) return catalog.find(function (movie) { return movieTmdbId(movie) === id; }) || null;
