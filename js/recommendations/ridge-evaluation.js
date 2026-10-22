@@ -1,3 +1,5 @@
+import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../core/date-utils.js";
+
 const OUTER_FOLDS = 5;
 const INNER_FOLDS = 3;
 const REPEATED_VALIDATION_RUNS = 3;
@@ -219,36 +221,18 @@ function identityFor(entry, movie, dependencies) {
 
 
 function dayForDateValue(raw) {
-  if (raw == null || raw === "") return null;
-  let timestamp;
-  if (typeof raw === "number" && Number.isFinite(raw)) {
-    timestamp = raw >= 1e11 ? raw : raw * 1000;
-  } else {
-    const text = String(raw).trim();
-    const numericEpoch = /^\d{10,13}$/.test(text) ? Number(text) : null;
-    if (numericEpoch != null) {
-      timestamp = numericEpoch >= 1e11 ? numericEpoch : numericEpoch * 1000;
-    } else {
-      if (!/^\d{4}-\d{2}-\d{2}(?:$|T)/.test(text)) return null;
-      timestamp = Date.parse(text);
-      const dayPart = text.slice(0, 10);
-      const dayTimestamp = Date.parse(dayPart + "T00:00:00.000Z");
-      if (!Number.isFinite(timestamp) || !Number.isFinite(dayTimestamp) ||
-        new Date(dayTimestamp).toISOString().slice(0, 10) !== dayPart) return null;
-    }
-  }
-  if (!Number.isFinite(timestamp)) return null;
-  try { return new Date(timestamp).toISOString().slice(0, 10); }
-  catch (_) { return null; }
+  return dateOnlyInTimeZone(raw, PANAMA_TIME_ZONE);
 }
 
 function watchedDayFor(record) {
+  if (record && record.watchDateConfidence === "pre-streak-unverified" &&
+    record.watchedAtSource !== "user-confirmed") return null;
   const raw = record && (record.watchedAt != null ? record.watchedAt : record.watched_at);
   return dayForDateValue(raw);
 }
 
 function collectionAddedDayFor(record) {
-  if (!record || record.addedAtSource !== "imported-collection") return null;
+  if (!record || record.addedAtSource !== "imported-collection" || record.watchDateConfidence) return null;
   const raw = record.addedAt != null ? record.addedAt : record.added_at;
   return dayForDateValue(raw);
 }
@@ -889,19 +873,31 @@ export function createRidgeRecommendationExperiment(dependencies) {
       if (!entry || !entry.title) return;
       const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
       const identity = identityFor(entry, movie, dependencies);
+      if (!identity) return;
+      const previous = watchedDayByIdentity.get(identity) || null;
+      const preStreakUnverified = entry.watchDateConfidence === "pre-streak-unverified" &&
+        entry.watchedAtSource !== "user-confirmed";
+      if (preStreakUnverified) {
+        if (!previous) {
+          watchedDayByIdentity.set(identity, { day: null, explicitDay: null, preStreakUnverified: true });
+        } else if (!previous.explicitDay) {
+          previous.preStreakUnverified = true;
+        }
+        return;
+      }
       const watchedDay = watchedDayFor(entry);
       const explicit = isExplicitDate(entry);
       const addedProxyDay = useCollectionAddedAtProxy && !explicit ? collectionAddedDayFor(entry) : null;
       const day = explicit ? watchedDay : (addedProxyDay || watchedDay);
-      if (!identity || !day) return;
+      if (!day) return;
       const explicitDay = explicit ? watchedDay : null;
-      const previous = watchedDayByIdentity.get(identity);
       if (!previous) {
-        watchedDayByIdentity.set(identity, { day: day, explicitDay: explicitDay });
+        watchedDayByIdentity.set(identity, { day: day, explicitDay: explicitDay, preStreakUnverified: false });
       } else {
-        if (day < previous.day) previous.day = day;
+        if (day < previous.day || !previous.day) previous.day = day;
         if (explicitDay && (!previous.explicitDay || explicitDay < previous.explicitDay)) {
           previous.explicitDay = explicitDay;
+          previous.preStreakUnverified = false;
         }
       }
     });
@@ -914,6 +910,10 @@ export function createRidgeRecommendationExperiment(dependencies) {
       const entryDay = watchedDayFor(row.entry);
       const entryIsExplicit = isExplicitDate(row.entry);
       const history = watchedDayByIdentity.get(row.identity) || null;
+      if (history && history.preStreakUnverified && row.entry.watchedAtSource !== "user-confirmed") {
+        missingDateCount += 1;
+        return;
+      }
       let day = null;
       let dateProvenance = "missing";
       if (entryDay && entryIsExplicit) {
@@ -969,6 +969,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       dateProvenanceStatus: nonNegativeInteger(unverifiedDateCount) > 0 ? "exploratory" :
         (nonNegativeInteger(datedRowCount) > 0 ? "explicit" : "unavailable"),
       dateSourceMode: temporalDateSourceMode(),
+      temporalTimezone: PANAMA_TIME_ZONE,
       missingDateCount: nonNegativeInteger(missingDateCount),
       distinctDayCount: nonNegativeInteger(dayGroupCount),
       warmupCount: 0,
@@ -1183,6 +1184,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         unverifiedDateCount: prepared.unverifiedDateCount,
         dateProvenanceStatus: prepared.unverifiedDateCount > 0 ? "exploratory" : "explicit",
         dateSourceMode: prepared.dateSourceMode,
+        temporalTimezone: PANAMA_TIME_ZONE,
         missingDateCount: prepared.missingDateCount,
         distinctDayCount: groups.length,
         warmupCount: schedule.warmupIndices.length,

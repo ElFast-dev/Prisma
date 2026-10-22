@@ -109,7 +109,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261021-24") &&
-                  lastUI.appSrc.includes("v=ui-20261021-75") &&
+                  lastUI.appSrc.includes("v=ui-20261022-79") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -295,7 +295,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v9" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v10" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||
@@ -578,7 +578,7 @@ jobs:
                   mimeType: "application/json",
                   buffer: Buffer.from(JSON.stringify({
                     movies: {
-                      cH: [{ id: 91001, tmId: 10101, t: "Prisma Test Seen", a: "2024-01-01T00:00:00.000Z" }],
+                      cH: [{ id: 91001, tmId: 10101, t: "Prisma Test Seen", a: "2024-01-01T00:00:00.000Z", watchedAt: "2024-01-01T06:00:00.000Z" }],
                       cW: [{ id: 91002, tmId: 10102, t: "Prisma Test Pending", a: "2024-01-02T00:00:00.000Z" }],
                       rM: [{ id: 91001, tmId: 10101, r: 8, rA: "2024-01-01T00:00:00.000Z" }]
                     },

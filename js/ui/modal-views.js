@@ -1,3 +1,5 @@
+import { resolveExplicitWatchedAt } from "./presentation-utils.js?v=core-20261022-2";
+
 export function createModalViews(ctx) {
   function renderUtilitySheet() {
     const root = ctx.$("#modalRoot");
@@ -57,7 +59,8 @@ export function createModalViews(ctx) {
     const genreChips = (movie.genres || []).slice(0,6).map(function (genre) { return '<span class="detail-chip">' + ctx.escapeHTML(ctx.displayGenre(genre)) + '</span>'; }).join("");
     const countryLine = (movie.productionCountries || []).slice(0,3).join(" · ");
     const release = movie.releaseDate ? ctx.dateLabel(movie.releaseDate) : (movie.year || "Estreno no disponible");
-    const markedAt = (ctx.state.watched || []).find(function (entry) { return ctx.sameMovieRecord(entry,movie); })?.watchedAt || (rating && (rating.watchedAt || rating.updatedAt)) || null;
+    const watchedRecord = (ctx.state.watched || []).find(function (entry) { return ctx.sameMovieRecord(entry,movie); }) || null;
+    const markedAt = resolveExplicitWatchedAt(watchedRecord, rating);
     const stateButton = seen ?
       '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + ctx.escapeHTML(markedAt ? ctx.formatWatchedDate(markedAt) : "Fecha no registrada") + '</small></button>' :
       (pending ?

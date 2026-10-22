@@ -1,4 +1,10 @@
 import { movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
+import { dateOnlyInTimeZone } from "../core/date-utils.js";
+import { createConfirmedWatchStreakRecord } from "../core/watch-streak.js";
+
+const CONFIRMED_STREAK_START_DAY = "2026-01-15";
+const CONFIRMED_STREAK_START_TITLE = "source code";
+const CONFIRMED_STREAK_START_TMDB_ID = "45612";
 
 export function movieMetadataFromJSON(root) {
   const scope = root && root.movies && typeof root.movies === "object" ? root.movies : root;
@@ -27,6 +33,18 @@ export function movieMetadataFromJSON(root) {
 export function extractPersonalCollections(root) {
   const scope = root && root.movies && typeof root.movies === "object" ? root.movies : root;
   const info = movieMetadataFromJSON(root);
+  const currentStreakExport = Boolean(root &&
+    String(root.platform || "").toLowerCase() === "android" &&
+    Number(root.version) === 2 &&
+    root.movies && scope === root.movies &&
+    Array.isArray(scope.cH) &&
+    scope.cH.some(function (raw) {
+      if (!raw || typeof raw !== "object") return false;
+      const isStartMovie = String(raw.tmId || raw.tmdbId || "") === CONFIRMED_STREAK_START_TMDB_ID ||
+        titleKey(raw.t || raw.title || raw.name || "") === CONFIRMED_STREAK_START_TITLE;
+      return isStartMovie && dateOnlyInTimeZone(raw.a) === CONFIRMED_STREAK_START_DAY;
+    }));
+  const confirmedWatchStreak = currentStreakExport ? createConfirmedWatchStreakRecord() : null;
   function findArray(names) {
     for (let i = 0; i < names.length; i += 1) {
       const key = Object.keys(scope || {}).find(function (candidate) { return candidate.toLowerCase() === names[i].toLowerCase(); });
@@ -58,7 +76,7 @@ export function extractPersonalCollections(root) {
     movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
     if (type === "watched") {
       if (movie.addedAt) {
-        // Preserve this as provenance for an opt-in exploratory proxy; never promote it to watchedAt.
+        // Preserve the source timestamp. The recognized challenge policy decides whether it proves a watch day.
         movie.addedAtSource = "imported-collection";
       } else {
         delete movie.addedAtSource;
@@ -67,9 +85,23 @@ export function extractPersonalCollections(root) {
       if (explicitWatchedAt != null && explicitWatchedAt !== "") {
         movie.watchedAt = explicitWatchedAt;
         movie.watchedAtSource = "imported-explicit";
+        if (currentStreakExport) movie.watchDateConfidence = "explicit-source";
+        else delete movie.watchDateConfidence;
+      } else if (currentStreakExport) {
+        const localWatchDay = dateOnlyInTimeZone(raw.a);
+        if (localWatchDay && localWatchDay >= CONFIRMED_STREAK_START_DAY) {
+          movie.watchedAt = raw.a;
+          movie.watchedAtSource = "imported-explicit";
+          movie.watchDateConfidence = "streak-confirmed";
+        } else {
+          delete movie.watchedAt;
+          delete movie.watchedAtSource;
+          movie.watchDateConfidence = "pre-streak-unverified";
+        }
       } else {
         delete movie.watchedAt;
         delete movie.watchedAtSource;
+        delete movie.watchDateConfidence;
       }
     }
     if (type === "pending") movie.addedAt = raw.a || raw.addedAt || raw.createdAt || null;
@@ -83,7 +115,13 @@ export function extractPersonalCollections(root) {
   const watchlist = pendingRaw.map(function (raw) { return convert(raw, "pending"); }).filter(Boolean);
   const hidden = hiddenRaw.map(function (raw) { return convert(raw, "hidden"); }).filter(Boolean);
   const records = mergeMovieListByTitle([], watched.concat(watchlist, hidden));
-  return { watched:watched, watchlist:watchlist, hidden:hidden, records:records };
+  return {
+    watched:watched,
+    watchlist:watchlist,
+    hidden:hidden,
+    records:records,
+    confirmedWatchStreak:confirmedWatchStreak
+  };
 }
 
 export function hasImportedCollection(collection) {
@@ -103,12 +141,14 @@ export function mergeMovieEntries(existing, incoming) {
   });
   merged.genres = uniqueStrings((old.genres || []).concat(fresh.genres || []));
   merged.tags = uniqueStrings((old.tags || []).concat(fresh.tags || []));
+  if (fresh.watchDateConfidence) merged.watchDateConfidence = fresh.watchDateConfidence;
   const isExplicitDate = function (record) {
     return Boolean(record && record.watchedAt &&
       (record.watchedAtSource === "imported-explicit" || record.watchedAtSource === "user-confirmed") &&
       Number.isFinite(Date.parse(record.watchedAt)));
   };
-  if (isExplicitDate(fresh) && (!isExplicitDate(old) || old.watchedAtSource !== "user-confirmed")) {
+  const freshChallengeDate = fresh.watchDateConfidence === "streak-confirmed" && isExplicitDate(fresh);
+  if (freshChallengeDate || (isExplicitDate(fresh) && (!isExplicitDate(old) || old.watchedAtSource !== "user-confirmed"))) {
     merged.watchedAt = fresh.watchedAt;
     merged.watchedAtSource = fresh.watchedAtSource;
   } else if (isExplicitDate(old)) {
@@ -120,6 +160,14 @@ export function mergeMovieEntries(existing, incoming) {
   } else if (fresh.watchedAtSource && !old.watchedAtSource && !old.watchedAt) {
     merged.watchedAt = fresh.watchedAt;
     merged.watchedAtSource = fresh.watchedAtSource;
+  }
+  if (freshChallengeDate) {
+    merged.watchDateConfidence = "streak-confirmed";
+  } else if (old.watchedAtSource === "user-confirmed" && old.watchedAt) {
+    merged.watchDateConfidence = "user-confirmed";
+  } else if (fresh.watchDateConfidence === "pre-streak-unverified") {
+    delete merged.watchedAt;
+    delete merged.watchedAtSource;
   }
   return merged;
 }

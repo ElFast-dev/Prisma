@@ -77,3 +77,26 @@ Prisma DEBE ejecutar la generación del diagnóstico localmente y solo poner su 
 - DADO que la persona va a copiar el informe para compartirlo en otra conversación
 - CUANDO consulta la explicación de privacidad
 - ENTONCES Prisma identifica los datos que incluye y excluye, y avisa de que las estadísticas de géneros y temas aún pueden revelar gustos personales
+
+
+### Requirement: Persistencia local de la racha confirmada
+
+Prisma DEBE almacenar la declaración de racha confirmada dentro del estado personal local y conservarla en las copias de seguridad de Prisma. La declaración DEBE incluir únicamente el intervalo, la meta diaria y su procedencia de confirmación; NO DEBE inventar ni generar filas de películas para rellenar fechas y NO DEBE enviar el registro de racha a un servidor.
+
+#### Scenario: Importar la exportación reconocida
+
+- DADO que la persona importa el archivo reconocido de su historial
+- CUANDO Prisma guarda su estado personal
+- ENTONCES persiste localmente el intervalo confirmado de 280 días aunque haya títulos ausentes
+
+#### Scenario: Restaurar una copia de Prisma
+
+- DADO una copia de seguridad que contiene una racha confirmada válida
+- CUANDO la persona restaura esa copia
+- ENTONCES Prisma recupera el mismo intervalo y la meta de una película por día
+
+#### Scenario: Datos locales sin una racha importada
+
+- DADO que no se ha importado la exportación reconocida
+- CUANDO se inicia Prisma o se importa otro archivo que no declara la racha
+- ENTONCES no se muestra una racha personal confirmada de forma predeterminada

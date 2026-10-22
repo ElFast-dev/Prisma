@@ -14,6 +14,7 @@ const paths = [
   'styles/catalog.css',
   'styles/collection-content.css',
   'styles/movie-details.css',
+  'styles/watch-streak.css',
   'styles/prisma-design-system.css'
 ];
 const matches = [...html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/g)];

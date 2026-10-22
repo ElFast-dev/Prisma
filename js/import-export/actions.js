@@ -35,6 +35,10 @@ export function createImportExportActions(ctx) {
     ctx.state.watched = ctx.mergeMovieListByTitle(ctx.state.watched, collection.watched);
     ctx.state.watchlist = ctx.mergeMovieListByTitle(ctx.state.watchlist, collection.watchlist);
     ctx.state.hidden = ctx.mergeMovieListByTitle(ctx.state.hidden, collection.hidden);
+    if (collection.confirmedWatchStreak) {
+      // The day ledger is user-confirmed and independent from how many movie rows survived import.
+      ctx.state.confirmedWatchStreak = collection.confirmedWatchStreak;
+    }
 
     const catalogIncoming = collection.records.concat(result.ratings).map(ctx.normalizeMovie).filter(Boolean);
     ctx.customCatalog = ctx.mergeMovieListByTitle(ctx.customCatalog, catalogIncoming);

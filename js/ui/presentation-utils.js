@@ -1,3 +1,14 @@
+import { formatPanamaDateMDY } from "../core/date-utils.js";
+
+/** Resolve only explicit watch timestamps; a rating update is not a watch date. */
+export function resolveExplicitWatchedAt(watchedRecord, ratingRecord) {
+  const candidates = [watchedRecord && watchedRecord.watchedAt, ratingRecord && ratingRecord.watchedAt];
+  for (const value of candidates) {
+    if (value != null && value !== "" && Number.isFinite(Date.parse(value))) return value;
+  }
+  return null;
+}
+
 export function createPresentationUtils(dependencies) {
   const escapeHTML = dependencies.escapeHTML;
 
@@ -47,12 +58,7 @@ export function createPresentationUtils(dependencies) {
   }
 
   function formatWatchedDate(value) {
-    if (!value) return "Fecha desconocida";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "Fecha desconocida";
-    const month = String(date.getMonth() + 1).padStart(2,"0");
-    const day = String(date.getDate()).padStart(2,"0");
-    return month + "/" + day + "/" + date.getFullYear();
+    return formatPanamaDateMDY(value) || "Fecha desconocida";
   }
 
   function displayMovieStatus(status) {

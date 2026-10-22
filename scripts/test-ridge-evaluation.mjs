@@ -5,6 +5,7 @@ import { createRecommendationEngine } from "../js/recommendations/engine.js";
 import { createRecommendationRanking } from "../js/recommendations/ranking.js";
 import { movieFeatures } from "../js/recommendations/features.js";
 import { ratingValue, movieTmdbId, titleKey } from "../js/core/movie-utils.js";
+import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../js/core/date-utils.js";
 
 function fixtures(count) {
   return Array.from({ length: count }, function (_, index) {
@@ -32,7 +33,8 @@ function harness(records, allMovies, watchedRecords, temporalAudit, useCollectio
   const watched = watchedSource.map(record => ({
     title: record.title, tmdbId: record.tmdbId, year: record.year,
     watchedAt: record.watchedAt, watchedAtSource: record.watchedAtSource,
-    addedAt: record.addedAt, addedAtSource: record.addedAtSource
+    addedAt: record.addedAt, addedAtSource: record.addedAtSource,
+    watchDateConfidence: record.watchDateConfidence
   }));
   const productionRanking = createRecommendationRanking({});
   const engine = createRecommendationEngine({
@@ -443,6 +445,39 @@ assert.equal(addedAtProxy.dateSourceMode, "collection-added-proxy");
 assert.doesNotMatch(JSON.stringify(addedAtProxy.windowSummaries), /2020-|addedAt|watchedAt|tmdbId|Película de prueba/i,
   "El resumen temporal no debe exportar fechas ni identidades individuales.");
 
+assert.equal(PANAMA_TIME_ZONE, "America/Panama");
+assert.equal(dateOnlyInTimeZone("2025-11-06T00:22:23.302Z"), "2025-11-05",
+  "La conversión UTC→Panamá debe retroceder al día anterior cuando corresponde.");
+assert.equal(dateOnlyInTimeZone("2026-01-15T05:56:02.305Z"), "2026-01-15",
+  "Source Code debe quedar en el 15 de enero de Panamá.");
+assert.equal(dateOnlyInTimeZone("2026-07-09T04:56:59.336Z"), "2026-07-08",
+  "Las fechas que cruzan la medianoche UTC deben agruparse en el día panameño correcto.");
+
+const retrospectiveRecords = temporalRecords.map(function (record) {
+  const copy = Object.assign({}, record, {
+    addedAt: record.watchedAt,
+    addedAtSource: "imported-collection",
+    watchDateConfidence: "pre-streak-unverified"
+  });
+  delete copy.watchedAt;
+  delete copy.watchedAtSource;
+  return copy;
+});
+const retrospectiveResult = await harness(retrospectiveRecords, temporalRecords, retrospectiveRecords, null, true).evaluateTemporalAsync();
+assert.equal(retrospectiveResult.available, false,
+  "El proxy no debe rehabilitar fechas retrospectivas anteriores al reto.");
+assert.equal(retrospectiveResult.timestampedFeatureCount, 0);
+assert.equal(retrospectiveResult.missingDateCount, 120);
+assert.equal(retrospectiveResult.dateSourceMode, "collection-added-proxy");
+
+const dayStart = Date.UTC(2026, 0, 15, 5, 0, 0);
+const challengeDays = Array.from({length:280}, (_, index) =>
+  dateOnlyInTimeZone(new Date(dayStart + index * 86400000).toISOString()));
+assert.equal(new Set(challengeDays).size, 280,
+  "El intervalo verificado contiene 280 días locales distintos sin huecos.");
+assert.equal(challengeDays[0], "2026-01-15");
+assert.equal(challengeDays.at(-1), "2026-10-21");
+
 const sameDayRecords = temporalRecords.map(record => Object.assign({}, record, { watchedAt: "2020-02-01T10:00:00.000Z" }));
 const sameDay = await harness(sameDayRecords, sameDayRecords).evaluateTemporalAsync();
 assert.equal(sameDay.available, false, "Un solo día no debe dividirse artificialmente entre entrenamiento y prueba.");
@@ -453,7 +488,7 @@ assert.match(appSource, /runTemporalRidgeExperiment/);
 assert.match(appSource, /evaluateTemporalAsync/);
 assert.match(viewsSource, /data-action="run-temporal-ridge-experiment"/);
 assert.match(viewsSource, /data-action="toggle-temporal-added-date-proxy"/);
-assert.match(viewsSource, /no confirma el día real del visionado/i);
+assert.match(viewsSource, /no se tratan como fechas reales/i);
 assert.match(viewsSource, /Ventana por incorporación/);
 assert.match(viewsSource, /Orden temporal exploratorio por fecha de incorporación/);
 assert.match(viewsSource, /Calidad del orden por fecha de incorporación/);

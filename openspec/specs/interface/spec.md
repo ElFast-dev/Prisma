@@ -472,3 +472,26 @@ Prisma DEBE ejecutar las acciones de emoción, pendientes, historial y ocultaci�
 - DADO que una emoción está seleccionada en el modal de calificación
 - CUANDO se guarda una nota válida
 - ENTONCES la valoración personal conserva esa emoción
+
+
+### Requirement: Racha diaria confirmada independiente de los títulos guardados
+
+Cuando una exportación de historial reconocida contiene la racha personal confirmada, Prisma DEBE conservar y presentar un día cumplido por cada fecha entre el 15 de enero y el 21 de octubre de 2026, ambos incluidos: 280 fechas consecutivas y una meta de una película al día. La racha DEBE mantenerse aunque falte el título de alguna película, NO DEBE crear películas ficticias y DEBE contar una sola vez los días con varias películas registradas.
+
+#### Scenario: Mostrar la racha reconocida
+
+- DADO que la persona importa su exportación Android v2 reconocida con `Source Code` el 15 de enero de 2026
+- CUANDO abre Progreso
+- ENTONCES Prisma muestra las 280 fechas de la racha del 15 de enero al 21 de octubre con un único marcador por día
+
+#### Scenario: Se perdió el título de una película
+
+- DADO que el registro de racha confirma un día pero ya no queda una película enlazada a esa fecha en la colección
+- CUANDO Prisma dibuja el calendario de la racha
+- ENTONCES mantiene el día confirmado e indica que no se conserva el título, sin inventar una película
+
+#### Scenario: Dos películas el mismo día
+
+- DADO que el historial guarda dos películas con fecha local de visionado idéntica
+- CUANDO Prisma cuenta los días de la racha
+- ENTONCES muestra un solo marcador para ese día y conserva ambas películas en la colección
