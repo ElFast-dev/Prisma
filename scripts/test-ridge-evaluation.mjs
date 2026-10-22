@@ -452,8 +452,12 @@ assert.doesNotMatch(JSON.stringify(temporalResult.windowSummaries), /2020-|watch
 assert.match(appSource, /runTemporalRidgeExperiment/);
 assert.match(appSource, /evaluateTemporalAsync/);
 assert.match(viewsSource, /data-action="run-temporal-ridge-experiment"/);
-assert.match(viewsSource, /historiales antiguos[\s\S]*?watchedAt[\s\S]*?updatedAt/);
+assert.match(viewsSource, /data-action="toggle-temporal-added-date-proxy"/);
+assert.match(viewsSource, /no confirma el día real del visionado/i);
 assert.match(eventSource, /action === "run-temporal-ridge-experiment"/);
+assert.match(eventSource, /action === "toggle-temporal-added-date-proxy"/);
+assert.match(appSource, /getUseCollectionAddedAtProxy/);
 assert.match(reportSource, /temporalRidgeExperiment/);
+assert.match(reportSource, /dateSourceMode/);
 
 console.log("Ridge verificado: validación anidada repetida, evaluación temporal walk-forward, privacidad y clipping 1–10.");
