@@ -63,6 +63,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let temporalRidgeEvaluationBusy = false;
   let temporalRidgeEvaluationProgress = null;
   let temporalRidgeEvaluationRunId = 0;
+  let temporalUseCollectionAddedAtProxy = false;
   let influenceNormalizationEvaluationResult = null;
   let influenceNormalizationEvaluationBusy = false;
   let influenceNormalizationEvaluationRunId = 0;
@@ -208,7 +209,9 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get temporalRidgeEvaluationResult() { return temporalRidgeEvaluationResult; },
     get temporalRidgeEvaluationBusy() { return temporalRidgeEvaluationBusy; },
     get temporalRidgeEvaluationProgress() { return temporalRidgeEvaluationProgress; },
+    get temporalUseCollectionAddedAtProxy() { return temporalUseCollectionAddedAtProxy; },
     get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
+    get toggleTemporalAddedAtProxy() { return toggleTemporalAddedAtProxy; },
     get influenceNormalizationEvaluationResult() { return influenceNormalizationEvaluationResult; },
     get influenceNormalizationEvaluationBusy() { return influenceNormalizationEvaluationBusy; },
     get runInfluenceNormalizationExperiment() { return runInfluenceNormalizationExperiment; }
@@ -520,6 +523,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     predictRating: predictRating,
     movieTmdbId: movieTmdbId,
     titleKey: titleKey,
+    getUseCollectionAddedAtProxy: function () { return temporalUseCollectionAddedAtProxy; },
     rankCandidates: recommendationRanking.rankCandidates
   });
 
@@ -623,6 +627,18 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
         if (currentPage === "lab") renderApp();
       }
     }
+  }
+
+  function toggleTemporalAddedAtProxy() {
+    if (temporalRidgeEvaluationBusy || ridgeEvaluationBusy) return;
+    temporalUseCollectionAddedAtProxy = !temporalUseCollectionAddedAtProxy;
+    temporalRidgeEvaluationRunId += 1;
+    temporalRidgeEvaluationResult = null;
+    temporalRidgeEvaluationProgress = null;
+    toast(temporalUseCollectionAddedAtProxy
+      ? "Proxy exploratorio activado: la fecha de incorporación a la lista podrá usarse solo en la evaluación temporal."
+      : "Proxy desactivado: la evaluación temporal usará solo las fechas watchedAt disponibles.");
+    if (currentPage === "lab") renderApp();
   }
 
   async function runTemporalRidgeExperiment() {
@@ -894,6 +910,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get clearRecommendationDiagnosticReport() { return clearRecommendationDiagnosticReport; },
     get runRidgeExperiment() { return runRidgeExperiment; },
     get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
+    get toggleTemporalAddedAtProxy() { return toggleTemporalAddedAtProxy; },
     get runInfluenceNormalizationExperiment() { return runInfluenceNormalizationExperiment; },
     get setRecommendationDiagnosticFeatureLabelsIncluded() { return function (value) { recommendationDiagnosticFeatureLabelsIncluded = Boolean(value); }; },
     get setTheme() { return themeController.setTheme; }
