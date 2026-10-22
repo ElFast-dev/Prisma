@@ -118,9 +118,9 @@ export function findMovieRecordMatch(entry, records) {
       const id = movieTmdbId(record);
       if (!id || id === entryId) return false;
       const year = movieYear(record);
-      // Another known identity at the same or unknown year makes the legacy row ambiguous.
-      return !(entryYear && year && entryYear !== year) &&
-        !(candidateYear && year && candidateYear !== year);
+      // Only matching known years can separate this legacy row from a different remake.
+      return !(entryYear && candidateYear && entryYear === candidateYear &&
+        year && year !== entryYear);
     });
     return conflictingIdentity ? null : candidate;
   }
