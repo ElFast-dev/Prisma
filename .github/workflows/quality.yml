@@ -145,6 +145,9 @@ jobs:
       - name: Test shareable recommendation diagnostic report
         run: node scripts/test-recommendation-diagnostic-report.mjs
 
+      - name: Test rating-only flow and rich film metadata
+        run: node scripts/test-ratings-only-rich-metadata.mjs
+
       - name: Test recommendation feature extraction
         run: node scripts/test-recommendation-features.mjs
 
