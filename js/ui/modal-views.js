@@ -167,8 +167,8 @@ export function createModalViews(ctx) {
           '</span></span>' + marker + '<span class="film-clapper" aria-hidden="true">▣</span></button>';
       }).join("");
       return '<section class="person-filmography-group" aria-label="Filmografía: ' +
-        ctx.escapeHTML(group.label) + '"><div class="detail-section-heading"><h4>' +
-        ctx.escapeHTML(group.label) + '</h4><span>' + group.items.length +
+        ctx.escapeHTML(group.label) + '"><div class="detail-section-heading"><h3>' +
+        ctx.escapeHTML(group.label) + '</h3><span>' + group.items.length +
         (group.items.length === 1 ? ' película' : ' películas') +
         '</span></div><div class="person-film-list">' + rows + '</div></section>';
     }).join("");
