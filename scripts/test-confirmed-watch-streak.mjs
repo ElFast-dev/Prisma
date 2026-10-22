@@ -22,7 +22,8 @@ const exportFixture = {
       { id: "edge-day-18", tmId: 19585, t: "G-Force", a: "2026-10-18T05:23:00Z" },
       { id: "edge-day-19", tmId: 433499, t: "Finding Steve McQueen", a: "2026-10-19T07:41:00Z" },
       { id: "edge-day-20", tmId: 76493, t: "The Dictator", a: "2026-10-20T06:31:00Z" },
-      { id: "edge-day-21", tmId: 769, t: "GoodFellas", a: "2026-10-22T04:16:00Z" }
+      { id: "edge-day-21", tmId: 769, t: "GoodFellas", a: "2026-10-22T04:16:00Z" },
+      { id: "after-streak-movie", tmId: 900004, t: "Película posterior a la racha", a: "2026-11-02T18:30:00Z" }
     ],
     cW: [],
     cHid: [],
@@ -128,8 +129,21 @@ await actions.importPersonalJSON({ text: async () => JSON.stringify(exportFixtur
 
 assert.equal(state.confirmedWatchStreak.totalDays, 280);
 assert.equal(state.confirmedWatchStreak.dailyTarget, 1);
-assert.equal(state.watched.length, 8,
+assert.equal(state.watched.length, 9,
   "La reimportación corrige la fila con conflicto sin duplicar películas.");
+for (const raw of exportFixture.movies.cH) {
+  const imported = state.watched.find(movie => String(movie.id) === String(raw.id));
+  assert.ok(imported, "Debe conservarse la película " + raw.t + ".");
+  assert.equal(imported.watchedAt, raw.a,
+    "La fecha del historial debe importarse para todas las películas, no solo para las que caen dentro de la racha: " + raw.t);
+  assert.equal(imported.addedAt, raw.a,
+    "El timestamp original debe mantenerse para preservar el dato de origen.");
+}
+const retrospective = state.watched.find(movie => movie.id === "retrospective-movie");
+assert.equal(retrospective.watchDateConfidence, "explicit-source",
+  "Las fechas anteriores a la racha también son utilizables cuando proceden explícitamente del historial Android v2.");
+assert.equal(state.watched.find(movie => movie.id === "after-streak-movie").watchDateConfidence, "explicit-source",
+  "Las fechas posteriores al reto no deben depender del límite artificial de 280 días.");
 const repairedMovie = state.watched.find(movie => movie.tmdbId === "76493");
 assert.equal(repairedMovie.watchedAt, "2026-10-20T06:31:00Z");
 assert.equal(repairedMovie.watchDateConfidence, "streak-confirmed");
@@ -175,6 +189,12 @@ assert.match(panel, /no inventa títulos/);
 assert.equal((panel.match(/data-watch-streak-date=/g) || []).length, 280);
 assert.equal((panel.match(/class="watch-streak-day /g) || []).length, 280,
   "La vista debe mostrar un único marcador para cada día del intervalo.");
+assert.equal((panel.match(/<details class="watch-streak-month"/g) || []).length, 10,
+  "El calendario debe dividir el intervalo en vistas mensuales.");
+assert.equal((panel.match(/<details class="watch-streak-month"[^>]* open>/g) || []).length, 1,
+  "Solo el mes más reciente debe estar abierto inicialmente, evitando mostrar de enero a octubre a la vez.");
+assert.ok(panel.includes('class="watch-streak-day-outside"'),
+  "Los días fuera del reto deben conservar la alineación real del calendario sin contarse como días de racha.");
 assert.equal(createPageViews({ state: emptyState(), escapeHTML }).renderConfirmedWatchStreakPanel(), "",
   "La racha personal no debe mostrarse a una instalación vacía ni a otra persona sin importación.");
 
