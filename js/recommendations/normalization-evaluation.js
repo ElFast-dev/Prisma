@@ -110,7 +110,7 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
     (getRatings() || []).forEach(function (entry) {
       const rating = ratingValue(entry);
       if (rating == null) return;
-      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId);
+      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
       if (!movieFeatures(movie, entry).length) return;
       const identity = identityFor(entry, movie, dependencies);
       if (!identity || seen.has(identity)) return;
