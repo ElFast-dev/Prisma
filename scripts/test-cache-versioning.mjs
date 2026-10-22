@@ -129,8 +129,8 @@ assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-1"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
 assert.ok(cached.has("./js/core/watch-streak.js"),
   "La lógica de racha confirmada debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261022-1"),
-  "El informe de diagnóstico v10 debe quedar versionado y disponible en la caché de la aplicación.");
+assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261022-2"),
+  "El informe de diagnóstico v11 debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/normalization-evaluation.js"),
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261022-7"),
