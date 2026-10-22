@@ -83,6 +83,10 @@ assert.equal(normalized.voteAverage, 7.7);
 assert.equal(normalized.voteCount, 123);
 assert.equal(normalized.metadataSource, 'tmdb');
 assert.equal(normalized.source, 'tmdb');
+assert.equal(normalized.tmdbCreditsFetchedAt, null,
+  'Una respuesta de búsqueda sin créditos no debe fingirse enriquecida.');
+assert.ok(normalized.tmdbKeywordsFetchedAt,
+  'La presencia de keywords debe quedar marcada como obtenida.');
 genreClient.client.resetGenres();
 await genreClient.client.ensureGenres();
 assert.equal(genreClient.calls.length, 2, 'La caché de géneros puede reiniciarse al cambiar la credencial');
