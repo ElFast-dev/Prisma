@@ -43,39 +43,161 @@ export function movieTmdbId(entry) {
   return Number.isSafeInteger(numeric) && numeric > 0 ? String(numeric) : "";
 }
 
-export function movieIdentityKey(entry) {
-  const id = movieTmdbId(entry);
-  return id ? "tmdb:" + id : "title:" + titleKey(entry && entry.title);
+export function movieYear(entry) {
+  const values = [entry && entry.year, entry && entry.releaseYear, entry && entry.release_year];
+  for (const value of values) {
+    const year = Number(value);
+    if (Number.isSafeInteger(year) && year >= 1870 && year <= 2200) return year;
+  }
+  const match = String(entry && entry.title || "").match(/\(((?:19|20)\d{2})\)\s*$/);
+  return match ? Number(match[1]) : 0;
 }
 
+export function movieIdentityKey(entry) {
+  const id = movieTmdbId(entry);
+  if (id) return "tmdb:" + id;
+  const title = titleKey(entry && entry.title);
+  const year = movieYear(entry);
+  return "title:" + title + ":year:" + (year || "unknown");
+}
+
+/**
+ * Compare records conservatively: a positive TMDB ID is authoritative, while
+ * title fallback requires matching years whenever either record has one.
+ * Two legacy title-only rows without any year still share the old fallback.
+ */
 export function sameMovieRecord(left, right) {
   if (!left || !right) return false;
   const leftId = movieTmdbId(left);
   const rightId = movieTmdbId(right);
-  if (leftId && rightId) return leftId === rightId;
-  return titleKey(left.title) === titleKey(right.title);
-}
-
-export function sameDiscoveryMovie(left, right) {
-  if (!left || !right) return false;
-  const leftId = movieTmdbId(left);
-  const rightId = movieTmdbId(right);
-  if (leftId && rightId) return leftId === rightId;
+  // Pairwise equality is strict: a missing ID can only be reconciled contextually.
+  if (leftId || rightId) return Boolean(leftId && rightId && leftId === rightId);
   const leftTitle = titleKey(left.title);
   const rightTitle = titleKey(right.title);
   if (!leftTitle || leftTitle !== rightTitle) return false;
-  const leftYear = Number(left.year) || 0;
-  const rightYear = Number(right.year) || 0;
-  return !leftYear || !rightYear || leftYear === rightYear;
+  const leftYear = movieYear(left);
+  const rightYear = movieYear(right);
+  if (leftYear || rightYear) return Boolean(leftYear && rightYear && leftYear === rightYear);
+  return true;
+}
+
+/** Discovery can merge a legacy row with another identity only when this pair is unambiguous. */
+export function sameDiscoveryMovie(left, right) {
+  const leftId = movieTmdbId(left);
+  const rightId = movieTmdbId(right);
+  if (leftId && rightId) return leftId === rightId;
+  return Boolean(findMovieRecordMatch(left, [right]));
+}
+
+/**
+ * Resolve a record against a collection. IDs are authoritative; records missing
+ * an ID/year are reconciled only when title, known year, and the full candidate
+ * set leave a single non-conflicting match.
+ */
+export function findMovieRecordMatch(entry, records) {
+  if (!entry || !titleKey(entry.title)) return null;
+  const title = titleKey(entry.title);
+  const sameTitle = (records || []).filter(function (record) {
+    return record && titleKey(record.title) === title;
+  });
+  if (!sameTitle.length) return null;
+
+  const entryId = movieTmdbId(entry);
+  const entryYear = movieYear(entry);
+
+  if (entryId) {
+    const exactId = sameTitle.find(function (record) { return movieTmdbId(record) === entryId; });
+    if (exactId) return exactId;
+
+    const untagged = sameTitle.filter(function (record) {
+      if (movieTmdbId(record)) return false;
+      const year = movieYear(record);
+      return !(entryYear && year && entryYear !== year);
+    });
+    if (untagged.length !== 1) return null;
+    const candidate = untagged[0];
+    const candidateYear = movieYear(candidate);
+    const conflictingIdentity = sameTitle.some(function (record) {
+      const id = movieTmdbId(record);
+      if (!id || id === entryId) return false;
+      const year = movieYear(record);
+      // Only matching known years can separate this legacy row from a different remake.
+      return !(entryYear && candidateYear && entryYear === candidateYear &&
+        year && year !== entryYear);
+    });
+    return conflictingIdentity ? null : candidate;
+  }
+
+  if (entryYear) {
+    const compatible = sameTitle.filter(function (record) {
+      const year = movieYear(record);
+      return !year || year === entryYear;
+    });
+    return compatible.length === 1 ? compatible[0] : null;
+  }
+
+  // Without ID or year, only a single title candidate is safe to resolve.
+  return sameTitle.length === 1 ? sameTitle[0] : null;
+}
+
+function discoveryMetadataScore(movie) {
+  return ["year","posterPath","posterUrl","overview","genres","tags","cast","directors","writers","composers",
+    "productionCountries","productionCompanies","originalLanguage","collectionName","runtime"].reduce(function (score, field) {
+      const value = movie && movie[field];
+      return score + (Array.isArray(value) ? (value.length ? 1 : 0) : (value != null && value !== "" ? 1 : 0));
+    }, 0);
+}
+
+function mergeDiscoveryRecord(existing, incoming) {
+  const existingId = movieTmdbId(existing);
+  const incomingId = movieTmdbId(incoming);
+  const preferred = (incomingId && !existingId) ||
+    (Boolean(incomingId) === Boolean(existingId) && discoveryMetadataScore(incoming) > discoveryMetadataScore(existing))
+    ? incoming : existing;
+  const secondary = preferred === incoming ? existing : incoming;
+  const merged = Object.assign({}, secondary, preferred);
+  Object.keys(preferred || {}).forEach(function (key) {
+    const value = preferred[key];
+    if (value == null || value === "" || (Array.isArray(value) && !value.length)) merged[key] = secondary[key] || value;
+  });
+  ["genres","tags","cast","directors","writers","composers","productionCountries","productionCompanies","spokenLanguages"].forEach(function (field) {
+    merged[field] = uniqueStrings((existing[field] || []).concat(incoming[field] || []));
+  });
+  return merged;
 }
 
 export function uniqueDiscoveryMovies(movies) {
+  // First collapse only identities that are already exact. Reconciliation is
+  // a second pass so a title-only row cannot be attached to whichever remake
+  // happened to appear first in the input list.
   const unique = [];
   (movies || []).forEach(function (movie) {
     if (!movie || !titleKey(movie.title)) return;
-    if (!unique.some(function (existing) { return sameDiscoveryMovie(existing,movie); })) unique.push(movie);
+    const exactIndex = unique.findIndex(function (existing) {
+      return sameMovieRecord(existing,movie);
+    });
+    if (exactIndex < 0) unique.push(movie);
+    else unique[exactIndex] = mergeDiscoveryRecord(unique[exactIndex],movie);
   });
-  return unique;
+
+  const removed = new Set();
+  unique.forEach(function (movie) {
+    if (removed.has(movie) || movieTmdbId(movie)) return;
+    const otherRecords = unique.filter(function (candidate) {
+      return candidate !== movie && !removed.has(candidate);
+    });
+    const matched = findMovieRecordMatch(movie,otherRecords);
+    if (!matched || removed.has(matched)) return;
+    // Only merge a title-only row into a TMDB identity; two separate local
+    // records should not be coalesced by this discovery-only enrichment pass.
+    if (!movieTmdbId(matched)) return;
+    const index = unique.indexOf(matched);
+    if (index < 0) return;
+    unique[index] = mergeDiscoveryRecord(matched,movie);
+    removed.add(movie);
+  });
+
+  return unique.filter(function (movie) { return !removed.has(movie); });
 }
 
 export function splitList(value) {

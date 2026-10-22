@@ -1,7 +1,7 @@
 export function createModalController(ctx) {
   function openModal(movie, mode) {
     if (!movie) return;
-    const existing = ctx.ratingFor(movie.title, movie.tmdbId);
+    const existing = ctx.ratingFor(movie.title, movie.tmdbId,movie.year);
     const nextMode = mode || "details";
     if (nextMode === "rate") {
       const detailIsVisible = Boolean(ctx.$(".detail-sheet"));

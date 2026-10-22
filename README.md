@@ -7,7 +7,7 @@ Prisma es una aplicación web estática, mobile-first y en español, pensada par
 ## Funciones del MVP
 - Importar el JSON personal de valoraciones de Prisma/tu app de seguimiento (las series se ignoran).
 - Catálogo personal inicialmente vacío, exploración de películas en TMDB tras configurar una credencial, fichas, pendientes y puntuación del 1 al 10.
-- Recomendador de contenido explicable que puntúa el catálogo personal y, tras consultar TMDB, películas populares mantenidas temporalmente en memoria; aprovecha géneros y etiquetas y usa la década de estreno como señal secundaria si el año es fiable.
+- Recomendador explicable que puntúa películas del catálogo personal y candidatas populares de TMDB mantenidas temporalmente en memoria. Usa géneros, palabras clave, términos de sinopsis, reparto, dirección, guion, música y otros metadatos disponibles; el año y la década solo influyen cuando son fiables.
 - Perfil, métricas y evaluación experimental del modelo.
 - Importación local de CSV de catálogo (incluido el formato `movies.csv` de MovieLens), exportación de copia de seguridad y PWA básica.
 - Perfil y colección guardados localmente, sin servidor; conexión a TMDB configurada desde la aplicación.
@@ -42,7 +42,7 @@ Puedes importar un CSV con columnas como `title`, `year`, `genres`, `tags`, `ove
 - Las valoraciones y emociones se guardan en el almacenamiento local de tu navegador (IndexedDB/localStorage de respaldo).
 - Borrar los datos del sitio puede borrar tu perfil. Exporta copias periódicamente.
 - No se precargan películas. La importación CSV es opcional y explícita; conecta TMDB para buscar títulos y cargar metadatos cinematográficos.
-- El recomendador es una primera línea base personal y explicable, no un modelo validado científicamente. Las estimaciones son aproximaciones; el laboratorio compara el MAE con la media y evalúa por separado la contribución de la década frente a una variante sin esa señal, siempre sobre las mismas muestras y solo si hay cinco años válidos.
+- El recomendador es una primera línea base personal y explicable, no un modelo validado científicamente. Sus pesos son heurísticos; las predicciones dependen de la cobertura y calidad de los metadatos. Prisma prioriza IDs TMDB y usa título normalizado más año como fallback; si un registro sin ID o año coincide con varias películas, se conserva separado hasta que haya información suficiente. El laboratorio evalúa las variantes experimentalmente, sin sustituir automáticamente el motor activo.
 
 ## Desarrollo
 No hay dependencias npm. Es HTML, CSS y JavaScript nativo, por lo que puedes editarlo desde un navegador/entorno de desarrollo en Android y publicarlo como archivos estáticos.

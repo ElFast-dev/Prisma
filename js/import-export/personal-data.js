@@ -1,4 +1,4 @@
-import { movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
+import { findMovieRecordMatch, movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, sameMovieRecord, splitList, titleKey, uniqueStrings } from "../core/movie-utils.js";
 import { dateOnlyInTimeZone } from "../core/date-utils.js";
 import { createConfirmedWatchStreakRecord } from "../core/watch-streak.js";
 
@@ -173,29 +173,35 @@ export function mergeMovieEntries(existing, incoming) {
 }
 
 export function mergeMovieListByTitle(existing, incoming) {
-  const map = new Map();
-  (existing || []).forEach(function (entry) {
-    if (entry && entry.title) map.set(movieIdentityKey(entry),entry);
-  });
-  (incoming || []).forEach(function (entry) {
+  // Exact identities are consolidated first, without using arrival order to
+  // guess which TMDB remake an incomplete row belongs to.
+  const merged = [];
+  (existing || []).concat(incoming || []).forEach(function (entry) {
     if (!entry || !entry.title) return;
-    let key = movieIdentityKey(entry);
-    let previous = map.get(key);
-    if (!previous) {
-      const sameTitleWithoutIdentity = Array.from(map.entries()).filter(function (pair) {
-        return titleKey(pair[1].title) === titleKey(entry.title) &&
-          (!movieTmdbId(pair[1]) || !movieTmdbId(entry));
-      });
-      if (sameTitleWithoutIdentity.length === 1) {
-        const pair = sameTitleWithoutIdentity[0];
-        map.delete(pair[0]);
-        key = movieTmdbId(entry) ? movieIdentityKey(entry) : pair[0];
-        previous = pair[1];
-      }
+    const exact = merged.find(function (record) { return sameMovieRecord(record,entry); });
+    if (!exact) {
+      merged.push(entry);
+      return;
     }
-    map.set(key,mergeMovieEntries(previous,entry));
+    const index = merged.indexOf(exact);
+    if (index >= 0) merged[index] = mergeMovieEntries(exact,entry);
   });
-  return Array.from(map.values());
+
+  const removed = new Set();
+  merged.forEach(function (entry) {
+    if (!entry || removed.has(entry) || movieTmdbId(entry)) return;
+    const candidates = merged.filter(function (record) {
+      return record && record !== entry && !removed.has(record);
+    });
+    const matched = findMovieRecordMatch(entry,candidates);
+    if (!matched || !movieTmdbId(matched)) return;
+    const index = merged.indexOf(matched);
+    if (index < 0) return;
+    merged[index] = mergeMovieEntries(matched,entry);
+    removed.add(entry);
+  });
+
+  return merged.filter(function (entry) { return !removed.has(entry); });
 }
 
 
@@ -227,14 +233,15 @@ export function extractPersonalRatings(root) {
     const meta = info.metaById.get(id) || info.metaByTmdb.get(tmId);
     const title = raw.t || raw.title || raw.name || (meta && meta.title);
     if (!title) return;
-    const key = tmId && Number(tmId) > 0 ? "tmdb:" + tmId : "title:" + titleKey(title);
+    const year = (meta && meta.year) || raw.year || null;
+    const key = movieIdentityKey({ title: title, year: year, tmdbId: tmId });
     if (!titleKey(title) || seen.has(key)) return;
     seen.add(key);
     imported.push({
       id: raw.id || (meta && meta.id) || key,
       tmId: raw.tmId || raw.tmdb_id || (meta && meta.tmId) || null,
       title: String(title).replace(/\s*\(((?:19|20)\d{2})\)\s*$/, ""),
-      year: (meta && meta.year) || raw.year || null,
+      year: year,
       rating: rating,
       genres: meta ? meta.genres : splitList(raw.genres || raw.genre),
       tags: meta ? meta.tags : splitList(raw.tags || raw.keywords),

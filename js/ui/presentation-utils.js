@@ -1,10 +1,15 @@
 import { dateOnlyInTimeZone, formatPanamaDateMDY } from "../core/date-utils.js";
 
-/** Resolve only explicit watch timestamps; a rating update is not a watch date. */
+/** Resolve trustworthy watch timestamps; the moment a rating is saved is not a watch date. */
 export function resolveExplicitWatchedAt(watchedRecord, ratingRecord) {
-  const candidates = [watchedRecord && watchedRecord.watchedAt, ratingRecord && ratingRecord.watchedAt];
-  for (const value of candidates) {
-    if (value != null && value !== "" && Number.isFinite(Date.parse(value))) return value;
+  const records = [watchedRecord, ratingRecord];
+  for (const record of records) {
+    if (!record || record.watchedAt == null || record.watchedAt === "" ||
+        !Number.isFinite(Date.parse(record.watchedAt))) continue;
+    if (record.watchedAtSource === "action-time") continue;
+    if (record.watchDateConfidence === "pre-streak-unverified" &&
+        record.watchedAtSource !== "user-confirmed") continue;
+    return record.watchedAt;
   }
   return null;
 }

@@ -1,4 +1,4 @@
-import { resolveExplicitWatchedAt } from "./presentation-utils.js?v=core-20261022-3";
+import { resolveExplicitWatchedAt } from "./presentation-utils.js?v=core-20261022-4";
 import { groupPersonFilmography } from "./person-filmography.js?v=core-20261022-1";
 
 export function createModalViews(ctx) {
@@ -9,7 +9,7 @@ export function createModalViews(ctx) {
       const help = {
         progress:{title:"Progreso",body:"Resume las películas vistas, las notas y la media personal de este navegador. Las tendencias por género usan los metadatos enlazados disponibles."},
         discover:{title:"Descubrir",body:"Aquí tienes recomendaciones, búsqueda TMDB y catálogo local. Las recomendaciones no incluyen películas vistas, pendientes u ocultas."},
-        recommendations:{title:"Recomendaciones",body:"Prisma compara géneros y etiquetas disponibles con tus valoraciones. La nota mostrada es una estimación personal, no una puntuación pública ni una garantía."},
+        recommendations:{title:"Recomendaciones",body:"Prisma compara géneros, palabras clave, trama y otros metadatos cinematográficos disponibles con tus valoraciones. La nota mostrada es una estimación personal, no una puntuación pública ni una garantía."},
         collection:{title:"Tu colección",body:"Historial reúne películas vistas o valoradas. Pendientes guarda títulos para más tarde. Ocultos los retira de recomendaciones sin borrar sus notas. La búsqueda y los filtros solo afectan a la colección."},
         genres:{title:"Géneros",body:"Puedes seleccionar varios. Se muestran películas que coinciden con al menos uno de los géneros escogidos."},
         metadata:{title:"Carátulas y datos",body:"El JSON aporta títulos, identificadores TMDB, fechas y valoraciones; no incluye imágenes ni sinopsis. Prisma usa los identificadores para recuperar carátulas, géneros, sinopsis, duración y otros datos. Los resultados se guardan en este navegador."},
@@ -54,7 +54,7 @@ export function createModalViews(ctx) {
   function renderMovieDetails() {
     const root = ctx.$("#modalRoot");
     if (!root || !ctx.movieDetail) return;
-    const movie = ctx.movieDetail.movie, data = ctx.movieDetail.data, rating = ctx.ratingFor(movie.title,movie.tmdbId);
+    const movie = ctx.movieDetail.movie, data = ctx.movieDetail.data, rating = ctx.ratingFor(movie.title,movie.tmdbId,movie.year);
     const seen = ctx.isInHistory(movie.title,movie.tmdbId), pending = ctx.isInWatchlist(movie.title,movie.tmdbId), hidden = ctx.isHidden(movie.title,movie.tmdbId);
     const backdrop = movie.backdropUrl || movie.posterUrl || "";
     const genreChips = (movie.genres || []).slice(0,6).map(function (genre) { return '<span class="detail-chip">' + ctx.escapeHTML(ctx.displayGenre(genre)) + '</span>'; }).join("");
@@ -100,7 +100,7 @@ export function createModalViews(ctx) {
     }).slice(0,12) : [];
     const similarMarkup = recs.length ? '<div class="similar-carousel">' + recs.map(function (item) {
       const marker = ctx.isInHistory(item.title,item.tmdbId) ? "seen" : (ctx.isInWatchlist(item.title,item.tmdbId) ? "pending" : "");
-      return '<button class="similar-poster" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '">' + (item.posterUrl ? '<img src="' + ctx.escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + (marker ? '<i class="collection-marker ' + marker + '"></i>' : "") + '<strong>' + ctx.escapeHTML(item.title) + '</strong></button>';
+      return '<button class="similar-poster" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" data-year="' + ctx.escapeHTML(item.year || "") + '">' + (item.posterUrl ? '<img src="' + ctx.escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + (marker ? '<i class="collection-marker ' + marker + '"></i>' : "") + '<strong>' + ctx.escapeHTML(item.title) + '</strong></button>';
     }).join("") + '</div>' : "";
     const videos = data && data.videos ? data.videos : [];
     const trailer = videos.find(function (video) { return video.site === "YouTube" && video.type === "Trailer"; }) || videos.find(function (video) { return video.site === "YouTube"; });
@@ -156,7 +156,7 @@ export function createModalViews(ctx) {
           : "";
         return '<button class="person-film-row" type="button" data-action="movie-from-person" data-title="' +
           ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") +
-          '"><span class="person-film-poster">' +
+          '" data-year="' + ctx.escapeHTML(movie.year || "") + '"><span class="person-film-poster">' +
           (movie.posterUrl
             ? '<img src="' + ctx.escapeHTML(movie.posterUrl) + '" alt="" loading="lazy">'
             : '<span>▣</span>') +
@@ -201,12 +201,12 @@ export function createModalViews(ctx) {
     if (!ctx.modalDraft) return;
     const root = ctx.$("#modalRoot");
     if (!root) return;
-    const movie = ctx.modalDraft.movie, rating = ctx.ratingFor(movie.title, movie.tmdbId);
+    const movie = ctx.modalDraft.movie, rating = ctx.ratingFor(movie.title, movie.tmdbId,movie.year);
     const stars = Array.from({ length: 10 }, function (_, index) {
       const value = index + 1;
       return '<button type="button" class="rating-star ' + (value <= ctx.modalDraft.rating ? "active" : "") + '" data-action="rating-star" data-rating="' + value + '" aria-label="Puntuar ' + value + ' de 10" aria-pressed="' + (value === ctx.modalDraft.rating) + '">★</button>';
     }).join("");
-    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal rating-sheet" role="dialog" aria-modal="true" aria-labelledby="ratingTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><h2 id="ratingTitle">Calificar</h2><p>' + ctx.escapeHTML(movie.title) + '</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="Cerrar">✕</button></div><div class="rating-score-large"><strong id="ratingPreview">' + ctx.modalDraft.rating + '</strong><span>/ 10</span></div><div class="rating-stars" aria-label="Selecciona una nota del 1 al 10">' + stars + '</div><input id="ratingInput" type="hidden" value="' + ctx.modalDraft.rating + '"><p class="rating-only-hint">Tu nota es suficiente. Prisma analizará los metadatos de la película para personalizar tus recomendaciones.</p><div class="rating-sheet-actions">' + (rating ? '<button class="btn btn-danger-outline" type="button" data-action="delete-rating" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '">Eliminar</button>' : '<button class="btn btn-danger-outline" type="button" data-action="close-modal">Cancelar</button>') + '<button class="btn btn-primary" type="button" data-action="save-rating">Guardar nota</button></div></section></div>';
+    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal rating-sheet" role="dialog" aria-modal="true" aria-labelledby="ratingTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><h2 id="ratingTitle">Calificar</h2><p>' + ctx.escapeHTML(movie.title) + '</p></div><button class="modal-close" type="button" data-action="close-modal" aria-label="Cerrar">✕</button></div><div class="rating-score-large"><strong id="ratingPreview">' + ctx.modalDraft.rating + '</strong><span>/ 10</span></div><div class="rating-stars" aria-label="Selecciona una nota del 1 al 10">' + stars + '</div><input id="ratingInput" type="hidden" value="' + ctx.modalDraft.rating + '"><p class="rating-only-hint">Tu nota es suficiente. Prisma analizará los metadatos de la película para personalizar tus recomendaciones.</p><div class="rating-sheet-actions">' + (rating ? '<button class="btn btn-danger-outline" type="button" data-action="delete-rating" data-title="' + ctx.escapeHTML(movie.title) + '" data-tmdb-id="' + ctx.escapeHTML(movie.tmdbId || "") + '" data-year="' + ctx.escapeHTML(movie.year || "") + '">Eliminar</button>' : '<button class="btn btn-danger-outline" type="button" data-action="close-modal">Cancelar</button>') + '<button class="btn btn-primary" type="button" data-action="save-rating">Guardar nota</button></div></section></div>';
   }
 
   return { renderUtilitySheet, renderMovieDetails, renderPersonDetails, renderRatingSheet };

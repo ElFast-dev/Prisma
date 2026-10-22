@@ -52,7 +52,7 @@ export function parseCatalogCSV(text) {
     const numericTmdbId = Number(rawTmdbId);
     const tmdbId = /^\d+$/.test(rawTmdbId) && Number.isSafeInteger(numericTmdbId) && numericTmdbId > 0 ? String(numericTmdbId) : null;
     const normalizedTitle = titleKey(cleanTitle);
-    const key = tmdbId ? "tmdb:" + tmdbId : "title:" + normalizedTitle;
+    const key = tmdbId ? "tmdb:" + tmdbId : "title:" + normalizedTitle + ":year:" + (year || "unknown");
     if (!normalizedTitle || seen.has(key)) continue;
     seen.add(key);
     catalogRows.push({

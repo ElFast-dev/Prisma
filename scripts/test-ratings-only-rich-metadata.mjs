@@ -15,7 +15,7 @@ assert.doesNotMatch(ratingUi, /¿Qué emociones recuerdas\?|emotion-chip|rating-
 assert.doesNotMatch(controller, /modalDraft\.emotions|memoriesExpanded/);
 assert.doesNotMatch(actions, /ctx\.modalDraft\.emotions|ratingNote|emociones registradas/);
 assert.match(actions, /rating:rating/);
-assert.match(controller, /ratingFor\(movie\.title, movie\.tmdbId\)/,
+assert.match(controller, /ratingFor\(movie\.title,\s*movie\.tmdbId(?:,\s*movie\.year)?\)/,
   "La valoración debe asociarse al ID TMDB correcto cuando está disponible.");
 assert.match(historySync, /append_to_response: "credits,keywords"/);
 assert.match(browserActions, /enrichRecommendationCandidates/);

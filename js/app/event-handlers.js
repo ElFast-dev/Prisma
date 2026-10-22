@@ -92,31 +92,49 @@ export function registerAppEvents(ctx) {
       if (action === "genre") { ctx.activeGenre = button.dataset.genre || "Todos"; ctx.renderApp(); return; }
       if (action === "details") {
         const requestedId = button.dataset.tmdbId || "";
+        const requestedYear = Number(button.dataset.year) || null;
+        const title = button.dataset.title || "";
+        const target = {title:title,tmdbId:requestedId,year:requestedYear};
+        const localExact = (ctx.catalog || []).find(function (item) {
+          return ctx.sameMovieRecord(item,target);
+        });
         let movie = (requestedId ? ctx.tmdbResults.find(function (item) { return ctx.movieTmdbId(item) === requestedId; }) : null) ||
-          ctx.findMovie(button.dataset.title,requestedId) ||
+          localExact ||
+          ctx.findMovie(title,requestedId,requestedYear) ||
           ctx.getCollectionItems("history").concat(ctx.getCollectionItems("pending"),ctx.getCollectionItems("hidden")).find(function (item) {
-            return requestedId ? ctx.movieTmdbId(item) === requestedId : ctx.titleKey(item.title) === ctx.titleKey(button.dataset.title);
+            return ctx.sameMovieRecord(item,target);
           });
         if (movie && requestedId && !movie.tmdbId) movie = Object.assign({},movie,{tmdbId:requestedId,source:"tmdb"});
-        if (!movie && button.dataset.title) movie = {title:button.dataset.title,id:requestedId || ctx.titleKey(button.dataset.title),tmdbId:requestedId || null,source:requestedId ? "tmdb" : "catalog"};
+        if (!movie && title && requestedId) movie = {title:title,year:requestedYear,id:requestedId,tmdbId:requestedId,source:"tmdb"};
+        if (!movie && title && !requestedId && !requestedYear) {
+          const sameTitle = (ctx.catalog || []).filter(function (item) {
+            return ctx.titleKey(item.title) === ctx.titleKey(title);
+          });
+          if (sameTitle.length <= 1) movie = {title:title,id:ctx.titleKey(title),tmdbId:null,source:"catalog"};
+          else ctx.toast("Hay varias películas con ese título y faltan datos para distinguirlas. Añade o recupera el año/ID de TMDB antes de abrir esta ficha.",true);
+        }
         if (movie) ctx.openModal(movie,"details");
         return;
       }
       if (action === "rate") {
         const inDetail = Boolean(button.closest(".detail-sheet"));
         const requestedId = button.dataset.tmdbId || (ctx.movieDetail && ctx.movieDetail.movie.tmdbId) || "";
+        const requestedYear = Number(button.dataset.year) || null;
+        const title = button.dataset.title || (ctx.movieDetail && ctx.movieDetail.movie.title) || "";
         const movie = (ctx.movieDetail && inDetail ? ctx.movieDetail.movie : null) ||
           (requestedId ? ctx.tmdbResults.find(function (item) { return ctx.movieTmdbId(item) === requestedId; }) : null) ||
-          ctx.findMovie(button.dataset.title || (ctx.movieDetail && ctx.movieDetail.movie.title),requestedId) || (ctx.movieDetail && ctx.movieDetail.movie);
+          ctx.findMovie(title,requestedId,requestedYear) || (ctx.movieDetail && ctx.movieDetail.movie);
         if (movie) {
           ctx.openModal(movie,"rate");
           if (typeof ctx.enrichTMDBMovie === "function") void ctx.enrichTMDBMovie(movie);
+        } else {
+          ctx.toast("No se pudo identificar la película de forma inequívoca.",true);
         }
         return;
       }
       if (action === "rating-star") { ctx.updateRatingPreview(button.dataset.rating); return; }
       if (action === "save-rating") { await ctx.saveRating(); return; }
-      if (action === "delete-rating") { await ctx.deleteRating(button.dataset.title,button.dataset.tmdbId); return; }
+      if (action === "delete-rating") { await ctx.deleteRating(button.dataset.title,button.dataset.tmdbId,Number(button.dataset.year) || null); return; }
       if (action === "close-modal") { ctx.closeModal(); return; }
       if (action === "backdrop-close" && event.target === button) {
         if (ctx.utilitySheet) { ctx.utilitySheet = null; ctx.renderModal(); }
@@ -124,22 +142,22 @@ export function registerAppEvents(ctx) {
         return;
       }
       if (action === "retry-movie-detail") { if (ctx.movieDetail) { ctx.movieDetailCache.delete(String(ctx.movieDetail.movie.tmdbId || "")); ctx.loadMovieDetail(ctx.movieDetail.movie); } return; }
-      if (action === "toggle-watchlist") { if (button.dataset.title) await ctx.toggleWatchlist(button.dataset.title,button.dataset.tmdbId); return; }
+      if (action === "toggle-watchlist") { if (button.dataset.title) await ctx.toggleWatchlist(button.dataset.title,button.dataset.tmdbId,Number(button.dataset.year) || null); return; }
       if (action === "manage-pending") {
         const actionMovie = ctx.movieDetail ? ctx.movieDetail.movie : (ctx.modalDraft && ctx.modalDraft.movie);
-        if (actionMovie) await ctx.toggleWatchlist(actionMovie.title,actionMovie.tmdbId);
+        if (actionMovie) await ctx.toggleWatchlist(actionMovie.title,actionMovie.tmdbId,actionMovie.year);
         if (ctx.utilitySheet) { ctx.utilitySheet = null; ctx.renderModal(); }
         return;
       }
       if (action === "mark-watched" || action === "manage-history") {
         const actionMovie = ctx.movieDetail ? ctx.movieDetail.movie : (ctx.modalDraft && ctx.modalDraft.movie);
-        if (actionMovie) await ctx.markWatched(actionMovie.title,actionMovie.tmdbId);
+        if (actionMovie) await ctx.markWatched(actionMovie.title,actionMovie.tmdbId,actionMovie.year);
         if (ctx.utilitySheet) { ctx.utilitySheet = null; ctx.renderModal(); }
         return;
       }
       if (action === "toggle-hidden" || action === "manage-hidden") {
         const actionMovie = ctx.movieDetail ? ctx.movieDetail.movie : (ctx.modalDraft && ctx.modalDraft.movie);
-        if (actionMovie) await ctx.toggleHidden(actionMovie.title,actionMovie.tmdbId);
+        if (actionMovie) await ctx.toggleHidden(actionMovie.title,actionMovie.tmdbId,actionMovie.year);
         if (ctx.utilitySheet) { ctx.utilitySheet = null; ctx.renderModal(); }
         return;
       }
@@ -188,7 +206,8 @@ export function registerAppEvents(ctx) {
       if (action === "person-filter") { ctx.personListFilter = button.dataset.filter || "all"; ctx.renderPersonDetails(); return; }
       if (action === "movie-from-person") {
         const title = button.dataset.title;
-        const movie = ctx.findMovie(title,button.dataset.tmdbId) || {title:title,id:button.dataset.tmdbId || ctx.titleKey(title),tmdbId:button.dataset.tmdbId || null,source:"tmdb"};
+        const year = Number(button.dataset.year) || null;
+        const movie = ctx.findMovie(title,button.dataset.tmdbId,year) || {title:title,year:year,id:button.dataset.tmdbId || ctx.titleKey(title),tmdbId:button.dataset.tmdbId || null,source:"tmdb"};
         ctx.personDetail = null; ctx.openModal(movie,"details"); return;
       }
       if (action === "open-trailer") {

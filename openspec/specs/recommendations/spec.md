@@ -78,7 +78,7 @@ El laboratorio DEBE evitar presentar la evaluación experimental como disponible
 
 ## Limitaciones conocidas
 
-El algoritmo actual es una línea base heurística basada en géneros y etiquetas. Sus puntuaciones son aproximaciones explicables y no una garantía de gusto futuro ni una validación científica.
+El algoritmo actual es una línea base heurística que usa géneros, palabras clave, términos disponibles de la sinopsis, reparto, dirección, guion, música y otros metadatos cinematográficos verificables. Sus pesos no han demostrado ser óptimos y sus puntuaciones son aproximaciones explicables, no una garantía de gusto futuro ni una validación científica. Para la identidad se prioriza el ID TMDB; en su ausencia se usa título normalizado y año fiable. Los registros incompletos ambiguos deben mantenerse separados en vez de atribuirse a un remake por conjetura.
 
 
 ### Requirement: Recomendaciones únicas y exclusión fiable de la colección
@@ -733,3 +733,20 @@ Prisma DEBE conservar la marca temporal original del registro y convertirla al d
 - DADO un registro retrospectivo con una fecha de visionado posteriormente confirmada de forma manual
 - CUANDO Prisma vuelve a importar el historial
 - ENTONCES conserva la fecha confirmada manualmente sin reemplazarla por la marca retrospectiva
+
+
+### Requirement: Exclusión por identidad conservadora
+
+La exclusión de películas valoradas, vistas, pendientes u ocultas DEBE usar el ID TMDB cuando exista y aplicar el fallback por título/año cuando falte. Una correspondencia incompleta solo DEBE excluir una candidata si el título no es ambiguo y no contradice años o IDs conocidos.
+
+#### Scenario: Candidata homónima de otro año
+
+- DADO que la colección contiene una película de 1998 y TMDB devuelve una película homónima de 2024 con otra identidad
+- CUANDO Prisma filtra candidatas de Descubrir
+- ENTONCES no excluye la película de 2024 por compartir solamente el título
+
+#### Scenario: Registro de colección incompleto y varios remakes
+
+- DADO que una entrada personal sin ID ni año coincide en título con dos remakes TMDB diferentes
+- CUANDO Prisma filtra las recomendaciones
+- ENTONCES no asigna esa entrada a un remake arbitrario ni fusiona las dos identidades
