@@ -22,7 +22,8 @@ const exportFixture = {
       { id: "edge-day-18", tmId: 19585, t: "G-Force", a: "2026-10-18T05:23:00Z" },
       { id: "edge-day-19", tmId: 433499, t: "Finding Steve McQueen", a: "2026-10-19T07:41:00Z" },
       { id: "edge-day-20", tmId: 76493, t: "The Dictator", a: "2026-10-20T06:31:00Z" },
-      { id: "edge-day-21", tmId: 769, t: "GoodFellas", a: "2026-10-22T04:16:00Z" }
+      { id: "edge-day-21", tmId: 769, t: "GoodFellas", a: "2026-10-22T04:16:00Z" },
+      { id: "after-streak-movie", tmId: 900004, t: "Película posterior a la racha", a: "2026-11-02T18:30:00Z" }
     ],
     cW: [],
     cHid: [],
@@ -132,11 +133,15 @@ await actions.importPersonalJSON({ text: async () => JSON.stringify(exportFixtur
 
 assert.equal(state.confirmedWatchStreak.totalDays, 280);
 assert.equal(state.confirmedWatchStreak.dailyTarget, 1);
-assert.equal(state.watched.length, 8,
+assert.equal(state.watched.length, 9,
   "La reimportación corrige la fila con conflicto sin duplicar películas.");
 const repairedMovie = state.watched.find(movie => movie.tmdbId === "76493");
 assert.equal(repairedMovie.watchedAt, "2026-10-20T06:31:00Z");
 assert.equal(repairedMovie.watchDateConfidence, "streak-confirmed");
+const postStreakMovie = state.watched.find(movie => movie.tmdbId === "900004");
+assert.equal(postStreakMovie.watchedAt, "2026-11-02T18:30:00Z");
+assert.equal(postStreakMovie.watchDateConfidence, "explicit-source",
+  "La fecha posterior se conserva en el historial, pero no amplía la racha.");
 assert.equal(writes.some(write => write.key === "catalogCustom"), true);
 assert.equal(renderCount, 1);
 
@@ -179,6 +184,10 @@ assert.match(panel, /no inventa títulos/);
 assert.equal((panel.match(/data-watch-streak-date=/g) || []).length, 280);
 assert.equal((panel.match(/class="watch-streak-day /g) || []).length, 280,
   "La vista debe mostrar un único marcador para cada día del intervalo.");
+assert.equal((panel.match(/<details class="watch-streak-month"/g) || []).length, 10,
+  "El calendario conserva un desplegable para cada mes de la racha.");
+assert.equal((panel.match(/<details class="watch-streak-month"[^>]*\\sopen>/g) || []).length, 1,
+  "Solo el mes más reciente debe aparecer desplegado inicialmente.");
 assert.equal(createPageViews({ state: emptyState(), escapeHTML }).renderConfirmedWatchStreakPanel(), "",
   "La racha personal no debe mostrarse a una instalación vacía ni a otra persona sin importación.");
 
