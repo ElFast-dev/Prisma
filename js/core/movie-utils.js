@@ -43,20 +43,30 @@ export function movieTmdbId(entry) {
   return Number.isSafeInteger(numeric) && numeric > 0 ? String(numeric) : "";
 }
 
+export function movieYear(entry) {
+  const values = [entry && entry.year, entry && entry.releaseYear, entry && entry.release_year];
+  for (const value of values) {
+    const year = Number(value);
+    if (Number.isSafeInteger(year) && year >= 1870 && year <= 2200) return year;
+  }
+  const match = String(entry && entry.title || "").match(/\(((?:19|20)\d{2})\)\s*$/);
+  return match ? Number(match[1]) : 0;
+}
+
 export function movieIdentityKey(entry) {
   const id = movieTmdbId(entry);
-  return id ? "tmdb:" + id : "title:" + titleKey(entry && entry.title);
+  if (id) return "tmdb:" + id;
+  const title = titleKey(entry && entry.title);
+  const year = movieYear(entry);
+  return "title:" + title + ":year:" + (year || "unknown");
 }
 
+/**
+ * Compare records conservatively: a positive TMDB ID is authoritative, while
+ * title fallback requires matching years whenever either record has one.
+ * Two legacy title-only rows without any year still share the old fallback.
+ */
 export function sameMovieRecord(left, right) {
-  if (!left || !right) return false;
-  const leftId = movieTmdbId(left);
-  const rightId = movieTmdbId(right);
-  if (leftId && rightId) return leftId === rightId;
-  return titleKey(left.title) === titleKey(right.title);
-}
-
-export function sameDiscoveryMovie(left, right) {
   if (!left || !right) return false;
   const leftId = movieTmdbId(left);
   const rightId = movieTmdbId(right);
@@ -64,16 +74,81 @@ export function sameDiscoveryMovie(left, right) {
   const leftTitle = titleKey(left.title);
   const rightTitle = titleKey(right.title);
   if (!leftTitle || leftTitle !== rightTitle) return false;
-  const leftYear = Number(left.year) || 0;
-  const rightYear = Number(right.year) || 0;
-  return !leftYear || !rightYear || leftYear === rightYear;
+  const leftYear = movieYear(left);
+  const rightYear = movieYear(right);
+  if (leftYear || rightYear) return Boolean(leftYear && rightYear && leftYear === rightYear);
+  return !leftId && !rightId;
+}
+
+export function sameDiscoveryMovie(left, right) {
+  return sameMovieRecord(left, right);
+}
+
+/**
+ * Resolve a record against a collection. A missing ID/year may be reconciled
+ * only when the title has a single unambiguous candidate in that collection.
+ */
+export function findMovieRecordMatch(entry, records) {
+  if (!entry || !titleKey(entry.title)) return null;
+  const list = (records || []).filter(function (record) {
+    return record && titleKey(record.title);
+  });
+  const exact = list.find(function (record) { return sameMovieRecord(entry, record); });
+  if (exact) return exact;
+
+  const title = titleKey(entry.title);
+  const sameTitle = list.filter(function (record) { return titleKey(record.title) === title; });
+  if (sameTitle.length !== 1) return null;
+
+  const candidate = sameTitle[0];
+  const entryId = movieTmdbId(entry);
+  const candidateId = movieTmdbId(candidate);
+  if (entryId && candidateId && entryId !== candidateId) return null;
+
+  const entryYear = movieYear(entry);
+  const candidateYear = movieYear(candidate);
+  if (entryYear && candidateYear) return entryYear === candidateYear ? candidate : null;
+  if (!entryId && !candidateId) return !entryYear && !candidateYear ? candidate : null;
+  return candidate;
+}
+
+function discoveryMetadataScore(movie) {
+  return ["year","posterPath","posterUrl","overview","genres","tags","cast","directors","writers","composers",
+    "productionCountries","productionCompanies","originalLanguage","collectionName","runtime"].reduce(function (score, field) {
+      const value = movie && movie[field];
+      return score + (Array.isArray(value) ? (value.length ? 1 : 0) : (value != null && value !== "" ? 1 : 0));
+    }, 0);
+}
+
+function mergeDiscoveryRecord(existing, incoming) {
+  const existingId = movieTmdbId(existing);
+  const incomingId = movieTmdbId(incoming);
+  const preferred = (incomingId && !existingId) ||
+    (Boolean(incomingId) === Boolean(existingId) && discoveryMetadataScore(incoming) > discoveryMetadataScore(existing))
+    ? incoming : existing;
+  const secondary = preferred === incoming ? existing : incoming;
+  const merged = Object.assign({}, secondary, preferred);
+  Object.keys(preferred || {}).forEach(function (key) {
+    const value = preferred[key];
+    if (value == null || value === "" || (Array.isArray(value) && !value.length)) merged[key] = secondary[key] || value;
+  });
+  ["genres","tags","cast","directors","writers","composers","productionCountries","productionCompanies","spokenLanguages"].forEach(function (field) {
+    merged[field] = uniqueStrings((existing[field] || []).concat(incoming[field] || []));
+  });
+  return merged;
 }
 
 export function uniqueDiscoveryMovies(movies) {
   const unique = [];
   (movies || []).forEach(function (movie) {
     if (!movie || !titleKey(movie.title)) return;
-    if (!unique.some(function (existing) { return sameDiscoveryMovie(existing,movie); })) unique.push(movie);
+    const matched = findMovieRecordMatch(movie, unique);
+    if (!matched) {
+      unique.push(movie);
+      return;
+    }
+    const index = unique.indexOf(matched);
+    if (index >= 0) unique[index] = mergeDiscoveryRecord(matched, movie);
   });
   return unique;
 }
