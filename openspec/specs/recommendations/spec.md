@@ -499,7 +499,7 @@ El experimento Ridge DEBE resumir la dirección y el rango observado de las mét
 
 ### Requirement: Evaluación temporal de recomendaciones sin fuga de futuro
 
-Prisma DEBE ofrecer un experimento temporal, local y bajo demanda que entrene con valoraciones de visionado anteriores a cada ventana exterior y pruebe con valoraciones posteriores. La fecha DEBE provenir de `watchedAt` válido en la valoración o su registro de visionado relacionado. Prisma NO DEBE usar `updatedAt`, `addedAt` ni la fecha de estreno como sustituto. La selección de alpha DEBE usar solamente ventanas de validación temporal internas anteriores a la ventana exterior de prueba.
+Prisma DEBE ofrecer un experimento temporal, local y bajo demanda que entrene con valoraciones de visionado anteriores a cada ventana exterior y pruebe con valoraciones posteriores. Por defecto, la fecha DEBE provenir de `watchedAt` válido en la valoración o su registro de visionado relacionado. Prisma NO DEBE convertir `updatedAt`, `addedAt` ni la fecha de estreno en una fecha de visionado confirmada. `updatedAt` y la fecha de estreno NUNCA DEBEN servir como proxy. `addedAt` solo puede emplearse como proxy temporal exploratorio cuando la persona activa expresamente esa opción; entonces DEBE clasificarse como no verificado, nunca DEBE crear ni modificar `watchedAt` y el resultado DEBE etiquetarse como exploratorio. La selección de alpha DEBE usar solamente ventanas de validación temporal internas anteriores a la ventana exterior de prueba.
 
 #### Scenario: Entrenar y probar en orden cronológico
 
@@ -552,6 +552,18 @@ La evaluación temporal DEBE distinguir fechas de visionado importadas explícit
 - DADO un registro que contiene `a` pero no `watchedAt` ni `watched_at`
 - CUANDO se importa el historial
 - ENTONCES Prisma conserva `a` como `addedAt` y no fabrica `watchedAt`
+
+#### Scenario: Proxy de fecha de incorporación activado de forma explícita
+
+- DADO un registro importado de la lista de vistas con `addedAtSource = "imported-collection"` y sin fecha de visionado fiable
+- CUANDO la persona activa el proxy temporal y ejecuta la evaluación
+- ENTONCES Prisma puede usar `addedAt` solo en ese experimento, cuenta la fila como no verificada, etiqueta el resultado como exploratorio y mantiene `watchedAt` intacto
+
+#### Scenario: Proxy temporal desactivado por defecto
+
+- DADO un registro que solo contiene `addedAt`
+- CUANDO la persona no activa el proxy
+- ENTONCES Prisma excluye esa fecha de la evaluación temporal y no crea un `watchedAt` derivado
 
 #### Scenario: Importar fecha explícita de visionado
 
