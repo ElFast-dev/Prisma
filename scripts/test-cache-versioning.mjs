@@ -119,11 +119,11 @@ assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-4"),
   "El catálogo debe fusionar las nuevas familias de metadatos.");
 assert.ok(cached.has("./js/collection/collection-model.js?v=core-20261022-4"),
   "El modelo de colección debe usar la identidad contextual y filtrar fechas automáticas.");
-assert.ok(cached.has("./js/import-export/personal-data.js?v=core-20261022-6"),
+assert.ok(cached.has("./js/import-export/personal-data.js?v=core-20261022-7"),
   "La importación de datos personales debe usar la nueva reconciliación de identidades.");
 assert.ok(cached.has("./js/tmdb/history-sync.js?v=core-20261022-3"),
   "La sincronización del historial debe utilizar metadatos enriquecidos.");
-assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-3"),
+assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-4"),
   "El enriquecimiento temporal de candidatas debe estar versionado.");
 assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-5"),
   "El registro de notas sin emociones debe estar versionado.");
