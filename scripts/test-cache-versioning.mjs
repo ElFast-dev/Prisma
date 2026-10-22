@@ -109,6 +109,8 @@ assert.ok(cached.has("./js/recommendations/features.js?v=rec-20261022-1"),
   "El extractor ampliado de características debe tener una URL versionada en caché.");
 assert.ok(cached.has("./js/recommendations/engine.js?v=rec-20261022-1"),
   "El motor de recomendación actualizado debe estar versionado.");
+assert.ok(cached.has("./js/core/movie-utils.js?v=core-20261022-2"),
+  "El normalizador de película debe usar una URL versionada en la caché.");
 assert.ok(cached.has("./js/tmdb/client.js?v=core-20261022-2"),
   "El cliente TMDB ampliado debe estar versionado.");
 assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-2"),
