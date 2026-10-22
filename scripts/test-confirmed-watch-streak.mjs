@@ -8,6 +8,7 @@ import { buildConfirmedWatchStreakDays, normalizeConfirmedWatchStreak } from "..
 import { createCollectionModel } from "../js/collection/collection-model.js";
 import { movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, sameMovieRecord, titleKey } from "../js/core/movie-utils.js";
 import { createPageViews } from "../js/ui/page-views.js";
+import { createModalViews } from "../js/ui/modal-views.js";
 
 const exportFixture = {
   platform: "android",
@@ -176,5 +177,60 @@ assert.equal((panel.match(/class="watch-streak-day /g) || []).length, 280,
   "La vista debe mostrar un único marcador para cada día del intervalo.");
 assert.equal(createPageViews({ state: emptyState(), escapeHTML }).renderConfirmedWatchStreakPanel(), "",
   "La racha personal no debe mostrarse a una instalación vacía ni a otra persona sin importación.");
+
+const modalRoot = { innerHTML: "" };
+const modalState = {
+  watched: [{
+    id: "dictator",
+    tmdbId: "76493",
+    title: "The Dictator",
+    watchedAt: "2026-10-20T06:31:00Z",
+    watchedAtSource: "imported-explicit",
+    watchDateConfidence: "streak-confirmed"
+  }]
+};
+const modalCtx = {
+  $: selector => selector === "#modalRoot" ? modalRoot : null,
+  movieDetail: {
+    movie: {
+      id: "dictator", tmdbId: "76493", title: "The Dictator", year: 2012,
+      genres: [], productionCountries: [], posterUrl: "", backdropUrl: "",
+      releaseDate: null, runtime: null, status: "released", overview: "",
+      tagline: "", originalTitle: ""
+    },
+    data: null,
+    loading: false,
+    error: null
+  },
+  state: modalState,
+  ratingFor: () => ({ title: "The Dictator", tmdbId: "76493", rating: 6, updatedAt: "2026-10-21T06:31:56.141Z" }),
+  isInHistory: () => true,
+  isInWatchlist: () => false,
+  isHidden: () => false,
+  sameMovieRecord,
+  escapeHTML,
+  displayGenre: value => value,
+  dateLabel: value => value,
+  formatWatchedDate: formatPanamaDateMDY,
+  buildRatingMetrics: () => "",
+  niceRuntime: () => "—",
+  displayMovieStatus: () => "Estrenada",
+  externalMovieUrl: () => "https://www.themoviedb.org/movie/76493",
+  ratingValue: value => Number(value.rating),
+  infoButton: () => "",
+  personImage: () => ""
+};
+const modalViews = createModalViews(modalCtx);
+modalViews.renderMovieDetails();
+assert.match(modalRoot.innerHTML, /10\/20\/2026/,
+  "La ficha de The Dictator debe mostrar su fecha de visionado del 20 de octubre en Panamá.");
+assert.doesNotMatch(modalRoot.innerHTML, /10\/21\/2026/,
+  "La fecha de actualización de la nota no puede aparecer como día de visionado.");
+modalState.watched = [{ id: "dictator", tmdbId: "76493", title: "The Dictator" }];
+modalViews.renderMovieDetails();
+assert.match(modalRoot.innerHTML, /Fecha no registrada/,
+  "Si no existe fecha explícita de visionado, la ficha no debe inventarla usando updatedAt.");
+assert.doesNotMatch(modalRoot.innerHTML, /10\/21\/2026/,
+  "La ausencia de fecha de visionado debe seguir siendo visible aunque haya updatedAt.");
 
 console.log("Racha diaria verificada: 280 fechas consecutivas, una marca por día, importación local y títulos nunca inventados.");
