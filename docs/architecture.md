@@ -14,7 +14,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/core/state-model.js` | Estado inicial y normalización del estado persistido/importado. |
 | `js/core/storage.js` | IndexedDB y fallback a localStorage. |
 | `js/core/storage-protection.js` | Consulta persistencia/cuota del almacenamiento y solicita persistencia solo tras una acción explícita. |
-| `js/recommendations/features.js` | Extracción de señales con claves de género canónicas compartidas por TMDB, catálogo CSV e historial personal, además de temas y década de estreno si existe un año válido. |
+| `js/recommendations/features.js` | Extrae géneros, palabras clave, términos de sinopsis, reparto, dirección, guion, música, compañías, países, idiomas, franquicia, duración y década fiable; excluye emociones y notas libres. |
 | `js/recommendations/engine.js` | Perfil de preferencias y predicción explicable; conserva la normalización media por defecto y acepta variantes de denominador solo cuando el evaluador diagnóstico las solicita. |
 | `js/recommendations/ridge-evaluation.js` | Experimento local y bajo demanda de Ridge: conserva validación de cinco pliegues y tres repeticiones y walk-forward temporal en cinco ventanas futuras. La fecha de incorporación a una colección importada solo puede usarse mediante un proxy explícito, marcado no verificado y exploratorio; nunca modifica `watchedAt` ni las recomendaciones activas. |
 | `js/recommendations/repeated-validation-summary.js` | Resumen puro de dirección y rango mínimo–máximo de las métricas agregadas por repetición; no produce intervalos de confianza ni modifica el modelo. |
