@@ -9,6 +9,7 @@
 - [x] DP9. Verificar con pruebas la precedencia del timestamp fiable frente a una fecha local obsoleta y los días consecutivos cerca de medianoche UTC.
 - [x] DP10. Impedir que `rA`, `updatedAt` o `addedAt` se muestren como fecha de visionado; cubrir las fechas reales del 18 al 21 de octubre y el caso sin `watchedAt` explícito.
 - [x] DP11. Invalidar la URL de caché de `actions.js`, alinear `app.js`/`sw.js`/entrada PWA y añadir una aserción para impedir que la versión obsoleta vuelva a desplegarse.
+- [x] DP12. Ajustar el fixture visual genérico para proporcionar `watchedAt` explícito al validar una fecha de historial; `a` y `rA` continúan sin ser fuentes de fecha de visionado.
 - [ ] DP7. Ejecutar calidad/SDD/Playwright, fusionar la implementación y verificar el despliegue.
 - [ ] DP8. Archivar el cambio SDD con evidencia de la integración y los resultados CI.
 
