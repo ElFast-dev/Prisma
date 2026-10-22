@@ -128,7 +128,7 @@ export function createPageViews(ctx) {
       const text = ctx.titleKey(movie.title + " " + (movie.genres || []).join(" ") + " " + (movie.tags || []).join(" ") + " " + (movie.year || ""));
       const queryOkay = !query || text.indexOf(query) >= 0;
       const genreOkay = ctx.activeGenre === "Todos" || (movie.genres || []).some(function (genre) { return ctx.titleKey(genre) === ctx.titleKey(ctx.activeGenre); });
-      return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);
+      return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId,movie.year) && !ctx.isHidden(movie.title,movie.tmdbId,movie.year);
     });
   }
 
@@ -216,7 +216,7 @@ export function createPageViews(ctx) {
 
   function collectionCompactCard(item) {
     const rating = ctx.ratingValue(item);
-    const seenMarker = ctx.isInHistory(item.title,item.tmdbId) ? "seen" : (ctx.isInWatchlist(item.title,item.tmdbId) ? "pending" : "hidden");
+    const seenMarker = ctx.isInHistory(item.title,item.tmdbId,item.year) ? "seen" : (ctx.isInWatchlist(item.title,item.tmdbId,item.year) ? "pending" : "hidden");
     return '<button class="collection-compact-card" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" data-year="' + ctx.escapeHTML(item.year || "") + '">' +
       '<span class="compact-poster">' + (item.posterUrl ? '<img data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" src="' + ctx.escapeHTML(item.posterUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<span class="poster-fallback">▣</span>') + '<i class="collection-marker ' + seenMarker + '"></i></span>' +
       '<strong>' + ctx.escapeHTML(item.title) + '</strong><small>' + ctx.escapeHTML(item.year || "") + (rating ? " · ★ " + rating + "/10" : "") + '</small></button>';
