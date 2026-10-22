@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createMovieActions } from "../js/app/movie-actions.js";
+import { resolveExplicitWatchedAt } from "../js/ui/presentation-utils.js";
 
 const movie = {
   title: "Película sintética",
@@ -60,6 +61,8 @@ assert.ok(Number.isFinite(Date.parse(firstRating.state.watched[0].watchedAt)),
   "Guardar una nueva valoración registra el momento de esa acción.");
 assert.equal(firstRating.state.watched[0].watchedAtSource, "action-time",
   "La fecha de una acción de registro no debe confundirse con una fecha de visionado explícita.");
+assert.equal(resolveExplicitWatchedAt(firstRating.state.watched[0],firstRating.state.rated[0]), null,
+  "La ficha debe ocultar la marca temporal automática de una valoración.");
 
 const oldUpdatedAt = "2018-04-12T09:30:00.000Z";
 const editedRating = createHarness({
@@ -90,6 +93,9 @@ assert.ok(Number.isFinite(Date.parse(explicitMark.state.watched[0].watchedAt)),
   "La acción explícita «marcar como vista» debe registrar su propia fecha.");
 assert.notEqual(explicitMark.state.watched[0].watchedAt, oldUpdatedAt,
   "Marcar como vista no debe reutilizar la fecha de edición de la nota.");
-assert.equal(explicitMark.state.watched[0].watchedAtSource, "action-time");
+assert.equal(explicitMark.state.watched[0].watchedAtSource, "user-confirmed");
+assert.equal(explicitMark.state.watched[0].watchDateConfidence, "user-confirmed");
+assert.equal(resolveExplicitWatchedAt(explicitMark.state.watched[0],null),explicitMark.state.watched[0].watchedAt,
+  "La acción explícita de marcar una película como vista sí confirma la fecha de esa acción.");
 
 console.log("Procedencia de fechas verificada: nuevas acciones explícitas se fechan y la edición de notas no inventa watchedAt.");
