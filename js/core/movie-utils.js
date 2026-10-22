@@ -108,7 +108,7 @@ export function findMovieRecordMatch(entry, records) {
   const entryYear = movieYear(entry);
   const candidateYear = movieYear(candidate);
   if (entryYear && candidateYear) return entryYear === candidateYear ? candidate : null;
-  if (!entryId && !candidateId) return !entryYear && !candidateYear ? candidate : null;
+  // Only known year conflicts are disqualifying once title uniqueness and ID checks pass.
   return candidate;
 }
 
