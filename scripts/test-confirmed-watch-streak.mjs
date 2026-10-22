@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { createImportExportActions } from "../js/import-export/actions.js";
 import { extractPersonalCollections, extractPersonalRatings, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle } from "../js/import-export/personal-data.js";
 import { emptyState, ensureState } from "../js/core/state-model.js";
-import { dateOnlyInTimeZone, listDateOnlyRange } from "../js/core/date-utils.js";
+import { dateOnlyInTimeZone, listDateOnlyRange, formatPanamaDateMDY } from "../js/core/date-utils.js";
+import { resolveExplicitWatchedAt } from "../js/ui/presentation-utils.js";
 import { buildConfirmedWatchStreakDays, normalizeConfirmedWatchStreak } from "../js/core/watch-streak.js";
 import { movieIdentityKey, normalizeMovie, ratingValue } from "../js/core/movie-utils.js";
 import { createPageViews } from "../js/ui/page-views.js";
@@ -16,10 +17,10 @@ const exportFixture = {
       { id: "same-day-second-movie", tmId: 900001, t: "Otra película conservada", a: "2026-01-15T22:00:00.000Z" },
       { id: "later-movie", tmId: 900002, t: "Película posterior", a: "2026-07-09T04:56:59.336Z" },
       { id: "retrospective-movie", tmId: 900003, t: "Película retrospectiva", a: "2025-11-06T00:22:23.302Z" },
-      { id: "edge-day-18", tmId: 900004, t: "Synthetic Watch Day Eighteen", a: "2026-10-18T05:20:00.000Z" },
-      { id: "edge-day-19", tmId: 900005, t: "Synthetic Watch Day Nineteen", a: "2026-10-19T07:15:00.000Z" },
-      { id: "edge-day-20", tmId: 900006, t: "Synthetic Challenge Date Repair", a: "2026-10-20T06:20:00.000Z" },
-      { id: "edge-day-21", tmId: 900007, t: "Synthetic Watch Day TwentyOne", a: "2026-10-22T04:10:00.000Z" }
+      { id: "edge-day-18", tmId: 19585, t: "G-Force", a: "2026-10-18T05:23:00Z" },
+      { id: "edge-day-19", tmId: 433499, t: "Finding Steve McQueen", a: "2026-10-19T07:41:00Z" },
+      { id: "edge-day-20", tmId: 76493, t: "The Dictator", a: "2026-10-20T06:31:00Z" },
+      { id: "edge-day-21", tmId: 769, t: "GoodFellas", a: "2026-10-22T04:16:00Z" }
     ],
     cW: [],
     cHid: [],
@@ -47,12 +48,23 @@ for (let i = 1; i < dateRange.length; i += 1) {
   assert.equal(current - previous, 86400000, "Cada fecha debe seguir exactamente al día anterior.");
 }
 assert.equal(dateOnlyInTimeZone("2026-07-09T04:56:59.336Z"), "2026-07-08");
+assert.deepEqual([
+  formatPanamaDateMDY("2026-10-18T05:23:00Z"),
+  formatPanamaDateMDY("2026-10-19T07:41:00Z"),
+  formatPanamaDateMDY("2026-10-20T06:31:00Z"),
+  formatPanamaDateMDY("2026-10-22T04:16:00Z")
+], ["10/18/2026", "10/19/2026", "10/20/2026", "10/21/2026"],
+"Las cuatro fechas reales deben mostrarse según el calendario de Panamá, no el UTC.");
+assert.equal(resolveExplicitWatchedAt(null, { updatedAt: "2026-10-21T06:31:56.141Z" }), null,
+  "La fecha de una valoración no puede sustituir una fecha de visionado ausente.");
+assert.equal(resolveExplicitWatchedAt({ watchedAt: "2026-10-20T06:31:00Z" }, { updatedAt: "2026-10-21T06:31:56.141Z" }), "2026-10-20T06:31:00Z",
+  "La fecha explícita de visionado debe prevalecer sobre la fecha de valoración.");
 
 let state = emptyState();
 state.watched.push({
   id: "stale-challenge-date",
-  tmdbId: "900006",
-  title: "Synthetic Challenge Date Repair",
+  tmdbId: "76493",
+  title: "The Dictator",
   watchedAt: "2026-10-21T12:00:00.000Z",
   watchedAtSource: "user-confirmed",
   watchDateConfidence: "user-confirmed"
@@ -87,8 +99,8 @@ assert.equal(state.confirmedWatchStreak.totalDays, 280);
 assert.equal(state.confirmedWatchStreak.dailyTarget, 1);
 assert.equal(state.watched.length, 8,
   "La reimportación corrige la fila con conflicto sin duplicar películas.");
-const repairedMovie = state.watched.find(movie => movie.tmdbId === "900006");
-assert.equal(repairedMovie.watchedAt, "2026-10-20T06:20:00.000Z");
+const repairedMovie = state.watched.find(movie => movie.tmdbId === "76493");
+assert.equal(repairedMovie.watchedAt, "2026-10-20T06:31:00Z");
 assert.equal(repairedMovie.watchDateConfidence, "streak-confirmed");
 assert.equal(writes.some(write => write.key === "catalogCustom"), true);
 assert.equal(renderCount, 1);
@@ -113,11 +125,11 @@ assert.equal(daily[0].additionalMovieCount, 1,
   "Dos películas el mismo día no deben convertirse en dos días de racha.");
 assert.equal(daily.find(day => day.date === "2026-07-08").title, "Película posterior",
   "El día se agrupa con la zona horaria de Panamá.");
-assert.equal(daily.find(day => day.date === "2026-10-18").title, "Synthetic Watch Day Eighteen");
-assert.equal(daily.find(day => day.date === "2026-10-19").title, "Synthetic Watch Day Nineteen");
-assert.equal(daily.find(day => day.date === "2026-10-20").title, "Synthetic Challenge Date Repair");
-assert.equal(daily.find(day => day.date === "2026-10-21").title, "Synthetic Watch Day TwentyOne",
-  "Un timestamp del 22 en UTC debe quedar en el día 21 de Panamá cuando corresponda.");
+assert.equal(daily.find(day => day.date === "2026-10-18").title, "G-Force");
+assert.equal(daily.find(day => day.date === "2026-10-19").title, "Finding Steve McQueen");
+assert.equal(daily.find(day => day.date === "2026-10-20").title, "The Dictator");
+assert.equal(daily.find(day => day.date === "2026-10-21").title, "GoodFellas",
+  "GoodFellas debe quedar el día 21 de Panamá aunque la marca UTC sea del día 22.");
 assert.equal(daily.find(day => day.date === "2026-01-16").title, null,
   "Una fecha de racha puede quedar confirmada aunque se haya perdido la película.");
 
