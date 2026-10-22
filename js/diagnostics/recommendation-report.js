@@ -501,7 +501,7 @@ export function buildRecommendationDiagnosticReport(input) {
         "Emociones, notas libres y textos personales",
         "Credenciales, datos de almacenamiento y copias de seguridad"
       ],
-      caution: "Las estadísticas agregadas de géneros o temas, si se incluyen sus nombres, pueden revelar parte de las preferencias personales. Revisa el informe antes de compartirlo."
+      caution: "Las estadísticas agregadas de géneros, temas, reparto o equipo creativo, si se incluyen sus nombres, pueden revelar parte de las preferencias personales. Revisa el informe antes de compartirlo."
     },
     sample: {
       ratedEntries: ratingCount,
