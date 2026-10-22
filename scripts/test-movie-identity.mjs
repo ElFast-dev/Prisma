@@ -7,6 +7,7 @@ import {
 import { parseCatalogCSV } from "../js/catalog/csv-parser.js";
 import { createCatalogModel } from "../js/catalog/catalog-model.js";
 import { mergeMovieListByTitle } from "../js/import-export/personal-data.js";
+import { createImportExportActions } from "../js/import-export/actions.js";
 
 assert.notEqual(
   movieIdentityKey({ title: "Prisma Identity Fixture", year: 1998 }),
@@ -120,6 +121,15 @@ assert.equal(mergedSameYear.length, 2, "La importación combina la fila del mism
 assert.ok(mergedSameYear.some(movie => movie.tmdbId === "990201" && movie.year === 1998));
 assert.ok(mergedSameYear.some(movie => movie.year === 2024));
 
+const batchAmbiguous = mergeMovieListByTitle([], [
+  { title: "Batch Ambiguous Fixture" },
+  { title: "Batch Ambiguous Fixture", year: 1998, tmdbId: "990211" },
+  { title: "Batch Ambiguous Fixture", year: 2024, tmdbId: "990212" }
+]);
+assert.equal(batchAmbiguous.length, 3,
+  "La reconciliación por lotes debe conservar una fila sin año cuando hay varios remakes, aunque aparezca primero.");
+assert.equal(batchAmbiguous.filter(movie => !movieTmdbId(movie)).length, 1);
+
 function combinedCatalog(customCatalog, rated = []) {
   let catalog = [];
   let catalogByTitle = new Map();
@@ -157,6 +167,38 @@ const ambiguousCatalog = combinedCatalog([
 ]);
 assert.equal(ambiguousCatalog.length, 3,
   "El catálogo no debe asignar una fila sin año al primer remake arbitrariamente.");
+
+const importRows = [];
+const importEffects = [];
+const csvActions = createImportExportActions({
+  customCatalog: importRows,
+  set customCatalog(value) { this._catalog = value; },
+  get customCatalog() { return this._catalog || importRows; },
+  parseCatalogCSV,
+  mergeMovieListByTitle,
+  movieIdentityKey,
+  movieTmdbId,
+  uniqueStrings,
+  async dbSet(key,value) { importEffects.push({key,value}); },
+  logEvent() {},
+  combineMovies() {},
+  renderApp() {},
+  toast() {}
+});
+await csvActions.importCatalogCSV({
+  name: "ambiguous-remakes.csv",
+  text: async () => [
+    "title,year,tmdb_id,genres",
+    "Prisma CSV Ambiguous Fixture,,,Drama",
+    "Prisma CSV Ambiguous Fixture,1998,990411,Drama",
+    "Prisma CSV Ambiguous Fixture,2024,990412,Action"
+  ].join("\\n")
+});
+assert.equal(csvActions ? importEffects.length : 0, 1);
+const importedAmbiguous = importEffects[0].value.filter(movie => movie.title === "Prisma CSV Ambiguous Fixture");
+assert.equal(importedAmbiguous.length, 3,
+  "La acción de importación CSV no debe asociar un título sin año al primer remake importado.");
+assert.equal(importedAmbiguous.filter(movie => !movieTmdbId(movie)).length, 1);
 
 let lookupCatalog = [
   { title: "Prisma Lookup Identity Fixture", year: 1998, tmdbId: "990501", genres: ["Drama"] },
