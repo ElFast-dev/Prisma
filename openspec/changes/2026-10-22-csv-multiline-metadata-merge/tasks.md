@@ -11,13 +11,15 @@
 - [x] Ejecutar calidad completa y Playwright de escritorio/móvil sobre el mismo código verificado.
 - [x] Corregir regresiones detectadas y volver a ejecutar las compuertas: ambas suites terminaron verdes.
 - [x] Fusionar el PR #79 después de las compuertas verdes.
-- [ ] Confirmar que GitHub Pages publicó exactamente el SHA de main fusionado.
-- [ ] Archivar este expediente tras demostrar la convergencia entre código, pruebas, documentación y despliegue.
+- [x] Confirmar que GitHub Pages publicó exactamente el SHA de main fusionado.
+- [x] Archivar este expediente tras demostrar la convergencia entre código, pruebas, documentación y despliegue.
 
-## Evidencia de verificación e integración
+## Evidencia de verificación, integración y despliegue
 
-- PR #79 fusionado: [commit c5791c80ed17c12a7d2da0e6ad13817a0de8e985](https://github.com/ElFast-dev/Prisma/commit/c5791c80ed17c12a7d2da0e6ad13817a0de8e985).
-- Calidad/SDD satisfactoria: [run 39866884761](https://github.com/ElFast-dev/Prisma/actions/runs/39866884761).
-- Playwright de escritorio y móvil satisfactorio: [run 39866884546](https://github.com/ElFast-dev/Prisma/actions/runs/39866884546).
-- La ejecución de calidad y Playwright se realizó antes de la fusión sobre el head 034437ec5667fcea4ec7531ad516a79f9e998f45; el commit de squash incorpora ese árbol de código.
-- La verificación del despliegue posterior a la fusión sigue pendiente; no se marca como completada sin evidencia de GitHub Pages.
+- PR #79 fusionado: commit `c5791c80ed17c12a7d2da0e6ad13817a0de8e985`.
+- Calidad/SDD antes de la fusión: [run 39866884761](https://github.com/ElFast-dev/Prisma/actions/runs/39866884761).
+- Playwright de escritorio y móvil antes de la fusión: [run 39866884546](https://github.com/ElFast-dev/Prisma/actions/runs/39866884546).
+- Calidad/SDD tras la fusión sobre el SHA `c5791c80ed17c12a7d2da0e6ad13817a0de8e985`: [run 39867123658](https://github.com/ElFast-dev/Prisma/actions/runs/39867123658).
+- Playwright de escritorio y móvil tras la fusión sobre el mismo SHA: [run 39867168097](https://github.com/ElFast-dev/Prisma/actions/runs/39867168097).
+- GitHub Pages publicó el mismo SHA, verificado por el artefacto de aprobación descargado y validado antes del despliegue: [run 39867363125](https://github.com/ElFast-dev/Prisma/actions/runs/39867363125).
+- Los logs del paso `Validate approved source SHA` confirmaron exactamente `c5791c80ed17c12a7d2da0e6ad13817a0de8e985`, y los pasos de subida de estáticos y despliegue finalizaron correctamente.
