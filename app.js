@@ -1,7 +1,7 @@
 import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js?v=core-20261022-2";
 import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { createStorageProtection } from "./js/core/storage-protection.js";
-import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-1";
+import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
 import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261022-1";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=core-20261022-9";
