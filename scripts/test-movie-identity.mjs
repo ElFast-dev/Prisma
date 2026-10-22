@@ -34,8 +34,16 @@ assert.equal(
     { title: "Prisma Identity Fixture", year: 1998 },
     { title: "Prisma Identity Fixture", year: 1998, tmdbId: "990001" }
   ),
-  true,
-  "El año permite asociar un registro legado sin ID a una identidad TMDB inequívoca."
+  false,
+  "La comparación par a par no debe ignorar que una de las identidades tiene ID TMDB."
+);
+assert.equal(
+  findMovieRecordMatch(
+    { title: "Prisma Identity Fixture", year: 1998 },
+    [{ title: "Prisma Identity Fixture", year: 1998, tmdbId: "990001" }]
+  ).tmdbId,
+  "990001",
+  "La asociación de un registro legado solo debe ocurrir con el contexto que prueba que es la única candidata."
 );
 assert.equal(sameDiscoveryMovie(
   { title: "Prisma Discovery Fixture", year: 1998 },
