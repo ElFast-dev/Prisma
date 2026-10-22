@@ -45,14 +45,27 @@ export function createPageViews(ctx) {
       ["L", "Lunes"], ["M", "Martes"], ["X", "Miércoles"], ["J", "Jueves"],
       ["V", "Viernes"], ["S", "Sábado"], ["D", "Domingo"]
     ];
-    const monthMarkup = Array.from(byMonth.entries()).map(function (monthEntry) {
+    const monthEntries = Array.from(byMonth.entries());
+    const monthMarkup = monthEntries.map(function (monthEntry, monthIndex) {
+      const monthKey = monthEntry[0];
       const monthDays = monthEntry[1];
-      const first = monthDays[0].date;
-      const weekday = (new Date(first + "T00:00:00.000Z").getUTCDay() + 6) % 7;
+      const first = monthKey + "-01";
+      const parts = monthKey.split("-");
+      const year = Number(parts[0]);
+      const monthNumber = Number(parts[1]);
+      const daysInCalendarMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+      const weekday = (new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay() + 6) % 7;
       const emptyCells = Array.from({ length: weekday }, function () {
         return '<span class="watch-streak-calendar-empty" aria-hidden="true"></span>';
       }).join("");
-      const dayCells = monthDays.map(function (day) {
+      const streakDaysByDate = new Map(monthDays.map(function (day) { return [day.date, day]; }));
+      const dayCells = Array.from({ length: daysInCalendarMonth }, function (_, index) {
+        const number = index + 1;
+        const date = monthKey + "-" + String(number).padStart(2, "0");
+        const day = streakDaysByDate.get(date);
+        if (!day) {
+          return '<span class="watch-streak-day-outside" aria-hidden="true"><span class="watch-streak-day-number">' + number + '</span></span>';
+        }
         const label = formatDateOnlyLong(day.date) || day.date;
         const movieLabel = day.title
           ? "Película conservada: " + day.title
@@ -64,17 +77,23 @@ export function createPageViews(ctx) {
         return '<div class="watch-streak-day ' + (day.title ? "has-movie" : "title-missing") +
           '" role="listitem" data-watch-streak-date="' + day.date +
           '" aria-label="' + ctx.escapeHTML(accessible) + '" title="' + ctx.escapeHTML(accessible) + '">' +
-          '<span class="watch-streak-day-number">' + String(Number(day.date.slice(8))) + '</span>' +
+          '<span class="watch-streak-day-number">' + number + '</span>' +
           '<span class="watch-streak-day-check" aria-hidden="true">✓</span></div>';
       }).join("");
-      return '<section class="watch-streak-month" aria-label="' + ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '">' +
-        '<h3 class="watch-streak-month-title">' + ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '</h3>' +
+      const monthLabel = formatDateOnlyMonth(first) || monthKey;
+      return '<details class="watch-streak-month" aria-label="' + ctx.escapeHTML(monthLabel) + '"' +
+        (monthIndex === monthEntries.length - 1 ? ' open' : '') + '>' +
+        '<summary class="watch-streak-month-summary">' +
+        '<span class="watch-streak-month-title">' + ctx.escapeHTML(monthLabel) + '</span>' +
+        '<span class="watch-streak-month-meta">' + monthDays.length.toLocaleString("es-PA") + ' días confirmados</span>' +
+        '</summary>' +
+        '<div class="watch-streak-month-calendar">' +
         '<div class="watch-streak-weekdays" aria-hidden="true">' +
         weekdays.map(function (weekdayItem) {
           return '<span title="' + weekdayItem[1] + '">' + weekdayItem[0] + '</span>';
         }).join("") + '</div>' +
         '<div class="watch-streak-days" role="list" aria-label="Días confirmados de ' +
-        ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '">' + emptyCells + dayCells + '</div></section>';
+        ctx.escapeHTML(monthLabel) + '">' + emptyCells + dayCells + '</div></div></details>';
     }).join("");
 
     return '<section class="panel watch-streak-panel" aria-labelledby="confirmed-watch-streak-title">' +
