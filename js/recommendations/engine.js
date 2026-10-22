@@ -190,7 +190,8 @@ export function createRecommendationEngine(dependencies) {
       const candidate = movie || heldOut;
       const predicted = predictRating(candidate, profile).score;
       errors.push(Math.abs(predicted - ratingValue(heldOut)));
-      baselineErrors.push(Math.abs(profile.average - ratingValue(heldOut)));
+      // Keep the reference predictor equal to the unshrunk training mean, not the model's smoothed prior.
+      baselineErrors.push(Math.abs(profile.personalAverage - ratingValue(heldOut)));
 
       // Paired experiment: same held-out entry and training split; only theme weights shrink.
       const shrinkageProfile = buildProfile(training, { themeSupportShrinkage: true });
