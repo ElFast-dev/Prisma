@@ -704,7 +704,7 @@ jobs:
                   throw new Error(name + ": CSV import collapsed remakes with distinct TMDB IDs: " + JSON.stringify(importedFixture));
                 }
                 const multilineOverview = remakes.find(movie => movie.tmdbId === "990001")?.overview || "";
-                if (!multilineOverview.includes("Primera línea, con coma.\\nSegunda línea de sinopsis con \\"comillas escapadas\\".")) {
+                if (!multilineOverview.includes("Primera línea, con coma.\nSegunda línea de sinopsis con \"comillas escapadas\".")) {
                   throw new Error(name + ": the CSV importer lost a quoted newline or escaped quotes inside the synopsis");
                 }
                 const movieLensRow = importedFixture.find(movie => movie.title === "Prisma MovieLens Namespace Fixture");
