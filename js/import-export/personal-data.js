@@ -33,11 +33,15 @@ export function movieMetadataFromJSON(root) {
 export function extractPersonalCollections(root) {
   const scope = root && root.movies && typeof root.movies === "object" ? root.movies : root;
   const info = movieMetadataFromJSON(root);
-  const currentStreakExport = Boolean(root &&
+  // In this Android v2 export, movies.cH is the watched-history collection and
+  // its "a" timestamp is the user's watch date. This applies to every watched row,
+  // not only the 280 dates represented by the independently confirmed streak.
+  const androidV2WatchHistoryExport = Boolean(root &&
     String(root.platform || "").toLowerCase() === "android" &&
     Number(root.version) === 2 &&
     root.movies && scope === root.movies &&
-    Array.isArray(scope.cH) &&
+    Array.isArray(scope.cH));
+  const currentStreakExport = Boolean(androidV2WatchHistoryExport &&
     scope.cH.some(function (raw) {
       if (!raw || typeof raw !== "object") return false;
       const isStartMovie = String(raw.tmId || raw.tmdbId || "") === CONFIRMED_STREAK_START_TMDB_ID ||
@@ -85,18 +89,27 @@ export function extractPersonalCollections(root) {
       if (explicitWatchedAt != null && explicitWatchedAt !== "") {
         movie.watchedAt = explicitWatchedAt;
         movie.watchedAtSource = "imported-explicit";
-        if (currentStreakExport) movie.watchDateConfidence = "explicit-source";
-        else delete movie.watchDateConfidence;
-      } else if (currentStreakExport) {
+        const explicitDay = dateOnlyInTimeZone(explicitWatchedAt);
+        movie.watchDateConfidence = currentStreakExport &&
+          explicitDay && explicitDay >= CONFIRMED_STREAK_START_DAY && explicitDay <= "2026-10-21"
+          ? "streak-confirmed"
+          : "explicit-source";
+      } else if (androidV2WatchHistoryExport) {
+        // The export's watched-history timestamp is useful for every row in cH,
+        // including dates before and after the separately confirmed 280-day streak.
+        // Only days inside that streak receive its stronger confidence label.
         const localWatchDay = dateOnlyInTimeZone(raw.a);
-        if (localWatchDay && localWatchDay >= CONFIRMED_STREAK_START_DAY) {
+        if (localWatchDay) {
           movie.watchedAt = raw.a;
           movie.watchedAtSource = "imported-explicit";
-          movie.watchDateConfidence = "streak-confirmed";
+          movie.watchDateConfidence = currentStreakExport &&
+            localWatchDay >= CONFIRMED_STREAK_START_DAY && localWatchDay <= "2026-10-21"
+            ? "streak-confirmed"
+            : "explicit-source";
         } else {
           delete movie.watchedAt;
           delete movie.watchedAtSource;
-          movie.watchDateConfidence = "pre-streak-unverified";
+          delete movie.watchDateConfidence;
         }
       } else {
         delete movie.watchedAt;
