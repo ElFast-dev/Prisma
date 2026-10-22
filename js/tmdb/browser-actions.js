@@ -1,4 +1,47 @@
 export function createTMDBBrowserActions(ctx) {
+  const requestedCandidateDetails = new Set();
+
+  async function enrichRecommendationCandidates(candidates) {
+    if (!ctx.tmdbCredential || !ctx.tmdbCredential.value) return;
+    const eligible = (candidates || []).filter(function (movie) {
+      const id = String(movie && (movie.tmdbId || movie.id) || "");
+      return id && !(movie.cast && movie.cast.length) && !requestedCandidateDetails.has(id);
+    }).slice(0, 6);
+    eligible.forEach(function (movie) { requestedCandidateDetails.add(String(movie.tmdbId || movie.id)); });
+    let cursor = 0;
+    let changed = false;
+
+    async function worker() {
+      while (cursor < eligible.length) {
+        const movie = eligible[cursor++];
+        const id = String(movie.tmdbId || movie.id);
+        try {
+          const details = await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), {
+            language: "es-ES",
+            append_to_response: "credits,keywords"
+          });
+          const enriched = ctx.fromTMDB(details);
+          if (!enriched || !enriched.title) continue;
+          const mergeById = function (list) {
+            return (list || []).map(function (entry) {
+              const entryId = String(entry && (entry.tmdbId || entry.id) || "");
+              return entryId === id ? Object.assign({}, entry, enriched, { source: entry.source || "tmdb" }) : entry;
+            });
+          };
+          ctx.recommendationCandidates = mergeById(ctx.recommendationCandidates);
+          ctx.tmdbResults = mergeById(ctx.tmdbResults);
+          changed = true;
+        } catch (_) {
+          requestedCandidateDetails.delete(id);
+          // Retain the basic popular result if TMDB cannot supply its detailed metadata.
+        }
+      }
+    }
+
+    await Promise.all(Array.from({ length: Math.min(2, eligible.length) }, worker));
+    if (changed && ctx.currentPage === "catalog") ctx.renderApp();
+  }
+
   async function loadTMDBPage(page, mode, append) {
     if (!ctx.tmdbCredential || !ctx.tmdbCredential.value) {
       ctx.renderTMDBResults();
@@ -26,6 +69,9 @@ export function createTMDBBrowserActions(ctx) {
       if (safeMode === "popular") {
         const previousCandidates = append ? (ctx.recommendationCandidates || []) : [];
         ctx.recommendationCandidates = ctx.uniqueDiscoveryMovies(previousCandidates.concat(mapped));
+        // Enrich at most six new candidates per page with two concurrent requests.
+        // Results stay in memory until an explicit user action stores a movie.
+        void enrichRecommendationCandidates(mapped);
       }
       ctx.tmdbPage = Number(data.page) || page;
       ctx.tmdbTotalPages = Math.min(Number(data.total_pages) || 1, 500);
@@ -50,7 +96,7 @@ export function createTMDBBrowserActions(ctx) {
     const cacheFresh = fetchedAt && Date.now() - fetchedAt < 1000 * 60 * 60 * 24 * 30;
     if (cacheFresh && movie.tags && movie.tags.length) return;
     try {
-      const details = await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "keywords" });
+      const details = await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "credits,keywords" });
       const enriched = ctx.fromTMDB(details);
       if (ctx.modalDraft && ctx.titleKey(ctx.modalDraft.movie.title) === ctx.titleKey(movie.title)) {
         ctx.modalDraft.movie = Object.assign({}, ctx.modalDraft.movie, enriched, { key: ctx.titleKey(enriched.title) });
