@@ -255,6 +255,20 @@ jobs:
                 await page.locator(".topbar [data-nav='lab']").click();
                 await page.locator(".recommendation-diagnostic-panel").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".ridge-experiment-panel").waitFor({ state: "visible", timeout: 10000 });
+                await page.locator(".temporal-ridge-panel").waitFor({ state: "visible", timeout: 10000 });
+                const dateProxyToggle = page.locator('[data-action="toggle-temporal-added-date-proxy"]');
+                if (await dateProxyToggle.getAttribute("aria-pressed") !== "false") {
+                  throw new Error(name + ": the exploratory collection-date proxy must be off by default");
+                }
+                await dateProxyToggle.click();
+                if (await page.locator('[data-action="toggle-temporal-added-date-proxy"]').getAttribute("aria-pressed") !== "true" ||
+                    !(await page.locator(".temporal-ridge-panel").innerText()).includes("no confirma el día real del visionado")) {
+                  throw new Error(name + ": activating the collection-date proxy must label it as exploratory/unverified");
+                }
+                await page.locator('[data-action="toggle-temporal-added-date-proxy"]').click();
+                if (await page.locator('[data-action="toggle-temporal-added-date-proxy"]').getAttribute("aria-pressed") !== "false") {
+                  throw new Error(name + ": the collection-date proxy toggle must turn off again");
+                }
                 await page.locator('[data-action="run-ridge-experiment"]').click();
                 await page.waitForFunction(() => (document.querySelector(".ridge-experiment-panel")?.innerText || "").includes("Se necesitan al menos 30 películas únicas"), null, { timeout: 10000 });
                 await page.evaluate(() => {
