@@ -14,7 +14,9 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  # Invalid or cancelled screenshot workflow_run events can still start this workflow,
+  # but their skipped jobs must never cancel an approved deployment already in progress.
+  cancel-in-progress: false
 
 jobs:
   deploy:
