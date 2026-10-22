@@ -1,3 +1,4 @@
+import { findMovieRecordMatch } from "../core/movie-utils.js";
 import { resolveExplicitWatchedAt } from "./presentation-utils.js?v=core-20261022-4";
 import { groupPersonFilmography } from "./person-filmography.js?v=core-20261022-1";
 
@@ -48,19 +49,19 @@ export function createModalViews(ctx) {
       return;
     }
     const current = ctx.movieDetail ? ctx.movieDetail.movie : null;
-    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal utility-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><div class="eyebrow">TU COLECCIÓN</div><h2 id="sheetTitle">Gestionar listas</h2><p>' + ctx.escapeHTML(current ? current.title : "") + '</p></div><button class="modal-close" type="button" data-action="close-sheet" aria-label="Cerrar">✕</button></div><div class="manage-list-actions"><button class="manage-list-action" type="button" data-action="manage-history"><span>✓</span><strong>' + (current && ctx.isInHistory(current.title) ? "Ya está en tu historial" : "Añadir al historial") + '</strong><small>Marcar como vista sin necesidad de poner una nota.</small></button><button class="manage-list-action" type="button" data-action="manage-pending"><span>＋</span><strong>' + (current && ctx.isInWatchlist(current.title) ? "Quitar de pendientes" : "Añadir a pendientes") + '</strong><small>Guardar para verla más adelante.</small></button><button class="manage-list-action" type="button" data-action="manage-hidden"><span>◌</span><strong>' + (current && ctx.isHidden(current.title) ? "Mostrar en Prisma" : "Ocultar película") + '</strong><small>Controla si aparece en Descubrir y en tus listas visibles.</small></button></div></section></div>';
+    root.innerHTML = '<div class="modal-backdrop" data-action="backdrop-close"><section class="modal utility-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" data-modal-panel><div class="sheet-handle"></div><div class="sheet-heading"><div><div class="eyebrow">TU COLECCIÓN</div><h2 id="sheetTitle">Gestionar listas</h2><p>' + ctx.escapeHTML(current ? current.title : "") + '</p></div><button class="modal-close" type="button" data-action="close-sheet" aria-label="Cerrar">✕</button></div><div class="manage-list-actions"><button class="manage-list-action" type="button" data-action="manage-history"><span>✓</span><strong>' + (current && ctx.isInHistory(current.title,current.tmdbId,current.year) ? "Ya está en tu historial" : "Añadir al historial") + '</strong><small>Marcar como vista sin necesidad de poner una nota.</small></button><button class="manage-list-action" type="button" data-action="manage-pending"><span>＋</span><strong>' + (current && ctx.isInWatchlist(current.title,current.tmdbId,current.year) ? "Quitar de pendientes" : "Añadir a pendientes") + '</strong><small>Guardar para verla más adelante.</small></button><button class="manage-list-action" type="button" data-action="manage-hidden"><span>◌</span><strong>' + (current && ctx.isHidden(current.title,current.tmdbId,current.year) ? "Mostrar en Prisma" : "Ocultar película") + '</strong><small>Controla si aparece en Descubrir y en tus listas visibles.</small></button></div></section></div>';
   }
 
   function renderMovieDetails() {
     const root = ctx.$("#modalRoot");
     if (!root || !ctx.movieDetail) return;
     const movie = ctx.movieDetail.movie, data = ctx.movieDetail.data, rating = ctx.ratingFor(movie.title,movie.tmdbId,movie.year);
-    const seen = ctx.isInHistory(movie.title,movie.tmdbId), pending = ctx.isInWatchlist(movie.title,movie.tmdbId), hidden = ctx.isHidden(movie.title,movie.tmdbId);
+    const seen = ctx.isInHistory(movie.title,movie.tmdbId,movie.year), pending = ctx.isInWatchlist(movie.title,movie.tmdbId,movie.year), hidden = ctx.isHidden(movie.title,movie.tmdbId,movie.year);
     const backdrop = movie.backdropUrl || movie.posterUrl || "";
     const genreChips = (movie.genres || []).slice(0,6).map(function (genre) { return '<span class="detail-chip">' + ctx.escapeHTML(ctx.displayGenre(genre)) + '</span>'; }).join("");
     const countryLine = (movie.productionCountries || []).slice(0,3).join(" · ");
     const release = movie.releaseDate ? ctx.dateLabel(movie.releaseDate) : (movie.year || "Estreno no disponible");
-    const watchedRecord = (ctx.state.watched || []).find(function (entry) { return ctx.sameMovieRecord(entry,movie); }) || null;
+    const watchedRecord = findMovieRecordMatch(movie,ctx.state.watched || []);
     const markedAt = resolveExplicitWatchedAt(watchedRecord, rating);
     const stateButton = seen ?
       '<button class="btn btn-primary detail-state-button" type="button" data-action="manage-history"><span aria-hidden="true">▣</span> Añadido al historial <small>' + ctx.escapeHTML(markedAt ? ctx.formatWatchedDate(markedAt) : "Fecha no registrada") + '</small></button>' :
@@ -96,10 +97,10 @@ export function createModalViews(ctx) {
     const collection = data && movie.collection ? movie.collection : null;
     const collectionMarkup = collection ? '<a class="saga-card" href="https://www.themoviedb.org/collection/' + encodeURIComponent(collection.id) + '" target="_blank" rel="noopener noreferrer"><span class="saga-art">' + (collection.poster_path ? '<img src="https://image.tmdb.org/t/p/w185' + ctx.escapeHTML(collection.poster_path) + '" alt="" loading="lazy">' : "▣") + '</span><span><small>PERTENECE A LA COLECCIÓN</small><strong>' + ctx.escapeHTML(collection.name) + '</strong></span><span aria-hidden="true">↗</span></a>' : "";
     const recs = data && data.recommendations ? ctx.uniqueDiscoveryMovies(data.recommendations).filter(function (item) {
-      return !ctx.isMovieInCollection(item.title,item.tmdbId);
+      return !ctx.isMovieInCollection(item.title,item.tmdbId,item.year);
     }).slice(0,12) : [];
     const similarMarkup = recs.length ? '<div class="similar-carousel">' + recs.map(function (item) {
-      const marker = ctx.isInHistory(item.title,item.tmdbId) ? "seen" : (ctx.isInWatchlist(item.title,item.tmdbId) ? "pending" : "");
+      const marker = ctx.isInHistory(item.title,item.tmdbId,item.year) ? "seen" : (ctx.isInWatchlist(item.title,item.tmdbId,item.year) ? "pending" : "");
       return '<button class="similar-poster" type="button" data-action="details" data-title="' + ctx.escapeHTML(item.title) + '" data-tmdb-id="' + ctx.escapeHTML(item.tmdbId || "") + '" data-year="' + ctx.escapeHTML(item.year || "") + '">' + (item.posterUrl ? '<img src="' + ctx.escapeHTML(item.posterUrl) + '" alt="" loading="lazy">' : '<span class="poster-fallback">▣</span>') + (marker ? '<i class="collection-marker ' + marker + '"></i>' : "") + '<strong>' + ctx.escapeHTML(item.title) + '</strong></button>';
     }).join("") + '</div>' : "";
     const videos = data && data.videos ? data.videos : [];
@@ -133,8 +134,8 @@ export function createModalViews(ctx) {
       : [];
     const filmographyGroups = groupPersonFilmography(creditsSource, {
       filterToCollection: ctx.personListFilter === "collection",
-      isMovieInCollection: function (title, tmdbId) {
-        return ctx.isMovieInCollection(title, tmdbId);
+      isMovieInCollection: function (title, tmdbId, year) {
+        return ctx.isMovieInCollection(title, tmdbId, year);
       }
     });
     const creditCount = filmographyGroups.reduce(function (total, group) {
@@ -147,11 +148,11 @@ export function createModalViews(ctx) {
       const rows = group.items.map(function (item) {
         const movie = ctx.fromTMDB(item);
         const role = item.character || item.job || "";
-        const marker = ctx.isMovieInCollection(movie.title, movie.tmdbId)
+        const marker = ctx.isMovieInCollection(movie.title, movie.tmdbId, movie.year)
           ? '<span class="collection-marker ' +
-            (ctx.isInHistory(movie.title, movie.tmdbId)
+            (ctx.isInHistory(movie.title, movie.tmdbId, movie.year)
               ? "seen"
-              : (ctx.isInWatchlist(movie.title, movie.tmdbId) ? "pending" : "hidden")) +
+              : (ctx.isInWatchlist(movie.title, movie.tmdbId, movie.year) ? "pending" : "hidden")) +
             '"></span>'
           : "";
         return '<button class="person-film-row" type="button" data-action="movie-from-person" data-title="' +
