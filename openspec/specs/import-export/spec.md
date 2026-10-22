@@ -67,3 +67,9 @@ Prisma DEBE detectar el formato Android v2 del historial personal y distinguir l
 - CUANDO se vuelve a importar esa exportación y la entrada recibe `watchDateConfidence=streak-confirmed`
 - ENTONCES prevalece la marca temporal del archivo de origen, se conserva su instante UTC, la interfaz calcula el día calendario en `America/Panama` y la película no se duplica
 - Y las entradas `pre-streak-unverified` siguen sin sobrescribir las fechas confirmadas manualmente
+
+#### Scenario: No confundir la fecha de valoración con la fecha de visionado
+
+- DADO un registro que contiene una fecha de valoración (`rA` o `updatedAt`) distinta de la fecha explícita del visionado
+- CUANDO Prisma muestra la fecha dentro de la ficha o el historial
+- ENTONCES usa solo `watchedAt` explícito convertido al día local de Panamá y no sustituye una fecha ausente por la valoración o la incorporación
