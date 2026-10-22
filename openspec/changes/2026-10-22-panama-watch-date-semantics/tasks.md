@@ -6,7 +6,7 @@
 - [x] DP4. Adaptar las vistas de historial/detalle para no mostrar una fecha retrospectiva como fecha de visionado.
 - [x] DP5. Actualizar diagnóstico agregado a v10, documentación y versionado del shell PWA.
 - [x] DP6. Añadir regresiones sintéticas de zona horaria, importación, racha, reimportación y privacidad.
-- [ ] DP9. Verificar con pruebas la precedencia del timestamp fiable frente a una fecha local obsoleta y los días consecutivos cerca de medianoche UTC.
+- [x] DP9. Verificar con pruebas la precedencia del timestamp fiable frente a una fecha local obsoleta y los días consecutivos cerca de medianoche UTC.
 - [ ] DP7. Ejecutar calidad/SDD/Playwright, fusionar la implementación y verificar el despliegue.
 - [ ] DP8. Archivar el cambio SDD con evidencia de la integración y los resultados CI.
 
@@ -15,4 +15,5 @@
 
 - SDD/calidad y pruebas de regresión: [run 39736710445](https://github.com/ElFast-dev/Prisma/actions/runs/39736710445), commit de código `1c09e75101b27f572a355accce949b0bb4be3c23`.
 - Playwright de escritorio y móvil: [run 39736710348](https://github.com/ElFast-dev/Prisma/actions/runs/39736710348), mismo commit.
+- Regresión de fechas fiables y reconciliación local: [SDD/calidad run 39744437708](https://github.com/ElFast-dev/Prisma/actions/runs/39744437708) — correcto.
 - Integración y despliegue siguen pendientes en [PR #70](https://github.com/ElFast-dev/Prisma/pull/70); por eso DP7 y DP8 no se marcan como completadas.
