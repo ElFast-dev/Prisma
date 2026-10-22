@@ -164,18 +164,37 @@ function mergeDiscoveryRecord(existing, incoming) {
 }
 
 export function uniqueDiscoveryMovies(movies) {
+  // First collapse only identities that are already exact. Reconciliation is
+  // a second pass so a title-only row cannot be attached to whichever remake
+  // happened to appear first in the input list.
   const unique = [];
   (movies || []).forEach(function (movie) {
     if (!movie || !titleKey(movie.title)) return;
-    const matched = findMovieRecordMatch(movie, unique);
-    if (!matched) {
-      unique.push(movie);
-      return;
-    }
-    const index = unique.indexOf(matched);
-    if (index >= 0) unique[index] = mergeDiscoveryRecord(matched, movie);
+    const exactIndex = unique.findIndex(function (existing) {
+      return sameMovieRecord(existing,movie);
+    });
+    if (exactIndex < 0) unique.push(movie);
+    else unique[exactIndex] = mergeDiscoveryRecord(unique[exactIndex],movie);
   });
-  return unique;
+
+  const removed = new Set();
+  unique.forEach(function (movie) {
+    if (removed.has(movie) || movieTmdbId(movie)) return;
+    const otherRecords = unique.filter(function (candidate) {
+      return candidate !== movie && !removed.has(candidate);
+    });
+    const matched = findMovieRecordMatch(movie,otherRecords);
+    if (!matched || removed.has(matched)) return;
+    // Only merge a title-only row into a TMDB identity; two separate local
+    // records should not be coalesced by this discovery-only enrichment pass.
+    if (!movieTmdbId(matched)) return;
+    const index = unique.indexOf(matched);
+    if (index < 0) return;
+    unique[index] = mergeDiscoveryRecord(matched,movie);
+    removed.add(movie);
+  });
+
+  return unique.filter(function (movie) { return !removed.has(movie); });
 }
 
 export function splitList(value) {
