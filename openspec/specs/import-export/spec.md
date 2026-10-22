@@ -43,3 +43,20 @@ La copia de seguridad DEBE excluir la credencial de TMDB para no propagar secret
 - DADO que hay una credencial de TMDB guardada en el navegador
 - CUANDO se exporta una copia de seguridad
 - ENTONCES la credencial no aparece en el archivo exportado
+
+
+### Requirement: Importación con procedencia del reto de visionado
+
+Prisma DEBE detectar el formato Android v2 del historial personal y distinguir las marcas de visionado verificables del reto diario de las marcas anteriores añadidas retrospectivamente. La importación DEBE mantener el campo `a` original en `addedAt`, guardar la procedencia del visionado por separado y NO DEBE modificar el archivo JSON fuente. Al reimportar, Prisma DEBE actualizar los marcadores del estado local de forma idempotente, sin duplicar películas y sin eliminar fechas confirmadas manualmente.
+
+#### Scenario: Importar el historial del reto
+
+- DADO un archivo Android v2 que contiene `Source Code` (TMDB 45612) el 15 de enero de 2026 en la fecha local de Panamá
+- CUANDO se importa el JSON
+- ENTONCES las marcas desde esa fecha se enlazan como visionados verificables, el instante UTC se conserva y `addedAt` sigue disponible por separado
+
+#### Scenario: Importar marcas anteriores al reto
+
+- DADO una película cuya marca del historial pertenece a un día anterior al 15 de enero de 2026
+- CUANDO se importa el JSON reconocido
+- ENTONCES la fecha se conserva como metadato original, pero no se usa como fecha real de visionado sin confirmación manual

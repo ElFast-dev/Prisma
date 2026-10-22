@@ -676,3 +676,32 @@ Prisma DEBE permitir evaluar localmente el denominador de influencia actual fren
 - DADO que finaliza el experimento
 - CUANDO se vuelve a Descubrir o se copia el informe técnico
 - ENTONCES el modelo activo sigue usando la normalización actual y el informe incluye solo métricas agregadas, sin títulos, IDs ni predicciones individuales
+
+
+### Requirement: Semántica temporal local de los visionados
+
+Prisma DEBE conservar la marca temporal original del registro y convertirla al día calendario de `America/Panama` al mostrar la fecha de visionado o agrupar filas en una evaluación temporal. La conversión de zona horaria NO DEBE sobrescribir ni truncar el instante almacenado. Para la exportación de reto diario reconocida, el primer día verificable es el 15 de enero de 2026, identificado por `Source Code` (TMDB 45612); las marcas anteriores de esa misma exportación DEBEN clasificarse como retrospectivas no verificadas y NO DEBEN alimentar la cronología, incluso cuando se active el proxy de fecha añadida. Una fecha confirmada manualmente DEBE prevalecer sobre este marcador.
+
+#### Scenario: Una marca UTC cambia de día en Panamá
+
+- DADO un visionado cuyo instante UTC es `2025-11-06T00:22:23.302Z`
+- CUANDO Prisma calcula su día de visionado
+- ENTONCES usa el 5 de noviembre de 2025 en `America/Panama` y conserva el instante UTC original
+
+#### Scenario: Racha verificada del reto personal
+
+- DADO la exportación Android v2 que contiene `Source Code` (TMDB 45612) el 15 de enero de 2026 según el día panameño
+- CUANDO Prisma importa el historial y ejecuta la evaluación temporal
+- ENTONCES considera los visionados del 15 de enero en adelante, excluye del cómputo las marcas anteriores no verificadas y agrupa varias películas de un mismo día como un día calendario
+
+#### Scenario: Proxy habilitado con marcas retrospectivas
+
+- DADO un registro previo al 15 de enero de 2026 marcado como `pre-streak-unverified`
+- CUANDO se activa el proxy experimental de fechas añadidas
+- ENTONCES el proxy no lo convierte en un día de visionado válido ni lo presenta como una fecha confirmada
+
+#### Scenario: Fecha confirmada por la persona
+
+- DADO un registro retrospectivo con una fecha de visionado posteriormente confirmada de forma manual
+- CUANDO Prisma vuelve a importar el historial
+- ENTONCES conserva la fecha confirmada manualmente sin reemplazarla por la marca retrospectiva

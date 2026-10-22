@@ -1,3 +1,5 @@
+import { formatPanamaDateMDY } from "../core/date-utils.js";
+
 export function createPresentationUtils(dependencies) {
   const escapeHTML = dependencies.escapeHTML;
 
@@ -47,12 +49,7 @@ export function createPresentationUtils(dependencies) {
   }
 
   function formatWatchedDate(value) {
-    if (!value) return "Fecha desconocida";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "Fecha desconocida";
-    const month = String(date.getMonth() + 1).padStart(2,"0");
-    const day = String(date.getDate()).padStart(2,"0");
-    return month + "/" + day + "/" + date.getFullYear();
+    return formatPanamaDateMDY(value) || "Fecha desconocida";
   }
 
   function displayMovieStatus(status) {

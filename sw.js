@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v85"
+const CACHE_NAME = "prisma-shell-v86"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -14,24 +14,25 @@ const APP_ASSETS = [
   "./styles/movie-details.css?v=ui-20261021-24",
   "./styles/prisma-design-system.css?v=ui-20261021-24",
 
-  "./app.js?v=ui-20261021-75",
+  "./app.js?v=ui-20261022-76",
   "./js/tmdb/client.js",
   "./js/core/movie-utils.js",
+  "./js/core/date-utils.js",
   "./js/core/storage.js?v=core-20261020-1",
   "./js/core/storage-protection.js",
   "./js/core/state-model.js",
   "./js/recommendations/features.js",
   "./js/recommendations/engine.js",
-  "./js/recommendations/ridge-evaluation.js?v=core-20261021-8",
+  "./js/recommendations/ridge-evaluation.js?v=core-20261022-9",
   "./js/recommendations/repeated-validation-summary.js?v=core-20261021-1",
   "./js/recommendations/evaluation.js",
   "./js/recommendations/normalization-evaluation.js",
-  "./js/diagnostics/recommendation-report.js?v=core-20261021-7",
+  "./js/diagnostics/recommendation-report.js?v=core-20261022-1",
   "./js/catalog/csv-parser.js",
   "./js/catalog/catalog-model.js?v=core-20261021-1",
-  "./js/collection/collection-model.js?v=core-20261020-1",
-  "./js/ui/presentation-utils.js?v=core-20261020-1",
-  "./js/ui/page-views.js?v=core-20261021-16",
+  "./js/collection/collection-model.js?v=core-20261022-2",
+  "./js/ui/presentation-utils.js?v=core-20261022-1",
+  "./js/ui/page-views.js?v=core-20261022-17",
   "./js/ui/theme-controller.js?v=theme-20261020-1",
   "./js/ui/modal-views.js?v=core-20261021-3",
   "./js/app/movie-actions.js?v=core-20261021-1",
@@ -48,7 +49,7 @@ const APP_ASSETS = [
   "./js/app/runtime.js?v=core-20261020-1",
   "./js/app/lifecycle.js?v=core-20261021-2",
   "./js/app/pwa-update.js?v=core-20261021-1",
-  "./js/import-export/personal-data.js?v=core-20261021-2",
+  "./js/import-export/personal-data.js?v=core-20261022-3",
   "./manifest.webmanifest?v=ui-20261020-15",
   "./assets/prisma.svg?v=brand-20261020-2"
 ];

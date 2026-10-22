@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v9";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v10";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -318,6 +318,7 @@ function temporalRidgeEvaluation(source) {
       (evaluation && evaluation.dateProvenanceStatus === "exploratory" ? "exploratory" : "unavailable"),
     dateSourceMode: evaluation && evaluation.dateSourceMode === "collection-added-proxy" ? "collection-added-proxy" :
       (evaluation && evaluation.dateSourceMode === "watchedAt-only" ? "watchedAt-only" : "not-selected"),
+    temporalTimezone: evaluation && evaluation.temporalTimezone === "America/Panama" ? "America/Panama" : "not-selected",
     missingDateCount: nonNegativeInteger(evaluation && evaluation.missingDateCount),
     distinctDayCount: nonNegativeInteger(evaluation && evaluation.distinctDayCount),
     warmupCount: nonNegativeInteger(evaluation && evaluation.warmupCount),

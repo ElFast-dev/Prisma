@@ -34,7 +34,12 @@ function dateScore(value) {
     });
     if (!Array.isArray(result.genres) || !result.genres.length) result.genres = known.genres || [];
     if (!Array.isArray(result.tags) || !result.tags.length) result.tags = known.tags || [];
-    result.watchedAt = result.watchedAt || latestRecordDate(stored);
+    if (stored.watchDateConfidence === "pre-streak-unverified" &&
+      stored.watchedAtSource !== "user-confirmed") {
+      delete result.watchedAt;
+    } else {
+      result.watchedAt = result.watchedAt || latestRecordDate(stored);
+    }
     return result;
   }
 
@@ -57,10 +62,18 @@ function dateScore(value) {
         if (!entry || !entry.title) return;
         const identity = movieIdentityKey(entry);
         const prior = map.get(identity) || {};
-        map.set(identity,enrichCollectionMovie(Object.assign({},prior,entry,{
-          rating:ratingValue(entry),
-          watchedAt:prior.watchedAt || latestRecordDate(entry)
-        })));
+        const combinedConfidence = entry.watchDateConfidence || prior.watchDateConfidence || "";
+        const confirmedDate = [prior, entry].some(function (record) {
+          return record && record.watchedAt && record.watchedAtSource === "user-confirmed";
+        });
+        const combined = Object.assign({},prior,entry,{ rating:ratingValue(entry) });
+        if (combinedConfidence) combined.watchDateConfidence = combinedConfidence;
+        if (combinedConfidence === "pre-streak-unverified" && !confirmedDate) {
+          delete combined.watchedAt;
+        } else {
+          combined.watchedAt = prior.watchedAt || latestRecordDate(entry);
+        }
+        map.set(identity,enrichCollectionMovie(combined));
       });
       items = Array.from(map.values()).filter(function (item) {
         return !(state.hidden || []).some(function (hidden) { return sameMovieRecord(hidden,item); });

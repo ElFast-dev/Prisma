@@ -528,8 +528,8 @@ export function createPageViews(ctx) {
       : (useCollectionAddedAtProxy ? "collection-added-proxy" : "watchedAt-only");
     const dateIsProxy = dateSourceMode === "collection-added-proxy";
     const dateSourceDescription = dateIsProxy
-      ? "Proxy exploratorio activado: se usará la fecha de incorporación a la lista de vistas solo si no hay una fecha watchedAt más fiable. Esa fecha no confirma el día real del visionado y se contará como no verificada."
-      : "Modo normal: se usarán las fechas watchedAt disponibles. El importador no convierte automáticamente a/addedAt ni rA/ratedAt en fechas de visionado.";
+      ? "Proxy exploratorio activado para importaciones sin una fecha de visionado fiable; la fecha de incorporación sigue siendo no verificada. Los días se agrupan por fecha local de Panamá (America/Panama, UTC−05:00). Las marcas anteriores al 15 de enero de 2026 de la exportación del reto no se usan como fechas reales, ni siquiera con el proxy."
+      : "Modo normal: watchedAt se convierte al día local de Panamá (America/Panama, UTC−05:00). En la exportación del reto, solo se consideran fiables los visionados desde el 15 de enero de 2026; las marcas anteriores, añadidas retrospectivamente, no se tratan como fechas reales.";
     const dateProxyControl = '<div class="temporal-date-proxy-control">' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="toggle-temporal-added-date-proxy" aria-pressed="' +
       (useCollectionAddedAtProxy ? "true" : "false") + '"' +
