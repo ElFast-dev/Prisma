@@ -13,7 +13,7 @@ import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261021-1";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261020-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261020-1";
-import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-15";
+import { createPageViews } from "./js/ui/page-views.js?v=core-20261021-16";
 import { createModalViews } from "./js/ui/modal-views.js?v=core-20261021-3";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261021-1";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261020-1";
