@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { sameDiscoveryMovie, uniqueDiscoveryMovies } from '../js/core/movie-utils.js';
 import { createPresentationUtils } from '../js/ui/presentation-utils.js';
+import { groupPersonFilmography } from '../js/ui/person-filmography.js';
 
 const [source, collectionSource, pageViewsSource, tmdbViewsSource, rankingSource] = await Promise.all([readFile('app.js', 'utf8'), readFile('js/collection/collection-model.js', 'utf8'), readFile('js/ui/page-views.js', 'utf8'), readFile('js/ui/tmdb-views.js', 'utf8'), readFile('js/recommendations/ranking.js', 'utf8')]);
 
@@ -30,6 +31,30 @@ assert.equal(formatWatchedDate('not-a-date'), 'Fecha desconocida');
 assert.ok(!formatWatchedDate('2024-09-17T15:45:39.000Z').includes(':'));
 assert.equal(presentation.formatDate('not-a-date'), 'fecha no disponible');
 assert.equal(presentation.dateLabel('not-a-date'), 'not-a-date');
+assert.match(presentation.dateLabel('2026-10-22'), /22 de octubre de 2026/,
+  'Una fecha de estreno YYYY-MM-DD debe conservar su día de calendario.');
+assert.match(presentation.dateLabel('2026-10-22T02:00:00.000Z'), /21 de octubre de 2026/,
+  'Un timestamp próximo a medianoche debe presentarse en el día de Panamá.');
+
+const syntheticCredits = [
+  { id: 10, title: 'Sin estreno anunciado', release_date: '' },
+  { id: 11, title: 'Clásica', release_date: '1999-04-10' },
+  { id: 12, title: 'Reciente', release_date: '2025-02-01' },
+  { id: 13, title: 'Otra reciente', release_date: '2025-09-10' },
+  { id: 13, title: 'Duplicado de otro rol', release_date: '2025-09-10' },
+  { id: 14, title: 'Remake con identidad propia', release_date: '2025-01-01' }
+];
+const groupedFilmography = groupPersonFilmography(syntheticCredits);
+assert.deepEqual(groupedFilmography.map(group => group.label), ['En producción', '2025', '1999'],
+  'La filmografía agrupa por año descendente y coloca primero las fechas no anunciadas.');
+assert.deepEqual(groupedFilmography[1].items.map(item => String(item.id)), ['13', '12', '14'],
+  'Se deduplica por identidad TMDB y los créditos del año se ordenan por estreno.');
+const collectedFilmography = groupPersonFilmography(syntheticCredits, {
+  filterToCollection: true,
+  isMovieInCollection: (_title, tmdbId) => ['10', '14'].includes(tmdbId)
+});
+assert.deepEqual(collectedFilmography.flatMap(group => group.items).map(item => String(item.id)), ['10', '14'],
+  'El filtro Colección compara el ID TMDB en vez de aceptar cualquier título homónimo.');
 
 assert.ok(pageViewsSource.includes('return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
   'El catálogo de Descubrir debe ocultar películas vistas');
@@ -64,6 +89,10 @@ assert.match(modalViewsSource, /var\(--bg-elevated\) 100%\),url/,
   'El fondo del encabezado debe terminar en la superficie activa del tema');
 assert.doesNotMatch(modalViewsSource, /35%,#08101b 100%/,
   'La ficha no debe forzar un color terminal azul fijo');
+assert.match(modalViewsSource, /groupPersonFilmography/,
+  'La ficha de persona debe reutilizar el agrupador de filmografía.');
+assert.match(modalViewsSource, /person-filmography-group/,
+  'Los grupos de filmografía deben incluir un encabezado por año.');
 assert.match(interfaceSpec, /Ficha de película con jerarquía y lectura cómoda/,
   'La mejora visual debe estar recogida en la especificación vigente');
 console.log('Ficha de película verificada: cuadrícula adaptable, sinopsis legible, objetivos táctiles, tema y scroll preservado.');
