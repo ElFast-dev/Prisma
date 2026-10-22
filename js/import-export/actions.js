@@ -70,27 +70,11 @@ export function createImportExportActions(ctx) {
 
   async function importCatalogCSV(file) {
     const parsed = ctx.parseCatalogCSV(await file.text());
-    const catalogRows = (ctx.customCatalog || []).slice();
-    parsed.forEach(function (movie) {
-      const old = findMovieRecordMatch(movie,catalogRows);
-      if (!old) {
-        catalogRows.push(movie);
-        return;
-      }
-      const index = catalogRows.indexOf(old);
-      if (index < 0) return;
-      catalogRows[index] = {
-        id: old.id || movie.id,
-        tmdbId: ctx.movieTmdbId(old) || ctx.movieTmdbId(movie) || null,
-        title: old.title,
-        year: old.year || movie.year,
-        genres: ctx.uniqueStrings((old.genres || []).concat(movie.genres || [])),
-        tags: ctx.uniqueStrings((old.tags || []).concat(movie.tags || [])),
-        overview: old.overview || movie.overview,
-        source: "csv"
-      };
+    // Reconcile the complete source set at once so an incomplete title cannot
+    // be assigned to the first same-title remake encountered in the CSV.
+    ctx.customCatalog = ctx.mergeMovieListByTitle(ctx.customCatalog || [],parsed).map(function (movie) {
+      return Object.assign({},movie,{source:"csv"});
     });
-    ctx.customCatalog = catalogRows;
     await ctx.dbSet(ctx.CATALOG_KEY, ctx.customCatalog);
     ctx.logEvent("Catálogo ampliado", parsed.length.toLocaleString("es-PA") + " títulos leídos de " + file.name, "▦");
     ctx.combineMovies();
