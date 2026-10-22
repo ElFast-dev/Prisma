@@ -54,7 +54,7 @@ export function createTMDBHistorySync(ctx) {
     const id = historyTMDBId(entry);
     if (id) {
       try {
-        return await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "keywords" });
+        return await ctx.tmdbRequest("/movie/" + encodeURIComponent(id), { language: "es-ES", append_to_response: "credits,keywords" });
       } catch (error) {
         // Si el ID guardado ya no existe, busca el título por nombre y año.
       }
@@ -76,7 +76,7 @@ export function createTMDBHistorySync(ctx) {
     }
     if (!selected && candidates.length === 1) selected = candidates[0];
     if (!selected) return null;
-    return await ctx.tmdbRequest("/movie/" + encodeURIComponent(selected.id), { language: "es-ES", append_to_response: "keywords" });
+    return await ctx.tmdbRequest("/movie/" + encodeURIComponent(selected.id), { language: "es-ES", append_to_response: "credits,keywords" });
   }
 
   function applyTMDBDetailsToRating(entry, enriched) {
@@ -94,7 +94,11 @@ export function createTMDBHistorySync(ctx) {
     entry.backdropUrl = enriched.backdropUrl || entry.backdropUrl || "";
     entry.tagline = enriched.tagline || entry.tagline || "";
     entry.status = enriched.status || entry.status || "";
-    entry.productionCountries = (enriched.productionCountries && enriched.productionCountries.length) ? enriched.productionCountries : (entry.productionCountries || []);
+    ["productionCountries","productionCompanies","spokenLanguages","cast","directors","writers","composers"].forEach(function (field) {
+      entry[field] = ctx.uniqueStrings((enriched[field] || []).concat(entry[field] || []));
+    });
+    entry.originalLanguage = enriched.originalLanguage || entry.originalLanguage || "";
+    entry.collectionName = enriched.collectionName || entry.collectionName || "";
     entry.imdbId = enriched.imdbId || entry.imdbId || "";
     entry.tmdbFetchedAt = enriched.tmdbFetchedAt || new Date().toISOString();
     entry.metadataSource = "tmdb";
