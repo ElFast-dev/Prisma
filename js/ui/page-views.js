@@ -526,7 +526,8 @@ export function createPageViews(ctx) {
     const dateSourceMode = result && result.dateSourceMode
       ? result.dateSourceMode
       : (useCollectionAddedAtProxy ? "collection-added-proxy" : "watchedAt-only");
-    const dateSourceDescription = dateSourceMode === "collection-added-proxy"
+    const dateIsProxy = dateSourceMode === "collection-added-proxy";
+    const dateSourceDescription = dateIsProxy
       ? "Proxy exploratorio activado: se usará la fecha de incorporación a la lista de vistas solo si no hay una fecha watchedAt más fiable. Esa fecha no confirma el día real del visionado y se contará como no verificada."
       : "Modo normal: se usarán las fechas watchedAt disponibles. El importador no convierte automáticamente a/addedAt ni rA/ratedAt en fechas de visionado.";
     const dateProxyControl = '<div class="temporal-date-proxy-control">' +
@@ -540,11 +541,13 @@ export function createPageViews(ctx) {
     let body = "";
     if (busy) {
       body = '<p class="metric-note" aria-live="polite">Evaluación temporal en curso: ' + completedWindows + ' de ' +
-        totalWindows + ' ventanas futuras completadas. Cada ventana se entrena con días anteriores y selecciona alpha con validación walk-forward interna.</p>';
+        totalWindows + (dateIsProxy ? ' ventanas por fecha de incorporación completadas. Esta es una comparación exploratoria, no una cronología confirmada de visionados.' : ' ventanas futuras completadas. Cada ventana se entrena con días anteriores y selecciona alpha con validación walk-forward interna.') + '</p>';
     } else if (ridgeBusy) {
       body = '<p class="metric-note" aria-live="polite">El experimento temporal se ejecutará cuando termine la validación Ridge estándar.</p>';
     } else if (!result) {
-      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha utilizable, repartidas en 12 días distintos. Usa watchedAt/watched_at por defecto. Si tu JSON solo contiene la fecha de incorporación a la lista, puedes activar el proxy anterior para hacer una comparación exploratoria.</p>';
+      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha utilizable, repartidas en 12 días distintos. ' +
+        (dateIsProxy ? 'El modo elegido ordena por fecha de incorporación a la lista y siempre produce resultados exploratorios; no representa necesariamente el orden real de visionado.' : 'Usa watchedAt/watched_at por defecto. Si tu JSON solo contiene la fecha de incorporación a la lista, puedes activar el proxy anterior para hacer una comparación exploratoria.') +
+        '</p>';
     } else if (!result.available) {
       body = '<p class="metric-note" aria-live="polite">Evaluación temporal no disponible: ' +
         ctx.escapeHTML(result.unavailableReason || "faltan suficientes valoraciones fechadas.") + '</p>' +
@@ -574,7 +577,7 @@ export function createPageViews(ctx) {
       }).join("");
       const windowsMarkup = (result.windowSummaries || []).map(function (window) {
         const windowDelta = Number(window.deltaBaseMinusRidge);
-        return '<p class="metric-note"><strong>Ventana futura ' + Number(window.window || 0) + ':</strong> entrenamiento n=' +
+        return '<p class="metric-note"><strong>' + (dateIsProxy ? 'Ventana por incorporación ' : 'Ventana futura ') + Number(window.window || 0) + ':</strong> entrenamiento n=' +
           Number(window.trainingCount || 0) + ' · prueba n=' + Number(window.testCount || 0) +
           ' · alpha ' + Number(window.selectedAlpha || 0) +
           ' · MAE Ridge ' + Number(window.mae).toFixed(4).replace(".", ",") +
@@ -582,13 +585,13 @@ export function createPageViews(ctx) {
           ' · base − Ridge ' + (windowDelta > 0 ? "+" : "") + windowDelta.toFixed(4).replace(".", ",") + '.</p>';
       }).join("");
       body = '<div class="metrics-grid">' +
-        ctx.metric("MAE Ridge temporal", Number(result.mae).toFixed(4).replace(".", ","), Number(result.testCount || 0) + " valoraciones futuras") +
-        ctx.metric("MAE aditivo", Number(result.baselineMae).toFixed(4).replace(".", ","), "Mismas valoraciones futuras") +
+        ctx.metric("MAE Ridge temporal", Number(result.mae).toFixed(4).replace(".", ","), Number(result.testCount || 0) + (dateIsProxy ? " valoraciones posteriores por incorporación" : " valoraciones futuras")) +
+        ctx.metric("MAE aditivo", Number(result.baselineMae).toFixed(4).replace(".", ","), dateIsProxy ? "Mismas valoraciones ordenadas por incorporación" : "Mismas valoraciones futuras") +
         ctx.metric("Base − Ridge", (delta > 0 ? "+" : "") + delta.toFixed(4).replace(".", ","), "Positivo favorece Ridge") +
         '</div>' +
         '<p class="metric-note">Muestra fechada con características: ' + Number(result.timestampedFeatureCount || 0) +
         ' · entrenamiento inicial: ' + Number(result.warmupCount || 0) +
-        ' · prueba futura: ' + Number(result.testCount || 0) +
+        (dateIsProxy ? ' · prueba ordenada por incorporación: ' : ' · prueba futura: ') + Number(result.testCount || 0) +
         ' · campo watchedAt explícito: ' + Number(result.explicitDateCount || 0) +
         ' · procedencia no verificable: ' + Number(result.unverifiedDateCount || 0) +
         ' · sin fecha: ' + Number(result.missingDateCount || 0) + '.</p>' +
@@ -604,14 +607,14 @@ export function createPageViews(ctx) {
             ', empata en ' + Number(stability.ties || 0) + ' y la base mejora en ' +
             Number(stability.baselineMaeWins || 0) + '.</p>'
           : '') +
-        '<h4>Calidad del orden futuro · nDCG@5</h4>' +
-        (modeMarkup || '<p class="metric-note">nDCG@5 no disponible con la parte futura de esta muestra: se necesitan al menos 50 pruebas y 10 notas relevantes.</p>') +
+        '<h4>' + (dateIsProxy ? 'Calidad del orden por fecha de incorporación · nDCG@5 (exploratoria)' : 'Calidad del orden futuro · nDCG@5') + '</h4>' +
+        (modeMarkup || '<p class="metric-note">nDCG@5 no disponible ' + (dateIsProxy ? 'con las valoraciones ordenadas por fecha de incorporación' : 'con la parte futura de esta muestra') + ': se necesitan al menos 50 pruebas y 10 notas relevantes.</p>') +
         '<h4>Resultados agregados por ventana</h4>' + windowsMarkup +
         '<p class="metric-note">Las ventanas son bloques temporales del mismo historial, no muestras independientes. No se muestran fechas exactas. Las recomendaciones activas siguen usando el modelo aditivo.</p>';
     }
     return '<section class="panel temporal-ridge-panel" aria-labelledby="temporal-ridge-heading">' +
       '<div class="panel-head"><div><h3 id="temporal-ridge-heading">Validación temporal · Ridge frente al modelo aditivo</h3>' +
-      '<p class="metric-note">Entrenar con el pasado; probar con visionados posteriores</p></div>' +
+      '<p class="metric-note">' + (dateIsProxy ? 'Orden temporal exploratorio por fecha de incorporación; no equivale a la fecha real de visionado' : 'Entrenar con el pasado; probar con visionados posteriores') + '</p></div>' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="run-temporal-ridge-experiment"' +
       (busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
       dateProxyControl + body +
