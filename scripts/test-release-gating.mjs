@@ -41,6 +41,8 @@ assert.match(deploy, /github\.event\.workflow_run\.conclusion\s*==\s*'success'/,
   "Un Playwright fallido debe bloquear el despliegue.");
 assert.match(deploy, /github\.event\.workflow_run\.event\s*==\s*'workflow_run'/,
   "Una ejecución manual aislada de capturas no debe disparar el deploy.");
+assert.match(deploy, /concurrency:[\s\S]*?group:\s*github-pages[\s\S]*?cancel-in-progress:\s*false/,
+  "Los eventos de capturas canceladas o fallidas no deben cancelar un deploy aprobado en curso.");
 assert.match(browser, /TESTED_SOURCE_SHA:\s*\$\{\{ github\.event_name == 'workflow_run' && github\.event\.workflow_run\.head_sha/,
   "Playwright debe escribir el SHA del commit exacto que recibió de la validación.");
 assert.match(browser, /name: prisma-published-ui-screenshots/,
