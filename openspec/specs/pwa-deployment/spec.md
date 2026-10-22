@@ -2,6 +2,22 @@
 
 ## Requirements
 
+### Requirement: Concurrencia segura de despliegues aprobados
+
+El workflow de GitHub Pages DEBE serializar los despliegues sin permitir que una ejecución omitida, fallida o cancelada de Playwright cancele una publicación aprobada que ya esté en curso. La compuerta del job DEBE continuar exigiendo que la ejecución de Playwright asociada a `main` haya concluido correctamente, que el evento original sea `workflow_run` y que el artefacto confirme el SHA exacto probado.
+
+#### Scenario: Evento antiguo o cancelado mientras se publica
+
+- DADO que un despliegue aprobado ya está publicando el SHA comprobado por Playwright
+- CUANDO termina otra ejecución de capturas que fue cancelada y su workflow de publicación queda omitido
+- ENTONCES esa ejecución no interrumpe el despliegue aprobado en curso
+
+#### Scenario: Dos despliegues válidos
+
+- DADO que dos SHA distintos pasaron calidad y Playwright
+- CUANDO sus workflows de publicación se solapan
+- ENTONCES GitHub Pages ejecuta los despliegues de forma serial y mantiene como estado final el SHA aprobado más reciente, sin cancelaciones provocadas por eventos no aprobados
+
 ### Requirement: Despliegue estático
 
 Prisma DEBE publicarse como una aplicación estática y conservar las rutas relativas que funcionan en el subdirectorio de GitHub Pages de este repositorio.
