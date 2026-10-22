@@ -88,13 +88,13 @@ export function createMovieActions(ctx) {
     ctx.toast("Tu experiencia quedó guardada en este dispositivo.");
   }
 
-  async function deleteRating(title,tmdbId) {
+  async function deleteRating(title,tmdbId,year) {
     const activeMovie = (ctx.modalDraft && ctx.modalDraft.movie) ||
       (ctx.movieDetail && ctx.movieDetail.movie) || {};
     const target = {
       title:title,
       tmdbId:tmdbId || activeMovie.tmdbId || "",
-      year:ctx.titleKey(activeMovie.title) === ctx.titleKey(title) ? activeMovie.year : null
+      year:Number(year) || (ctx.titleKey(activeMovie.title) === ctx.titleKey(title) ? activeMovie.year : null)
     };
     const match = findMovieRecordMatch(target,ctx.state.rated);
     ctx.state.rated = ctx.state.rated.filter(function (entry) {
@@ -111,21 +111,25 @@ export function createMovieActions(ctx) {
     ctx.toast("Se quitó la valoración de " + title + ".");
   }
 
-  function resolveMovieForAction(title,tmdbId) {
+  function resolveMovieForAction(title,tmdbId,year) {
     const active = ctx.movieDetail && ctx.titleKey(ctx.movieDetail.movie.title) === ctx.titleKey(title) ? ctx.movieDetail.movie : null;
     const id = String(tmdbId || (active && active.tmdbId) || "");
-    const target = {title:title,tmdbId:id};
-    return (active && (!id || ctx.movieTmdbId(active) === id) ? active : null) ||
-      ctx.findMovie(title,id) ||
+    const requestedYear = Number(year) || 0;
+    const activeYear = active ? Number(active.year) || 0 : 0;
+    const resolvedYear = requestedYear || (active && (!id || ctx.movieTmdbId(active) === id) ? activeYear : 0);
+    const target = {title:title,tmdbId:id,year:resolvedYear || null};
+    return (active && (!id || ctx.movieTmdbId(active) === id) &&
+      (!resolvedYear || !activeYear || resolvedYear === activeYear) ? active : null) ||
+      ctx.findMovie(title,id,target.year) ||
       findMovieRecordMatch(target,ctx.state.rated) ||
       findMovieRecordMatch(target,ctx.state.watchlist) ||
       findMovieRecordMatch(target,ctx.state.watched || []) ||
       findMovieRecordMatch(target,ctx.state.hidden || []) ||
-      {title:title,id:id || ctx.titleKey(title),tmdbId:id || null,genres:[],tags:[]};
+      {title:title,year:target.year,id:id || ctx.titleKey(title),tmdbId:id || null,genres:[],tags:[]};
   }
 
-  async function toggleWatchlist(title,tmdbId) {
-    const movie = resolveMovieForAction(title,tmdbId);
+  async function toggleWatchlist(title,tmdbId,year) {
+    const movie = resolveMovieForAction(title,tmdbId,year);
     const pendingMatch = findMovieRecordMatch(movie,ctx.state.watchlist);
     const remove = Boolean(pendingMatch) || ctx.isInWatchlist(movie.title,movie.tmdbId);
     if (remove) {
@@ -144,8 +148,8 @@ export function createMovieActions(ctx) {
     if (ctx.movieDetail) ctx.renderMovieDetails(); else ctx.renderApp();
   }
 
-  async function markWatched(title,tmdbId) {
-    const source = resolveMovieForAction(title,tmdbId);
+  async function markWatched(title,tmdbId,year) {
+    const source = resolveMovieForAction(title,tmdbId,year);
     const matchedPrevious = findMovieRecordMatch(source,ctx.state.watched || []);
     const index = matchedPrevious ? ctx.state.watched.indexOf(matchedPrevious) : -1;
     const previous = index >= 0 ? ctx.state.watched[index] : null;
@@ -177,8 +181,8 @@ export function createMovieActions(ctx) {
     ctx.toast("Marcada como vista.");
   }
 
-  async function toggleHidden(title,tmdbId) {
-    const movie = resolveMovieForAction(title,tmdbId);
+  async function toggleHidden(title,tmdbId,year) {
+    const movie = resolveMovieForAction(title,tmdbId,year);
     const hiddenMatch = findMovieRecordMatch(movie,ctx.state.hidden);
     const remove = Boolean(hiddenMatch) || ctx.isHidden(movie.title,movie.tmdbId);
     if (remove) {
