@@ -20,7 +20,18 @@ export function createMovieActions(ctx) {
       metadataSource:movie.metadataSource || old.metadataSource || (movie.source === "tmdb" ? "tmdb" : null),
       genres:ctx.uniqueStrings((old.genres || []).concat(movie.genres || [])),
       tags:ctx.uniqueStrings((old.tags || []).concat(movie.tags || [])),
-      emotions:ctx.modalDraft.emotions.slice(),note:String((ctx.$("#ratingNote") || {}).value || "").trim(),
+      productionCountries:ctx.uniqueStrings((old.productionCountries || []).concat(movie.productionCountries || [])),
+      productionCompanies:ctx.uniqueStrings((old.productionCompanies || []).concat(movie.productionCompanies || [])),
+      spokenLanguages:ctx.uniqueStrings((old.spokenLanguages || []).concat(movie.spokenLanguages || [])),
+      cast:ctx.uniqueStrings((old.cast || []).concat(movie.cast || [])),
+      directors:ctx.uniqueStrings((old.directors || []).concat(movie.directors || [])),
+      writers:ctx.uniqueStrings((old.writers || []).concat(movie.writers || [])),
+      composers:ctx.uniqueStrings((old.composers || []).concat(movie.composers || [])),
+      originalLanguage:movie.originalLanguage || old.originalLanguage || "",
+      collectionName:movie.collectionName || old.collectionName || "",
+      // Preserve imported legacy fields if present; the rating-only UI neither edits nor learns from them.
+      emotions:Array.isArray(old.emotions) ? old.emotions.slice() : [],
+      note:typeof old.note === "string" ? old.note : "",
       updatedAt:new Date().toISOString(),source:"manual"
     });
     if (existingIndex >= 0) ctx.state.rated[existingIndex] = newEntry;
@@ -55,7 +66,7 @@ export function createMovieActions(ctx) {
     }
     if (watchedIndex >= 0) ctx.state.watched[watchedIndex] = watchedRecord;
     else ctx.state.watched.unshift(watchedRecord);
-    ctx.logEvent("Valoración guardada: " + movie.title,"Nota " + rating + "/10" + (newEntry.emotions.length ? " · " + newEntry.emotions.length + " emociones registradas" : ""),"★");
+    ctx.logEvent("Valoración guardada: " + movie.title,"Nota " + rating + "/10","★");
     await ctx.persistState();
     const returnToDetails = ctx.ratingReturnDetail && Boolean(ctx.movieDetail);
     ctx.modalDraft = null;ctx.ratingReturnDetail = false;
