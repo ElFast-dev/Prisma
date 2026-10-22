@@ -321,6 +321,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get currentPage() { return currentPage; },
     get catalogQuery() { return catalogQuery; },
     get loadTMDBPage() { return loadTMDBPage; },
+    get enrichTMDBMovie() { return enrichTMDBMovie; },
     get tmdbResults() { return tmdbResults; },
     set tmdbResults(value) { tmdbResults = value; },
     get recommendationCandidates() { return tmdbRecommendationCandidates; },
