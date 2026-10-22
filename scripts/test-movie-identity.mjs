@@ -9,6 +9,9 @@ import { createCatalogModel } from "../js/catalog/catalog-model.js";
 import { mergeMovieListByTitle } from "../js/import-export/personal-data.js";
 import { createImportExportActions } from "../js/import-export/actions.js";
 import { createRecommendationEngine } from "../js/recommendations/engine.js";
+import { createRecommendationEvaluation } from "../js/recommendations/evaluation.js";
+import { createRecommendationNormalizationEvaluation } from "../js/recommendations/normalization-evaluation.js";
+import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
 
 assert.notEqual(
   movieIdentityKey({ title: "Prisma Identity Fixture", year: 1998 }),
@@ -239,12 +242,18 @@ assert.equal(lookupModel.ratingFor("Prisma Lookup Identity Fixture", null, 1998)
 assert.equal(lookupModel.ratingFor("Prisma Lookup Identity Fixture", null, null), null,
   "No se debe atribuir una nota a un título ambiguo sin ID ni año.");
 
+const yearLookupCalls = [];
+const yearAwareFindMovie = function (title, id, year) {
+  yearLookupCalls.push({ title, id, year });
+  return lookupModel.findMovie(title,id,year);
+};
+const syntheticFeatures = movie => movie
+  ? (movie.genres || []).map(genre => "género: " + String(genre).toLowerCase())
+  : [];
 const lookupEngine = createRecommendationEngine({
   getRatings: () => lookupRatings,
-  findMovie: lookupModel.findMovie,
-  movieFeatures: movie => movie
-    ? (movie.genres || []).map(genre => "género: " + String(genre).toLowerCase())
-    : [],
+  findMovie: yearAwareFindMovie,
+  movieFeatures: syntheticFeatures,
   ratingValue
 });
 const yearAwareProfile = lookupEngine.buildProfile();
@@ -254,5 +263,44 @@ assert.ok(yearAwareProfile.features.get("género: drama").weight < 0,
   "La nota de la película de 1998 debe aprender del género que realmente le corresponde.");
 assert.ok(yearAwareProfile.features.get("género: action").weight > 0,
   "La nota de la película de 2024 debe aprender del género que realmente le corresponde.");
+assert.ok(yearLookupCalls.some(call => call.year === 1998) && yearLookupCalls.some(call => call.year === 2024),
+  "El motor activo debe pasar el año de cada valoración a la búsqueda de metadatos.");
 
-console.log("Identidad cinematográfica correcta: ID TMDB prioritario, año en fallback, remakes conservados y asociación solo cuando es inequívoca.");
+const evaluatorDependencies = {
+  getRatings: () => lookupRatings,
+  getWatched: () => [],
+  findMovie: yearAwareFindMovie,
+  movieFeatures: syntheticFeatures,
+  ratingValue,
+  movieTmdbId,
+  titleKey,
+  buildProfile: ratings => lookupEngine.buildProfile(ratings),
+  predictRating: (movie, profile) => lookupEngine.predictRating(movie,profile),
+  getRecommendations: () => [],
+  rankCandidates: rows => rows.slice()
+};
+
+yearLookupCalls.length = 0;
+const classicEvaluation = createRecommendationEvaluation(evaluatorDependencies);
+assert.equal(classicEvaluation.evaluateRankingQuality().available, false);
+assert.ok(yearLookupCalls.some(call => call.year === 1998) && yearLookupCalls.some(call => call.year === 2024),
+  "La evaluación nDCG debe pasar el año disponible a la búsqueda de metadatos.");
+
+yearLookupCalls.length = 0;
+const normalizationEvaluation = createRecommendationNormalizationEvaluation(evaluatorDependencies);
+assert.equal(normalizationEvaluation.evaluate().available, false);
+assert.ok(yearLookupCalls.some(call => call.year === 1998) && yearLookupCalls.some(call => call.year === 2024),
+  "El experimento de normalización debe resolver por título/año.");
+
+yearLookupCalls.length = 0;
+const ridgeEvaluation = createRidgeRecommendationExperiment(evaluatorDependencies);
+assert.equal(ridgeEvaluation.evaluate().available, false);
+assert.ok(yearLookupCalls.some(call => call.year === 1998) && yearLookupCalls.some(call => call.year === 2024),
+  "El experimento Ridge debe resolver por título/año.");
+
+yearLookupCalls.length = 0;
+assert.equal(lookupEngine.evaluateModel().available, false);
+assert.ok(yearLookupCalls.some(call => call.year === 1998) && yearLookupCalls.some(call => call.year === 2024),
+  "La evaluación MAE del motor activo debe resolver por título/año.");
+
+console.log("Identidad cinematográfica correcta: ID TMDB prioritario, año en fallback, remakes conservados, aprendizaje y evaluación conscientes del año.");
