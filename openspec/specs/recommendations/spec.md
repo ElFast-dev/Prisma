@@ -545,13 +545,19 @@ Prisma DEBE ofrecer un experimento temporal, local y bajo demanda que entrene co
 
 ### Requirement: Procedencia de fechas en evaluación temporal
 
-La evaluación temporal DEBE distinguir fechas de visionado importadas explícitamente, fechas generadas al registrar una acción y timestamps antiguos sin procedencia verificable. El importador NO DEBE interpretar `raw.a` (fecha de añadido) como `watchedAt`. Si existe una fecha explícita en el historial para una identidad, esta DEBE prevalecer sobre una fecha heredada sin procedencia. Los resultados que incluyan filas sin procedencia fiable DEBEN marcarse como exploratorios y compartir solo agregados.
+La evaluación temporal DEBE distinguir fechas de visionado importadas explícitamente, fechas generadas al registrar una acción y timestamps antiguos sin procedencia verificable. Por defecto, el importador NO DEBE interpretar `raw.a` (fecha de añadido) como `watchedAt`. La excepción delimitada es la exportación Android v2 reconocida (`platform=android`, `version=2` y colección `movies.cH`): allí, `movies.cH[].a` es la marca explícita de visionado y DEBE aplicarse a todas las filas de esa colección, tanto anteriores como posteriores al intervalo de la racha. Esta excepción NO se aplica a listas pendientes/ocultas ni a otros formatos. Si existe una fecha explícita en el historial para una identidad, esta DEBE prevalecer sobre una fecha heredada sin procedencia. Los resultados que incluyan filas sin procedencia fiable DEBEN marcarse como exploratorios y compartir solo agregados.
 
-#### Scenario: Importar colección con solo fecha de añadido
+#### Scenario: Importar colección desconocida con solo fecha de añadido
 
-- DADO un registro que contiene `a` pero no `watchedAt` ni `watched_at`
+- DADO un registro que contiene `a` pero no `watchedAt` ni `watched_at`, y no pertenece a la colección `movies.cH` del Android v2 reconocido
 - CUANDO se importa el historial
 - ENTONCES Prisma conserva `a` como `addedAt` y no fabrica `watchedAt`
+
+#### Scenario: Importar la fecha explícita de cada película del historial Android v2
+
+- DADO un registro de `movies.cH` en el Android v2 reconocido con una marca `a` válida
+- CUANDO se importa la colección o se ejecuta la evaluación temporal
+- ENTONCES Prisma conserva el instante original como `watchedAt` explícito y convierte el timestamp al día de `America/Panama` al agrupar o mostrar el historial, aunque la fecha esté fuera de la racha confirmada
 
 #### Scenario: Proxy de fecha de incorporación activado de forma explícita
 
