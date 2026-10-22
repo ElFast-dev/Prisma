@@ -495,3 +495,42 @@ Cuando una exportación de historial reconocida contiene la racha personal confi
 - DADO que el historial guarda dos películas con fecha local de visionado idéntica
 - CUANDO Prisma cuenta los días de la racha
 - ENTONCES muestra un solo marcador para ese día y conserva ambas películas en la colección
+
+
+### Requirement: Filmografía agrupada por año e identidad TMDB
+
+La ficha de persona DEBE agrupar los créditos cinematográficos por año, mostrar «En producción» para los títulos sin fecha verificable y ordenar esos grupos antes de los años de más reciente a más antiguo. Los créditos duplicados para una misma identidad TMDB DEBEN aparecer una sola vez. El filtro «Colección» DEBE comprobar la identidad de la película, no solo su título.
+
+#### Scenario: Filmografía con títulos estrenados y sin fecha
+
+- DADO que los créditos de una persona incluyen títulos con fecha de estreno y títulos sin fecha
+- CUANDO se abre la filmografía
+- ENTONCES «En producción» aparece primero y los demás títulos se agrupan por año descendente.
+
+#### Scenario: Créditos repetidos de la misma película
+
+- DADO que la fuente devuelve varias entradas para un mismo ID TMDB
+- CUANDO se construye la filmografía
+- ENTONCES la película aparece una sola vez dentro de su grupo.
+
+#### Scenario: Filtro de películas guardadas con títulos homónimos
+
+- DADO que dos películas comparten título pero tienen IDs TMDB distintos y solo una está en la colección
+- CUANDO se activa «Colección»
+- ENTONCES solo aparece el registro con identidad guardada.
+
+### Requirement: Fechas de calendario independientes de la zona horaria del navegador
+
+Las fechas de estreno y otras fechas de calendario DEBEN preservar el día YYYY-MM-DD recibido, sin desplazarlo a la fecha anterior por el huso horario del dispositivo. Los timestamps DEBEN presentarse usando el día calendario de America/Panama y la interfaz NO DEBE mostrar una hora cuando solo se solicita la fecha.
+
+#### Scenario: Fecha de estreno sin hora
+
+- DADO que TMDB proporciona una fecha de estreno 2026-10-22
+- CUANDO se presenta la fecha en la interfaz
+- ENTONCES se muestra el 22 de octubre de 2026, independientemente del huso horario del navegador.
+
+#### Scenario: Timestamp cerca de medianoche UTC
+
+- DADO un timestamp 2026-10-22T02:00:00.000Z
+- CUANDO la fecha se muestra en Panamá
+- ENTONCES corresponde al 21 de octubre de 2026 y no incluye hora.
