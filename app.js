@@ -42,7 +42,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const CATALOG_KEY = "catalogCustom";
   const TMDB_CREDENTIAL_KEY = "tmdbCredential";
   const TMDB_LOGO_URL = "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg";
-  const EMOTIONS = ["Asombro", "Alegría", "Tristeza", "Tensión", "Sorpresa", "Miedo", "Esperanza", "Curiosidad", "Empatía", "Nostalgia", "Frustración", "Alivio", "Ilusión", "Inquietud"];
  
 
   let customCatalog = [];
@@ -225,7 +224,6 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get personDetail() { return personDetail; },
     get personListFilter() { return personListFilter; },
     get state() { return state; },
-    get EMOTIONS() { return EMOTIONS; },
     get COLLECTION_GENRES() { return COLLECTION_GENRES; },
     get escapeHTML() { return escapeHTML; },
     get infoButton() { return infoButton; },
