@@ -18,7 +18,7 @@ const baseInput = {
   catalogCount: 12,
   collectionCounts: { watched: 3, pending: 2, hidden: 1 },
   profile,
-  signalWeights: { genre: 1, theme: 0.35, decade: 0.2 },
+  signalWeights: { genre: 1, theme: 0.35, director: 0.45, collection: 0.4, actor: 0.28, writer: 0.3, composer: 0.18, synopsis: 0.12, company: 0.14, country: 0.12, language: 0.1, spokenLanguage: 0.08, runtime: 0.12, decade: 0.2 },
   recommendationMode: "variety",
   ratingEvaluation: {
     available: true, count: 4, mae: 1.2, baselineMae: 1.5,
@@ -163,7 +163,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v10");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v11");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
