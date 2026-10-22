@@ -16,7 +16,7 @@ Prisma es una aplicación web personal para organizar películas vistas, valorac
 1. Importación local de un historial JSON y de catálogos CSV/TSV.
 2. Colecciones separadas para valoraciones, películas vistas, pendientes y elementos ocultos.
 3. Fichas y búsqueda con metadatos de TMDB cuando la fuente está conectada, además de datos locales incorporados explícitamente por la persona.
-4. Recomendaciones basadas en señales explicables, con mayor influencia de los géneros que de etiquetas dispersas, una señal débil de década cuando existe año fiable, reducción hacia la media cuando faltan señales aprendidas y confianza acorde con la cobertura.
+4. Recomendaciones basadas exclusivamente en la nota personal y metadatos cinematográficos disponibles: géneros, palabras clave, sinopsis, reparto, dirección, guion, música, productoras, países, idiomas, franquicia, duración y década fiable. La confianza debe reflejar la cobertura; no se usan emociones ni notas libres como señales.
 5. Laboratorio con estadísticas descriptivas y evaluación experimental del recomendador: MAE frente a la media de entrenamiento, ablación de la señal de década y comparación de nDCG@5 entre Equilibrado, Más afines y Más variedad sobre las mismas candidatas retenidas. El experimento Ridge conserva la evaluación histórica de cinco pliegues y añade, bajo demanda, tres repeticiones deterministas de cinco pliegues con métricas agregadas por repetición y progreso local. El Laboratorio resume la dirección favorable y el rango observado entre repeticiones, sin atribuirles significación estadística. Incluye un experimento temporal walk-forward, bajo demanda, que entrena con visionados anteriores, prueba con visionados posteriores y excluye valoraciones sin fecha fiable. Equilibrado y Más variedad muestran además la diferencia descriptiva respecto a Más afines; la diversidad de géneros en las listas actuales se mide por separado. Permite copiar un informe técnico agregado v6 sin registros individuales ni envío automático; la validación temporal distingue timestamps importados explícitamente de fechas heredadas o generadas por acciones, que solo respaldan resultados exploratorios. Las métricas no garantizan satisfacción ni prueban significación estadística.
 6. Copia de seguridad y restauración local, con consulta del estado de almacenamiento y solicitud explícita de persistencia cuando el navegador lo admite.
 7. Instalación PWA y un modo sin conexión limitado por la caché disponible.
@@ -43,7 +43,8 @@ La lista describe el código inspeccionado como base de partida; no afirma que c
 
 - La persona usuaria puede importar, revisar, exportar y restaurar sus datos sin enviarlos al repositorio.
 - Una modificación no altera las valoraciones, notas, emociones o fechas personales fuera de su alcance declarado.
-- Toda recomendación excluye elementos ya valorados, vistos, pendientes u ocultos y muestra sus limitaciones.
+- Toda recomendación excluye elementos ya valorados, vistos, pendientes u ocultos, usa únicamente notas y metadatos cinematográficos para personalizarse y comunica sus limitaciones.
+- La primera nota aporta una señal útil sin aparentar alta confianza; la predicción inicial se suaviza hacia una referencia neutral.
 - Los cambios pasan las comprobaciones automáticas disponibles y los criterios de aceptación específicos de la funcionalidad.
 
 
@@ -56,8 +57,8 @@ La misión de Prisma es combinar en una experiencia personal de cine la organiza
 1. **Experiencia móvil y navegación.** Mantener controles fáciles de pulsar, un estado de navegación claro, formularios compactos y transiciones mínimas; respetar las preferencias de movimiento reducido.
 2. **Descubrir con personalización al principio.** Mostrar recomendaciones personalizadas antes del resto del catálogo, sin duplicados y excluyendo elementos vistos u ocultos; los resultados adicionales siguen disponibles después de las recomendaciones.
 3. **Ficha completa, jerarquizada.** Organizar póster, sinopsis completa, fecha/año, puntuación personal y pública, reparto/dirección, tráiler, títulos similares y opciones externas de consulta sin saturar la pantalla. No afirmar disponibilidad de streaming en Panamá sin datos comprobados.
-4. **Registro personal opcional.** Permitir guardar estado, nota, fecha, emociones, etiquetas, notas y listas, pero mantener el flujo básico breve y no exigir campos opcionales.
-5. **Recomendaciones equilibradas y ajustables.** Combinar similitud con películas bien valoradas, variedad/serendipia y señales del contexto o interés. Ponderar por evidencia las valoraciones, favoritos, géneros, temas, personas creadoras, época, emociones, etiquetas y rechazos; explicar las señales que contribuyen a cada sugerencia.
+4. **Calificación sencilla.** La interacción personal esencial es buscar una película ya vista y darle una nota del 1 al 10. No se deben pedir emociones, sentimientos ni comentarios para alimentar las recomendaciones. Los campos emocionales importados anteriormente pueden conservarse por compatibilidad, pero se ignoran.
+5. **Recomendaciones basadas en metadatos cinematográficos.** Aprender de las notas y contrastarlas con géneros, palabras clave, sinopsis, reparto, dirección, guion, música, productoras, países, idiomas, franquicia, duración y época fiable. Ponderar cada familia según la evidencia, explicar las coincidencias y evaluar cambios con pruebas comparables.
 6. **Privacidad local primero.** Mantener el perfil solo en el dispositivo y ofrecer exportación/importación de copias de seguridad. La sincronización en la nube no forma parte del alcance hasta que se decida explícitamente lo contrario.
 
 ### Estrategia de entrega
