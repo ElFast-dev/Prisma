@@ -12,8 +12,14 @@ const [html, serviceWorker, css, interfaceSpec, pageViews, settingsViews, themeC
 ]);
 
 const links = [...html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/g)].map(match => match[1]);
-assert.equal(links.at(-1), './styles/prisma-design-system.css?v=ui-20261023-27',
-  'El sistema visual debe ser la última hoja y utilizar la nueva versión.');
+const styleVersion = new URL(links.at(-1), 'https://prisma.invalid/').searchParams.get('v');
+assert.equal(new URL(links.at(-1), 'https://prisma.invalid/').pathname, '/styles/prisma-design-system.css',
+  'El sistema visual debe ser la última hoja.');
+assert.ok(styleVersion, 'El sistema visual debe utilizar una versión cacheable.');
+assert.ok(links.every(link => new URL(link, 'https://prisma.invalid/').searchParams.get('v') === styleVersion),
+  'Todas las hojas CSS deben usar la misma versión compartida.');
+assert.ok(serviceWorker.includes('./styles/prisma-design-system.css?v=' + styleVersion),
+  'El service worker debe precargar la versión actual del sistema visual.');
 assert.match(html, /<html\b[^>]*data-theme=["']dark["']/, 'El HTML debe iniciar en modo oscuro.');
 assert.match(css, /--bg:\s*#050505;/, 'El fondo oscuro debe ser negro.');
 assert.match(css, /--accent:\s*#8197b2;/, 'El acento oscuro debe ser azul acero apagado.');
