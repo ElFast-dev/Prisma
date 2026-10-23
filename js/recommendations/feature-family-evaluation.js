@@ -106,7 +106,8 @@ export function createFeatureFamilyEvaluation(dependencies) {
     : function (candidates, cutoff) { return candidates.slice().sort(function (a, b) {
       return b.prediction.score - a.prediction.score;
     }).slice(0, cutoff); };
-  const onAudit = typeof deps.onAudit === "function" ? deps.onAudit : function () {};
+  const hasAudit = typeof deps.onAudit === "function";
+  const onAudit = hasAudit ? deps.onAudit : function () {};
   const yieldToBrowser = typeof deps.yieldToBrowser === "function"
     ? deps.yieldToBrowser
     : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
@@ -164,7 +165,7 @@ export function createFeatureFamilyEvaluation(dependencies) {
     const familyResults = FAMILIES.map(function (family) {
       return { family: family, errors: [], baselineErrors: [], foldMae: [], foldNdcg: { balanced: [], affinity: [], variety: [] } };
     });
-    const totalWork = sourceRatings.length + Math.max(1, rows.length) * FAMILIES.length;
+    const totalWork = Math.max(1, sourceRatings.length * (FAMILIES.length + 1) + 1);
     let completedWork = sourceRatings.length;
 
     for (let familyIndex = 0; familyIndex < FAMILIES.length; familyIndex += 1) {
@@ -208,16 +209,18 @@ export function createFeatureFamilyEvaluation(dependencies) {
           foldErrors.push(error);
           foldBaselineErrors.push(baselineError);
           testCandidates.push(candidate);
-          onAudit({
-            family: family.id,
-            foldIndex: foldIndex,
-            heldOutIdentity: row.identity,
-            trainingIdentities: trainRows.map(function (item) { return item.identity; }),
-            candidateHasPersonalRating: Object.prototype.hasOwnProperty.call(candidate, "rating"),
-            trainingCount: trainRows.length
-          });
+          if (hasAudit) {
+            onAudit({
+              family: family.id,
+              foldIndex: foldIndex,
+              heldOutIdentity: row.identity,
+              trainingIdentities: trainRows.map(function (item) { return item.identity; }),
+              candidateHasPersonalRating: Object.prototype.hasOwnProperty.call(candidate, "rating"),
+              trainingCount: trainRows.length
+            });
+          }
+          completedWork += 1;
           if ((index + 1) % 8 === 0 || index + 1 === testRows.length) {
-            completedWork += 1;
             onProgress({
               completedWork: Math.min(totalWork, completedWork),
               totalWork: totalWork,
