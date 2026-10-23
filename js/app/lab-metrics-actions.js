@@ -18,8 +18,15 @@ function writeTiming(windowRef, operation, durationMs, sampleCount, status) {
 
 function nextTask(windowRef) {
   return new Promise(function (resolve) {
-    if (windowRef && typeof windowRef.setTimeout === "function") windowRef.setTimeout(resolve, 0);
-    else setTimeout(resolve, 0);
+    if (windowRef && typeof windowRef.requestAnimationFrame === "function") {
+      windowRef.requestAnimationFrame(function () {
+        windowRef.requestAnimationFrame(resolve);
+      });
+    } else if (windowRef && typeof windowRef.setTimeout === "function") {
+      windowRef.setTimeout(resolve, 0);
+    } else {
+      setTimeout(resolve, 0);
+    }
   });
 }
 
