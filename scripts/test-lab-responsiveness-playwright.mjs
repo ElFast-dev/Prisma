@@ -22,7 +22,13 @@ const results = {
   reportCoverage: null,
   reportRatedEntries: null,
   cancellationAndReentryPassed: false,
-  emptyProfilePassed: false
+  mobileLayoutPassed: false,
+  emptyProfilePassed: false,
+  featureFamilySampleCount: null,
+  featureFamilyCount: null,
+  diagnosticPhaseCount: null,
+  diagnosticDurationMs: null,
+  diagnosticPhaseStatuses: []
 };
 
 function captureLogs(page) {
@@ -93,23 +99,36 @@ try {
     status: document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState || "",
     controls: {
       diagnosticCopy: Boolean(document.querySelector("[data-action='copy-recommendation-diagnostics']")),
-      ridge: Boolean(document.querySelector("[data-action='run-ridge-experiment']")),
-      normalization: Boolean(document.querySelector("[data-action='run-influence-normalization-experiment']")),
-      featureLabels: Boolean(document.querySelector("#diagnosticFeatureLabels"))
+      ridgeAutomatic: [...document.querySelectorAll(".lab-automatic-label")].some(node => node.closest(".panel")?.innerText.includes("Ridge")),
+      normalizationAutomatic: [...document.querySelectorAll(".lab-automatic-label")].some(node => node.closest(".panel")?.innerText.includes("normalización")),
+      featureLabels: Boolean(document.querySelector("#diagnosticFeatureLabels")),
+      globalProgress: Boolean(document.querySelector(".lab-diagnostic-progress-bar")),
+      sevenPhases: document.querySelectorAll(".lab-diagnostic-phase").length === 7,
+      copyDisabledUntilFinal: Boolean(document.querySelector("[data-action='copy-recommendation-diagnostics']")?.disabled)
     }
   }));
   assert.equal(immediateDom.heading, "Laboratorio");
   assert.equal(immediateDom.status, "loading");
-  assert.ok(Object.values(immediateDom.controls).every(Boolean), "Principal Lab controls must be present on first render");
+  assert.ok(Object.values(immediateDom.controls).every(Boolean), "Global progress and all automatic-phase controls must be present on first render");
   results.firstLabRenderMs = performanceEvents.find(item => item.operation === "renderLab")?.durationMs ?? null;
 
-  const labelsControl = page.locator("#diagnosticFeatureLabels");
-  await labelsControl.check({ timeout: 2000 });
-  await labelsControl.uncheck({ timeout: 2000 });
+  // Progress updates intentionally repaint the phase list. Keep the first-render responsiveness
+  // checks during calculation, then interact with the report controls once the battery is stable.
   await page.waitForFunction(() => {
     const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
     return state === "ready" || state === "error";
   }, null, { timeout: 120000 });
+  await page.waitForFunction(() => {
+    const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
+    const copyButton = document.querySelector('[data-action="copy-recommendation-diagnostics"]');
+    return state === "ready" && copyButton && !copyButton.disabled;
+  }, null, { timeout: 10000 });
+  // The coordinator's final publication follows the ready marker; wait for a frame after
+  // the copy action is enabled so the label control is no longer being replaced.
+  await page.waitForTimeout(150);
+  const labelsControl = page.locator("#diagnosticFeatureLabels");
+  await labelsControl.check({ timeout: 5000 });
+  await labelsControl.uncheck({ timeout: 5000 });
   results.metricsStatus = await page.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state");
   results.responsiveTicks = await page.evaluate(() => {
     window.clearInterval(window.__labResponsivenessTimer);
@@ -158,13 +177,25 @@ try {
       featureNamesIncluded: value.privacy.featureLabelsIncluded,
       networkTransmission: value.privacy.networkTransmission,
       containsSyntheticTitle: text.includes("Synthetic Film 000"),
-      containsRawMovieIdentity: /"tmdbId"|"tmId"|"tmdb_id"/i.test(text)
+      containsRawMovieIdentity: /"tmdbId"|"tmId"|"tmdb_id"/i.test(text),
+      diagnosticStatus: value.diagnostic?.status || "",
+      diagnosticPhaseCount: value.diagnostic?.run?.phases?.length || 0,
+      diagnosticDurationMs: value.diagnostic?.run?.durationMs ?? null,
+      diagnosticPhaseStatuses: (value.diagnostic?.run?.phases || []).map(phase => phase.status),
+      featureFamilySampleCount: value.diagnostic?.featureFamilyComparison?.sampleCount ?? 0,
+      featureFamilyCount: value.diagnostic?.featureFamilyComparison?.families?.length || 0,
+      featureFamiliesAvailable: value.diagnostic?.featureFamilyComparison?.families?.every(family => family.available) || false
     };
   });
   results.reportSchema = report.schema;
   results.reportRatedEntries = report.ratedEntries;
   results.reportCoverage = report.metadataCoverage;
-  assert.equal(report.schema, "prisma-recommendation-diagnostics/v11");
+  results.featureFamilySampleCount = report.featureFamilySampleCount;
+  results.featureFamilyCount = report.featureFamilyCount;
+  results.diagnosticPhaseCount = report.diagnosticPhaseCount;
+  results.diagnosticDurationMs = report.diagnosticDurationMs;
+  results.diagnosticPhaseStatuses = report.diagnosticPhaseStatuses;
+  assert.equal(report.schema, "prisma-recommendation-diagnostics/v12");
   assert.equal(report.ratedEntries, 351);
   assert.equal(report.validRatingCount, 351);
   assert.equal(report.ratingsWithFeatures, 351);
@@ -175,6 +206,16 @@ try {
   assert.equal(report.networkTransmission, false);
   assert.equal(report.containsSyntheticTitle, false);
   assert.equal(report.containsRawMovieIdentity, false);
+  assert.equal(report.diagnosticStatus, "completed-with-unavailable");
+  assert.equal(report.diagnosticPhaseCount, 7);
+  assert.equal(report.diagnosticPhaseStatuses.length, 7);
+  assert.ok(report.diagnosticPhaseStatuses.every(status => ["completed", "unavailable"].includes(status)),
+    "Each diagnostic phase must have a terminal status even when sample data are unavailable");
+  assert.ok(Number.isFinite(report.diagnosticDurationMs) && report.diagnosticDurationMs >= 0,
+    "The report must include the measured total battery duration");
+  assert.equal(report.featureFamilySampleCount, 351);
+  assert.equal(report.featureFamilyCount, 4);
+  assert.equal(report.featureFamiliesAvailable, true);
   results.metricRunCountsAfterReport = {
     ratingEvaluation: countBefore("rating-evaluation"),
     rankingEvaluation: countBefore("ranking-cross-validation"),
@@ -185,14 +226,19 @@ try {
     "Copying the diagnostics report must reuse cached metrics without repeating evaluation");
 
   const timingOperations = [
-    "navigation-render", "renderLab", "lab-first-render-yield", "summaryStats",
+    "navigation-render", "renderLab", "summaryStats",
     "buildProfile", "genreStats", "rating-evaluation", "ranking-cross-validation",
-    "ranking-diversity", "recommendation-quality", "lab-metrics-pipeline"
+    "ranking-diversity", "recommendation-quality",
+    "lab-diagnostic-coverage", "lab-diagnostic-baseline", "lab-diagnostic-ranking",
+    "lab-diagnostic-normalization", "lab-diagnostic-ridge", "lab-diagnostic-temporal",
+    "lab-diagnostic-featureFamilies", "lab-metrics-pipeline"
   ];
   results.calculationTimes = performanceEvents.filter(item => timingOperations.includes(item.operation));
-  for (const operation of ["navigation-render", "renderLab", "lab-first-render-yield", "summaryStats",
+  for (const operation of ["navigation-render", "renderLab", "summaryStats",
     "buildProfile", "genreStats", "rating-evaluation", "ranking-cross-validation",
-    "ranking-diversity", "lab-metrics-pipeline"]) {
+    "ranking-diversity", "lab-diagnostic-coverage", "lab-diagnostic-baseline",
+    "lab-diagnostic-ranking", "lab-diagnostic-normalization", "lab-diagnostic-ridge",
+    "lab-diagnostic-temporal", "lab-diagnostic-featureFamilies", "lab-metrics-pipeline"]) {
     assert.ok(results.calculationTimes.some(item => item.operation === operation),
       "Missing timing for " + operation + "; saw " + results.calculationTimes.map(item => item.operation).join(", "));
   }
@@ -201,7 +247,7 @@ try {
   if (errors.length) throw new Error("Browser exceptions: " + errors.join(" | "));
   await context.close();
 
-  // Navigate away after the loading state appears, then return. Stale work must not overwrite the new page.
+  // Navigate away while the battery is running; it must continue locally and remain reusable on return.
   const cancelContext = await browser.newContext({ viewport: { width: 1100, height: 820 }, serviceWorkers: "block" });
   const cancelPage = await cancelContext.newPage();
   captureLogs(cancelPage);
@@ -214,9 +260,13 @@ try {
   await cancelPage.locator("[data-lab-metrics-state='loading']").waitFor({ state: "visible", timeout: 3000 });
   await cancelPage.locator(".bottom-nav [data-nav='catalog']").click({ timeout: 5000 });
   await cancelPage.locator(".discover-heading h1").waitFor({ state: "visible", timeout: 10000 });
-  await cancelPage.waitForTimeout(150);
+  await cancelPage.waitForFunction(() => {
+    const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
+    return !state;
+  }, null, { timeout: 3000 });
   assert.equal(await cancelPage.locator("[data-lab-metrics-state]").count(), 0,
-    "A cancelled Lab evaluation must not replace the current Discover view");
+    "A diagnostic update must not replace the active Discover view");
+  await cancelPage.waitForFunction(() => performance.getEntriesByType("resource").length >= 0);
   await cancelPage.locator(".topbar [data-nav='lab']").click({ timeout: 5000 });
   await cancelPage.locator("main h1").filter({ hasText: "Laboratorio" }).waitFor({ state: "visible", timeout: 2500 });
   await cancelPage.waitForFunction(() => {
@@ -224,13 +274,13 @@ try {
     return state === "ready" || state === "error";
   }, null, { timeout: 120000 });
   assert.equal(await cancelPage.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state"), "ready",
-    "Returning to Lab after cancellation must start a fresh evaluation");
+    "Returning to Lab must recover the finished in-flight result or its cache");
   results.cancellationAndReentryPassed = true;
   if (errors.length) throw new Error("Browser exceptions during cancellation: " + errors.join(" | "));
   await cancelContext.close();
 
   // A brand-new context with no imported data must still complete its Lab lifecycle.
-  const emptyContext = await browser.newContext({ viewport: { width: 900, height: 800 }, serviceWorkers: "block" });
+  const emptyContext = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
   const emptyPage = await emptyContext.newPage();
   captureLogs(emptyPage);
   await emptyPage.goto(baseUrl + (baseUrl.includes("?") ? "&" : "?") + "lab-empty=" + Date.now(), { waitUntil: "networkidle", timeout: 60000 });
@@ -243,9 +293,65 @@ try {
   }, null, { timeout: 20000 });
   assert.equal(await emptyPage.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state"), "ready");
   assert.match(await emptyPage.locator(".lab-ranking-diagnostics").innerText(), /Datos insuficientes|se necesitan al menos/i);
+  const mobileLayout = await emptyPage.evaluate(() => ({
+    width: window.innerWidth,
+    bodyScrollWidth: document.body.scrollWidth,
+    viewport: document.documentElement.clientWidth,
+    progressVisible: Boolean(document.querySelector(".lab-diagnostic-progress-bar")),
+    phaseColumns: getComputedStyle(document.querySelector(".lab-diagnostic-phase-list")).gridTemplateColumns
+  }));
+  assert.equal(mobileLayout.width, 390);
+  assert.ok(mobileLayout.bodyScrollWidth <= mobileLayout.viewport + 1, "The mobile Lab must not create horizontal overflow");
+  assert.ok(mobileLayout.progressVisible, "The global diagnostic progress bar must remain visible on mobile");
+  assert.ok(mobileLayout.phaseColumns.split(" ").length <= 2, "The diagnostic phase list must collapse for mobile");
+  results.mobileLayoutPassed = true;
   results.emptyProfilePassed = true;
   if (errors.length) throw new Error("Browser exceptions in empty-profile scenario: " + errors.join(" | "));
   await emptyContext.close();
+
+  // Few-rating profile: phases with unmet sample thresholds must end explicitly unavailable.
+  const fewContext = await browser.newContext({ viewport: { width: 900, height: 800 }, serviceWorkers: "block" });
+  const fewPage = await fewContext.newPage();
+  captureLogs(fewPage);
+  await fewPage.goto(baseUrl + (baseUrl.includes("?") ? "&" : "?") + "lab-few=" + Date.now(),
+    { waitUntil: "networkidle", timeout: 60000 });
+  await fewPage.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
+  const fewFixture = makeLabSyntheticFixture();
+  fewFixture.state.rated = fewFixture.state.rated.slice(0, 3);
+  fewFixture.catalog = fewFixture.catalog.slice(0, 43);
+  await seedLabSyntheticProfile(fewPage, fewFixture);
+  await fewPage.reload({ waitUntil: "networkidle", timeout: 60000 });
+  await fewPage.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
+  await fewPage.locator(".topbar [data-nav='lab']").click({ timeout: 5000 });
+  await fewPage.waitForFunction(() => {
+    const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
+    return state === "ready" || state === "error";
+  }, null, { timeout: 30000 });
+  assert.equal(await fewPage.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state"), "ready",
+    "A sparse profile must finish the battery rather than remain pending");
+  const sparseStates = await fewPage.locator(".lab-diagnostic-phase").evaluateAll(nodes =>
+    nodes.map(node => ({ label: node.querySelector("strong")?.innerText || "", text: node.innerText }))
+  );
+  assert.equal(sparseStates.length, 7);
+  assert.ok(sparseStates.some(phase => /Ridge/i.test(phase.label) && /No disponible/.test(phase.text)));
+  assert.ok(sparseStates.some(phase => /temporal/i.test(phase.label) && /No disponible/.test(phase.text)));
+  assert.equal(await fewPage.locator("[data-action='copy-recommendation-diagnostics']").isEnabled(), true,
+    "The single copy button must become available after all phases reach final states, even when unavailable");
+  await fewPage.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async text => { window.__sparseDiagnosticReport = text; } }
+    });
+  });
+  await fewPage.locator("[data-action='copy-recommendation-diagnostics']").click({ timeout: 5000 });
+  await fewPage.waitForFunction(() => typeof window.__sparseDiagnosticReport === "string", null, { timeout: 10000 });
+  const sparseReport = await fewPage.evaluate(() => JSON.parse(window.__sparseDiagnosticReport));
+  assert.equal(sparseReport.diagnostic.run.phases.length, 7);
+  assert.ok(sparseReport.diagnostic.run.phases.some(phase => phase.status === "unavailable"));
+  assert.equal(sparseReport.diagnostic.status, "completed-with-unavailable");
+  results.fewRatingProfilePassed = true;
+  if (errors.length) throw new Error("Browser exceptions in few-rating scenario: " + errors.join(" | "));
+  await fewContext.close();
 
   await mkdir("artifacts", { recursive: true });
   await writeFile("artifacts/lab-responsiveness.json", JSON.stringify(results, null, 2) + "\n", "utf8");

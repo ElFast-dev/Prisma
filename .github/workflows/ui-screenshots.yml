@@ -135,8 +135,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261022-26") &&
-                  lastUI.appSrc.includes("v=ui-20261023-103") &&
+                  lastUI.cssHref.includes("v=ui-20261023-27") &&
+                  lastUI.appSrc.includes("v=ui-20261023-105") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -296,8 +296,21 @@ jobs:
                 if (await page.locator('[data-action="toggle-temporal-added-date-proxy"]').getAttribute("aria-pressed") !== "false") {
                   throw new Error(name + ": the collection-date proxy toggle must turn off again");
                 }
-                await page.locator('[data-action="run-ridge-experiment"]').click();
-                await page.waitForFunction(() => (document.querySelector(".ridge-experiment-panel")?.innerText || "").includes("Se necesitan al menos 30 películas únicas"), null, { timeout: 10000 });
+                await page.waitForFunction(() =>
+                  document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState === "ready",
+                  null, { timeout: 30000 });
+                await page.waitForFunction(() => {
+                  const button = document.querySelector('[data-action="copy-recommendation-diagnostics"]');
+                  return button && !button.disabled;
+                }, null, { timeout: 10000 });
+                const diagnosticPhases = await page.locator(".lab-diagnostic-phase").evaluateAll(nodes =>
+                  nodes.map(node => node.innerText)
+                );
+                if (diagnosticPhases.length !== 7 ||
+                    !diagnosticPhases.some(phase => /Ridge/i.test(phase) && /No disponible/i.test(phase))) {
+                  throw new Error(name + ": automatic seven-phase battery did not expose the sparse-profile Ridge status: " +
+                    JSON.stringify(diagnosticPhases));
+                }
                 await page.evaluate(() => {
                   Object.defineProperty(navigator, "clipboard", {
                     configurable: true,
@@ -322,7 +335,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v11" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v12" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||

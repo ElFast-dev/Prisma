@@ -52,6 +52,14 @@ export function registerAppEvents(ctx) {
     const action = button.dataset.action;
     try {
       if (action === "protect-storage") { await ctx.requestStorageProtection(); return; }
+      if (action === "retry-lab-diagnostic") {
+        if (typeof ctx.retryLabDiagnosticFailures === "function") await ctx.retryLabDiagnosticFailures();
+        return;
+      }
+      if (action === "restart-lab-diagnostic") {
+        if (typeof ctx.restartLabDiagnostic === "function") await ctx.restartLabDiagnostic();
+        return;
+      }
       if (action === "copy-recommendation-diagnostics") {
         const includeLabels = Boolean(ctx.$("#diagnosticFeatureLabels") && ctx.$("#diagnosticFeatureLabels").checked);
         ctx.setRecommendationDiagnosticFeatureLabelsIncluded(includeLabels);

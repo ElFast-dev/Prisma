@@ -16,7 +16,7 @@ export function createLabRidgeView(ctx) {
       body = '<p class="metric-note" aria-live="polite">Validación repetida en curso: ' + completedRepeats + ' de ' +
         totalRepeats + ' repeticiones completadas. Cada repetición evalúa cinco pliegues externos y selecciona alpha en tres pliegues internos. El cálculo es local; no se envían ni guardan datos nuevos.</p>';
     } else if (!result) {
-      body = '<p class="metric-note" aria-live="polite">Esta prueba no se ejecuta automáticamente. Ejecuta validación anidada repetida (3 × 5 pliegues) para elegir alpha sin consultar las notas retenidas al evaluar.</p>';
+      body = '<p class="metric-note" aria-live="polite">Esta validación anidada se ejecuta automáticamente en la batería: cinco pliegues externos, tres internos y tres repeticiones para elegir alpha sin consultar las notas retenidas.</p>';
     } else if (!result.available) {
       body = '<p class="metric-note" aria-live="polite">' + ctx.escapeHTML(result.reason || "No hay una muestra suficiente para evaluar Ridge.") + '</p>';
     } else {
@@ -212,8 +212,7 @@ export function createLabRidgeView(ctx) {
     return '<section class="panel ridge-experiment-panel" aria-labelledby="ridge-experiment-heading">' +
       '<div class="panel-head"><div><h3 id="ridge-experiment-heading">Experimento Ridge (regularización L2)</h3>' +
       '<p class="metric-note">Comparación local de la base aditiva, Ridge y una mezcla fija 50/50</p></div>' +
-      '<button class="btn btn-secondary btn-small" type="button" data-action="run-ridge-experiment"' +
-      (metricsBusy || busy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      '<p class="metric-note lab-automatic-label">Incluida en el diagnóstico automático</p></div>' +
       body + '</section>';
   }
 

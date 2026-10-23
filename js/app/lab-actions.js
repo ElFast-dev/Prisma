@@ -195,31 +195,45 @@ export function createLabActions(ctx) {
 
   async function copyRecommendationDiagnosticReport(includeFeatureLabels) {
     ctx.recommendationDiagnosticFeatureLabelsIncluded = Boolean(includeFeatureLabels);
-    const metrics = await ctx.ensureLabMetrics();
-    if (!metrics || ctx.currentPage !== "lab") {
-      if (ctx.currentPage === "lab") {
-        ctx.toast(ctx.labMetricsError || "El diagnóstico aún no está disponible; espera a que terminen las métricas iniciales.", true);
-      }
+    const snapshotBefore = ctx.labDiagnosticSnapshot;
+    const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
+    if (!snapshotBefore || !Array.isArray(snapshotBefore.phases) ||
+        !snapshotBefore.phases.every(function (phase) { return finalStatuses.indexOf(phase.status) !== -1; })) {
+      ctx.toast("El diagnóstico aún tiene fases pendientes o en ejecución.", true);
       return;
     }
-    const profile = metrics.profile;
+    const metrics = await ctx.ensureLabMetrics();
+    const snapshot = ctx.labDiagnosticSnapshot;
+    if (!snapshot || !Array.isArray(snapshot.phases) ||
+        !snapshot.phases.every(function (phase) { return finalStatuses.indexOf(phase.status) !== -1; })) {
+      ctx.toast("El diagnóstico cambió durante la preparación. Espera a que todas las fases alcancen un estado final.", true);
+      return;
+    }
+    const sourceMetrics = metrics || {};
+    const profile = sourceMetrics.profile || { average: 6.5, withMetadata: 0, features: new Map() };
+    const state = ctx.state || {};
+    const ratings = Array.isArray(state.rated) ? state.rated : [];
     const report = ctx.buildRecommendationDiagnosticReport({
-      ratedCount: ctx.state.rated.length,
-      ratingValues: ctx.state.rated.map(ctx.ratingValue).filter(function (value) { return value != null; }),
-      catalogCount: ctx.catalog.length,
+      ratedCount: ratings.length,
+      ratingValues: ratings.map(ctx.ratingValue).filter(function (value) { return value != null; }),
+      catalogCount: Array.isArray(ctx.catalog) ? ctx.catalog.length : 0,
       collectionCounts: {
-        watched: (ctx.state.watched || []).length,
-        pending: (ctx.state.watchlist || []).length,
-        hidden: (ctx.state.hidden || []).length
+        watched: (state.watched || []).length,
+        pending: (state.watchlist || []).length,
+        hidden: (state.hidden || []).length
       },
       profile: profile,
+      coverage: sourceMetrics.coverage,
+      featureFamilyEvaluation: sourceMetrics.featureFamilyEvaluation,
+      diagnosticSnapshot: snapshot,
+      applicationVersion: "prisma-web/2026.10.23-lab-diagnostic.1",
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
-      ratingEvaluation: metrics.evaluation,
-      ridgeEvaluation: ctx.ridgeEvaluationResult,
-      temporalRidgeEvaluation: ctx.temporalRidgeEvaluationResult,
-      influenceNormalizationEvaluation: ctx.influenceNormalizationEvaluationResult,
-      recommendationQuality: metrics.recommendationQuality,
+      ratingEvaluation: sourceMetrics.evaluation,
+      ridgeEvaluation: sourceMetrics.ridgeEvaluation || ctx.ridgeEvaluationResult,
+      temporalRidgeEvaluation: sourceMetrics.temporalEvaluation || ctx.temporalRidgeEvaluationResult,
+      influenceNormalizationEvaluation: sourceMetrics.normalizationEvaluation || ctx.influenceNormalizationEvaluationResult,
+      recommendationQuality: sourceMetrics.recommendationQuality,
       includeFeatureLabels: ctx.recommendationDiagnosticFeatureLabelsIncluded
     });
     const reportText = JSON.stringify(report, null, 2);

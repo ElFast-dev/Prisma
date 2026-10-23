@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v11";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v12";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -461,6 +461,152 @@ function rankingEvaluation(source) {
   };
 }
 
+const ALLOWED_PHASES = new Set(["coverage", "baseline", "ranking", "normalization", "ridge", "temporal", "featureFamilies"]);
+const ALLOWED_PHASE_STATUSES = new Set(["pending", "running", "completed", "unavailable", "cancelled", "error"]);
+const FEATURE_FAMILY_LABELS = {
+  "genres-only": "Solo géneros",
+  "genres-tags": "Géneros + etiquetas",
+  "genres-tags-synopsis": "Géneros + etiquetas + sinopsis",
+  "full-current": "Conjunto completo actual"
+};
+
+function isoDate(value) {
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
+}
+
+function safeStatus(value) {
+  const status = String(value || "");
+  return ALLOWED_PHASE_STATUSES.has(status) || ["completed", "completed-with-unavailable", "partial-error", "partial-cancelled", "incomplete", "unknown"].includes(status)
+    ? status : "unknown";
+}
+
+function diagnosticRunSummary(run) {
+  if (!run || typeof run !== "object") return { schema: "prisma-lab-diagnostic-run/v1", status: "unknown", phases: [], durationMs: null };
+  const phases = (Array.isArray(run.phases) ? run.phases : []).filter(function (phase) {
+    return phase && ALLOWED_PHASES.has(phase.id);
+  }).map(function (phase) {
+    const progress = phase.progress || {};
+    return {
+      id: phase.id,
+      status: safeStatus(phase.status),
+      durationMs: rounded(phase.durationMs, 1),
+      completedWork: nonNegativeInteger(progress.completed),
+      totalWork: nonNegativeInteger(progress.total),
+      unavailableReason: phase.status === "unavailable"
+        ? String(phase.unavailableReason || "No cumple los requisitos de muestra.").slice(0, 220)
+        : null,
+      error: phase.status === "error" ? "Fase fallida; se conservan las demás mediciones." : null
+    };
+  });
+  const statusValues = phases.map(function (phase) { return phase.status; });
+  const allFinal = phases.length === ALLOWED_PHASES.size && statusValues.every(function (status) {
+    return ["completed", "unavailable", "cancelled", "error"].includes(status);
+  });
+  const status = !allFinal ? (statusValues.includes("running") ? "incomplete" : "unknown")
+    : (statusValues.includes("error") ? "partial-error"
+      : (statusValues.includes("cancelled") ? "partial-cancelled"
+        : (statusValues.includes("unavailable") ? "completed-with-unavailable" : "completed")));
+  return {
+    schema: "prisma-lab-diagnostic-run/v1",
+    status: status,
+    startedAt: isoDate(run.startedAt),
+    finishedAt: isoDate(run.finishedAt),
+    durationMs: rounded(run.durationMs, 1),
+    sampleCount: nonNegativeInteger(run.sampleCount),
+    globalPercent: percentReport(run.globalPercent),
+    completedPhases: nonNegativeInteger(run.completedPhases),
+    totalPhases: Math.min(ALLOWED_PHASES.size, phases.length || ALLOWED_PHASES.size),
+    estimatedRemainingMs: rounded(run.estimatedRemainingMs, 1),
+    estimateStatus: run.estimateStatus === "estimated" || run.estimateStatus === "measured" ? run.estimateStatus : "calculating",
+    phases: phases
+  };
+}
+
+function percentReport(value) {
+  const number = numeric(value);
+  return number == null ? 0 : Math.max(0, Math.min(100, Math.round(number)));
+}
+
+function coverageSummary(input) {
+  if (!input || typeof input !== "object") return null;
+  const nonNegativeKeys = [
+    "ratingEntries", "validRatingEntries", "invalidRatingEntries", "uniqueRatedMovies",
+    "featureLinkedRatingEntries", "uniqueFeatureMovies", "ratingsWithoutUsefulFeatures",
+    "featurelessUniqueMovies", "profileFeatureCount", "featureObservations", "catalogMovies",
+    "candidatesAvailable"
+  ];
+  const result = {};
+  nonNegativeKeys.forEach(function (key) { result[key] = nonNegativeInteger(input[key]); });
+  result.metadataCoverage = rounded(input.metadataCoverage, 4);
+  result.featureLinkedCoverage = rounded(input.featureLinkedCoverage, 4);
+  const distribution = input.supportDistribution || {};
+  result.supportDistribution = {
+    once: nonNegativeInteger(distribution.once),
+    twoToFour: nonNegativeInteger(distribution.twoToFour),
+    fiveToNine: nonNegativeInteger(distribution.fiveToNine),
+    tenOrMore: nonNegativeInteger(distribution.tenOrMore)
+  };
+  const allowedTypes = ["genre", "theme", "synopsis", "actor", "director", "writer", "composer", "company", "country",
+    "language", "spokenLanguage", "collection", "runtime", "decade", "other"];
+  const typeCounts = input.signalTypeCounts || {};
+  result.signalTypeCounts = {};
+  allowedTypes.forEach(function (key) { result.signalTypeCounts[key] = nonNegativeInteger(typeCounts[key]); });
+  return result;
+}
+
+function featureFamilySummary(input) {
+  if (!input || typeof input !== "object") return { available: false, sampleCount: 0, foldsPlanned: 5, foldsEvaluated: 0, sharedPartition: true, families: [], unavailableReason: "La fase no produjo resultados." };
+  const sourceFamilies = Array.isArray(input.families) ? input.families : [];
+  const expected = ["genres-only", "genres-tags", "genres-tags-synopsis", "full-current"];
+  const families = expected.map(function (id) {
+    const row = sourceFamilies.find(function (item) { return item && item.id === id; }) || {};
+    const modes = ["balanced", "affinity", "variety"].map(function (mode) {
+      const current = (Array.isArray(row.rankingModes) ? row.rankingModes : []).find(function (item) { return item && item.mode === mode; }) || {};
+      return {
+        mode: mode,
+        available: Boolean(current.available),
+        ndcgAt5: rounded(current.ndcgAt5, 5),
+        deltaNdcgVsGenres: rounded(current.deltaNdcgVsGenres, 5),
+        foldsEvaluated: nonNegativeInteger(current.foldsEvaluated),
+        wins: nonNegativeInteger(current.wins),
+        ties: nonNegativeInteger(current.ties),
+        losses: nonNegativeInteger(current.losses)
+      };
+    });
+    return {
+      id: id,
+      label: FEATURE_FAMILY_LABELS[id],
+      available: Boolean(row.available),
+      mae: rounded(row.mae, 5),
+      baselineMae: rounded(row.baselineMae, 5),
+      deltaMaeVsGenres: rounded(row.deltaMaeVsGenres, 5),
+      foldsEvaluated: nonNegativeInteger(row.foldsEvaluated),
+      maeWins: nonNegativeInteger(row.maeWins),
+      ties: nonNegativeInteger(row.ties),
+      maeLosses: nonNegativeInteger(row.maeLosses),
+      foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 5).map(function (value) { return rounded(value, 5); }) : [],
+      rankingModes: modes
+    };
+  });
+  return {
+    executionStatus: input.executionStatus === "completed" ? "completed" : "unavailable",
+    available: Boolean(input.available),
+    sampleCount: nonNegativeInteger(input.sampleCount),
+    foldsPlanned: 5,
+    foldsEvaluated: Math.min(5, nonNegativeInteger(input.foldsEvaluated)),
+    sharedPartition: input.sharedPartition === true,
+    trainingLeakageChecked: input.trainingLeakageChecked === true,
+    families: families,
+    unavailableReason: input.available ? null : String(input.unavailableReason || "La muestra no cumple los requisitos.").slice(0, 220),
+    interpretationLimits: [
+      "Las cuatro familias comparten las mismas películas con género enlazado y los mismos cinco pliegues.",
+      "Las notas del pliegue retenido solo intervienen en el cálculo de error y ganancia, nunca en el perfil que predice ese pliegue.",
+      "La comparación es descriptiva y no demuestra significación estadística ni causalidad."
+    ]
+  };
+}
+
 /**
  * Builds a shareable report from local aggregates only. It deliberately never accepts or
  * serializes the raw profile state, movie records, titles, movie IDs, dates or notes.
@@ -480,9 +626,18 @@ export function buildRecommendationDiagnosticReport(input) {
   const metadataCount = Math.min(ratings.length, nonNegativeInteger(profile.withMetadata));
   const featureCount = features && typeof features.size === "number" ? nonNegativeInteger(features.size) : 0;
   const quality = rankingEvaluation(source.recommendationQuality);
+  const diagnosticRun = diagnosticRunSummary(source.diagnosticSnapshot);
+  const coverage = coverageSummary(source.coverage);
+  const featureFamilyComparison = featureFamilySummary(source.featureFamilyEvaluation);
+  const generatedAt = isoDate(source.generatedAt) || new Date().toISOString();
+  const requestedAppVersion = String(source.applicationVersion || "prisma-web/2026.10.23-lab-diagnostic.1");
+  const applicationVersion = /^[a-zA-Z0-9./_-]{1,100}$/.test(requestedAppVersion)
+    ? requestedAppVersion : "prisma-web/2026.10.23-lab-diagnostic.1";
 
   return {
     schema: REPORT_SCHEMA,
+    generatedAt: generatedAt,
+    applicationVersion: applicationVersion,
     privacy: {
       generatedLocally: true,
       networkTransmission: false,
@@ -546,6 +701,17 @@ export function buildRecommendationDiagnosticReport(input) {
       rankingQuality: quality.ranking,
       currentListDiversity: quality.diversity
     },
+    diagnostic: {
+      schema: "prisma-lab-diagnostic-report/v1",
+      status: diagnosticRun.status,
+      run: diagnosticRun,
+      coverage: coverage,
+      featureFamilyComparison: featureFamilyComparison,
+      phaseDurationsMs: diagnosticRun.phases.reduce(function (all, phase) {
+        all[phase.id] = phase.durationMs;
+        return all;
+      }, {})
+    },
     interpretationLimits: [
       "MAE mide la predicción de notas conocidas y no garantiza satisfacción con películas futuras.",
       "nDCG@5 de Prisma evalúa el orden de películas valoradas retenidas, no todas las películas desconocidas del catálogo.",
@@ -553,6 +719,8 @@ export function buildRecommendationDiagnosticReport(input) {
       "Las métricas temporales con fechas sin procedencia verificable se marcan como exploratorias; el informe solo comparte recuentos agregados de procedencia.",
       "La diversidad Jaccard usa las listas actuales y no es una medida de serendipia.",
       "La calibración de normalización compara el denominador actual con hipótesis diagnósticas; no cambia las recomendaciones activas.",
+      "La batería automática usa siete fases independientes; un resultado no disponible por cobertura insuficiente no equivale a un experimento ejecutado correctamente.",
+      "La evaluación de familias es emparejada y local. El informe comparte métricas agregadas, no títulos, identificadores individuales, notas por película ni fechas personales.",
       "Una mejora observada en esta muestra personal es descriptiva; no demuestra significación estadística."
     ]
   };

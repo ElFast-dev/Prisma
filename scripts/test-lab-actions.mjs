@@ -22,6 +22,24 @@ function createFixture() {
     recommendationDiagnosticReportText: "informe anterior",
     recommendationDiagnosticCopyMessage: "mensaje anterior",
     recommendationDiagnosticFeatureLabelsIncluded: false,
+    labDiagnosticSnapshot: {
+      schema: "prisma-lab-diagnostic-run/v1",
+      status: "completed",
+      startedAt: 1000,
+      finishedAt: 1800,
+      durationMs: 800,
+      sampleCount: 2,
+      globalPercent: 100,
+      completedPhases: 7,
+      totalPhases: 7,
+      estimatedRemainingMs: 0,
+      estimateStatus: "measured",
+      phases: ["coverage", "baseline", "ranking", "normalization", "ridge", "temporal", "featureFamilies"].map(id => ({
+        id, label: id, status: id === "temporal" ? "unavailable" : "completed",
+        durationMs: 50, progress: { completed: 2, total: 2 },
+        unavailableReason: id === "temporal" ? "No hay fechas sintéticas de visionado." : null
+      }))
+    },
     ridgeEvaluationResult: null,
     ridgeEvaluationBusy: false,
     ridgeEvaluationProgress: null,

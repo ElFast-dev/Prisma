@@ -1,5 +1,5 @@
 import { createWatchStreakView } from "./watch-streak-view.js?v=core-20261023-1";
-import { createLabViews } from "./lab-views.js?v=core-20261023-4";
+import { createLabViews } from "./lab-views.js?v=core-20261023-5";
 import { createCollectionViews } from "./collection-views.js?v=core-20261023-1";
 import { createCatalogViews } from "./catalog-views.js?v=core-20261023-1";
 import { createSettingsViews } from "./settings-views.js?v=core-20261023-1";
@@ -49,7 +49,8 @@ export function createPageViews(ctx) {
     if (ctx.currentPage === "lab" && typeof ctx.ensureLabMetrics === "function") {
       ctx.ensureLabMetrics();
     } else {
-      if (typeof ctx.cancelLabMetrics === "function") ctx.cancelLabMetrics();
+      // Leaving the Laboratory must not cancel a valid local diagnostic run.
+      // Data mutations invalidate it through the metrics coordinator itself.
       if (typeof ctx.cancelLabExperiments === "function") ctx.cancelLabExperiments();
     }
     if (ctx.currentPage === "catalog") {

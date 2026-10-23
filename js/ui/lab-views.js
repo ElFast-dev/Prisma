@@ -1,14 +1,91 @@
-import { createLabRidgeView } from "./lab-ridge-view.js?v=core-20261023-2";
-import { createLabTemporalView } from "./lab-temporal-view.js?v=core-20261023-2";
+import { createLabRidgeView } from "./lab-ridge-view.js?v=core-20261023-3";
+import { createLabTemporalView } from "./lab-temporal-view.js?v=core-20261023-3";
 
 export function createLabViews(ctx) {
+  function formatDiagnosticDuration(milliseconds) {
+    if (!Number.isFinite(Number(milliseconds)) || Number(milliseconds) < 0) return "—";
+    const seconds = Math.round(Number(milliseconds) / 1000);
+    if (seconds < 60) return seconds + " s";
+    return Math.floor(seconds / 60) + " min " + String(seconds % 60).padStart(2, "0") + " s";
+  }
+
+  function renderLabDiagnosticProgressPanel() {
+    const run = ctx.labDiagnosticSnapshot || null;
+    const phases = run && Array.isArray(run.phases) ? run.phases : [
+      { id: "coverage", label: "Estado y cobertura del perfil", status: "pending", progress: { completed: 0, total: 1 } },
+      { id: "baseline", label: "Línea base heurística", status: "pending", progress: { completed: 0, total: 1 } },
+      { id: "ranking", label: "Calidad del ranking", status: "pending", progress: { completed: 0, total: 1 } },
+      { id: "normalization", label: "Calibración de normalización", status: "pending", progress: { completed: 0, total: 1 } },
+      { id: "ridge", label: "Validación Ridge", status: "pending", progress: { completed: 0, total: 1 } },
+      { id: "temporal", label: "Evaluación temporal", status: "pending", progress: { completed: 0, total: 1 } },
+      { id: "featureFamilies", label: "Familias de características", status: "pending", progress: { completed: 0, total: 1 } }
+    ];
+    const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
+    const allFinal = phases.every(function (phase) { return finalStatuses.includes(phase.status); });
+    const busy = Boolean(ctx.labMetricsBusy);
+    const currentId = run && run.currentPhase;
+    const current = phases.find(function (phase) { return phase.id === currentId; }) ||
+      phases.find(function (phase) { return phase.status === "running"; }) || null;
+    const percent = Math.max(0, Math.min(100, Number(run && run.globalPercent) || 0));
+    const statusLabels = {
+      pending: "Pendiente", running: "En curso", completed: "Completada",
+      unavailable: "No disponible", cancelled: "Cancelada", error: "Error"
+    };
+    const statusMarks = {
+      pending: "○", running: "◌", completed: "✓",
+      unavailable: "—", cancelled: "Ⅱ", error: "!"
+    };
+    const phaseList = phases.map(function (phase) {
+      const status = statusLabels[phase.status] ? phase.status : "pending";
+      const progress = phase.progress || {};
+      const unitLabel = status === "running"
+        ? '<small class="lab-diagnostic-phase-units">' + Number(progress.completed || 0) + ' / ' + Math.max(1, Number(progress.total) || 1) + ' unidades</small>'
+        : (phase.durationMs != null && finalStatuses.includes(status)
+          ? '<small class="lab-diagnostic-phase-units">' + formatDiagnosticDuration(phase.durationMs) + '</small>' : "");
+      const reason = status === "unavailable" && phase.unavailableReason
+        ? '<small class="lab-diagnostic-phase-reason">' + ctx.escapeHTML(phase.unavailableReason) + '</small>' : "";
+      return '<li class="lab-diagnostic-phase status-' + status + (phase.id === (current && current.id) && busy ? ' is-current' : '') + '">' +
+        '<span class="lab-diagnostic-phase-mark" aria-hidden="true">' + statusMarks[status] + '</span>' +
+        '<span class="lab-diagnostic-phase-copy"><strong>' + ctx.escapeHTML(phase.label || phase.id) + '</strong>' +
+        '<small>' + statusLabels[status] + '</small>' + unitLabel + reason + '</span></li>';
+    }).join("");
+    const eta = run && run.estimatedRemainingMs != null && run.estimateStatus !== "calculating"
+      ? "≈ " + formatDiagnosticDuration(run.estimatedRemainingMs)
+      : (allFinal ? "0 s" : "Calculando estimación…");
+    const overallStatus = allFinal
+      ? (phases.some(function (phase) { return phase.status === "error"; }) ? "Diagnóstico parcial: hay fases con error"
+        : (phases.some(function (phase) { return phase.status === "unavailable"; }) ? "Diagnóstico terminado con métricas no disponibles" : "Diagnóstico terminado"))
+      : (busy ? "Batería automática en curso" : "La batería automática comenzará al entrar en el Laboratorio");
+    const canRetry = allFinal && phases.some(function (phase) { return phase.status === "error" || phase.status === "cancelled"; });
+    const actionButtons = '<div class="lab-diagnostic-actions">' +
+      (canRetry ? '<button class="btn btn-secondary btn-small" type="button" data-action="retry-lab-diagnostic">Reintentar fases fallidas</button>' : "") +
+      '<button class="btn btn-quiet btn-small" type="button" data-action="restart-lab-diagnostic"' +
+      (busy ? ' disabled aria-disabled="true"' : '') + '>Repetir diagnóstico</button></div>';
+    return '<section class="panel lab-diagnostic-progress" aria-labelledby="lab-diagnostic-progress-title">' +
+      '<div class="panel-head"><div><h2 id="lab-diagnostic-progress-title">Diagnóstico automático de Prisma</h2>' +
+      '<p class="metric-note" role="status" aria-live="polite">' + ctx.escapeHTML(overallStatus) + '</p></div>' +
+      '<span class="lab-diagnostic-percent">' + percent + '%</span></div>' +
+      '<progress class="lab-diagnostic-progress-bar" value="' + percent + '" max="100" aria-label="Progreso global del diagnóstico">' + percent + '%</progress>' +
+      '<div class="lab-diagnostic-summary" aria-live="polite">' +
+      '<span><strong>Fase actual:</strong> ' + ctx.escapeHTML(current ? current.label : (allFinal ? "Ninguna" : "Preparando batería")) + '</span>' +
+      '<span><strong>Fases finalizadas:</strong> ' + Number(run && run.completedPhases || (allFinal ? phases.length : 0)) + ' de ' + phases.length + '</span>' +
+      '<span><strong>Transcurrido:</strong> ' + formatDiagnosticDuration(run ? run.elapsedMs : 0) + '</span>' +
+      '<span><strong>Restante estimado:</strong> ' + eta + '</span></div>' +
+      '<p class="metric-note">La estimación se deriva de duraciones y unidades observadas; puede variar entre fases y perfiles. En esta primera ejecución se muestra “Calculando estimación…” hasta disponer de mediciones suficientes.</p>' +
+      '<ol class="lab-diagnostic-phase-list">' + phaseList + '</ol>' + actionButtons +
+      '</section>';
+  }
+
   function renderRecommendationDiagnosticPanel() {
     const reportText = ctx.recommendationDiagnosticReportText || "";
     const metricsBusy = Boolean(ctx.labMetricsBusy);
-    const metricsError = Boolean(ctx.labMetricsError);
-    const diagnosticButtonLabel = metricsBusy ? "Preparando diagnóstico…" : "Copiar diagnóstico técnico";
-    const disclosure = '<p class="metric-note">El informe se calcula con tus datos reales en este dispositivo. Incluye cantidades, distribución agregada de notas, cobertura del perfil, pesos del modelo, estadísticas resumidas de señales y los resultados agregados de MAE, Ridge, validación repetida y temporal, nDCG@5 por modo y diversidad.</p>' +
-      '<p class="metric-note">No incluye títulos de películas, IDs TMDB, notas por película, fechas personales, emociones, notas libres, credenciales ni copias de seguridad. Si incluyes nombres de señales, esos géneros y temas agregados pueden revelar parte de tus gustos.</p>';
+    const snapshot = ctx.labDiagnosticSnapshot || null;
+    const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
+    const allFinal = Boolean(snapshot && Array.isArray(snapshot.phases) &&
+      snapshot.phases.length === 7 && snapshot.phases.every(function (phase) { return finalStatuses.includes(phase.status); }));
+    const diagnosticButtonLabel = "Copiar diagnóstico completo para la IA desarrolladora";
+    const disclosure = '<p class="metric-note">Informe JSON único con estado y duración de cada una de las siete fases, cobertura, MAE y referencias, nDCG@5, diversidad, normalización, Ridge, evaluación temporal y comparación emparejada de familias de características.</p>' +
+      '<p class="metric-note">Se genera en este dispositivo y no se transmite automáticamente. Excluye títulos, identificadores de películas, notas por película, fechas personales, comentarios, emociones, credenciales y copias de seguridad.</p>';
     const detailsToggle = '<label class="diagnostic-feature-option"><input id="diagnosticFeatureLabels" type="checkbox"' +
       (ctx.recommendationDiagnosticFeatureLabelsIncluded ? ' checked' : '') +
       '> Incluir hasta 40 nombres de señales agregadas (géneros, temas y décadas) para facilitar el análisis</label>';
@@ -18,11 +95,11 @@ export function createLabViews(ctx) {
         '<div class="hero-actions"><button class="btn btn-quiet btn-small" type="button" data-action="clear-recommendation-diagnostics">Limpiar informe</button></div></div>'
       : "";
     return '<section class="panel recommendation-diagnostic-panel" aria-labelledby="recommendation-diagnostic-heading">' +
-      '<div class="panel-head"><div><h3 id="recommendation-diagnostic-heading">Informe para revisar el recomendador</h3><p class="metric-note">Preparado localmente a partir de las pruebas del Laboratorio</p></div>' +
-      '<button class="btn btn-secondary btn-small" type="button" data-action="copy-recommendation-diagnostics"' +
-      (metricsBusy || metricsError ? ' disabled aria-disabled="true"' : '') + '>' + diagnosticButtonLabel + '</button></div>' +
+      '<div class="panel-head"><div><h3 id="recommendation-diagnostic-heading">Informe integral para la IA desarrolladora</h3><p class="metric-note">Un único JSON preparado localmente cuando todas las fases hayan terminado.</p></div>' +
+      '<button class="btn btn-primary" type="button" data-action="copy-recommendation-diagnostics"' +
+      (metricsBusy || !allFinal ? ' disabled aria-disabled="true"' : '') + '>' + diagnosticButtonLabel + '</button></div>' +
       disclosure + detailsToggle +
-      '<p class="metric-note">Copiar no envía datos. Solo tú decides si pegas el informe en otra conversación.</p>' +
+      '<p class="metric-note">Copiar no envía datos. Solo tú decides si pegas el informe en otra conversación. Las etiquetas de señales concretas permanecen excluidas salvo que actives expresamente la opción anterior.</p>' +
       output + '</section>';
   }
 
@@ -34,7 +111,7 @@ export function createLabViews(ctx) {
     const ridgeBusy = Boolean(ctx.ridgeEvaluationBusy);
     const temporalBusy = Boolean(ctx.temporalRidgeEvaluationBusy);
     const metricsBusy = Boolean(ctx.labMetricsBusy);
-    const buttonLabel = metricsBusy ? "Preparando métricas iniciales…" : (busy ? "Evaluando normalización…" : (result ? "Volver a evaluar" : "Evaluar normalización"));
+    const buttonLabel = "";
     const methodNames = {
       mean: "Media actual · N",
       "coverage-sqrt": "Raíz de cobertura · √(N×K)",
@@ -46,7 +123,7 @@ export function createLabViews(ctx) {
       body = '<p class="metric-note" aria-live="polite">Comparando tres fórmulas con las mismas cinco particiones, perfiles de entrenamiento y películas retenidas. El recomendador activo no cambia.</p>';
     } else if (!result) {
       body = '<p class="metric-note">Esta prueba mide si dividir entre todas las características atenúa demasiado las señales conocidas. La raíz geométrica reduce esa atenuación conservando una penalización por baja cobertura; solo coincidencias se muestra como control sin esa penalización.</p>' +
-        '<p class="metric-note">Pulsa “Evaluar normalización” para calcular MAE, estabilidad por pliegue y nDCG@5. La ejecución es local y no modifica el perfil guardado ni las recomendaciones de producción.</p>';
+        '<p class="metric-note">Esta evaluación se ejecuta automáticamente como parte de la batería integrada, sin pulsar botones individuales. La fórmula activa permanece sin cambios.</p>';
     } else if (!result.available) {
       body = '<p class="metric-note" aria-live="polite">Experimento no disponible: ' +
         ctx.escapeHTML(result.unavailableReason || "faltan valoraciones enlazadas.") + '</p>';
@@ -90,8 +167,7 @@ export function createLabViews(ctx) {
     return '<section class="panel influence-normalization-panel" aria-labelledby="influence-normalization-heading">' +
       '<div class="panel-head"><div><h3 id="influence-normalization-heading">Calibración de la normalización de influencia</h3>' +
       '<p class="metric-note">¿La cantidad de metadatos diluye demasiado las coincidencias conocidas?</p></div>' +
-      '<button class="btn btn-secondary btn-small" type="button" data-action="run-influence-normalization-experiment"' +
-      (metricsBusy || busy || ridgeBusy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      '<p class="metric-note lab-automatic-label">Incluida en el diagnóstico automático</p></div>' +
       body + '</section>';
   }
 
@@ -168,16 +244,28 @@ export function createLabViews(ctx) {
         '<div class="metric-note">Referencia (media de entrenamiento): ' + evaluation.baselineMae.toFixed(2).replace(".",",") + '</div>' +
         evaluationComparison + decadeEvaluationMarkup :
         '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>')) + themeShrinkageEvaluationMarkup;
-    const labMetricsStatusMarkup = metrics
-      ? '<p class="metric-note" data-lab-metrics-state="ready" aria-live="polite">Métricas actualizadas con el perfil local. Los cálculos usan únicamente datos de este dispositivo.</p>'
-      : '<p class="metric-note" data-lab-metrics-state="' + (ctx.labMetricsError ? "error" : (metricsBusy ? "loading" : "pending")) + '" aria-live="polite">' +
-        (ctx.labMetricsError
-          ? ctx.escapeHTML(ctx.labMetricsError)
-          : (metricsBusy ? 'Calculando métricas en segundo plano; puedes seguir navegando mientras terminan…' : 'Preparando las métricas del Laboratorio…')) +
-        '</p>';
+    const metricsReady = Boolean(metrics && metrics.coverage);
+    const diagnostic = ctx.labDiagnosticSnapshot || null;
+    const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
+    const batteryFinal = Boolean(diagnostic && Array.isArray(diagnostic.phases) &&
+      diagnostic.phases.length === 7 && diagnostic.phases.every(function (phase) { return finalStatuses.includes(phase.status); }));
+    const statusState = batteryFinal ? (ctx.labMetricsError ? "error" : "ready")
+      : (metricsBusy ? "loading" : "pending");
+    const statusMessage = batteryFinal
+      ? (ctx.labMetricsError
+        ? ctx.labMetricsError
+        : (diagnostic.phases.some(function (phase) { return phase.status === "unavailable"; })
+          ? "Diagnóstico terminado; algunas métricas no estaban disponibles por cobertura."
+          : "Diagnóstico completo. El motor de producción permanece sin cambios."))
+      : (metricsReady ? "Cobertura medida; el diagnóstico automático continúa en segundo plano."
+        : (metricsBusy ? "Calculando métricas en segundo plano; puedes seguir navegando mientras terminan…"
+          : "Preparando las métricas del Laboratorio…"));
+    const labMetricsStatusMarkup = '<p class="metric-note" data-lab-metrics-state="' + statusState + '" aria-live="polite">' +
+      ctx.escapeHTML(statusMessage) + '</p>';
     const markup = '<section class="page-heading"><h1>Laboratorio</h1>' + ctx.infoButton("lab","Información sobre el Laboratorio") + '</section>' +
+      renderLabDiagnosticProgressPanel() +
       labMetricsStatusMarkup +
-      '<div class="metrics-grid">' + ctx.metric("Historial enlazado",metrics ? profile.withMetadata + "/" + stats.total : "Calculando…","") + ctx.metric("Señales",metrics ? String(profile.features.size) : "…","") + ctx.metric("Nota media",metrics ? overall.toFixed(1).replace(".",",") : "…","") + '</div>' +
+      '<div class="metrics-grid">' + ctx.metric("Historial enlazado",metricsReady ? profile.withMetadata + "/" + stats.total : "Calculando…","") + ctx.metric("Señales",metricsReady ? String(profile.features.size) : "…","") + ctx.metric("Nota media",metricsReady ? overall.toFixed(1).replace(".",",") : "…","") + '</div>' +
       '<div class="lab-metadata-host">' + ctx.renderTMDBHistoryPanel() + '</div>' +
       '<div class="two-col lab-charts"><section class="panel"><div class="panel-head"><h3>Géneros mejor valorados</h3></div>' +
       (top.length ? '<div class="bar-list">' + top.map(function (item) { return ctx.barRow(ctx.displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Datos insuficientes</strong></div>') +

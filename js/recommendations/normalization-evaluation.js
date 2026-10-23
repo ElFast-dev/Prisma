@@ -120,7 +120,7 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
     return rows;
   }
 
-  async function mappedRatingsAsync(shouldContinue, yieldToBrowser) {
+  async function mappedRatingsAsync(shouldContinue, yieldToBrowser, onProgress) {
     const rows = [];
     const seen = new Set();
     const sourceRatings = getRatings() || [];
@@ -138,7 +138,12 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
           }
         }
       }
-      if ((index + 1) % 16 === 0) {
+      if ((index + 1) % 16 === 0 || index + 1 === sourceRatings.length) {
+        if (typeof onProgress === "function") onProgress({
+          completedWork: index + 1,
+          totalWork: Math.max(1, sourceRatings.length * 4 + FOLDS),
+          detail: "Enlazando características para normalización"
+        });
         await yieldToBrowser();
         if (!shouldContinue()) return null;
       }
@@ -325,9 +330,10 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
     const settings = control || {};
     const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
     const onMeasure = typeof settings.onMeasure === "function" ? settings.onMeasure : function () {};
+    const onProgress = typeof settings.onProgress === "function" ? settings.onProgress : function () {};
     const startedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
     const yieldToBrowser = function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
-    const rows = await mappedRatingsAsync(shouldContinue, yieldToBrowser);
+    const rows = await mappedRatingsAsync(shouldContinue, yieldToBrowser, onProgress);
     if (!rows || !shouldContinue()) return null;
     const relevantCount = rows.filter(function (row) {
       return row.rating >= RELEVANT_THRESHOLD;
@@ -360,6 +366,8 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
       });
     });
 
+    const progressTotal = Math.max(1, (getRatings() || []).length * 4 + FOLDS);
+    let progressWork = (getRatings() || []).length;
     for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
       if (!shouldContinue()) return null;
       const testRows = folds[foldIndex];
@@ -382,6 +390,7 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
         const accumulator = accumulators[method];
         const candidates = [];
         let foldErrorSum = 0;
+        let reportedRowCount = 0;
         for (let rowIndex = 0; rowIndex < testRows.length; rowIndex += 1) {
           if (!shouldContinue()) return null;
           const row = testRows[rowIndex];
@@ -394,7 +403,14 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
             evaluationIdentity: row.identity,
             prediction: Object.assign({}, prediction || {}, { score: score })
           }));
-          if ((rowIndex + 1) % 8 === 0) {
+          if ((rowIndex + 1) % 8 === 0 || rowIndex + 1 === testRows.length) {
+            progressWork += rowIndex + 1 - reportedRowCount;
+            reportedRowCount = rowIndex + 1;
+            onProgress({
+              completedWork: Math.min(progressTotal, progressWork),
+              totalWork: progressTotal,
+              detail: "Normalización · método " + method + " · pliegue " + (foldIndex + 1) + " de " + folds.length
+            });
             await yieldToBrowser();
             if (!shouldContinue()) return null;
           }
@@ -419,6 +435,12 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
           ranking.foldsEvaluated += 1;
         });
       }
+      progressWork += 1;
+      onProgress({
+        completedWork: Math.min(progressTotal, progressWork),
+        totalWork: progressTotal,
+        detail: "Pliegue de normalización " + (foldIndex + 1) + " de " + folds.length
+      });
       await yieldToBrowser();
       if (!shouldContinue()) return null;
     }
