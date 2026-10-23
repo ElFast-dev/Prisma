@@ -556,24 +556,35 @@ function coverageSummary(input) {
 }
 
 function featureFamilySummary(input) {
-  if (!input || typeof input !== "object") return { available: false, sampleCount: 0, foldsPlanned: 5, foldsEvaluated: 0, sharedPartition: true, families: [], unavailableReason: "La fase no produjo resultados." };
+  if (!input || typeof input !== "object") return {
+    available: false, sampleCount: 0, repeats: 3, foldsPerRepeat: 5, foldsEvaluated: 0,
+    sharedPartition: true, trainingLeakageChecked: false, families: [],
+    unavailableReason: "La fase no produjo resultados."
+  };
   const sourceFamilies = Array.isArray(input.families) ? input.families : [];
   const expected = ["genres-only", "genres-tags", "genres-tags-synopsis", "full-current"];
-  const families = expected.map(function (id) {
-    const row = sourceFamilies.find(function (item) { return item && item.id === id; }) || {};
-    const modes = ["balanced", "affinity", "variety"].map(function (mode) {
-      const current = (Array.isArray(row.rankingModes) ? row.rankingModes : []).find(function (item) { return item && item.mode === mode; }) || {};
+  const summarizeModes = function (row, threshold, reference) {
+    const modesSource = row && row.rankingByThreshold && row.rankingByThreshold[String(threshold)]
+      ? row.rankingByThreshold[String(threshold)]
+      : (threshold === 7 && row ? row.rankingModes : null);
+    return ["balanced", "affinity", "variety"].map(function (mode) {
+      const current = modesSource && modesSource[mode] ? modesSource[mode] :
+        ((Array.isArray(row && row.rankingModes) ? row.rankingModes : []).find(function (item) { return item && item.mode === mode; }) || {});
       return {
         mode: mode,
         available: Boolean(current.available),
-        ndcgAt5: rounded(current.ndcgAt5, 5),
-        deltaNdcgVsGenres: rounded(current.deltaNdcgVsGenres, 5),
+        ndcgAt5: current.available ? rounded(current.ndcgAt5, 5) : null,
+        deltaNdcgVsGenres: current.available ? rounded(current.deltaNdcgVsGenres, 5) : null,
         foldsEvaluated: nonNegativeInteger(current.foldsEvaluated),
         wins: nonNegativeInteger(current.wins),
         ties: nonNegativeInteger(current.ties),
-        losses: nonNegativeInteger(current.losses)
+        losses: nonNegativeInteger(current.losses),
+        foldNdcgAt5: Array.isArray(current.foldNdcgAt5) ? current.foldNdcgAt5.slice(0, 15).map(function (v) { return rounded(v, 5); }) : []
       };
     });
+  };
+  const families = expected.map(function (id) {
+    const row = sourceFamilies.find(function (item) { return item && item.id === id; }) || {};
     return {
       id: id,
       label: FEATURE_FAMILY_LABELS[id],
@@ -585,26 +596,155 @@ function featureFamilySummary(input) {
       maeWins: nonNegativeInteger(row.maeWins),
       ties: nonNegativeInteger(row.ties),
       maeLosses: nonNegativeInteger(row.maeLosses),
-      foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 5).map(function (value) { return rounded(value, 5); }) : [],
-      rankingModes: modes
+      foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 15).map(function (value) { return rounded(value, 5); }) : [],
+      rankingModes: summarizeModes(row, 7),
+      rankingByThreshold: {
+        "7": summarizeModes(row, 7),
+        "9": summarizeModes(row, 9)
+      }
     };
   });
+  const repeatSummaries = (Array.isArray(input.repeatSummaries) ? input.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+    const folds = (Array.isArray(repeat && repeat.folds) ? repeat.folds : []).slice(0, 5).map(function (fold) {
+      const foldFamilies = {};
+      const sourceFoldFamilies = fold && fold.families && typeof fold.families === "object" ? fold.families : {};
+      expected.forEach(function (id) {
+        const row = sourceFoldFamilies[id] || {};
+        foldFamilies[id] = {
+          mae: rounded(row.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(row.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(row.ndcgAt5Threshold9)
+        };
+      });
+      const lambdas = {};
+      const sourceLambdas = fold && fold.lambdas && typeof fold.lambdas === "object" ? fold.lambdas : {};
+      Object.keys(sourceLambdas).filter(function (key) { return ["0", "0.5", "1", "2", "4", "8"].includes(key); }).forEach(function (key) {
+        const row = sourceLambdas[key] || {};
+        lambdas[key] = {
+          mae: rounded(row.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(row.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(row.ndcgAt5Threshold9)
+        };
+      });
+      const selected = fold && fold.selectedLambda || {};
+      return {
+        fold: nonNegativeInteger(fold && fold.fold),
+        trainingCount: nonNegativeInteger(fold && fold.trainCount),
+        testCount: nonNegativeInteger(fold && fold.testCount),
+        families: foldFamilies,
+        lambdas: lambdas,
+        selectedLambda: {
+          available: Number.isFinite(Number(selected.lambda)),
+          lambda: Number.isFinite(Number(selected.lambda)) ? rounded(selected.lambda, 4) : null,
+          mae: rounded(selected.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(selected.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(selected.ndcgAt5Threshold9),
+          unavailableReason: selected.available === false ? String(selected.reason || "La selección interna no está disponible.").slice(0, 180) : null
+        }
+      };
+    });
+    return {
+      repeat: nonNegativeInteger(repeat && repeat.repeat),
+      foldsEvaluated: folds.length,
+      maeByFamily: expected.reduce(function (all, id) {
+        const values = folds.map(function (fold) { return fold.families[id].mae; }).filter(Number.isFinite);
+        all[id] = rounded(values.length ? values.reduce(function (sum, value) { return sum + value; }, 0) / values.length : null, 5);
+        return all;
+      }, {}),
+      folds: folds
+    };
+  });
+  const support = input.supportRegularization && typeof input.supportRegularization === "object" ? input.supportRegularization : null;
+  const supportRegularization = support ? {
+    available: Boolean(support.available),
+    featureSupportWeightFormula: support.featureSupportWeightFormula === "weight * support / (support + lambda)"
+      ? support.featureSupportWeightFormula : null,
+    lambdas: Array.isArray(support.lambdas) ? support.lambdas.map(numeric).filter(function (v) { return v != null && v >= 0; }).slice(0, 10) : [],
+    results: (Array.isArray(support.results) ? support.results : []).slice(0, 10).map(function (row) {
+      return {
+        lambda: rounded(row.lambda, 4),
+        available: Boolean(row.available),
+        mae: rounded(row.mae, 5),
+        deltaMaeVsNoShrinkage: rounded(row.deltaMaeVsNoShrinkage, 5),
+        foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
+        maeWins: nonNegativeInteger(row.maeWins),
+        ties: nonNegativeInteger(row.ties),
+        maeLosses: nonNegativeInteger(row.maeLosses),
+        rankingModes: summarizeModes(row, 7),
+        rankingByThreshold: { "7": summarizeModes(row, 7), "9": summarizeModes(row, 9) },
+        repeatSummaries: (Array.isArray(row.repeatSummaries) ? row.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+          return { repeat: nonNegativeInteger(repeat.repeat), mae: rounded(repeat.mae, 5), foldsEvaluated: nonNegativeInteger(repeat.foldCount) };
+        })
+      };
+    }),
+    nestedSelection: support.nestedSelection ? {
+      available: Boolean(support.nestedSelection.available),
+      selectionCriterion: String(support.nestedSelection.selectionCriterion || "").slice(0, 180),
+      outerFoldsEvaluated: nonNegativeInteger(support.nestedSelection.outerFoldsEvaluated),
+      selectedLambdaCounts: Object.keys(support.nestedSelection.selectedLambdaCounts || {}).filter(function (key) {
+        return ["0", "0.5", "1", "2", "4", "8"].includes(key);
+      }).reduce(function (all, key) {
+        all[key] = nonNegativeInteger(support.nestedSelection.selectedLambdaCounts[key]);
+        return all;
+      }, {}),
+      mae: rounded(support.nestedSelection.mae, 5),
+      foldMae: Array.isArray(support.nestedSelection.foldMae) ? support.nestedSelection.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
+      rankingModes: summarizeModes(support.nestedSelection, 7),
+      rankingByThreshold: { "7": summarizeModes(support.nestedSelection, 7), "9": summarizeModes(support.nestedSelection, 9) }
+    } : null,
+    featureSupportBySignalType: summarizeSupportSignalTypes(support.featureSupportBySignalType),
+    interpretationLimits: Array.isArray(support.interpretationLimits) ? support.interpretationLimits.map(function (v) { return String(v).slice(0, 220); }).slice(0, 8) : []
+  } : null;
   return {
     executionStatus: input.executionStatus === "completed" ? "completed" : "unavailable",
     available: Boolean(input.available),
     sampleCount: nonNegativeInteger(input.sampleCount),
-    foldsPlanned: 5,
-    foldsEvaluated: Math.min(5, nonNegativeInteger(input.foldsEvaluated)),
-    sharedPartition: input.sharedPartition === true,
+    repeats: nonNegativeInteger(input.repeats),
+    foldsPerRepeat: nonNegativeInteger(input.foldsPerRepeat),
+    foldsPlanned: nonNegativeInteger(input.foldsPerRepeat),
+    foldsEvaluated: Math.min(15, nonNegativeInteger(input.foldsEvaluated)),
+    sharedPartition: input.sharedPartition === true || input.sharedPartitions === true,
     trainingLeakageChecked: input.trainingLeakageChecked === true,
+    relevanceThresholds: Array.isArray(input.relevanceThresholds) ? input.relevanceThresholds.map(numeric).filter(function (v) { return v != null; }).slice(0, 4) : [7],
+    relevantCounts: {
+      "7": nonNegativeInteger(input.relevantCounts && input.relevantCounts["7"]),
+      "9": nonNegativeInteger(input.relevantCounts && input.relevantCounts["9"])
+    },
+    durationMs: rounded(input.durationMs, 1),
     families: families,
+    repeatSummaries: repeatSummaries,
+    supportRegularization: supportRegularization,
     unavailableReason: input.available ? null : String(input.unavailableReason || "La muestra no cumple los requisitos.").slice(0, 220),
     interpretationLimits: [
-      "Las cuatro familias comparten las mismas películas con género enlazado y los mismos cinco pliegues.",
-      "Las notas del pliegue retenido solo intervienen en el cálculo de error y ganancia, nunca en el perfil que predice ese pliegue.",
-      "La comparación es descriptiva y no demuestra significación estadística ni causalidad."
+      "Las cuatro familias comparten las mismas identidades y particiones exteriores dentro de cada repetición.",
+      "Las notas del pliegue exterior se usan solo para métricas; la selección de lambda emplea únicamente particiones internas del entrenamiento.",
+      "Tres repeticiones y quince pliegues reutilizan el mismo historial personal: no son quince muestras independientes.",
+      "El umbral 9 puede tener baja potencia con pocos ratings muy altos; las dos notas 10 no bastan para estimar predicción de obras excepcionales.",
+      "Una mejora descriptiva en este historial no demuestra significación estadística ni causalidad."
     ]
   };
+}
+function summarizeRawFoldModes(source) {
+  const input = source && typeof source === "object" ? source : {};
+  return ["balanced", "affinity", "variety"].reduce(function (all, mode) {
+    const value = input[mode];
+    all[mode] = Number.isFinite(Number(value)) ? rounded(value, 5) : null;
+    return all;
+  }, {});
+}
+function summarizeSupportSignalTypes(source) {
+  const input = source && typeof source === "object" ? source : {};
+  const allowed = ["genre", "theme", "synopsis", "actor", "director", "writer", "composer", "company", "country", "language", "spokenLanguage", "collection", "runtime", "decade", "other"];
+  return allowed.reduce(function (all, type) {
+    const row = input[type] || {};
+    all[type] = {
+      featureObservations: nonNegativeInteger(row.featureObservations),
+      supportOneFeatures: nonNegativeInteger(row.supportOneFeatures),
+      meanSupport: rounded(row.meanSupport, 4),
+      meanAbsoluteWeight: rounded(row.meanAbsoluteWeight, 5)
+    };
+    return all;
+  }, {});
 }
 
 /**
