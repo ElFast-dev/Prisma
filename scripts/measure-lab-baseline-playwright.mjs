@@ -5,6 +5,7 @@ import { makeLabSyntheticFixture, seedLabSyntheticProfile } from "./lab-regressi
 const baseUrl = process.env.PRISMA_BASELINE_URL || "http://127.0.0.1:8766/";
 const thresholdMs = Number(process.env.PRISMA_BASELINE_TIMEOUT_MS) || 20000;
 const browser = await chromium.launch({ headless: true });
+const diagnosticsStartedAt = Date.now();
 const result = {
   baselineCommit: "edcaaf63e1a79506deeda369f26646ba6633af67",
   profileType: "synthetic-only",
@@ -17,6 +18,7 @@ const result = {
 };
 
 try {
+  console.log("[Prisma baseline Lab]", JSON.stringify({ phase: "browser-created", thresholdMs: thresholdMs, ratings: result.ratings }));
   const context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
     serviceWorkers: "block"
@@ -27,15 +29,19 @@ try {
     timeout: 60000
   });
   await page.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
+  console.log("[Prisma baseline Lab]", JSON.stringify({ phase: "initial-home-ready", elapsedMs: Date.now() - diagnosticsStartedAt }));
   await seedLabSyntheticProfile(page, makeLabSyntheticFixture());
+  console.log("[Prisma baseline Lab]", JSON.stringify({ phase: "fixture-seeded", elapsedMs: Date.now() - diagnosticsStartedAt }));
   await page.reload({ waitUntil: "networkidle", timeout: 60000 });
   await page.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
+  console.log("[Prisma baseline Lab]", JSON.stringify({ phase: "seeded-home-reloaded", elapsedMs: Date.now() - diagnosticsStartedAt }));
 
   await page.evaluate(() => {
     window.__baselineLabTicks = 0;
     window.__baselineLabHeartbeat = setInterval(() => { window.__baselineLabTicks += 1; }, 10);
   });
   const startedAt = Date.now();
+  console.log("[Prisma baseline Lab]", JSON.stringify({ phase: "navigation-started", elapsedMs: Date.now() - diagnosticsStartedAt }));
   const headingPromise = page.locator("main h1").filter({ hasText: "Laboratorio" })
     .waitFor({ state: "visible", timeout: thresholdMs + 10000 })
     .then(() => ({ visible: true, elapsedMs: Date.now() - startedAt }))
@@ -49,6 +55,7 @@ try {
     headingPromise,
     new Promise(resolve => setTimeout(() => resolve({ visible: false, elapsedMs: thresholdMs, timedOut: true }), thresholdMs))
   ]);
+  console.log("[Prisma baseline Lab]", JSON.stringify({ phase: outcome.timedOut ? "heading-timeout" : "heading-visible", elapsedMs: Date.now() - diagnosticsStartedAt, headingMs: outcome.elapsedMs }));
   result.visibleWithinTimeout = outcome.visible;
   result.clickToLabHeadingMs = outcome.elapsedMs;
   if (outcome.timedOut) {
