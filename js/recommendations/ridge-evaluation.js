@@ -863,6 +863,13 @@ export function createRidgeRecommendationExperiment(dependencies) {
       return keepGoing;
     };
     const shouldContinue = function () { return !callbackCancelled && externalShouldContinue(); };
+    const abortedResult = function () {
+      if (!externalShouldContinue()) return null;
+      if (!callbackCancelled) return null;
+      const reason = "La evaluación Ridge se canceló porque se invalidó la ejecución solicitada.";
+      return unavailableResult(rows.length, reason,
+        unavailableRankingQuality(rows.length, relevantCount, reason), relevantCount);
+    };
     const yieldToBrowser = typeof settings.yieldToBrowser === "function"
       ? settings.yieldToBrowser
       : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
@@ -923,13 +930,13 @@ export function createRidgeRecommendationExperiment(dependencies) {
           });
         }
       });
-      if (!canContinue()) return null;
+      if (!canContinue()) return abortedResult();
       const indices = rows.map(function (_, index) { return index; });
       const repeatedRuns = [];
       for (let repetitionIndex = 0; repetitionIndex < REPEATED_VALIDATION_RUNS; repetitionIndex += 1) {
-        if (!canContinue()) return null;
+        if (!canContinue()) return abortedResult();
         const run = await evaluateFoldSetAsync(rows, kernel, indices, repetitionIndex, relevantCount, control);
-        if (!run || !canContinue()) return null;
+        if (!run || !canContinue()) return abortedResult();
         repeatedRuns.push(run);
         emitProgress({
           completedWork: completedWork,
@@ -943,7 +950,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       }
       return completedEvaluation(rows, repeatedRuns, relevantCount);
     } catch (error) {
-      if (!canContinue()) return null;
+      if (!canContinue()) return abortedResult();
       return unavailableEvaluation(rows, relevantCount);
     }
   }
