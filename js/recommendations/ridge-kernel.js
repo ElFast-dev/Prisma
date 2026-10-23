@@ -186,7 +186,7 @@ export async function trainRidgeAsync(rows, kernel, trainIndices, alpha, control
     throw new Error("Parámetros de entrenamiento inválidos");
   }
   const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
-  const batchSize = Math.max(4, Math.min(24, Number(settings.batchSize) || 12));
+  const batchSize = Math.max(8, Math.min(64, Number(settings.batchSize) || 48));
   const size = trainIndices.length;
   const rowMeans = new Float64Array(size);
   let grandMean = 0;
