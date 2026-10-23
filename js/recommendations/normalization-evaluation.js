@@ -120,6 +120,32 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
     return rows;
   }
 
+  async function mappedRatingsAsync(shouldContinue, yieldToBrowser) {
+    const rows = [];
+    const seen = new Set();
+    const sourceRatings = getRatings() || [];
+    for (let index = 0; index < sourceRatings.length; index += 1) {
+      if (!shouldContinue()) return null;
+      const entry = sourceRatings[index];
+      const rating = ratingValue(entry);
+      if (rating != null) {
+        const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
+        if (movieFeatures(movie, entry).length) {
+          const identity = identityFor(entry, movie, dependencies);
+          if (identity && !seen.has(identity)) {
+            seen.add(identity);
+            rows.push({ entry: entry, movie: movie, identity: identity, rating: rating });
+          }
+        }
+      }
+      if ((index + 1) % 16 === 0) {
+        await yieldToBrowser();
+        if (!shouldContinue()) return null;
+      }
+    }
+    return rows;
+  }
+
   function evaluate() {
     const rows = mappedRatings();
     const relevantCount = rows.filter(function (row) {
@@ -301,7 +327,8 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
     const onMeasure = typeof settings.onMeasure === "function" ? settings.onMeasure : function () {};
     const startedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
     const yieldToBrowser = function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
-    const rows = mappedRatings();
+    const rows = await mappedRatingsAsync(shouldContinue, yieldToBrowser);
+    if (!rows || !shouldContinue()) return null;
     const relevantCount = rows.filter(function (row) {
       return row.rating >= RELEVANT_THRESHOLD;
     }).length;
