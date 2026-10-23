@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -17,6 +17,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/recommendations/evaluation.js', 'utf8'),
   readFile('js/recommendations/normalization-evaluation.js', 'utf8'),
   readFile('js/recommendations/ridge-evaluation.js', 'utf8'),
+  readFile('js/recommendations/ridge-kernel.js', 'utf8'),
   readFile('js/recommendations/repeated-validation-summary.js', 'utf8'),
   readFile('js/catalog/csv-parser.js', 'utf8'),
   readFile('js/catalog/catalog-model.js', 'utf8'),
@@ -84,6 +85,7 @@ const modules = [
   ['js/recommendations/evaluation.js', evaluation],
   ['js/recommendations/normalization-evaluation.js', normalizationEvaluation],
   ['js/recommendations/ridge-evaluation.js', ridgeEvaluation],
+  ['js/recommendations/ridge-kernel.js', ridgeKernel],
   ['js/recommendations/repeated-validation-summary.js', repeatedValidationSummary],
   ['js/recommendations/preferences.js', recommendationPreferences],
   ['js/catalog/csv-parser.js', csvParser],
@@ -143,7 +145,9 @@ assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-3"),
   "El enriquecimiento temporal de candidatas debe estar versionado.");
 assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-5"),
   "El registro de notas sin emociones debe estar versionado.");
-assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-10"),
+assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=rec-20261023-1"),
+assert.ok(cached.has("./js/recommendations/ridge-kernel.js?v=rec-20261023-1"),
+  "El kernel numérico de Ridge debe estar incluido en la precaché versionada.");
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
