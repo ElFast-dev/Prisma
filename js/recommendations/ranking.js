@@ -102,7 +102,7 @@ export function createRecommendationRanking(ctx) {
 
     const candidates = (ctx.catalog || []).concat(ctx.recommendationCandidates || []);
     const results = ctx.uniqueDiscoveryMovies(candidates).filter(function (movie) {
-      return !ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history";
+      return !ctx.isMovieInCollection(movie.title,movie.tmdbId,movie.year) && movie.source !== "history";
     }).map(function (movie) {
       const prediction = ctx.predictRating(movie, profile);
       return Object.assign({}, movie, { prediction: prediction });

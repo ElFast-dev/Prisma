@@ -143,7 +143,7 @@ assert.ok(cached.has("./js/tmdb/movie-details.js?v=core-20261022-3"),
   "Los detalles de película deben guardar los marcadores de créditos y keywords.");
 assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-4"),
   "El catálogo debe fusionar las nuevas familias de metadatos.");
-assert.ok(cached.has("./js/collection/collection-model.js?v=core-20261022-4"),
+assert.ok(cached.has("./js/collection/collection-model.js?v=core-20261023-1"),
   "El modelo de colección debe usar la identidad contextual y filtrar fechas automáticas.");
 assert.ok(cached.has("./js/import-export/personal-data.js?v=core-20261022-8"),
   "La importación de datos personales debe usar la nueva reconciliación de identidades.");
@@ -177,7 +177,7 @@ assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-2"),
   "El módulo del Laboratorio debe tener versión propia y estar en la precaché.");
 assert.ok(cached.has("./js/ui/watch-streak-view.js?v=core-20261023-1"),
   "La vista del calendario de racha debe estar versionada y precargada en la caché.");
-assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261023-1"),
+assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261023-2"),
   "El ranking debe usar búsqueda de perfil con identidad y año fiables.");
 assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-2"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");

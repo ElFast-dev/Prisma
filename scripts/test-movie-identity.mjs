@@ -12,6 +12,8 @@ import { createRecommendationEngine } from "../js/recommendations/engine.js";
 import { createRecommendationEvaluation } from "../js/recommendations/evaluation.js";
 import { createRecommendationNormalizationEvaluation } from "../js/recommendations/normalization-evaluation.js";
 import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
+import { createCollectionModel } from "../js/collection/collection-model.js";
+import { createRecommendationRanking } from "../js/recommendations/ranking.js";
 
 assert.notEqual(
   movieIdentityKey({ title: "Prisma Identity Fixture", year: 1998 }),
@@ -54,6 +56,50 @@ assert.equal(sameDiscoveryMovie(
   { title: "Prisma Discovery Fixture", year: 1998 },
   { title: "Prisma Discovery Fixture", year: 2024 }
 ), false);
+
+// Recomendaciones deben pasar el año a la comprobación de colección: permite
+// reconciliar una fila antigua sin ID con la identidad correcta sin ocultar remakes.
+const identityState = {
+  rated: [],
+  watched: [],
+  watchlist: [],
+  hidden: [{ title: "Prisma Recommendation Legacy Fixture" , year: 2024 }]
+};
+const collection = createCollectionModel({
+  getState: () => identityState,
+  getCollectionTab: () => "history",
+  getCollectionQuery: () => "",
+  getCollectionGenres: () => [],
+  getOnlyReleased: () => false,
+  getCollectionSort: () => "added",
+  getCollectionDirection: () => "desc",
+  findMovie: () => null,
+  titleKey,
+  displayGenre: value => value,
+  movieIdentityKey,
+  movieTmdbId,
+  ratingValue,
+  sameMovieRecord,
+  hasTrustedTMDBScore: () => false
+});
+assert.equal(collection.isMovieInCollection("Prisma Recommendation Legacy Fixture", "990501", 2024), true,
+  "Una candidata TMDB debe excluirse cuando la colección tiene su fila legada del mismo año.");
+assert.equal(collection.isMovieInCollection("Prisma Recommendation Legacy Fixture", "990502", 1998), false,
+  "La misma película con un año distinto no debe ocultarse por una fila legada ambigua.");
+
+const recommendationRanking = createRecommendationRanking({
+  catalog: [{ title: "Prisma Recommendation Legacy Fixture", year: 2024, tmdbId: "990501" }],
+  recommendationCandidates: [],
+  buildProfile: () => ({ count: 1, average: 7 }),
+  uniqueDiscoveryMovies: movies => movies,
+  isMovieInCollection: (title, id, year) => collection.isMovieInCollection(title, id, year),
+  predictRating: () => ({ score: 8, matches: [], freshFeatures: 0 }),
+  state: { rated: [] },
+  findMovie: () => null,
+  ratingValue
+});
+assert.deepEqual(recommendationRanking.getRecommendations(8, "affinity"), [],
+  "Las recomendaciones deben excluir una película de colección aunque su fila personal no tenga ID TMDB.");
 
 const singleTMDB = { title: "About Time", year: 2013, tmdbId: "122906" };
 assert.equal(
