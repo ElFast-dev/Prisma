@@ -135,8 +135,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261022-26") &&
-                  lastUI.appSrc.includes("v=ui-20261023-103") &&
+                  lastUI.cssHref.includes("v=ui-20261023-27") &&
+                  lastUI.appSrc.includes("v=ui-20261023-104") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
