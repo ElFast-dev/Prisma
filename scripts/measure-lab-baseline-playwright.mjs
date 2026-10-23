@@ -65,10 +65,15 @@ try {
     clickPromise,
     new Promise(resolve => setTimeout(() => resolve("pending when measurement ended"), 1))
   ]);
-  await context.close().catch(() => {});
+  // Persist the measurement before asking the browser to close a renderer that may be blocked.
   await mkdir("artifacts", { recursive: true });
   await writeFile("artifacts/lab-responsiveness-before.json", JSON.stringify(result, null, 2) + "\n", "utf8");
   console.log("Pre-fix synthetic Lab measurement:", JSON.stringify(result));
+  if (outcome.timedOut) {
+    // BrowserContext.close may itself wait for the blocked renderer. Exit only after the result is durable.
+    process.exit(0);
+  }
+  await context.close().catch(() => {});
 } finally {
   await browser.close();
 }
