@@ -433,6 +433,9 @@ const [appSource, labViewsSource, eventHandlersSource, reportSource, labActionsS
 assert.match(appSource, /buildRecommendationDiagnosticReport/);
 assert.match(labActionsSource, /ctx\.navigator\.clipboard\.writeText/);
 assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
+assert.match(labViewsSource, /Copiar contexto resumido para IA/);
+assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics-json"/);
+assert.match(labActionsSource, /buildRecommendationDeveloperBrief/);
 assert.match(labViewsSource, /Excluye títulos, identificadores de películas/);
 assert.match(labViewsSource, /Experimento \(temas atenuados por soporte\)/);
 assert.match(reportSource, /themeShrinkageDeltaBaseMinusRegularized/);
