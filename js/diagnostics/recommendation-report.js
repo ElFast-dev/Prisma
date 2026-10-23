@@ -1008,6 +1008,7 @@ export function buildRecommendationDiagnosticReport(input) {
       temporalRidgeExperiment: temporalRidgeEvaluation(source.temporalRidgeEvaluation),
       influenceNormalizationExperiment: influenceNormalizationEvaluation(source.influenceNormalizationEvaluation),
       rankingQuality: quality.ranking,
+      candidateAvailability: quality.candidateAvailability,
       currentListDiversity: quality.diversity
     },
     diagnostic: {
