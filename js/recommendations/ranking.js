@@ -93,7 +93,7 @@ export function createRecommendationRanking(ctx) {
   function eligibleCandidates(source) {
     const rows = Array.isArray(source) ? source : [];
     return ctx.uniqueDiscoveryMovies(rows).filter(function (movie) {
-      return !ctx.isMovieInCollection(movie.title, movie.tmdbId || movie.tmId, movie.year) && movie.source !== "history";
+      return !ctx.isMovieInCollection(movie.title,movie.tmdbId,movie.year) && movie.source !== "history";
     });
   }
 
