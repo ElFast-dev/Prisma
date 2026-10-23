@@ -352,15 +352,6 @@ export function createLabMetricsActions(ctx) {
           localCandidatesEligible: 0, eligibleCandidatePool: 0, rankedResultsAvailable: 0,
           requestedResultLimit: requestedResultLimit, profileAvailable: Boolean(profile && profile.count > 0)
         };
-    const currentRecommendations = typeof ctx.getRecommendations === "function"
-      ? (ctx.getRecommendations(requestedResultLimit, ctx.recommendationMode || "balanced", profile) || [])
-      : [];
-    candidateCounts.returnedResultCount = currentRecommendations.length;
-    if (!candidateCounts.profileAvailable) candidateCounts.shortfallReason = "empty-personal-profile";
-    else if (candidateCounts.eligibleCandidatePool < requestedResultLimit) candidateCounts.shortfallReason = "eligible-pool-too-small";
-    else if (candidateCounts.returnedResultCount < requestedResultLimit) {
-      candidateCounts.shortfallReason = ctx.recommendationMode === "balanced" ? "balanced-genre-cap" : "ranking-policy-shortfall";
-    } else candidateCounts.shortfallReason = null;
     const report = {
       ratingEntries: ratings.length,
       validRatingEntries: validEntries,
@@ -381,8 +372,6 @@ export function createLabMetricsActions(ctx) {
       eligibleCandidatePool: Number(candidateCounts.eligibleCandidatePool) || 0,
       rankedResultsAvailable: Number(candidateCounts.rankedResultsAvailable) || 0,
       requestedResultLimit: requestedResultLimit,
-      returnedResultCount: currentRecommendations.length,
-      shortfallReason: candidateCounts.shortfallReason || null,
       metadataCoverage: validEntries ? metadataCount / validEntries : 0,
       featureLinkedCoverage: uniqueRatings ? uniqueFeatureRows / uniqueRatings : 0
     };
