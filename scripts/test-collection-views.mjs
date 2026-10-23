@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createCollectionViews } from "../js/ui/collection-views.js";
+import { createPageViews } from "../js/ui/page-views.js";
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -48,6 +49,12 @@ const ctx = {
 };
 
 const views = createCollectionViews(ctx);
+const pageViews = createPageViews(ctx);
+
+// The general page factory must preserve the collection renderer API as direct delegates.
+for (const name of ["recentPoster", "collectionRow", "collectionCompactCard", "renderCollectionContent", "refreshCollectionContent", "renderLibrary"]) {
+  assert.equal(pageViews[name], views[name], "createPageViews debe conservar la API pública de Colección: " + name);
+}
 
 // Collection page keeps tabs, counts, accessible search, filters, sorting and layout controls.
 const library = views.renderLibrary();
