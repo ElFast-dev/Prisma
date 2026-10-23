@@ -187,8 +187,13 @@ const asyncMeasures = [];
 const asyncQuality = await ideal.evaluation.evaluateRecommendationQualityAsync({
   onMeasure: (operation, durationMs, sampleCount, status) => asyncMeasures.push({ operation, durationMs, sampleCount, status })
 });
-assert.deepEqual(asyncQuality, { ranking: idealResult, diversity },
-  "El ranking cooperativo y la diversidad deben preservar los resultados calculados de forma síncrona.");
+assert.deepEqual(asyncQuality.ranking, idealResult,
+  "El ranking cooperativo debe preservar los resultados calculados de forma síncrona.");
+assert.deepEqual(asyncQuality.diversity, diversity,
+  "La diversidad cooperativa debe preservar los resultados calculados de forma síncrona.");
+assert.equal(asyncQuality.candidateAvailability.length, 3,
+  "Cada modo debe incluir los contadores agregados del pool y de los resultados devueltos.");
+assert.ok(asyncQuality.candidateAvailability.every(item => item.requestedResultLimit === 5));
 assert.ok(asyncMeasures.some(item => item.operation === "ranking-cross-validation" && item.status === "completed"));
 assert.ok(asyncMeasures.some(item => item.operation === "ranking-diversity" && item.status === "completed"));
 
