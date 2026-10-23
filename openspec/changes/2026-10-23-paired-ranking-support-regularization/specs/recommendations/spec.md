@@ -36,6 +36,12 @@ Prisma DEBE comparar una rejilla declarada de lambda, incluido lambda=0, aplican
 
 Prisma DEBE evaluar alphas menores que 0,1 y comparar la selección interna por MAE con selección interna por nDCG@5. Las dos estrategias DEBEN compartir pliegues internos dentro de cada pliegue exterior y SOLO las etiquetas internas podrán intervenir en la selección. Los resultados se contrastan en los pliegues externos sin alterar producción.
 
+#### Scenario: Criterios internos emparejados
+
+- DADO un conjunto de entrenamiento exterior con muestra suficiente para medir nDCG@5
+- CUANDO Prisma selecciona alpha mediante validación interna por MAE y, por separado, por ranking
+- ENTONCES ambas estrategias utilizan los mismos pliegues internos y se comparan en el mismo pliegue exterior, sin consultar sus notas retenidas para seleccionar el parámetro
+
 ### Requirement: Privacidad y disponibilidad de candidatas
 
 El informe compartible DEBE excluir etiquetas concretas de características por defecto y conservar únicamente agregados por tipo. El Laboratorio DEBE distinguir candidatas remotas, candidatas locales elegibles, resultados disponibles y límite solicitado/retornado. El déficit de diversidad DEBE explicarse a partir del tamaño real del pool y de filtros aplicados, no suponerse un defecto sin reproducción.
