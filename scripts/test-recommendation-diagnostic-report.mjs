@@ -345,7 +345,6 @@ const integrated = buildRecommendationDiagnosticReport({
         foldsEvaluated: 15, wins: 8, ties: 3, losses: 4, title: "Private film title"
       }))
     })),
-    unavailableReason: null
     supportRegularization: {
       available: true, featureSupportWeightFormula: "weight * support / (support + lambda)",
       lambdas: [0, 0.5, 1, 2, 4, 8], signalFamilyLambda: 2,
