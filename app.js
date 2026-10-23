@@ -8,7 +8,7 @@ import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261023-4";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js?v=rec-20261023-3";
 import { createPairedRankingEvaluation } from "./js/recommendations/paired-ranking-evaluation.js?v=rec-20261023-1";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261023-2";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261023-3";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js?v=rec-20261023-3";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
