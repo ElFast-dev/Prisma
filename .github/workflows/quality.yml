@@ -165,6 +165,9 @@ jobs:
       - name: Test local storage protection API
         run: node scripts/test-storage-protection.mjs
 
+      - name: Test separated laboratory actions
+        run: node scripts/test-lab-actions.mjs
+
       - name: Test shareable recommendation diagnostic report
         run: node scripts/test-recommendation-diagnostic-report.mjs
 

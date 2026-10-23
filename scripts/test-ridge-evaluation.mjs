@@ -256,9 +256,10 @@ const duplicateResult = harness(duplicated, records).evaluate();
 assert.equal(duplicateResult.count, records.length,
   "Registros repetidos con el mismo ID TMDB no deben inflar la muestra.");
 
-const [engineSource, appSource, labViewsBaseSource, labRidgeViewSource, labTemporalViewSource, reportSource, eventSource] = await Promise.all([
+const [engineSource, appSource, labActionsSource, labViewsBaseSource, labRidgeViewSource, labTemporalViewSource, reportSource, eventSource] = await Promise.all([
   import("node:fs/promises").then(fs => fs.readFile("js/recommendations/engine.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("app.js", "utf8")),
+  import("node:fs/promises").then(fs => fs.readFile("js/app/lab-actions.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-views.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-ridge-view.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-temporal-view.js", "utf8")),
@@ -272,9 +273,9 @@ assert.match(labViewsSource, /data-action="run-ridge-experiment"/);
 assert.match(labViewsSource, /Validación repetida/);
 assert.match(labViewsSource, /3 × 5/);
 assert.match(eventSource, /action === "run-ridge-experiment"/);
-assert.match(appSource, /3 repeticiones de 5 pliegues/);
-assert.match(appSource, /ridgeRecommendationExperiment\.evaluateAsync/);
-assert.match(appSource, /ridgeEvaluationProgress = progress/);
+assert.match(labActionsSource, /3 repeticiones de 5 pliegues/);
+assert.ok(labActionsSource.includes('ctx.ridgeRecommendationExperiment.evaluateAsync'));
+assert.ok(labActionsSource.includes('ctx.ridgeEvaluationProgress = progress'));
 assert.match(labViewsSource, /ridgeEvaluationProgress/);
 assert.match(reportSource, /ridgeExperiment: ridgeEvaluation/);
 assert.match(reportSource, /repeatedValidation: ridgeRepeatedValidationEvaluation/);
@@ -513,7 +514,7 @@ assert.equal(sameDay.distinctDayCount, 1);
 assert.doesNotMatch(JSON.stringify(temporalResult.windowSummaries), /2020-|watchedAt|tmdbId|Película de prueba/i);
 
 assert.match(appSource, /runTemporalRidgeExperiment/);
-assert.match(appSource, /evaluateTemporalAsync/);
+assert.match(labActionsSource, /evaluateTemporalAsync/);
 assert.match(labViewsSource, /data-action="run-temporal-ridge-experiment"/);
 assert.match(labViewsSource, /data-action="toggle-temporal-added-date-proxy"/);
 assert.match(labViewsSource, /el reto de 280 días permanece limitado del 15 de enero al 21 de octubre de 2026/i);

@@ -29,6 +29,7 @@ import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-8";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js?v=core-20261022-3";
+import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-1";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
 (function () {
@@ -554,187 +555,77 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     titleKey: titleKey
   });
 
+  const labActions = createLabActions({
+    get currentPage() { return currentPage; },
+    get renderApp() { return renderApp; },
+    get window() { return window; },
+    get navigator() { return navigator; },
+    get toast() { return toast; },
+    get recommendationNormalizationEvaluation() { return recommendationNormalizationEvaluation; },
+    get ridgeRecommendationExperiment() { return ridgeRecommendationExperiment; },
+    get buildRecommendationDiagnosticReport() { return buildRecommendationDiagnosticReport; },
+    get buildProfile() { return buildProfile; },
+    get state() { return state; },
+    get ratingValue() { return ratingValue; },
+    get catalog() { return catalog; },
+    get RECOMMENDATION_SIGNAL_WEIGHTS() { return RECOMMENDATION_SIGNAL_WEIGHTS; },
+    get recommendationMode() { return recommendationMode; },
+    get evaluateModel() { return evaluateModel; },
+    get evaluateRecommendationQuality() { return evaluateRecommendationQuality; },
+    get influenceNormalizationEvaluationBusy() { return influenceNormalizationEvaluationBusy; },
+    set influenceNormalizationEvaluationBusy(value) { influenceNormalizationEvaluationBusy = value; },
+    get ridgeEvaluationBusy() { return ridgeEvaluationBusy; },
+    set ridgeEvaluationBusy(value) { ridgeEvaluationBusy = value; },
+    get temporalRidgeEvaluationBusy() { return temporalRidgeEvaluationBusy; },
+    set temporalRidgeEvaluationBusy(value) { temporalRidgeEvaluationBusy = value; },
+    get influenceNormalizationEvaluationRunId() { return influenceNormalizationEvaluationRunId; },
+    set influenceNormalizationEvaluationRunId(value) { influenceNormalizationEvaluationRunId = value; },
+    get ridgeEvaluationRunId() { return ridgeEvaluationRunId; },
+    set ridgeEvaluationRunId(value) { ridgeEvaluationRunId = value; },
+    get temporalRidgeEvaluationRunId() { return temporalRidgeEvaluationRunId; },
+    set temporalRidgeEvaluationRunId(value) { temporalRidgeEvaluationRunId = value; },
+    get temporalUseCollectionAddedAtProxy() { return temporalUseCollectionAddedAtProxy; },
+    set temporalUseCollectionAddedAtProxy(value) { temporalUseCollectionAddedAtProxy = value; },
+    get temporalRidgeEvaluationResult() { return temporalRidgeEvaluationResult; },
+    set temporalRidgeEvaluationResult(value) { temporalRidgeEvaluationResult = value; },
+    get temporalRidgeEvaluationProgress() { return temporalRidgeEvaluationProgress; },
+    set temporalRidgeEvaluationProgress(value) { temporalRidgeEvaluationProgress = value; },
+    get ridgeEvaluationProgress() { return ridgeEvaluationProgress; },
+    set ridgeEvaluationProgress(value) { ridgeEvaluationProgress = value; },
+    get ridgeEvaluationResult() { return ridgeEvaluationResult; },
+    set ridgeEvaluationResult(value) { ridgeEvaluationResult = value; },
+    get influenceNormalizationEvaluationResult() { return influenceNormalizationEvaluationResult; },
+    set influenceNormalizationEvaluationResult(value) { influenceNormalizationEvaluationResult = value; },
+    get recommendationDiagnosticReportText() { return recommendationDiagnosticReportText; },
+    set recommendationDiagnosticReportText(value) { recommendationDiagnosticReportText = value; },
+    get recommendationDiagnosticCopyMessage() { return recommendationDiagnosticCopyMessage; },
+    set recommendationDiagnosticCopyMessage(value) { recommendationDiagnosticCopyMessage = value; },
+    get recommendationDiagnosticFeatureLabelsIncluded() { return recommendationDiagnosticFeatureLabelsIncluded; },
+    set recommendationDiagnosticFeatureLabelsIncluded(value) { recommendationDiagnosticFeatureLabelsIncluded = value; }
+  });
+
   async function runInfluenceNormalizationExperiment() {
-    if (influenceNormalizationEvaluationBusy || ridgeEvaluationBusy || temporalRidgeEvaluationBusy) return;
-    const runId = ++influenceNormalizationEvaluationRunId;
-    influenceNormalizationEvaluationBusy = true;
-    if (currentPage === "lab") renderApp();
-    await new Promise(function (resolve) {
-      if (window && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(resolve);
-      else window.setTimeout(resolve, 0);
-    });
-    try {
-      const evaluationResult = recommendationNormalizationEvaluation.evaluate();
-      if (runId !== influenceNormalizationEvaluationRunId) return;
-      influenceNormalizationEvaluationResult = evaluationResult;
-      toast(evaluationResult.available
-        ? "Calibración de influencia terminada: tres variantes y los mismos pliegues comparados."
-        : (evaluationResult.unavailableReason || "No se pudo evaluar la normalización de influencia."),
-      !evaluationResult.available);
-    } catch (_) {
-      if (runId !== influenceNormalizationEvaluationRunId) return;
-      influenceNormalizationEvaluationResult = {
-        executionStatus: "unavailable",
-        available: false,
-        sampleCount: 0,
-        methods: [],
-        unavailableReason: "No se pudo completar el experimento de normalización de forma estable."
-      };
-      toast("No se pudo completar el experimento de normalización de forma estable.", true);
-    } finally {
-      if (runId === influenceNormalizationEvaluationRunId) {
-        influenceNormalizationEvaluationBusy = false;
-        if (currentPage === "lab") renderApp();
-      }
-    }
+    return labActions.runInfluenceNormalizationExperiment();
   }
 
   async function runRidgeExperiment() {
-    if (ridgeEvaluationBusy || temporalRidgeEvaluationBusy) return;
-    const runId = ++ridgeEvaluationRunId;
-    ridgeEvaluationBusy = true;
-    ridgeEvaluationProgress = { completedRepeats: 0, totalRepeats: 3, foldsPerRepeat: 5 };
-    if (currentPage === "lab") renderApp();
-    await new Promise(function (resolve) {
-      if (window && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(resolve);
-      else window.setTimeout(resolve, 0);
-    });
-    try {
-      const evaluationResult = await ridgeRecommendationExperiment.evaluateAsync(function (progress) {
-        if (runId !== ridgeEvaluationRunId) return false;
-        if (progress.phase !== "starting") {
-          ridgeEvaluationProgress = progress;
-          if (currentPage === "lab") renderApp();
-        }
-        return true;
-      });
-      if (runId !== ridgeEvaluationRunId) return;
-      ridgeEvaluationResult = evaluationResult;
-      toast(ridgeEvaluationResult.available
-        ? "Validación Ridge terminada: se evaluaron 3 repeticiones de 5 pliegues. Revisa los agregados en el Laboratorio."
-        : (ridgeEvaluationResult.reason || "No se pudo evaluar Ridge con esta muestra."), !ridgeEvaluationResult.available);
-    } catch (_) {
-      if (runId !== ridgeEvaluationRunId) return;
-      ridgeEvaluationResult = { available: false, count: 0, mae: null, baselineMae: null,
-        deltaBaseMinusRidge: null, outerFolds: 5, foldsEvaluated: 0, innerFolds: 3,
-        selectedAlphaCounts: {}, repeatedValidation: { available: false, repeats: 3, foldsPerRepeat: 5,
-          foldsEvaluated: 0, repeatSummaries: [], unavailableReason: "No se pudo completar la validación Ridge repetida." },
-        reason: "No se pudo completar el experimento Ridge de forma estable." };
-      toast("No se pudo completar el experimento Ridge de forma estable.", true);
-    } finally {
-      if (runId === ridgeEvaluationRunId) {
-        ridgeEvaluationBusy = false;
-        ridgeEvaluationProgress = null;
-        if (currentPage === "lab") renderApp();
-      }
-    }
+    return labActions.runRidgeExperiment();
   }
 
   function toggleTemporalAddedAtProxy() {
-    if (temporalRidgeEvaluationBusy || ridgeEvaluationBusy) return;
-    temporalUseCollectionAddedAtProxy = !temporalUseCollectionAddedAtProxy;
-    temporalRidgeEvaluationRunId += 1;
-    temporalRidgeEvaluationResult = null;
-    temporalRidgeEvaluationProgress = null;
-    toast(temporalUseCollectionAddedAtProxy
-      ? "Proxy exploratorio activado: la fecha de incorporación a la lista podrá usarse solo en la evaluación temporal."
-      : "Proxy desactivado: la evaluación temporal usará solo las fechas watchedAt disponibles.");
-    if (currentPage === "lab") renderApp();
+    return labActions.toggleTemporalAddedAtProxy();
   }
 
   async function runTemporalRidgeExperiment() {
-    if (temporalRidgeEvaluationBusy || ridgeEvaluationBusy) return;
-    const runId = ++temporalRidgeEvaluationRunId;
-    temporalRidgeEvaluationBusy = true;
-    temporalRidgeEvaluationProgress = { completedWindows: 0, totalWindows: 5 };
-    if (currentPage === "lab") renderApp();
-    await new Promise(function (resolve) {
-      if (window && typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(resolve);
-      else window.setTimeout(resolve, 0);
-    });
-    try {
-      const evaluationResult = await ridgeRecommendationExperiment.evaluateTemporalAsync(function (progress) {
-        if (runId !== temporalRidgeEvaluationRunId) return false;
-        if (progress.phase !== "starting") {
-          temporalRidgeEvaluationProgress = progress;
-          if (currentPage === "lab") renderApp();
-        }
-        return true;
-      });
-      if (runId !== temporalRidgeEvaluationRunId) return;
-      temporalRidgeEvaluationResult = evaluationResult;
-      toast(temporalRidgeEvaluationResult.available
-        ? "Validación temporal terminada. Revisa las ventanas futuras en el Laboratorio."
-        : (temporalRidgeEvaluationResult.unavailableReason || "No se pudo completar la evaluación temporal."),
-      !temporalRidgeEvaluationResult.available);
-    } catch (_) {
-      if (runId !== temporalRidgeEvaluationRunId) return;
-      temporalRidgeEvaluationResult = {
-        available: false, sampleCount: 0, featureRowCount: 0, timestampedFeatureCount: 0,
-        missingDateCount: 0, warmupCount: 0, testCount: 0, windowsPlanned: 5,
-        windowsEvaluated: 0, innerWindows: 3, selectedAlphaCounts: {}, mae: null, baselineMae: null,
-        deltaBaseMinusRidge: null, windowSummaries: [],
-        unavailableReason: "No se pudo completar la evaluación temporal de forma estable."
-      };
-      toast("No se pudo completar la evaluación temporal de forma estable.", true);
-    } finally {
-      if (runId === temporalRidgeEvaluationRunId) {
-        temporalRidgeEvaluationBusy = false;
-        temporalRidgeEvaluationProgress = null;
-        if (currentPage === "lab") renderApp();
-      }
-    }
+    return labActions.runTemporalRidgeExperiment();
   }
 
   function clearRecommendationDiagnosticReport() {
-    recommendationDiagnosticReportText = "";
-    recommendationDiagnosticCopyMessage = "";
-    if (currentPage === "lab") renderApp();
+    return labActions.clearRecommendationDiagnosticReport();
   }
 
   async function copyRecommendationDiagnosticReport(includeFeatureLabels) {
-    recommendationDiagnosticFeatureLabelsIncluded = Boolean(includeFeatureLabels);
-    const profile = buildProfile();
-    const report = buildRecommendationDiagnosticReport({
-      ratedCount: state.rated.length,
-      ratingValues: state.rated.map(ratingValue).filter(function (value) { return value != null; }),
-      catalogCount: catalog.length,
-      collectionCounts: {
-        watched: (state.watched || []).length,
-        pending: (state.watchlist || []).length,
-        hidden: (state.hidden || []).length
-      },
-      profile: profile,
-      signalWeights: RECOMMENDATION_SIGNAL_WEIGHTS,
-      recommendationMode: recommendationMode,
-      ratingEvaluation: evaluateModel(),
-      ridgeEvaluation: ridgeEvaluationResult,
-      temporalRidgeEvaluation: temporalRidgeEvaluationResult,
-      influenceNormalizationEvaluation: influenceNormalizationEvaluationResult,
-      recommendationQuality: evaluateRecommendationQuality(),
-      includeFeatureLabels: recommendationDiagnosticFeatureLabelsIncluded
-    });
-    const reportText = JSON.stringify(report, null, 2);
-    recommendationDiagnosticReportText = reportText;
-    recommendationDiagnosticCopyMessage = "Informe generado localmente. Revisa su contenido antes de compartirlo; Prisma no lo envía a ningún servidor.";
-
-    let copied = false;
-    try {
-      if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") {
-        throw new Error("El portapapeles no está disponible");
-      }
-      // Keep the clipboard write directly within the explicit click activation.
-      const writePromise = navigator.clipboard.writeText(reportText);
-      await writePromise;
-      copied = true;
-      recommendationDiagnosticCopyMessage = "Copiado al portapapeles. Revisa el contenido de abajo antes de pegarlo en otra conversación.";
-    } catch (_) {
-      recommendationDiagnosticCopyMessage = "No se pudo copiar automáticamente. El informe completo está visible abajo para seleccionarlo y copiarlo manualmente.";
-    }
-
-    if (currentPage === "lab") renderApp();
-    if (copied) toast("Diagnóstico copiado. Revísalo antes de compartirlo.");
-    else toast("Informe preparado para revisión y copia manual.");
+    return labActions.copyRecommendationDiagnosticReport(includeFeatureLabels);
   }
 
   async function refreshStorageProtectionSnapshot() {

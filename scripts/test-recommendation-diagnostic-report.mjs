@@ -303,14 +303,15 @@ assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
 assert.equal(unavailable.evaluation.rankingQuality.unavailableReason, "Muestra insuficiente");
 assert.equal(unavailable.sample.ratingsWithoutFeatures, 2);
 
-const [appSource, labViewsSource, eventHandlersSource, reportSource] = await Promise.all([
+const [appSource, labViewsSource, eventHandlersSource, reportSource, labActionsSource] = await Promise.all([
   readFile("app.js", "utf8"),
   readFile("js/ui/lab-views.js", "utf8"),
   readFile("js/app/event-handlers.js", "utf8"),
-  readFile("js/diagnostics/recommendation-report.js", "utf8")
+  readFile("js/diagnostics/recommendation-report.js", "utf8"),
+  readFile("js/app/lab-actions.js", "utf8")
 ]);
 assert.match(appSource, /buildRecommendationDiagnosticReport/);
-assert.match(appSource, /navigator\.clipboard\.writeText/);
+assert.match(labActionsSource, /ctx\.navigator\.clipboard\.writeText/);
 assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
 assert.match(labViewsSource, /No incluye títulos de películas, IDs TMDB/);
 assert.match(labViewsSource, /Experimento \(temas atenuados por soporte\)/);
