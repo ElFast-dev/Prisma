@@ -156,6 +156,25 @@ for (const forbidden of ["synthetic film", "910000", "heldoutidentities", "train
   assert.equal(serialized.includes(forbidden), false, "Shareable aggregate must not serialize row-level data: " + forbidden);
 }
 
+const sampleLimitedFixture = makeFixture(30);
+const sampleLimited = await createEvaluator(sampleLimitedFixture.movies, sampleLimitedFixture.ratings).evaluateAsync();
+assert.equal(sampleLimited.available, true);
+assert.equal(sampleLimited.sampleCount, 30);
+assert.ok(sampleLimited.families.every(family => family.rankingByThreshold["7"].balanced.available === false &&
+  family.rankingByThreshold["9"].balanced.available === false),
+"Both nDCG thresholds must be unavailable when the unique sample is below the minimum of 50.");
+assert.ok(sampleLimited.supportRegularization.results.every(lambda =>
+  lambda.rankingByThreshold["7"].balanced.available === false &&
+  lambda.rankingByThreshold["9"].balanced.available === false),
+"Fixed-lambda nDCG must not appear available for an under-sized profile.");
+assert.equal(sampleLimited.supportRegularization.nestedSelection.available, false,
+"Do not choose lambda outside the predefined inner-validation sample minimum.");
+const smallFold = sampleLimited.repeatSummaries[0].folds[0];
+assert.equal(smallFold.families["full-current"].ndcgAt5.balanced, null);
+assert.equal(smallFold.families["full-current"].ndcgAt5Threshold9.balanced, null);
+assert.equal(smallFold.lambdas["2"].ndcgAt5.balanced, null);
+assert.equal(smallFold.lambdas["2"].ndcgAt5Threshold9.balanced, null);
+
 const tooSmall = await createEvaluator([], []).evaluateAsync();
 assert.equal(tooSmall.available, false);
 assert.equal(tooSmall.sampleCount, 0);
