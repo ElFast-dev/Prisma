@@ -29,7 +29,8 @@ export function createLabViews(ctx) {
     const busy = Boolean(ctx.influenceNormalizationEvaluationBusy);
     const ridgeBusy = Boolean(ctx.ridgeEvaluationBusy);
     const temporalBusy = Boolean(ctx.temporalRidgeEvaluationBusy);
-    const buttonLabel = busy ? "Evaluando normalización…" : (result ? "Volver a evaluar" : "Evaluar normalización");
+    const metricsBusy = Boolean(ctx.labMetricsBusy);
+    const buttonLabel = metricsBusy ? "Preparando métricas iniciales…" : (busy ? "Evaluando normalización…" : (result ? "Volver a evaluar" : "Evaluar normalización"));
     const methodNames = {
       mean: "Media actual · N",
       "coverage-sqrt": "Raíz de cobertura · √(N×K)",
@@ -86,7 +87,7 @@ export function createLabViews(ctx) {
       '<div class="panel-head"><div><h3 id="influence-normalization-heading">Calibración de la normalización de influencia</h3>' +
       '<p class="metric-note">¿La cantidad de metadatos diluye demasiado las coincidencias conocidas?</p></div>' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="run-influence-normalization-experiment"' +
-      (busy || ridgeBusy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      (metricsBusy || busy || ridgeBusy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
       body + '</section>';
   }
 
