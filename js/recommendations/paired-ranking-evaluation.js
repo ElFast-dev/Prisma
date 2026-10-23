@@ -584,18 +584,33 @@ export function createPairedRankingEvaluation(dependencies) {
         })
       };
     });
+    const selectedLambdaFoldCount = selectedLambdaOutcomes.foldMae.length;
+    const selectedLambdaComparisonAvailable = selectedLambdaFoldCount === REPEATS * OUTER_FOLDS;
+    const noShrinkageControl = lambdaAccumulators["0"];
+    const selectedLambdaMaeWins = selectedLambdaComparisonAvailable
+      ? selectedLambdaOutcomes.foldMae.filter((value, index) => value < noShrinkageControl.foldMae[index] - EPSILON).length : 0;
+    const selectedLambdaTies = selectedLambdaComparisonAvailable
+      ? selectedLambdaOutcomes.foldMae.filter((value, index) => Math.abs(value - noShrinkageControl.foldMae[index]) <= EPSILON).length : 0;
+    const selectedLambdaMaeLosses = selectedLambdaComparisonAvailable
+      ? selectedLambdaOutcomes.foldMae.filter((value, index) => value > noShrinkageControl.foldMae[index] + EPSILON).length : 0;
     const selectedLambdaSummary = {
-      available: Object.values(selectedLambdaCounts).reduce((sum, count) => sum + count, 0) > 0,
+      available: selectedLambdaComparisonAvailable,
       selectionCriterion: "mean inner-validation nDCG@5 across available ranking modes at relevance threshold 7",
       outerFoldsEvaluated: Object.values(selectedLambdaCounts).reduce((sum, count) => sum + count, 0),
       selectedLambdaCounts,
-      mae: mean(selectedLambdaOutcomes.errors),
-      baselineMae: mean(selectedLambdaOutcomes.baselineErrors),
+      mae: selectedLambdaComparisonAvailable ? mean(selectedLambdaOutcomes.errors) : null,
+      baselineMaeSameFolds: selectedLambdaComparisonAvailable ? mean(noShrinkageControl.errors) : null,
+      deltaMaeVsNoShrinkage: selectedLambdaComparisonAvailable
+        ? mean(noShrinkageControl.errors) - mean(selectedLambdaOutcomes.errors) : null,
       foldMae: selectedLambdaOutcomes.foldMae.slice(),
-      rankingModes: summariseRanking(selectedLambdaOutcomes, 7, null, rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT),
+      maeWins: selectedLambdaMaeWins,
+      ties: selectedLambdaTies,
+      maeLosses: selectedLambdaMaeLosses,
+      rankingModes: summariseRanking(selectedLambdaOutcomes, 7, noShrinkageControl,
+        selectedLambdaComparisonAvailable && rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT),
       rankingByThreshold: Object.fromEntries(THRESHOLDS.map(threshold => [
-        String(threshold), summariseRanking(selectedLambdaOutcomes, threshold, null,
-          rows.length >= 50 && relevantCounts[String(threshold)] >= MIN_TUNING_RELEVANT)
+        String(threshold), summariseRanking(selectedLambdaOutcomes, threshold, noShrinkageControl,
+          selectedLambdaComparisonAvailable && rows.length >= 50 && relevantCounts[String(threshold)] >= MIN_TUNING_RELEVANT)
       ]))
     };
     const signalFeatures = Object.fromEntries(Object.keys(signalTotals).map(type => {
