@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v107"
+const CACHE_NAME = "prisma-shell-v108"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,7 @@ const APP_ASSETS = [
   "./styles/watch-streak.css?v=ui-20261022-26",
   "./styles/prisma-design-system.css?v=ui-20261022-26",
 
-  "./app.js?v=ui-20261023-96",
+  "./app.js?v=ui-20261023-97",
   "./js/tmdb/client.js?v=core-20261022-3",
   "./js/core/movie-utils.js",
   "./js/core/date-utils.js",
@@ -34,12 +34,14 @@ const APP_ASSETS = [
   "./js/catalog/catalog-model.js?v=core-20261022-4",
   "./js/collection/collection-model.js?v=core-20261022-4",
   "./js/ui/presentation-utils.js?v=core-20261022-4",
-  "./js/ui/page-views.js?v=core-20261023-6",
+  "./js/ui/page-views.js?v=core-20261023-7",
   "./js/ui/progress-views.js?v=core-20261023-1",
   "./js/ui/settings-views.js?v=core-20261023-1",
   "./js/ui/catalog-views.js?v=core-20261023-1",
   "./js/ui/collection-views.js?v=core-20261023-1",
-  "./js/ui/lab-views.js?v=core-20261023-1",
+  "./js/ui/lab-views.js?v=core-20261023-2",
+  "./js/ui/lab-ridge-view.js?v=core-20261023-1",
+  "./js/ui/lab-temporal-view.js?v=core-20261023-1",
   "./js/ui/watch-streak-view.js?v=core-20261023-1",
   "./js/ui/theme-controller.js?v=theme-20261020-1",
   "./js/ui/modal-views.js?v=core-20261022-8",
