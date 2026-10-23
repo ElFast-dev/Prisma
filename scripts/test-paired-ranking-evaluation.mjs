@@ -127,6 +127,20 @@ assert.ok(support.featureSupportBySignalType.actor.featureObservations > 0);
 assert.ok(support.featureSupportBySignalType.theme.supportOneFeatures > 0,
   "Support-one features must be counted, not dropped");
 assert.equal(support.featureSupportWeightFormula, "weight * support / (support + lambda)");
+assert.equal(support.signalFamilyLambda, 2);
+assert.equal(support.signalFamilyExperiments.length, 7,
+  "Support must be evaluated independently for genre, theme, synopsis, cast and creative-team signal types.");
+for (const family of support.signalFamilyExperiments) {
+  assert.equal(family.available, true, family.id);
+  assert.equal(family.lambda, 2);
+  assert.equal(family.foldsEvaluated, 15);
+  assert.equal(family.foldMae.length, 15);
+  assert.ok(Number.isFinite(family.mae));
+  assert.equal(family.rankingModes.balanced.foldsEvaluated, 15);
+  assert.equal(family.rankingByThreshold["9"].balanced.foldsEvaluated, 15);
+  assert.equal(family.repeatSummaries.length, 3);
+  assert.ok(family.repeatSummaries.every(repeat => repeat.foldCount === 5));
+}
 
 assert.ok(progress.length > 20);
 assert.ok(progress.every(item => Number.isFinite(item.completedWork) &&
