@@ -4,6 +4,9 @@ import { createLabTemporalView } from "./lab-temporal-view.js?v=core-20261023-2"
 export function createLabViews(ctx) {
   function renderRecommendationDiagnosticPanel() {
     const reportText = ctx.recommendationDiagnosticReportText || "";
+    const metricsBusy = Boolean(ctx.labMetricsBusy);
+    const metricsError = Boolean(ctx.labMetricsError);
+    const diagnosticButtonLabel = metricsBusy ? "Preparando diagnóstico…" : "Copiar diagnóstico técnico";
     const disclosure = '<p class="metric-note">El informe se calcula con tus datos reales en este dispositivo. Incluye cantidades, distribución agregada de notas, cobertura del perfil, pesos del modelo, estadísticas resumidas de señales y los resultados agregados de MAE, Ridge, validación repetida y temporal, nDCG@5 por modo y diversidad.</p>' +
       '<p class="metric-note">No incluye títulos de películas, IDs TMDB, notas por película, fechas personales, emociones, notas libres, credenciales ni copias de seguridad. Si incluyes nombres de señales, esos géneros y temas agregados pueden revelar parte de tus gustos.</p>';
     const detailsToggle = '<label class="diagnostic-feature-option"><input id="diagnosticFeatureLabels" type="checkbox"' +
@@ -16,7 +19,8 @@ export function createLabViews(ctx) {
       : "";
     return '<section class="panel recommendation-diagnostic-panel" aria-labelledby="recommendation-diagnostic-heading">' +
       '<div class="panel-head"><div><h3 id="recommendation-diagnostic-heading">Informe para revisar el recomendador</h3><p class="metric-note">Preparado localmente a partir de las pruebas del Laboratorio</p></div>' +
-      '<button class="btn btn-secondary btn-small" type="button" data-action="copy-recommendation-diagnostics">Copiar diagnóstico técnico</button></div>' +
+      '<button class="btn btn-secondary btn-small" type="button" data-action="copy-recommendation-diagnostics"' +
+      (metricsBusy || metricsError ? ' disabled aria-disabled="true"' : '') + '>' + diagnosticButtonLabel + '</button></div>' +
       disclosure + detailsToggle +
       '<p class="metric-note">Copiar no envía datos. Solo tú decides si pegas el informe en otra conversación.</p>' +
       output + '</section>';
