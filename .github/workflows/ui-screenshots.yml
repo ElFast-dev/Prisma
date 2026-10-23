@@ -16,7 +16,8 @@ jobs:
   screenshots:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # Allow for slow Ubuntu apt mirrors during Chromium system-dependency installation.
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
