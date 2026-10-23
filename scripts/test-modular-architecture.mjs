@@ -25,6 +25,7 @@ const files = [
   'js/collection/collection-model.js',
   'js/ui/presentation-utils.js',
   'js/ui/page-views.js',
+  'js/ui/lab-views.js',
   'js/ui/watch-streak-view.js',
   'js/ui/theme-controller.js',
   'js/ui/modal-views.js',
@@ -111,6 +112,19 @@ assert.ok(app.includes('createModalController('));
 assert.ok(app.includes('createRecommendationRanking('));
 assert.ok(app.includes('createAppRuntime('));
 assert.ok(app.includes('createAppLifecycle('));
+const [pageViewsSource, labViewsSource] = await Promise.all([
+  readFile('js/ui/page-views.js', 'utf8'),
+  readFile('js/ui/lab-views.js', 'utf8')
+]);
+assert.match(pageViewsSource, /createLabViews\(ctx\)/,
+  'La composición general debe delegar los renderizadores de Laboratorio al módulo especializado.');
+assert.doesNotMatch(pageViewsSource, /function render(?:RecommendationDiagnosticPanel|RidgeExperimentPanel|InfluenceNormalizationPanel|TemporalRidgePanel|Lab)\(/,
+  'Los renderizadores del Laboratorio no deben volver a concentrarse en page-views.js.');
+assert.match(labViewsSource, /export function createLabViews\(ctx\)/,
+  'El módulo de Laboratorio debe exponer su fábrica con dependencias inyectadas.');
+assert.match(labViewsSource, /function renderTemporalRidgePanel\(/,
+  'La vista dedicada debe conservar el panel temporal de Ridge.');
+
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));
