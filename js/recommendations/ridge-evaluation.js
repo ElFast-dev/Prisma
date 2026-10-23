@@ -1,5 +1,5 @@
 import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../core/date-utils.js";
-import { buildKernel, clampRating, predictRidge, trainRidge, vectorize } from "./ridge-kernel.js?v=rec-20261023-1";
+import { buildKernel, buildKernelAsync, clampRating, predictRidge, trainRidge, trainRidgeAsync, vectorize } from "./ridge-kernel.js?v=rec-20261023-2";
 
 const OUTER_FOLDS = 5;
 const INNER_FOLDS = 3;
@@ -347,37 +347,53 @@ export function createRidgeRecommendationExperiment(dependencies) {
     return rows;
   }
 
-  function selectAlpha(rows, kernel, outerTraining, outerFold, repetitionIndex) {
+  async function selectAlphaAsync(rows, kernel, outerTraining, outerFold, repetitionIndex, control) {
     const innerSalt = repetitionIndex === 0
       ? "ridge-inner-" + outerFold
       : "ridge-inner-repeat-" + repetitionIndex + "-" + outerFold;
     const folds = foldIndices(outerTraining, rows, INNER_FOLDS, innerSalt);
     let bestAlpha = null;
     let bestMae = Infinity;
-    ALPHAS.forEach(function (alpha) {
+    for (let alphaIndex = 0; alphaIndex < ALPHAS.length; alphaIndex += 1) {
+      if (!control.shouldContinue()) return null;
+      const alpha = ALPHAS[alphaIndex];
       const errors = [];
-      folds.forEach(function (validationIndices) {
+      for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
+        if (!control.shouldContinue()) return null;
+        const validationIndices = folds[foldIndex];
         const validationSet = new Set(validationIndices);
         const trainingIndices = outerTraining.filter(function (index) { return !validationSet.has(index); });
-        if (!trainingIndices.length || !validationIndices.length) return;
-        const model = trainRidge(rows, kernel, trainingIndices, alpha);
+        if (!trainingIndices.length || !validationIndices.length) continue;
+        const model = await trainRidgeAsync(rows, kernel, trainingIndices, alpha, {
+          shouldContinue: control.shouldContinue,
+          yieldToBrowser: control.yieldToBrowser,
+          batchSize: control.batchSize
+        });
         validationIndices.forEach(function (index) {
           const prediction = predictRidge(rows, model, rows[index].candidateVector);
           errors.push(Math.abs(prediction - rows[index].rating));
         });
-      });
+        control.onModelFit({
+          stage: "inner",
+          alpha: alpha,
+          repetitionIndex: repetitionIndex,
+          outerFold: outerFold,
+          innerFold: foldIndex
+        });
+        await control.yieldToBrowser();
+      }
       if (!errors.length) throw new Error("Validación interna insuficiente");
       const mae = meanAbsoluteError(errors);
       if (mae < bestMae - 1e-10 || (Math.abs(mae - bestMae) <= 1e-10 && alpha > bestAlpha)) {
         bestMae = mae;
         bestAlpha = alpha;
       }
-    });
+    }
     if (bestAlpha == null) throw new Error("No se pudo seleccionar alpha");
     return bestAlpha;
   }
 
-  function evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount) {
+  async function evaluateFoldSetAsync(rows, kernel, indices, repetitionIndex, relevantCount, control) {
     const repeatSalt = repetitionIndex === 0 ? "" : "-repeat-" + repetitionIndex;
     const outerSalt = repetitionIndex === 0 ? "ridge-outer" : "ridge-outer" + repeatSalt;
     const outer = foldIndices(indices, rows, OUTER_FOLDS, outerSalt);
@@ -400,12 +416,24 @@ export function createRidgeRecommendationExperiment(dependencies) {
     let predictionMin = Infinity;
     let predictionMax = -Infinity;
 
-    outer.forEach(function (testIndices, outerFold) {
+    for (let outerFold = 0; outerFold < outer.length; outerFold += 1) {
+      if (!control.shouldContinue()) return null;
+      const testIndices = outer[outerFold];
       const testSet = new Set(testIndices);
       const trainingIndices = indices.filter(function (index) { return !testSet.has(index); });
-      const alpha = selectAlpha(rows, kernel, trainingIndices, outerFold, repetitionIndex);
+      const alpha = await selectAlphaAsync(rows, kernel, trainingIndices, outerFold, repetitionIndex, control);
+      if (alpha == null || !control.shouldContinue()) return null;
       selectedAlphaCounts[String(alpha)] += 1;
-      const ridgeModel = trainRidge(rows, kernel, trainingIndices, alpha);
+      const ridgeModel = await trainRidgeAsync(rows, kernel, trainingIndices, alpha, {
+        shouldContinue: control.shouldContinue,
+        yieldToBrowser: control.yieldToBrowser,
+        batchSize: control.batchSize
+      });
+      control.onModelFit({
+        stage: "outer",
+        repetitionIndex: repetitionIndex,
+        outerFold: outerFold
+      });
       const trainingRatings = trainingIndices.map(function (index) { return rows[index].entry; });
       const additiveProfile = buildProfile(trainingRatings);
       const baselineCandidates = [];
@@ -486,7 +514,15 @@ export function createRidgeRecommendationExperiment(dependencies) {
           });
         }
       }
-    });
+      control.onOuterFoldCompleted({
+        completedWork: control.completedWork(),
+        totalWork: control.totalWork,
+        repetitionIndex: repetitionIndex,
+        outerFold: outerFold
+      });
+      await control.yieldToBrowser();
+      if (!control.shouldContinue()) return null;
+    }
 
     return {
       repetitionIndex: repetitionIndex,
@@ -654,57 +690,92 @@ export function createRidgeRecommendationExperiment(dependencies) {
     }
   }
 
-  async function evaluateAsync(onProgress) {
+  async function evaluateAsync(onProgress, options) {
+    const callback = typeof onProgress === "function" ? onProgress :
+      (onProgress && typeof onProgress.onProgress === "function" ? onProgress.onProgress : function () {});
+    const settings = options || (onProgress && typeof onProgress === "object" ? onProgress : {});
+    const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    const yieldToBrowser = typeof settings.yieldToBrowser === "function"
+      ? settings.yieldToBrowser
+      : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
+    const batchSize = Math.max(4, Math.min(24, Number(settings.batchSize) || 12));
     const rows = mappedRows();
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
     if (rows.length < MIN_RECORDS) {
       const reason = "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.";
       return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
     }
+    if (!shouldContinue()) return null;
+    const totalWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1);
+    let completedWork = 0;
+    const canContinue = function () { return shouldContinue(); };
+    const reportWork = function (detail) {
+      callback({
+        completedWork: completedWork,
+        totalWork: totalWork,
+        completedRepeats: Math.floor(completedWork / (OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1))),
+        totalRepeats: REPEATED_VALIDATION_RUNS,
+        foldsPerRepeat: OUTER_FOLDS,
+        phase: "fold",
+        detail: detail || "Validación Ridge anidada"
+      });
+      return canContinue();
+    };
+    const control = {
+      shouldContinue: canContinue,
+      yieldToBrowser: yieldToBrowser,
+      batchSize: batchSize,
+      totalWork: totalWork,
+      completedWork: function () { return completedWork; },
+      onModelFit: function (detail) {
+        completedWork = Math.min(totalWork, completedWork + 1);
+        reportWork(detail && detail.stage === "inner" ? "Selección interna de alpha · " + detail.alpha : "Ajuste Ridge externo");
+      },
+      onOuterFoldCompleted: function (detail) {
+        reportWork("Pliegue externo " + (detail.outerFold + 1) + " de " + OUTER_FOLDS +
+          " · repetición " + (detail.repetitionIndex + 1) + " de " + REPEATED_VALIDATION_RUNS);
+      }
+    };
     try {
-      const kernel = buildKernel(rows);
+      const kernel = await buildKernelAsync(rows, {
+        shouldContinue: canContinue,
+        yieldToBrowser: yieldToBrowser,
+        onProgress: function (update) {
+          callback({
+            completedWork: 0,
+            totalWork: totalWork,
+            completedRepeats: 0,
+            totalRepeats: REPEATED_VALIDATION_RUNS,
+            foldsPerRepeat: OUTER_FOLDS,
+            phase: "kernel",
+            detail: "Construyendo matriz de similitud " + update.completedWork + "/" + update.totalWork
+          });
+        }
+      });
+      if (!canContinue()) return null;
       const indices = rows.map(function (_, index) { return index; });
       const repeatedRuns = [];
       for (let repetitionIndex = 0; repetitionIndex < REPEATED_VALIDATION_RUNS; repetitionIndex += 1) {
-        if (repetitionIndex > 0 && typeof onProgress === "function") {
-          const canStart = onProgress({
-            completedRepeats: repetitionIndex,
-            totalRepeats: REPEATED_VALIDATION_RUNS,
-            foldsPerRepeat: OUTER_FOLDS,
-            phase: "starting"
-          });
-          if (canStart === false) {
-            const reason = "La validación Ridge repetida se canceló porque cambiaron los datos personales durante el cálculo.";
-            return unavailableResult(rows.length, reason,
-              unavailableRankingQuality(rows.length, relevantCount, reason, REPEATED_VALIDATION_RUNS * OUTER_FOLDS),
-              relevantCount);
-          }
-        }
-        repeatedRuns.push(evaluateFoldSet(rows, kernel, indices, repetitionIndex, relevantCount));
-        if (typeof onProgress === "function") {
-          const shouldContinue = onProgress({
-            completedRepeats: repetitionIndex + 1,
-            totalRepeats: REPEATED_VALIDATION_RUNS,
-            foldsPerRepeat: OUTER_FOLDS,
-            phase: "completed"
-          });
-          if (shouldContinue === false) {
-            const reason = "La validación Ridge repetida se canceló porque cambiaron los datos personales durante el cálculo.";
-            return unavailableResult(rows.length, reason,
-              unavailableRankingQuality(rows.length, relevantCount, reason, REPEATED_VALIDATION_RUNS * OUTER_FOLDS),
-              relevantCount);
-          }
-        }
-        if (repetitionIndex + 1 < REPEATED_VALIDATION_RUNS) {
-          await new Promise(function (resolve) { setTimeout(resolve, 0); });
-        }
+        if (!canContinue()) return null;
+        const run = await evaluateFoldSetAsync(rows, kernel, indices, repetitionIndex, relevantCount, control);
+        if (!run || !canContinue()) return null;
+        repeatedRuns.push(run);
+        callback({
+          completedWork: completedWork,
+          totalWork: totalWork,
+          completedRepeats: repetitionIndex + 1,
+          totalRepeats: REPEATED_VALIDATION_RUNS,
+          foldsPerRepeat: OUTER_FOLDS,
+          phase: "completed"
+        });
+        await yieldToBrowser();
       }
       return completedEvaluation(rows, repeatedRuns, relevantCount);
-    } catch (_) {
+    } catch (error) {
+      if (!canContinue()) return null;
       return unavailableEvaluation(rows, relevantCount);
     }
   }
-
 
   function collectionAddedAtProxyEnabled() {
     return typeof dependencies.getUseCollectionAddedAtProxy === "function" &&
