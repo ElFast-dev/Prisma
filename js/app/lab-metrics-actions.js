@@ -233,17 +233,23 @@ export function createLabMetricsActions(ctx) {
     const ratings = ratedEntries();
     const seen = new Set();
     const supportByType = Object.create(null);
+    const genreTotals = new Map();
     let validEntries = 0;
+    let ratingSum = 0;
     let linkedEntries = 0;
     let featureRows = 0;
     let uniqueRatings = 0;
     let uniqueFeatureRows = 0;
+    const mappingStartedAt = now(ctx.window);
+    const totalWork = Math.max(1, ratings.length * 2);
 
     for (let index = 0; index < ratings.length; index += 1) {
       if (!settings.shouldContinue()) return null;
       const entry = ratings[index];
-      if (validRating(entry) != null) {
+      const rating = validRating(entry);
+      if (rating != null) {
         validEntries += 1;
+        ratingSum += rating;
         const movie = typeof ctx.findMovie === "function"
           ? ctx.findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year)
           : null;
@@ -262,23 +268,64 @@ export function createLabMetricsActions(ctx) {
             supportByType[type] = (supportByType[type] || 0) + 1;
           });
         }
+        const genres = entry.genres && entry.genres.length ? entry.genres : (movie && movie.genres) || [];
+        genres.forEach(function (genre) {
+          const key = String(genre == null ? "" : genre).trim();
+          if (!key) return;
+          const current = genreTotals.get(key) || { sum: 0, count: 0 };
+          current.sum += rating;
+          current.count += 1;
+          genreTotals.set(key, current);
+        });
       }
       if ((index + 1) % 16 === 0 || index + 1 === ratings.length) {
-        settings.onProgress({ completedWork: index + 1, totalWork: Math.max(1, ratings.length), detail: "Contando identidad y cobertura de metadatos" });
+        settings.onProgress({
+          completedWork: index + 1,
+          totalWork: totalWork,
+          detail: "Contando identidad y cobertura de metadatos"
+        });
         await yieldToBrowser(ctx.window);
       }
     }
+    writeTiming(ctx.window, "coverage-mapping", now(ctx.window) - mappingStartedAt, validEntries, "completed");
 
-    let stageStartedAt = now(ctx.window);
-    const stats = typeof ctx.summaryStats === "function"
-      ? ctx.summaryStats() : { total: ratings.length, average: null };
-    writeTiming(ctx.window, "summaryStats", now(ctx.window) - stageStartedAt, validEntries, "completed");
-    stageStartedAt = now(ctx.window);
-    const profile = typeof ctx.buildProfile === "function" ? ctx.buildProfile() : emptyProfile();
-    writeTiming(ctx.window, "buildProfile", now(ctx.window) - stageStartedAt, validEntries, "completed");
-    stageStartedAt = now(ctx.window);
-    const genres = typeof ctx.genreStats === "function" ? ctx.genreStats() : [];
-    writeTiming(ctx.window, "genreStats", now(ctx.window) - stageStartedAt, validEntries, "completed");
+    const statsStartedAt = now(ctx.window);
+    const stats = {
+      total: validEntries,
+      average: validEntries ? ratingSum / validEntries : null,
+      matched: linkedEntries
+    };
+    writeTiming(ctx.window, "summaryStats", now(ctx.window) - statsStartedAt, validEntries, "completed");
+
+    const genres = Array.from(genreTotals.entries()).map(function (entry) {
+      return { name: entry[0], average: entry[1].sum / entry[1].count, count: entry[1].count };
+    }).filter(function (item) { return item.count >= 2; })
+      .sort(function (left, right) { return right.average - left.average; });
+
+    const profileStartedAt = now(ctx.window);
+    let profile;
+    if (typeof ctx.buildProfileAsync === "function") {
+      profile = await ctx.buildProfileAsync(undefined, undefined, {
+        shouldContinue: settings.shouldContinue,
+        batchSize: 32,
+        yieldToBrowser: function () { return yieldToBrowser(ctx.window); },
+        onProgress: function (update) {
+          if (!update) return;
+          settings.onProgress({
+            completedWork: ratings.length + (Number(update.completedWork) || 0),
+            totalWork: totalWork,
+            detail: update.detail || "Construcción cooperativa del perfil"
+          });
+        }
+      });
+      if (!profile || !settings.shouldContinue()) return null;
+    } else {
+      profile = typeof ctx.buildProfile === "function" ? ctx.buildProfile() : emptyProfile();
+    }
+    writeTiming(ctx.window, "buildProfile", now(ctx.window) - profileStartedAt,
+      profile && profile.count || validEntries, "completed");
+    writeTiming(ctx.window, "genreStats", now(ctx.window) - statsStartedAt, validEntries, "completed");
+
     const features = profile.features && typeof profile.features.forEach === "function" ? profile.features : new Map();
     const supportDistribution = { once: 0, twoToFour: 0, fiveToNine: 0, tenOrMore: 0 };
     features.forEach(function (feature) {
