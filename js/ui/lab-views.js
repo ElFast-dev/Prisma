@@ -1,5 +1,5 @@
-import { createLabRidgeView } from "./lab-ridge-view.js?v=core-20261023-1";
-import { createLabTemporalView } from "./lab-temporal-view.js?v=core-20261023-1";
+import { createLabRidgeView } from "./lab-ridge-view.js?v=core-20261023-2";
+import { createLabTemporalView } from "./lab-temporal-view.js?v=core-20261023-2";
 
 export function createLabViews(ctx) {
   function renderRecommendationDiagnosticPanel() {
