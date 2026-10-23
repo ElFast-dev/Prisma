@@ -238,8 +238,8 @@ export function createPairedRankingEvaluation(dependencies) {
     }
     return { scored, errors, mae: mean(errors) };
   }
-  async function metricAccumulatorFor(engine, trainRows, testRows, lambda, shouldContinue, signalTypeOnly) {
-    const profile = await createProfile(engine, trainRows.map(row => row.entry), shouldContinue);
+  async function metricAccumulatorFor(engine, trainRows, testRows, lambda, shouldContinue, signalTypeOnly, sharedBaseProfile) {
+    const profile = sharedBaseProfile || await createProfile(engine, trainRows.map(row => row.entry), shouldContinue);
     if (!profile) return null;
     const evaluationProfile = lambda === null ? profile : cloneAndShrink(profile, lambda, signalTypeOnly);
     const scored = await scoreRows(engine, evaluationProfile, testRows, shouldContinue);
@@ -368,9 +368,11 @@ export function createPairedRankingEvaluation(dependencies) {
         }
 
         const fullEngine = createFamilyEngine(FAMILY_DEFINITIONS[3]);
+        let fullBaseProfile = null;
         for (const lambda of LAMBDAS) {
           if (!shouldContinue()) return null;
-          const evaluated = await metricAccumulatorFor(fullEngine, trainRows, testRows, lambda, shouldContinue);
+          const evaluated = await metricAccumulatorFor(fullEngine, trainRows, testRows, lambda, shouldContinue, null, fullBaseProfile);
+          if (lambda === 0) fullBaseProfile = evaluated && evaluated.profile;
           if (!evaluated) return null;
           if (lambda === 0) {
             const localFeatures = [];
@@ -417,7 +419,7 @@ export function createPairedRankingEvaluation(dependencies) {
         for (const family of SIGNAL_FAMILIES) {
           if (!shouldContinue()) return null;
           const evaluated = await metricAccumulatorFor(
-            fullEngine, trainRows, testRows, SIGNAL_FAMILY_LAMBDA, shouldContinue, family.id
+            fullEngine, trainRows, testRows, SIGNAL_FAMILY_LAMBDA, shouldContinue, family.id, fullBaseProfile
           );
           if (!evaluated) return null;
           const accumulator = signalFamilyAccumulators[family.id];
@@ -456,9 +458,10 @@ export function createPairedRankingEvaluation(dependencies) {
           const innerTrain = innerRows.filter((row, index) => !innerTestSet.has(index));
           const innerTest = innerFolds[innerFold].map(index => innerRows[index]);
           innerValidationRelevant += innerTest.filter(row => row.rating >= 7).length;
-          const innerEvaluation = [];
+          let innerBaseProfile = null;
           for (const lambda of LAMBDAS) {
-            const evaluated = await metricAccumulatorFor(fullEngine, innerTrain, innerTest, lambda, shouldContinue);
+            const evaluated = await metricAccumulatorFor(fullEngine, innerTrain, innerTest, lambda, shouldContinue, null, innerBaseProfile);
+            if (lambda === 0) innerBaseProfile = evaluated && evaluated.profile;
             if (!evaluated) return null;
             const availableScores = MODES.map(mode => evaluated.thresholds["7"][mode]).filter(Number.isFinite);
               innerScores[String(lambda)].push(...availableScores);
@@ -482,7 +485,7 @@ export function createPairedRankingEvaluation(dependencies) {
         }
         if (chosenLambda !== null) {
           selectedLambdaCounts[String(chosenLambda)] += 1;
-          const selected = await metricAccumulatorFor(fullEngine, trainRows, testRows, chosenLambda, shouldContinue);
+          const selected = await metricAccumulatorFor(fullEngine, trainRows, testRows, chosenLambda, shouldContinue, null, fullBaseProfile);
           if (!selected) return null;
           selectedLambdaOutcomes.errors.push(...selected.scored.errors);
           selectedLambdaOutcomes.baselineErrors.push(...selected.baselineErrors);
