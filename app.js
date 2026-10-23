@@ -31,7 +31,7 @@ import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-8";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js?v=core-20261022-3";
-import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-4";
+import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-5";
 import { createLabMetricsActions } from "./js/app/lab-metrics-actions.js?v=core-20261023-4";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
@@ -57,6 +57,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   let storageProtectionBusy = false;
   let labMetricsActions = null;
   let recommendationDiagnosticReportText = "";
+  let recommendationDiagnosticReportFormat = "brief";
   let recommendationDiagnosticCopyMessage = "";
   let recommendationDiagnosticFeatureLabelsIncluded = false;
   let ridgeEvaluationResult = null;
@@ -179,6 +180,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get storageProtectionSnapshot() { return storageProtectionSnapshot; },
     get storageProtectionBusy() { return storageProtectionBusy; },
     get recommendationDiagnosticReportText() { return recommendationDiagnosticReportText; },
+    get recommendationDiagnosticReportFormat() { return recommendationDiagnosticReportFormat; },
     get recommendationDiagnosticCopyMessage() { return recommendationDiagnosticCopyMessage; },
     get recommendationDiagnosticFeatureLabelsIncluded() { return recommendationDiagnosticFeatureLabelsIncluded; },
     get labDiagnosticSnapshot() { return labMetricsActions ? labMetricsActions.labDiagnosticSnapshot : null; },
@@ -703,6 +705,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     set influenceNormalizationEvaluationResult(value) { influenceNormalizationEvaluationResult = value; },
     get recommendationDiagnosticReportText() { return recommendationDiagnosticReportText; },
     set recommendationDiagnosticReportText(value) { recommendationDiagnosticReportText = value; },
+    get recommendationDiagnosticReportFormat() { return recommendationDiagnosticReportFormat; },
+    set recommendationDiagnosticReportFormat(value) { recommendationDiagnosticReportFormat = value === "json" ? "json" : "brief"; },
     get recommendationDiagnosticCopyMessage() { return recommendationDiagnosticCopyMessage; },
     set recommendationDiagnosticCopyMessage(value) { recommendationDiagnosticCopyMessage = value; },
     get recommendationDiagnosticFeatureLabelsIncluded() { return recommendationDiagnosticFeatureLabelsIncluded; },
@@ -730,7 +734,15 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   }
 
   async function copyRecommendationDiagnosticReport(includeFeatureLabels) {
-    return labActions.copyRecommendationDiagnosticReport(includeFeatureLabels);
+    return labActions.copyRecommendationDiagnosticReport(includeFeatureLabels, "json");
+  }
+
+  async function copyRecommendationDeveloperBrief() {
+    return labActions.copyRecommendationDeveloperBrief();
+  }
+
+  async function copyRecommendationDiagnosticJson(includeFeatureLabels) {
+    return labActions.copyRecommendationDiagnosticJson(includeFeatureLabels);
   }
 
   const storageProtectionActions = createStorageProtectionActions({
@@ -883,6 +895,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get retryLabDiagnosticFailures() { return labMetricsActions ? labMetricsActions.retryLabDiagnosticFailures : null; },
     get restartLabDiagnostic() { return labMetricsActions ? labMetricsActions.restartLabDiagnostic : null; },
     get copyRecommendationDiagnosticReport() { return copyRecommendationDiagnosticReport; },
+    get copyRecommendationDeveloperBrief() { return copyRecommendationDeveloperBrief; },
+    get copyRecommendationDiagnosticJson() { return copyRecommendationDiagnosticJson; },
     get clearRecommendationDiagnosticReport() { return clearRecommendationDiagnosticReport; },
     get runRidgeExperiment() { return runRidgeExperiment; },
     get runTemporalRidgeExperiment() { return runTemporalRidgeExperiment; },
