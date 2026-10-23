@@ -344,7 +344,15 @@ export function createLabDiagnosticCoordinator(options) {
       if (runGeneration === generation) {
         activePromise = null;
         activeKey = "";
-        publish();
+        if (snapshotKey !== getDataKey()) {
+          generation += 1;
+          snapshot = null;
+          snapshotKey = "";
+          completedAt = null;
+          onUpdate(null);
+        } else {
+          publish();
+        }
       }
     });
     return activePromise;
