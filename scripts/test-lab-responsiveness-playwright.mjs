@@ -226,19 +226,19 @@ try {
     "Copying the diagnostics report must reuse cached metrics without repeating evaluation");
 
   const timingOperations = [
-    "navigation-render", "renderLab", "lab-first-render-yield", "summaryStats",
+    "navigation-render", "renderLab", "summaryStats",
     "buildProfile", "genreStats", "rating-evaluation", "ranking-cross-validation",
     "ranking-diversity", "recommendation-quality",
     "lab-diagnostic-coverage", "lab-diagnostic-baseline", "lab-diagnostic-ranking",
     "lab-diagnostic-normalization", "lab-diagnostic-ridge", "lab-diagnostic-temporal",
-    "lab-diagnostic-featureFamilies"
+    "lab-diagnostic-featureFamilies", "lab-metrics-pipeline"
   ];
   results.calculationTimes = performanceEvents.filter(item => timingOperations.includes(item.operation));
-  for (const operation of ["navigation-render", "renderLab", "lab-first-render-yield", "summaryStats",
+  for (const operation of ["navigation-render", "renderLab", "summaryStats",
     "buildProfile", "genreStats", "rating-evaluation", "ranking-cross-validation",
     "ranking-diversity", "lab-diagnostic-coverage", "lab-diagnostic-baseline",
     "lab-diagnostic-ranking", "lab-diagnostic-normalization", "lab-diagnostic-ridge",
-    "lab-diagnostic-temporal", "lab-diagnostic-featureFamilies"]) {
+    "lab-diagnostic-temporal", "lab-diagnostic-featureFamilies", "lab-metrics-pipeline"]) {
     assert.ok(results.calculationTimes.some(item => item.operation === operation),
       "Missing timing for " + operation + "; saw " + results.calculationTimes.map(item => item.operation).join(", "));
   }
