@@ -71,8 +71,9 @@ assert.notEqual(allVariety.find(movie => movie.tmdbId === "95"), undefined);
 assert.notEqual(allVariety.find(movie => movie.tmdbId === "96"), undefined,
   "Los remakes con IDs TMDB distintos deben conservar su identidad.");
 
-const [pageViews, eventHandlers, cacheTest, modularTest, spec, workflow] = await Promise.all([
+const [pageViews, labViews, eventHandlers, cacheTest, modularTest, spec, workflow] = await Promise.all([
   import("node:fs/promises").then(fs => fs.readFile("js/ui/page-views.js", "utf8")),
+  import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-views.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/app/event-handlers.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("scripts/test-cache-versioning.mjs", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("scripts/test-modular-architecture.mjs", "utf8")),
@@ -81,7 +82,7 @@ const [pageViews, eventHandlers, cacheTest, modularTest, spec, workflow] = await
 ]);
 assert.match(pageViews, /data-action="recommendation-mode"/);
 assert.match(pageViews, /aria-pressed=/);
-assert.match(pageViews, /Δ frente a Más afines:/, "Laboratorio debe mostrar la diferencia de nDCG frente al modo de afinidad.");
+assert.match(labViews, /Δ frente a Más afines:/, "Laboratorio debe mostrar la diferencia de nDCG frente al modo de afinidad.");
 assert.match(eventHandlers, /action === "recommendation-mode"/);
 assert.match(spec, /Modos de recomendación ajustables/);
 assert.match(cacheTest, /js\/recommendations\/preferences\.js/);
