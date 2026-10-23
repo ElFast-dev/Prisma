@@ -334,7 +334,7 @@ export function createRecommendationEvaluation(dependencies) {
     if (!ranking || !shouldContinue()) return null;
 
     const diversityStartedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-    const profile = buildProfile();
+    const profile = settings.profile || buildProfile();
     const diversity = [];
     for (const mode of RECOMMENDATION_MODES) {
       if (!shouldContinue()) return null;
