@@ -357,8 +357,10 @@ export function createPairedRankingEvaluation(dependencies) {
           }
           foldSummary.families[family.id] = {
             mae: evaluated.scored.mae,
-            ndcgAt5: evaluated.thresholds["7"],
-            ndcgAt5Threshold9: evaluated.thresholds["9"]
+            ndcgAt5: rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT
+              ? evaluated.thresholds["7"] : { balanced: null, affinity: null, variety: null },
+            ndcgAt5Threshold9: rows.length >= 50 && relevantCounts["9"] >= MIN_TUNING_RELEVANT
+              ? evaluated.thresholds["9"] : { balanced: null, affinity: null, variety: null }
           };
           work += 1;
           publishProgress("Familia " + family.label + "; repetición " + (repeat + 1) + ", pliegue " + (foldIndex + 1));
@@ -400,7 +402,11 @@ export function createPairedRankingEvaluation(dependencies) {
             }
           }
           foldSummary.lambdas[String(lambda)] = {
-            mae: evaluated.scored.mae, ndcgAt5: evaluated.thresholds["7"], ndcgAt5Threshold9: evaluated.thresholds["9"]
+            mae: evaluated.scored.mae,
+            ndcgAt5: rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT
+              ? evaluated.thresholds["7"] : { balanced: null, affinity: null, variety: null },
+            ndcgAt5Threshold9: rows.length >= 50 && relevantCounts["9"] >= MIN_TUNING_RELEVANT
+              ? evaluated.thresholds["9"] : { balanced: null, affinity: null, variety: null }
           };
           work += 1;
           publishProgress("Contracción lambda=" + lambda + "; repetición " + (repeat + 1) + ", pliegue " + (foldIndex + 1));
@@ -428,8 +434,10 @@ export function createPairedRankingEvaluation(dependencies) {
           }
           foldSummary.signalFamilies[family.id] = {
             mae: evaluated.scored.mae,
-            ndcgAt5: evaluated.thresholds["7"],
-            ndcgAt5Threshold9: evaluated.thresholds["9"]
+            ndcgAt5: rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT
+              ? evaluated.thresholds["7"] : { balanced: null, affinity: null, variety: null },
+            ndcgAt5Threshold9: rows.length >= 50 && relevantCounts["9"] >= MIN_TUNING_RELEVANT
+              ? evaluated.thresholds["9"] : { balanced: null, affinity: null, variety: null }
           };
           work += 1;
           publishProgress("Contracción selectiva " + family.label + "; repetición " + (repeat + 1) + ", pliegue " + (foldIndex + 1));
@@ -536,9 +544,11 @@ export function createPairedRankingEvaluation(dependencies) {
         maeWins: lambda === 0 ? 0 : accumulator.foldMae.filter((value, index) => value < control.foldMae[index] - EPSILON).length,
         ties: lambda === 0 ? 0 : accumulator.foldMae.filter((value, index) => Math.abs(value - control.foldMae[index]) <= EPSILON).length,
         maeLosses: lambda === 0 ? 0 : accumulator.foldMae.filter((value, index) => value > control.foldMae[index] + EPSILON).length,
-        rankingModes: summariseRanking(accumulator, 7, lambda === 0 ? null : control),
+        rankingModes: summariseRanking(accumulator, 7, lambda === 0 ? null : control,
+          rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT),
         rankingByThreshold: Object.fromEntries(THRESHOLDS.map(threshold => [
-          String(threshold), summariseRanking(accumulator, threshold, lambda === 0 ? null : control)
+          String(threshold), summariseRanking(accumulator, threshold, lambda === 0 ? null : control,
+            rows.length >= 50 && relevantCounts[String(threshold)] >= MIN_TUNING_RELEVANT)
         ])),
         repeatSummaries: repetitions.map(repeat => ({
           repeat: repeat.repeat,
