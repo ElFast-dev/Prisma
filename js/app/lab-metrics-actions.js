@@ -176,6 +176,7 @@ export function createLabMetricsActions(ctx) {
       progress = { phase: "ranking-evaluation", completed: 0, total: 5 };
       const recommendationQuality = await timed("recommendation-quality", function () {
         return ctx.evaluateRecommendationQualityAsync({
+          profile: profile,
           shouldContinue: isCurrent,
           onMeasure: function (operation, durationMs, sampleCount, status) {
             writeTiming(ctx.window, operation, durationMs, sampleCount, status);
