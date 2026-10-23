@@ -377,7 +377,7 @@ export function createRecommendationEvaluation(dependencies) {
         ? getCandidatePoolCounts(RANKING_CUTOFF, mode, profile)
         : { mode: mode, remoteCandidatesReceived: 0, localCatalogEntries: 0, localCandidatesEligible: 0,
             eligibleCandidatePool: movies.length, rankedResultsAvailable: movies.length,
-            requestedResultLimit: RANKING_CUTOFF, profileAvailable: Boolean(profile && profile.count > 0) };
+            requestedResultLimit: RANKING_CUTOFF, profileAvailable: Boolean(!profile || typeof profile.count !== "number" || profile.count > 0) };
       counts.returnedResultCount = movies.length;
       if (movies.length < RANKING_CUTOFF && counts.profileAvailable) {
         if (counts.eligibleCandidatePool < RANKING_CUTOFF) counts.shortfallReason = "eligible-pool-too-small";
