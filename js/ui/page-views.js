@@ -48,8 +48,9 @@ export function createPageViews(ctx) {
     }
     if (ctx.currentPage === "lab" && typeof ctx.ensureLabMetrics === "function") {
       ctx.ensureLabMetrics();
-    } else if (typeof ctx.cancelLabMetrics === "function") {
-      ctx.cancelLabMetrics();
+    } else {
+      if (typeof ctx.cancelLabMetrics === "function") ctx.cancelLabMetrics();
+      if (typeof ctx.cancelLabExperiments === "function") ctx.cancelLabExperiments();
     }
     if (ctx.currentPage === "catalog") {
       renderCatalogResults();
