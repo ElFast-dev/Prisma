@@ -231,7 +231,7 @@ export function createLabActions(ctx) {
       recommendationMode: ctx.recommendationMode,
       ratingEvaluation: sourceMetrics.evaluation,
       ridgeEvaluation: ctx.ridgeEvaluationResult,
-      temporalRidgeEvaluation: ctx.temporalRidgeEvaluationResult,
+      temporalRidgeEvaluation: sourceMetrics.temporalEvaluation || ctx.temporalRidgeEvaluationResult,
       influenceNormalizationEvaluation: ctx.influenceNormalizationEvaluationResult,
       recommendationQuality: sourceMetrics.recommendationQuality,
       includeFeatureLabels: ctx.recommendationDiagnosticFeatureLabelsIncluded
