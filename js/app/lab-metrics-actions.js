@@ -105,6 +105,10 @@ export function createLabMetricsActions(ctx) {
     const source = results || {};
     const coveragePhase = source.coverage || {};
     const coverage = coveragePhase.coverage || null;
+    const allFinal = Boolean(snapshot && Array.isArray(snapshot.phases) && snapshot.phases.every(function (phase) {
+      return ["completed", "unavailable", "cancelled", "error"].includes(phase.status);
+    }));
+    if (!coveragePhase.available && !allFinal) return null;
     const profile = coveragePhase.profile || emptyProfile();
     const rawEvaluation = source.baseline || null;
     const evaluation = rawEvaluation || {
