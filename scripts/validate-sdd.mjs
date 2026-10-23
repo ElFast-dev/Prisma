@@ -268,6 +268,12 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-22-year-aware-recommendation-lookups/design.md',
   'openspec/changes/archive/2026-10-22-year-aware-recommendation-lookups/tasks.md',
   'openspec/changes/archive/2026-10-22-year-aware-recommendation-lookups/specs/recommendations/spec.md',
+  'openspec/changes/archive/2026-10-22-scalable-watch-history-and-compact-progress-calendar/proposal.md',
+  'openspec/changes/archive/2026-10-22-scalable-watch-history-and-compact-progress-calendar/design.md',
+  'openspec/changes/archive/2026-10-22-scalable-watch-history-and-compact-progress-calendar/tasks.md',
+  'openspec/changes/archive/2026-10-22-scalable-watch-history-and-compact-progress-calendar/specs/import-export/spec.md',
+  'openspec/changes/archive/2026-10-22-scalable-watch-history-and-compact-progress-calendar/specs/interface/spec.md',
+  'openspec/changes/archive/2026-10-22-scalable-watch-history-and-compact-progress-calendar/specs/recommendations/spec.md'
 ];
 
 const errors = [];
