@@ -6,6 +6,7 @@ import { createTMDBMovieDetails } from '../js/tmdb/movie-details.js';
 import { createCatalogViews } from '../js/ui/catalog-views.js';
 import { createCollectionViews } from '../js/ui/collection-views.js';
 import { createSettingsViews } from '../js/ui/settings-views.js';
+import { createProgressViews } from '../js/ui/progress-views.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const entry = resolve(root, 'app.js');
@@ -28,6 +29,7 @@ const files = [
   'js/collection/collection-model.js',
   'js/ui/presentation-utils.js',
   'js/ui/page-views.js',
+  'js/ui/progress-views.js',
   'js/ui/settings-views.js',
   'js/ui/catalog-views.js',
   'js/ui/collection-views.js',
@@ -118,13 +120,41 @@ assert.ok(app.includes('createModalController('));
 assert.ok(app.includes('createRecommendationRanking('));
 assert.ok(app.includes('createAppRuntime('));
 assert.ok(app.includes('createAppLifecycle('));
-const [pageViewsSource, settingsViewsSource, catalogViewsSource, collectionViewsSource, labViewsSource] = await Promise.all([
+const [pageViewsSource, progressViewsSource, settingsViewsSource, catalogViewsSource, collectionViewsSource, labViewsSource] = await Promise.all([
   readFile('js/ui/page-views.js', 'utf8'),
+  readFile('js/ui/progress-views.js', 'utf8'),
   readFile('js/ui/settings-views.js', 'utf8'),
   readFile('js/ui/catalog-views.js', 'utf8'),
   readFile('js/ui/collection-views.js', 'utf8'),
   readFile('js/ui/lab-views.js', 'utf8')
 ]);
+assert.match(pageViewsSource, /createProgressViews\(ctx, renderConfirmedWatchStreakPanel\)/,
+  'La composición general debe delegar Progreso al módulo especializado.');
+assert.doesNotMatch(pageViewsSource, /function renderHome\(/,
+  'El renderizador de Progreso no debe seguir concentrado en page-views.js.');
+assert.match(progressViewsSource, /export function createProgressViews\(ctx, renderConfirmedWatchStreakPanel\)/,
+  'Progreso debe exponer una fábrica de vistas con su dependencia de racha inyectada.');
+const progressFixture = {
+  state: { events: [], watchlist: [] },
+  summaryStats() { return { total: 0, average: null }; },
+  getCollectionItems() { return []; },
+  dateScore() { return 0; },
+  genreStats() { return []; },
+  escapeHTML(value) { return String(value == null ? '' : value); },
+  formatDate() { return '20/10/2026'; },
+  infoButton() { return ''; },
+  metric(label, value) { return '<span class="metric">' + label + ':' + value + '</span>'; },
+  displayGenre(value) { return String(value); },
+  barRow() { return ''; }
+};
+const progressViews = createProgressViews(progressFixture, () => '<section class="streak-test"></section>');
+const progressMarkup = progressViews.renderHome();
+assert.match(progressMarkup, /<h1>Progreso<\/h1>/);
+assert.match(progressMarkup, /Empieza a construir tu perfil/);
+assert.match(progressMarkup, /class="streak-test"/,
+  'La vista de Progreso debe incluir el renderizador de racha recibido por inyección.');
+assert.match(progressMarkup, /Sin actividad reciente/);
+
 assert.match(pageViewsSource, /createSettingsViews\(ctx\)/,
   'La composición general debe delegar Ajustes y Datos al módulo especializado.');
 assert.doesNotMatch(pageViewsSource, /function (?:renderAppearanceSettings|renderTMDBSettings|formatStorageBytes|renderStorageProtectionSettings|renderData)\(/,
