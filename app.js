@@ -121,7 +121,10 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     getState: function () { return state; },
     getCatalog: function () { return catalog; },
     getCatalogByTitle: function () { return catalogByTitle; },
-    setCatalog: function (value) { catalog = value; },
+    setCatalog: function (value) {
+      if (catalog !== value && labMetricsActions) labMetricsActions.invalidateLabMetrics();
+      catalog = value;
+    },
     setCatalogByTitle: function (value) { catalogByTitle = value; },
     normalizeMovie: normalizeMovie,
     titleKey: titleKey,
