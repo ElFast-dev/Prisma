@@ -858,7 +858,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const yieldToBrowser = typeof settings.yieldToBrowser === "function"
       ? settings.yieldToBrowser
       : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
-    const batchSize = Math.max(4, Math.min(24, Number(settings.batchSize) || 12));
+    const batchSize = Math.max(8, Math.min(64, Number(settings.batchSize) || 48));
     const rows = mappedRows();
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
     if (rows.length < MIN_RECORDS) {
@@ -875,7 +875,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       callback({
         completedWork: completedWork,
         totalWork: totalWork,
-        completedRepeats: Math.floor(completedWork / (OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1))),
+        completedRepeats: Math.floor(Math.max(0, completedWork - kernelWork) / (OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1))),
         totalRepeats: REPEATED_VALIDATION_RUNS,
         foldsPerRepeat: OUTER_FOLDS,
         phase: "fold",
