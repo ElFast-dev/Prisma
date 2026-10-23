@@ -1,4 +1,4 @@
-import { createLabDiagnosticCoordinator } from "../diagnostics/lab-diagnostic-coordinator.js?v=diag-20261023-1";
+import { createLabDiagnosticCoordinator } from "../diagnostics/lab-diagnostic-coordinator.js?v=diag-20261023-2";
 
 function now(windowRef) {
   return windowRef && windowRef.performance && typeof windowRef.performance.now === "function"
