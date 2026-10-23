@@ -126,6 +126,7 @@ export function createLabMetricsActions(ctx) {
       coverage: coverage,
       evaluation: evaluation,
       recommendationQuality: recommendationQuality,
+      ridgeEvaluation: source.ridge || null,
       normalizationEvaluation: source.normalization || null,
       featureFamilyEvaluation: source.featureFamilies || null,
       temporalEvaluation: source.temporal || null,
