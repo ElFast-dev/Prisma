@@ -142,7 +142,7 @@ modules.push(['js/app/lab-metrics-actions.js', await readFile('js/app/lab-metric
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
 assert.ok(cached.has("./js/recommendations/features.js?v=rec-20261022-1"),
   "El extractor ampliado de características debe tener una URL versionada en caché.");
-assert.ok(cached.has("./js/recommendations/engine.js?v=rec-20261023-1"),
+assert.ok(cached.has("./js/recommendations/engine.js?v=rec-20261023-2"),
   "El motor de recomendación actualizado debe estar versionado.");
 assert.ok(cached.has("./js/core/movie-utils.js"),
   "El normalizador compartido debe estar disponible en la caché PWA renovada.");
