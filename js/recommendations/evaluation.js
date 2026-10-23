@@ -205,6 +205,8 @@ export function createRecommendationEvaluation(dependencies) {
     const seen = new Set();
     const rows = [];
     const sourceRatings = getRatings() || [];
+    const progressTotal = Math.max(1, sourceRatings.length * 2 + RANKING_FOLDS + RECOMMENDATION_MODES.length);
+    let progressWork = 0;
 
     for (let index = 0; index < sourceRatings.length; index += 1) {
       if (!shouldContinue()) return null;
@@ -220,15 +222,17 @@ export function createRecommendationEvaluation(dependencies) {
         }
       }
       if ((index + 1) % 16 === 0 || index + 1 === sourceRatings.length) {
+        progressWork = index + 1;
         onProgress({
-          completedWork: index + 1,
-          totalWork: Math.max(1, sourceRatings.length * 2 + RANKING_FOLDS + RECOMMENDATION_MODES.length),
+          completedWork: progressWork,
+          totalWork: progressTotal,
           detail: "Enlazando valoraciones y características"
         });
         await yieldToBrowser();
       }
     }
 
+    progressWork = sourceRatings.length;
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
     if (rows.length < MIN_RANKING_RECORDS) {
       const result = unavailableRanking(
