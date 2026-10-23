@@ -14,7 +14,7 @@ function makeFixture(count) {
       title: index < 2 ? "The Remake" : "Synthetic Film " + String(index).padStart(3, "0"),
       year: index < 2 ? 2001 : 1980 + index % 40,
       genres: ["Genre " + (index % 7), "Genre " + ((index + 3) % 7)],
-      tags: ["tag " + (index % 11), "signal " + (index % 13)],
+      tags: ["tag " + (index % 11), "signal " + (index % 13)].concat(index === 17 ? ["one-off narrative tag"] : []),
       overview: "mystery discovery emotion future memory time travel friendship and hope " + (index % 17),
       cast: ["Synthetic Actor " + (index % 13)],
       directors: ["Synthetic Director " + (index % 9)],
