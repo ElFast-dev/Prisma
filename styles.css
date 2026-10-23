@@ -313,3 +313,168 @@ p { color: var(--muted); line-height: 1.65; }
   line-height: 1;
 }
 .metric-note { color: var(--subtle); font-size: 10px; line-height: 1.5; margin-top: 10px; }
+
+
+/* Integrated Laboratory diagnostic */
+.lab-diagnostic-progress {
+  margin: 10px 0 20px;
+  min-width: 0;
+  overflow: hidden;
+}
+.lab-diagnostic-progress > .panel-head {
+  align-items: flex-start;
+  gap: 16px;
+}
+.lab-diagnostic-progress h2 {
+  margin: 0;
+  font-size: clamp(18px, 2vw, 23px);
+  line-height: 1.2;
+  letter-spacing: -.035em;
+}
+.lab-diagnostic-percent {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: clamp(25px, 3vw, 34px);
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.lab-diagnostic-progress-bar {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin: 16px 0;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  appearance: none;
+  background: var(--surface-soft);
+}
+.lab-diagnostic-progress-bar::-webkit-progress-bar {
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+.lab-diagnostic-progress-bar::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-strong), var(--mint));
+  transition: width .16s ease-out;
+}
+.lab-diagnostic-progress-bar::-moz-progress-bar {
+  border-radius: 999px;
+  background: var(--accent-strong);
+}
+.lab-diagnostic-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 18px;
+  margin: 13px 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.lab-diagnostic-summary strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.lab-diagnostic-phase-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 17px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lab-diagnostic-phase {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(255,255,255,.018);
+}
+.lab-diagnostic-phase.is-current {
+  border-color: var(--line-strong);
+  background: var(--accent-wash);
+}
+.lab-diagnostic-phase-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.lab-diagnostic-phase.status-running .lab-diagnostic-phase-mark,
+.lab-diagnostic-phase.status-completed .lab-diagnostic-phase-mark {
+  color: var(--mint);
+}
+.lab-diagnostic-phase.status-error .lab-diagnostic-phase-mark {
+  color: var(--danger);
+}
+.lab-diagnostic-phase-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+.lab-diagnostic-phase-copy strong {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.lab-diagnostic-phase-copy small {
+  color: var(--subtle);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.lab-diagnostic-phase-copy .lab-diagnostic-phase-units {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.lab-diagnostic-phase-copy .lab-diagnostic-phase-reason {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.lab-diagnostic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.lab-automatic-label {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  margin-top: 0;
+}
+.diagnostic-report-output {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 760px) {
+  .app-shell { padding-right: 18px; padding-left: 18px; }
+  .lab-diagnostic-progress { padding: 17px; border-radius: 16px; }
+  .lab-diagnostic-phase-list { grid-template-columns: minmax(0, 1fr); }
+  .lab-diagnostic-summary { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .lab-diagnostic-progress > .panel-head { align-items: flex-start; }
+  .lab-diagnostic-percent { font-size: 27px; }
+  .lab-diagnostic-actions .btn { flex: 1 1 auto; }
+  .lab-automatic-label { white-space: normal; text-align: right; max-width: 45%; }
+  .recommendation-diagnostic-panel .panel-head { flex-direction: column; align-items: stretch; }
+  .recommendation-diagnostic-panel .panel-head .btn { width: 100%; }
+}
