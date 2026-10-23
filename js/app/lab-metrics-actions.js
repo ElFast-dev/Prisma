@@ -145,6 +145,20 @@ export function createLabMetricsActions(ctx) {
   }
 
   function handleUpdate(nextSnapshot, results) {
+    if (!nextSnapshot) {
+      snapshot = null;
+      phaseResults = Object.create(null);
+      metrics = null;
+      error = null;
+      cachedKey = "";
+      scheduleRender();
+      return;
+    }
+    if (snapshot && snapshot.dataKey !== nextSnapshot.dataKey) {
+      phaseResults = Object.create(null);
+      metrics = null;
+      cachedKey = "";
+    }
     snapshot = nextSnapshot;
     if (results && typeof results === "object") phaseResults = results;
     const currentResults = phaseResults;
