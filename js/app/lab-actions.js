@@ -187,7 +187,7 @@ export function createLabActions(ctx) {
     }
   }
 
-  function clearRecommendationDiagnosticReport()
+  function clearRecommendationDiagnosticReport() {
     ctx.recommendationDiagnosticReportText = "";
     ctx.recommendationDiagnosticCopyMessage = "";
     if (ctx.currentPage === "lab") ctx.renderApp();
