@@ -118,6 +118,14 @@ try {
     const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
     return state === "ready" || state === "error";
   }, null, { timeout: 120000 });
+  await page.waitForFunction(() => {
+    const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
+    const copyButton = document.querySelector('[data-action="copy-recommendation-diagnostics"]');
+    return state === "ready" && copyButton && !copyButton.disabled;
+  }, null, { timeout: 10000 });
+  // The coordinator's final publication follows the ready marker; wait for a frame after
+  // the copy action is enabled so the label control is no longer being replaced.
+  await page.waitForTimeout(150);
   const labelsControl = page.locator("#diagnosticFeatureLabels");
   await labelsControl.check({ timeout: 5000 });
   await labelsControl.uncheck({ timeout: 5000 });
