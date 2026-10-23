@@ -854,7 +854,14 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const callback = typeof onProgress === "function" ? onProgress :
       (onProgress && typeof onProgress.onProgress === "function" ? onProgress.onProgress : function () {});
     const settings = options || (onProgress && typeof onProgress === "object" ? onProgress : {});
-    const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    const externalShouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    let callbackCancelled = false;
+    const emitProgress = function (update) {
+      const keepGoing = callback(update);
+      if (keepGoing === false) callbackCancelled = true;
+      return keepGoing;
+    };
+    const shouldContinue = function () { return !callbackCancelled && externalShouldContinue(); };
     const yieldToBrowser = typeof settings.yieldToBrowser === "function"
       ? settings.yieldToBrowser
       : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
@@ -872,10 +879,10 @@ export function createRidgeRecommendationExperiment(dependencies) {
     let completedWork = 0;
     const canContinue = function () { return shouldContinue(); };
     const reportWork = function (detail) {
-      callback({
+      emitProgress({
         completedWork: completedWork,
         totalWork: totalWork,
-        completedRepeats: Math.floor(Math.max(0, completedWork - kernelWork) / (OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1))),
+        completedRepeats: Math.min(REPEATED_VALIDATION_RUNS, Math.floor(Math.max(0, completedWork - kernelWork) / (OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1)))),
         totalRepeats: REPEATED_VALIDATION_RUNS,
         foldsPerRepeat: OUTER_FOLDS,
         phase: "fold",
@@ -904,7 +911,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         yieldToBrowser: yieldToBrowser,
         onProgress: function (update) {
           completedWork = Math.max(completedWork, Number(update.completedWork) || 0);
-          callback({
+          emitProgress({
             completedWork: completedWork,
             totalWork: totalWork,
             completedRepeats: 0,
@@ -923,7 +930,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         const run = await evaluateFoldSetAsync(rows, kernel, indices, repetitionIndex, relevantCount, control);
         if (!run || !canContinue()) return null;
         repeatedRuns.push(run);
-        callback({
+        emitProgress({
           completedWork: completedWork,
           totalWork: totalWork,
           completedRepeats: repetitionIndex + 1,
@@ -1145,7 +1152,14 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const callback = typeof onProgress === "function" ? onProgress :
       (onProgress && typeof onProgress.onProgress === "function" ? onProgress.onProgress : function () {});
     const settings = options || (onProgress && typeof onProgress === "object" ? onProgress : {});
-    const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    const externalShouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    let callbackCancelled = false;
+    const emitProgress = function (update) {
+      const keepGoing = callback(update);
+      if (keepGoing === false) callbackCancelled = true;
+      return keepGoing;
+    };
+    const shouldContinue = function () { return !callbackCancelled && externalShouldContinue(); };
     const yieldToBrowser = typeof settings.yieldToBrowser === "function"
       ? settings.yieldToBrowser
       : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
@@ -1185,7 +1199,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         batchSize: batchSize,
         onModelFit: function (detail) {
           completedWork = Math.min(totalWork, completedWork + 1);
-          callback({
+          emitProgress({
             completedWork: completedWork,
             totalWork: totalWork,
             completedWindows: Math.min(TEMPORAL_OUTER_WINDOWS, Math.floor(completedWork / workPerWindow)),
@@ -1201,7 +1215,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         yieldToBrowser: yieldToBrowser,
         onProgress: function (update) {
           completedWork = Math.max(completedWork, Number(update.completedWork) || 0);
-          callback({
+          emitProgress({
             completedWork: completedWork,
             totalWork: totalWork,
             completedWindows: 0,
@@ -1239,7 +1253,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         };
         starting.completedWork = completedWork;
         starting.totalWork = totalWork;
-        if (callback(starting) === false || !shouldContinue()) return null;
+        if (emitProgress(starting) === false || !shouldContinue()) return null;
 
         const alpha = await selectTemporalAlphaAsync(rows, kernel, window.trainingIndices, control);
         if (alpha == null || !shouldContinue()) return null;
@@ -1325,7 +1339,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
           deltaBaseMinusRidge: deltaBaseMinusRidge,
           rankingAvailable: windowRankingAvailable
         });
-        const shouldKeepGoing = callback({
+        const shouldKeepGoing = emitProgress({
           completedWindows: windowIndex + 1,
           totalWindows: TEMPORAL_OUTER_WINDOWS,
           windowsPlanned: TEMPORAL_OUTER_WINDOWS,
