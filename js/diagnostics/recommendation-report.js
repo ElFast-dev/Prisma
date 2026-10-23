@@ -857,6 +857,11 @@ function featureFamilySummary(input) {
         return all;
       }, {}),
       mae: rounded(support.nestedSelection.mae, 5),
+      baselineMaeSameFolds: rounded(support.nestedSelection.baselineMaeSameFolds, 5),
+      deltaMaeVsNoShrinkage: rounded(support.nestedSelection.deltaMaeVsNoShrinkage, 5),
+      maeWins: nonNegativeInteger(support.nestedSelection.maeWins),
+      ties: nonNegativeInteger(support.nestedSelection.ties),
+      maeLosses: nonNegativeInteger(support.nestedSelection.maeLosses),
       foldMae: Array.isArray(support.nestedSelection.foldMae) ? support.nestedSelection.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
       rankingModes: summarizeModes(support.nestedSelection, 7),
       rankingByThreshold: { "7": summarizeModes(support.nestedSelection, 7), "9": summarizeModes(support.nestedSelection, 9) }
