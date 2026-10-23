@@ -700,10 +700,11 @@ function featureFamilySummary(input) {
         ndcgAt5: current.available ? rounded(current.ndcgAt5, 5) : null,
         deltaNdcgVsGenres: current.available ? rounded(current.deltaNdcgVsGenres, 5) : null,
         foldsEvaluated: nonNegativeInteger(current.foldsEvaluated),
+        pairedFoldsEvaluated: nonNegativeInteger(current.pairedFoldsEvaluated),
         wins: nonNegativeInteger(current.wins),
         ties: nonNegativeInteger(current.ties),
         losses: nonNegativeInteger(current.losses),
-        foldNdcgAt5: Array.isArray(current.foldNdcgAt5) ? current.foldNdcgAt5.slice(0, 15).map(function (v) { return rounded(v, 5); }) : []
+        foldNdcgAt5: Array.isArray(current.foldNdcgAt5) ? current.foldNdcgAt5.slice(0, 15).map(function (v) { return v == null ? null : rounded(v, 5); }) : []
       };
     });
   };
