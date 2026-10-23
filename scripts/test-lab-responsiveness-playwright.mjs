@@ -14,6 +14,7 @@ const results = {
   firstLabRenderMs: null,
   calculationTimes: [],
   responsiveTicks: 0,
+  maxHeartbeatGapMs: null,
   metricsStatus: null,
   metricRunCountsBeforeReport: {},
   metricRunCountsAfterReport: {},
@@ -69,8 +70,14 @@ try {
   await page.reload({ waitUntil: "networkidle", timeout: 60000 });
   await page.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
   await page.evaluate(() => {
-    window.__labResponsivenessTicks = 0;
-    window.__labResponsivenessTimer = window.setInterval(() => { window.__labResponsivenessTicks += 1; }, 10);
+    window.__labResponsivenessHeartbeat = { ticks: 0, maxGapMs: 0, lastAt: performance.now() };
+    window.__labResponsivenessTimer = window.setInterval(() => {
+      const heartbeat = window.__labResponsivenessHeartbeat;
+      const now = performance.now();
+      heartbeat.ticks += 1;
+      heartbeat.maxGapMs = Math.max(heartbeat.maxGapMs, now - heartbeat.lastAt);
+      heartbeat.lastAt = now;
+    }, 10);
   });
 
   const clickStartedAt = Date.now();
@@ -106,10 +113,15 @@ try {
   results.metricsStatus = await page.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state");
   results.responsiveTicks = await page.evaluate(() => {
     window.clearInterval(window.__labResponsivenessTimer);
-    return window.__labResponsivenessTicks || 0;
+    return window.__labResponsivenessHeartbeat || { ticks: 0, maxGapMs: null };
   });
+  const heartbeat = results.responsiveTicks;
+  results.responsiveTicks = heartbeat.ticks;
+  results.maxHeartbeatGapMs = Math.round(heartbeat.maxGapMs * 10) / 10;
   assert.equal(results.metricsStatus, "ready", "Synthetic 351-rating profile must finish all automatic metrics");
   assert.ok(results.responsiveTicks >= 3, "UI task heartbeat must continue while metrics compute: ticks=" + results.responsiveTicks);
+  assert.ok(results.maxHeartbeatGapMs < 1000,
+    "The main thread must yield at least once per second while metrics compute; max heartbeat gap=" + results.maxHeartbeatGapMs + "ms");
 
   const countBefore = operation => countOperations(operation).length;
   results.metricRunCountsBeforeReport = {
