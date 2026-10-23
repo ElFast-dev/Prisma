@@ -772,3 +772,20 @@ Cuando una valoración incluye un año fiable, Prisma DEBE pasar ese año a la b
 - DADO que una valoración no tiene ID TMDB ni año y existen varias películas con el mismo título
 - CUANDO el recomendador o el laboratorio resuelve sus metadatos
 - ENTONCES no elige una identidad arbitraria ni usa características ambiguas
+
+
+### Requirement: Exclusión contextual de películas ya guardadas
+
+Prisma DEBE comprobar las recomendaciones contra las colecciones personales usando título, ID TMDB y año disponible. La ausencia de ID en un registro legado no DEBE permitir recomendar la misma película si el título y año la identifican de forma inequívoca; tampoco DEBE provocar que se excluyan remakes con años distintos.
+
+#### Scenario: Película ya guardada sin ID TMDB
+
+- DADO que una película está guardada en historial, pendientes u ocultas con título y año pero sin ID TMDB
+- CUANDO una candidata TMDB de la misma identidad se evalúa
+- ENTONCES no aparece en recomendaciones
+
+#### Scenario: Título compartido por remakes
+
+- DADO que la colección contiene una película con el mismo título normalizado pero un año distinto
+- CUANDO se evalúa una candidata de otro año
+- ENTONCES la candidata sigue disponible si no hay otra coincidencia de identidad
