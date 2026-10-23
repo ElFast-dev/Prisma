@@ -230,9 +230,9 @@ export function createLabActions(ctx) {
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
       ratingEvaluation: sourceMetrics.evaluation,
-      ridgeEvaluation: ctx.ridgeEvaluationResult,
+      ridgeEvaluation: sourceMetrics.ridgeEvaluation || ctx.ridgeEvaluationResult,
       temporalRidgeEvaluation: sourceMetrics.temporalEvaluation || ctx.temporalRidgeEvaluationResult,
-      influenceNormalizationEvaluation: ctx.influenceNormalizationEvaluationResult,
+      influenceNormalizationEvaluation: sourceMetrics.normalizationEvaluation || ctx.influenceNormalizationEvaluationResult,
       recommendationQuality: sourceMetrics.recommendationQuality,
       includeFeatureLabels: ctx.recommendationDiagnosticFeatureLabelsIncluded
     });
