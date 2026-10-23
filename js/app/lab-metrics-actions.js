@@ -343,6 +343,24 @@ export function createLabMetricsActions(ctx) {
       else supportDistribution.tenOrMore += 1;
     });
     const metadataCount = Math.min(validEntries, linkedEntries);
+    const requestedResultLimit = 5;
+    const candidateCounts = typeof ctx.getCandidatePoolCounts === "function"
+      ? ctx.getCandidatePoolCounts(requestedResultLimit, ctx.recommendationMode || "balanced", profile)
+      : {
+          remoteCandidatesReceived: Array.isArray(ctx.recommendationCandidates) ? ctx.recommendationCandidates.length : 0,
+          localCatalogEntries: Array.isArray(ctx.catalog) ? ctx.catalog.length : 0,
+          localCandidatesEligible: 0, eligibleCandidatePool: 0, rankedResultsAvailable: 0,
+          requestedResultLimit: requestedResultLimit, profileAvailable: Boolean(profile && profile.count > 0)
+        };
+    const currentRecommendations = typeof ctx.getRecommendations === "function"
+      ? (ctx.getRecommendations(requestedResultLimit, ctx.recommendationMode || "balanced", profile) || [])
+      : [];
+    candidateCounts.returnedResultCount = currentRecommendations.length;
+    if (!candidateCounts.profileAvailable) candidateCounts.shortfallReason = "empty-personal-profile";
+    else if (candidateCounts.eligibleCandidatePool < requestedResultLimit) candidateCounts.shortfallReason = "eligible-pool-too-small";
+    else if (candidateCounts.returnedResultCount < requestedResultLimit) {
+      candidateCounts.shortfallReason = ctx.recommendationMode === "balanced" ? "balanced-genre-cap" : "ranking-policy-shortfall";
+    } else candidateCounts.shortfallReason = null;
     const report = {
       ratingEntries: ratings.length,
       validRatingEntries: validEntries,
@@ -358,6 +376,13 @@ export function createLabMetricsActions(ctx) {
       signalTypeCounts: supportByType,
       catalogMovies: Array.isArray(ctx.catalog) ? ctx.catalog.length : 0,
       candidatesAvailable: Array.isArray(ctx.recommendationCandidates) ? ctx.recommendationCandidates.length : 0,
+      remoteCandidatesReceived: Number(candidateCounts.remoteCandidatesReceived) || 0,
+      localCandidatesEligible: Number(candidateCounts.localCandidatesEligible) || 0,
+      eligibleCandidatePool: Number(candidateCounts.eligibleCandidatePool) || 0,
+      rankedResultsAvailable: Number(candidateCounts.rankedResultsAvailable) || 0,
+      requestedResultLimit: requestedResultLimit,
+      returnedResultCount: currentRecommendations.length,
+      shortfallReason: candidateCounts.shortfallReason || null,
       metadataCoverage: validEntries ? metadataCount / validEntries : 0,
       featureLinkedCoverage: uniqueRatings ? uniqueFeatureRows / uniqueRatings : 0
     };
