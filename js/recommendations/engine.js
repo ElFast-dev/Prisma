@@ -105,6 +105,7 @@ export function createRecommendationEngine(dependencies) {
       : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
     const source = trainingRatings || getRatings();
     const valid = source.filter(function (entry) { return ratingValue(entry) != null; });
+    const mappedRows = options == null && Array.isArray(settings.mappedRows) ? settings.mappedRows : null;
     const ratingSum = valid.reduce(function (sum, entry) { return sum + ratingValue(entry); }, 0);
     const personalAverage = valid.length ? ratingSum / valid.length : RECOMMENDATION_PRIOR_RATING;
     const average = (ratingSum + RECOMMENDATION_PRIOR_RATING * RECOMMENDATION_PRIOR_STRENGTH) /
@@ -115,8 +116,9 @@ export function createRecommendationEngine(dependencies) {
     for (let index = 0; index < valid.length; index += 1) {
       if (!shouldContinue()) return null;
       const entry = valid[index];
-      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
-      const names = movieFeatures(movie, entry, options);
+      const cached = mappedRows && mappedRows[index] && mappedRows[index].entry === entry ? mappedRows[index] : null;
+      const movie = cached ? cached.movie : findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
+      const names = cached && Array.isArray(cached.features) ? cached.features : movieFeatures(movie, entry, options);
       if (names.length) {
         withMetadata += 1;
         const deviation = (ratingValue(entry) - average) / 4;
