@@ -28,7 +28,7 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
   function findMovie(title, id) {
     return id ? (movies.get(String(id)) || null) : (ratings.find(entry => entry.title === title) || null);
   }
-  function buildProfile(trainingRatings) {
+  function buildProfile(trainingRatings = ratings) {
     const seenIds = new Set(trainingRatings.map(entry => String(entry.tmdbId)));
     const sums = new Map();
     const counts = new Map();
