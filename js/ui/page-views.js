@@ -45,14 +45,27 @@ export function createPageViews(ctx) {
       ["L", "Lunes"], ["M", "Martes"], ["X", "Miércoles"], ["J", "Jueves"],
       ["V", "Viernes"], ["S", "Sábado"], ["D", "Domingo"]
     ];
-    const monthMarkup = Array.from(byMonth.entries()).map(function (monthEntry) {
+    const monthEntries = Array.from(byMonth.entries());
+    const monthMarkup = monthEntries.map(function (monthEntry, monthIndex) {
+      const monthKey = monthEntry[0];
       const monthDays = monthEntry[1];
-      const first = monthDays[0].date;
-      const weekday = (new Date(first + "T00:00:00.000Z").getUTCDay() + 6) % 7;
+      const first = monthKey + "-01";
+      const parts = monthKey.split("-");
+      const year = Number(parts[0]);
+      const monthNumber = Number(parts[1]);
+      const daysInCalendarMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+      const weekday = (new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay() + 6) % 7;
       const emptyCells = Array.from({ length: weekday }, function () {
         return '<span class="watch-streak-calendar-empty" aria-hidden="true"></span>';
       }).join("");
-      const dayCells = monthDays.map(function (day) {
+      const streakDaysByDate = new Map(monthDays.map(function (day) { return [day.date, day]; }));
+      const dayCells = Array.from({ length: daysInCalendarMonth }, function (_, index) {
+        const number = index + 1;
+        const date = monthKey + "-" + String(number).padStart(2, "0");
+        const day = streakDaysByDate.get(date);
+        if (!day) {
+          return '<span class="watch-streak-day-outside" aria-hidden="true"><span class="watch-streak-day-number">' + number + '</span></span>';
+        }
         const label = formatDateOnlyLong(day.date) || day.date;
         const movieLabel = day.title
           ? "Película conservada: " + day.title
@@ -64,17 +77,23 @@ export function createPageViews(ctx) {
         return '<div class="watch-streak-day ' + (day.title ? "has-movie" : "title-missing") +
           '" role="listitem" data-watch-streak-date="' + day.date +
           '" aria-label="' + ctx.escapeHTML(accessible) + '" title="' + ctx.escapeHTML(accessible) + '">' +
-          '<span class="watch-streak-day-number">' + String(Number(day.date.slice(8))) + '</span>' +
+          '<span class="watch-streak-day-number">' + number + '</span>' +
           '<span class="watch-streak-day-check" aria-hidden="true">✓</span></div>';
       }).join("");
-      return '<section class="watch-streak-month" aria-label="' + ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '">' +
-        '<h3 class="watch-streak-month-title">' + ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '</h3>' +
+      const monthLabel = formatDateOnlyMonth(first) || monthKey;
+      return '<details class="watch-streak-month" aria-label="' + ctx.escapeHTML(monthLabel) + '"' +
+        (monthIndex === monthEntries.length - 1 ? ' open' : '') + '>' +
+        '<summary class="watch-streak-month-summary">' +
+        '<span class="watch-streak-month-title">' + ctx.escapeHTML(monthLabel) + '</span>' +
+        '<span class="watch-streak-month-meta">' + monthDays.length.toLocaleString("es-PA") + ' días confirmados</span>' +
+        '</summary>' +
+        '<div class="watch-streak-month-calendar">' +
         '<div class="watch-streak-weekdays" aria-hidden="true">' +
         weekdays.map(function (weekdayItem) {
           return '<span title="' + weekdayItem[1] + '">' + weekdayItem[0] + '</span>';
         }).join("") + '</div>' +
         '<div class="watch-streak-days" role="list" aria-label="Días confirmados de ' +
-        ctx.escapeHTML(formatDateOnlyMonth(first) || monthEntry[0]) + '">' + emptyCells + dayCells + '</div></section>';
+        ctx.escapeHTML(monthLabel) + '">' + emptyCells + dayCells + '</div></div></details>';
     }).join("");
 
     return '<section class="panel watch-streak-panel" aria-labelledby="confirmed-watch-streak-title">' +
@@ -591,7 +610,7 @@ export function createPageViews(ctx) {
     const dateIsProxy = dateSourceMode === "collection-added-proxy";
     const dateSourceDescription = dateIsProxy
       ? "Proxy exploratorio activado. La fecha de incorporación no confirma el día real del visionado y se cuenta como no verificada. Los días se agrupan por fecha local de Panamá (America/Panama, UTC−05:00). Las marcas anteriores al 15 de enero de 2026 de la exportación del reto no se usan como fechas reales, ni siquiera con el proxy."
-      : "Modo normal: watchedAt se convierte al día local de Panamá (America/Panama, UTC−05:00). En la exportación del reto, solo se consideran fiables los visionados desde el 15 de enero de 2026; las marcas anteriores, añadidas retrospectivamente, no se tratan como fechas reales.";
+      : "Modo normal: watchedAt se convierte al día local de Panamá (America/Panama, UTC−05:00). En la exportación Android v2 reconocida, cada marca válida del historial se conserva como fecha explícita de visionado; el reto de 280 días permanece limitado del 15 de enero al 21 de octubre de 2026.";
     const dateProxyControl = '<div class="temporal-date-proxy-control">' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="toggle-temporal-added-date-proxy" aria-pressed="' +
       (useCollectionAddedAtProxy ? "true" : "false") + '"' +

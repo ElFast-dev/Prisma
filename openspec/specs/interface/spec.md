@@ -475,13 +475,19 @@ Prisma DEBE ejecutar las acciones de pendientes, historial, ocultación y califi
 
 ### Requirement: Racha diaria confirmada independiente de los títulos guardados
 
-Cuando una exportación de historial reconocida contiene la racha personal confirmada, Prisma DEBE conservar y presentar un día cumplido por cada fecha entre el 15 de enero y el 21 de octubre de 2026, ambos incluidos: 280 fechas consecutivas y una meta de una película al día. La racha DEBE mantenerse aunque falte el título de alguna película, NO DEBE crear películas ficticias y DEBE contar una sola vez los días con varias películas registradas.
+Cuando una exportación de historial reconocida contiene la racha personal confirmada, Prisma DEBE conservar y presentar un día cumplido por cada fecha entre el 15 de enero y el 21 de octubre de 2026, ambos incluidos: 280 fechas consecutivas y una meta de una película al día. La racha DEBE mantenerse aunque falte el título de alguna película, NO DEBE crear películas ficticias y DEBE contar una sola vez los días con varias películas registradas. El calendario DEBE ser compacto y progresivo: solo un mes se despliega inicialmente, las otras vistas mensuales permanecen plegadas y cada mes puede abrirse con teclado o tacto.
 
 #### Scenario: Mostrar la racha reconocida
 
-- DADO que la persona importa su exportación Android v2 reconocida con `Source Code` el 15 de enero de 2026
+- DADO que la persona importa su exportación Android v2 reconocida con Source Code el 15 de enero de 2026
 - CUANDO abre Progreso
-- ENTONCES Prisma muestra las 280 fechas de la racha del 15 de enero al 21 de octubre con un único marcador por día
+- ENTONCES Prisma muestra las 280 fechas de la racha con un único marcador por día y abre por defecto el último mes de la racha, sin desplegar a la vez todos los calendarios de enero a octubre
+
+#### Scenario: Navegación mensual compacta
+
+- DADO que la racha abarca varios meses
+- CUANDO se abre o se cierra una sección mensual
+- ENTONCES solo se presenta la cuadrícula del mes desplegado, cada título mensual se mantiene visible y las fechas de cada cuadrícula se alinean desde el día de la semana correcto
 
 #### Scenario: Se perdió el título de una película
 
@@ -495,6 +501,11 @@ Cuando una exportación de historial reconocida contiene la racha personal confi
 - CUANDO Prisma cuenta los días de la racha
 - ENTONCES muestra un solo marcador para ese día y conserva ambas películas en la colección
 
+#### Scenario: Fechas fuera del reto
+
+- DADO que el mes inicial o final contiene días fuera del intervalo confirmado
+- CUANDO se dibuja la cuadrícula de ese mes
+- ENTONCES los días de contexto se alinean con el calendario real y se distinguen visualmente, sin añadir marcadores ni contarlos como parte de la racha
 
 ### Requirement: Filmografía agrupada por año e identidad TMDB
 

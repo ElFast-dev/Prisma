@@ -112,7 +112,8 @@ const challengeExport = {
     cH: [
       { id: "source-code-record", tmId: 45612, t: "Source Code", a: "2026-01-15T05:56:02.305Z" },
       { id: "before-challenge", tmId: 10001, t: "Retrospective Movie", a: "2025-11-06T00:22:23.302Z" },
-      { id: "challenge-late-utc", tmId: 10002, t: "Late UTC Movie", a: "2026-07-09T04:56:59.336Z" }
+      { id: "challenge-late-utc", tmId: 10002, t: "Late UTC Movie", a: "2026-07-09T04:56:59.336Z" },
+      { id: "after-challenge", tmId: 10003, t: "After Challenge Movie", a: "2026-11-02T18:30:00.000Z" }
     ],
     cW: [],
     cHid: []
@@ -125,9 +126,13 @@ const lateUtc = importedChallenge.find(movie => movie.tmdbId === "10002");
 assert.equal(sourceCode.watchedAt, "2026-01-15T05:56:02.305Z");
 assert.equal(sourceCode.watchedAtSource, "imported-explicit");
 assert.equal(sourceCode.watchDateConfidence, "streak-confirmed");
-assert.equal(retrospective.watchDateConfidence, "pre-streak-unverified");
-assert.equal(Object.prototype.hasOwnProperty.call(retrospective, "watchedAt"), false,
-  "Una fecha marcada antes del reto no debe tratarse como fecha real de visionado.");
+assert.equal(retrospective.watchDateConfidence, "explicit-source");
+assert.equal(retrospective.watchedAt, "2025-11-06T00:22:23.302Z",
+  "El historial Android v2 conserva fechas explícitas anteriores a la racha.");
+const afterChallenge = importedChallenge.find(movie => movie.tmdbId === "10003");
+assert.equal(afterChallenge.watchedAt, "2026-11-02T18:30:00.000Z");
+assert.equal(afterChallenge.watchDateConfidence, "explicit-source",
+  "El historial sigue admitiendo películas posteriores al intervalo de 280 días.");
 assert.equal(lateUtc.watchedAt, "2026-07-09T04:56:59.336Z",
   "Debe preservarse el instante UTC original del visionado confirmado.");
 assert.equal(lateUtc.watchDateConfidence, "streak-confirmed");
@@ -138,8 +143,8 @@ const staleRetrospective = mergeMovieEntries({
   watchedAt: "2025-11-06T00:22:23.302Z",
   watchedAtSource: "action-time"
 }, retrospective);
-assert.equal(Object.prototype.hasOwnProperty.call(staleRetrospective, "watchedAt"), false,
-  "La reimportación fiable debe retirar una marca de acción retrospectiva heredada.");
+assert.equal(staleRetrospective.watchedAt, retrospective.watchedAt,
+  "La fecha explícita del historial Android v2 reemplaza una marca de acción heredada.");
 const personallyConfirmed = mergeMovieEntries({
   title: "Retrospective Movie",
   tmdbId: "10001",
@@ -149,4 +154,4 @@ const personallyConfirmed = mergeMovieEntries({
 assert.equal(personallyConfirmed.watchedAt, "2025-10-01T13:00:00.000Z",
   "Una fecha confirmada manualmente no debe sobrescribirse sin permiso.");
 
-console.log("Importación verificada: fechas UTC, corte del reto personal y separación entre añadido y visionado.");
+console.log("Importación verificada: fechas UTC para todo el historial Android v2, racha independiente y separación de otras fuentes temporales.");

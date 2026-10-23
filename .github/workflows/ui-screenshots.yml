@@ -108,8 +108,8 @@ jobs:
                 });
                 if (
                   lastUI.cssHref &&
-                  lastUI.cssHref.includes("v=ui-20261021-24") &&
-                  lastUI.appSrc.includes("v=ui-20261022-89") &&
+                  lastUI.cssHref.includes("v=ui-20261022-26") &&
+                  lastUI.appSrc.includes("v=ui-20261022-90") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
