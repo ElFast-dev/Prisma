@@ -126,7 +126,7 @@ export function createFeatureFamilyEvaluation(dependencies) {
     const sourceRatings = getRatings() || [];
     const rows = [];
     const seen = new Set();
-    const totalWork = Math.max(1, sourceRatings.length * (FAMILIES.length + 1) + 1);
+    let totalWork = Math.max(1, sourceRatings.length + 1);
 
     for (let index = 0; index < sourceRatings.length; index += 1) {
       if (!shouldContinue()) return null;
@@ -153,6 +153,7 @@ export function createFeatureFamilyEvaluation(dependencies) {
       }
     }
 
+    totalWork = Math.max(1, sourceRatings.length + rows.length * FAMILIES.length + 1);
     if (!rows.length) return emptyResult("No hay valoraciones válidas con identidad única y al menos un género enlazado.", 0);
     if (rows.length < FOLDS) return emptyResult("Se necesitan al menos cinco películas únicas con géneros enlazados para formar cinco pliegues.", rows.length);
     if (typeof createEngine !== "function") return emptyResult("No se ha configurado la fábrica del motor experimental.", rows.length);
