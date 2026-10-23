@@ -350,12 +350,20 @@ export function createLabMetricsActions(ctx) {
         const repeats = Math.max(1, Number(update && update.totalRepeats) || 3);
         const completedRepeats = Math.max(0, Number(update && update.completedRepeats) || 0);
         const folds = Math.max(1, Number(update && update.foldsPerRepeat) || 5);
+        const completed = Number.isFinite(Number(update && update.completedWork))
+          ? Number(update.completedWork) : completedRepeats * folds;
+        const total = Number.isFinite(Number(update && update.totalWork))
+          ? Number(update.totalWork) : repeats * folds;
         control.onProgress({
-          completedWork: completedRepeats * folds,
-          totalWork: repeats * folds,
-          detail: "Repetición " + Math.min(repeats, completedRepeats) + " de " + repeats
+          completedWork: completed,
+          totalWork: total,
+          detail: update && update.detail || ("Repetición " + Math.min(repeats, completedRepeats) + " de " + repeats)
         });
         return control.shouldContinue();
+      }, {
+        shouldContinue: control.shouldContinue,
+        yieldToBrowser: function () { return yieldToBrowser(ctx.window); },
+        batchSize: 12
       });
     },
     temporal: async function (control) {
@@ -364,10 +372,18 @@ export function createLabMetricsActions(ctx) {
         return { available: false, unavailableReason: "El evaluador temporal con fechas explícitas no está configurado." };
       }
       return evaluator.evaluateTemporalAsync(function (update) {
-        const total = Math.max(1, Number(update && update.totalWindows) || 5);
-        const completed = Math.max(0, Number(update && update.completedWindows) || 0);
-        control.onProgress({ completedWork: completed, totalWork: total, detail: "Ventana temporal " + completed + " de " + total });
+        const total = Math.max(1, Number(update && update.totalWork) || Number(update && update.totalWindows) || 5);
+        const completed = Math.max(0, Number(update && update.completedWork) || Number(update && update.completedWindows) || 0);
+        control.onProgress({
+          completedWork: completed,
+          totalWork: total,
+          detail: update && update.detail || ("Ventana temporal " + Number(update && update.completedWindows || 0) + " de " + Number(update && update.totalWindows || 5))
+        });
         return control.shouldContinue();
+      }, {
+        shouldContinue: control.shouldContinue,
+        yieldToBrowser: function () { return yieldToBrowser(ctx.window); },
+        batchSize: 12
       });
     },
     featureFamilies: async function (control) {
