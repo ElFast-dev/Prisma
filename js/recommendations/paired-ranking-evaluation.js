@@ -10,6 +10,16 @@ const INNER_FOLDS = 3;
 const CUTOFF = 5;
 const THRESHOLDS = Object.freeze([7, 9]);
 const LAMBDAS = Object.freeze([0, 0.5, 1, 2, 4, 8]);
+const SIGNAL_FAMILY_LAMBDA = 2;
+const SIGNAL_FAMILIES = Object.freeze([
+  { id: "genre", label: "Géneros" },
+  { id: "theme", label: "Temas" },
+  { id: "synopsis", label: "Sinopsis" },
+  { id: "actor", label: "Reparto" },
+  { id: "director", label: "Dirección" },
+  { id: "writer", label: "Guion" },
+  { id: "composer", label: "Música" }
+]);
 const MODES = Object.freeze(["balanced", "affinity", "variety"]);
 const MIN_TUNING_RELEVANT = 10;
 const EPSILON = 1e-10;
@@ -87,12 +97,13 @@ function initMetricAccumulator() {
     )]))
   };
 }
-function cloneAndShrink(profile, lambda) {
+function cloneAndShrink(profile, lambda, signalTypeOnly) {
   const features = new Map();
   if (profile && profile.features && typeof profile.features.forEach === "function") {
     profile.features.forEach((item, name) => {
       const support = Math.max(0, Number(item && item.count) || 0);
-      const factor = lambda === 0 ? 1 : support / (support + lambda);
+      const isTargetSignal = !signalTypeOnly || signalType(name) === signalTypeOnly;
+      const factor = lambda === 0 || !isTargetSignal ? 1 : support / (support + lambda);
       features.set(name, Object.assign({}, item, {
         weight: (Number(item && item.weight) || 0) * factor
       }));
@@ -227,10 +238,10 @@ export function createPairedRankingEvaluation(dependencies) {
     }
     return { scored, errors, mae: mean(errors) };
   }
-  async function metricAccumulatorFor(engine, trainRows, testRows, lambda, shouldContinue) {
+  async function metricAccumulatorFor(engine, trainRows, testRows, lambda, shouldContinue, signalTypeOnly) {
     const profile = await createProfile(engine, trainRows.map(row => row.entry), shouldContinue);
     if (!profile) return null;
-    const evaluationProfile = lambda === null ? profile : cloneAndShrink(profile, lambda);
+    const evaluationProfile = lambda === null ? profile : cloneAndShrink(profile, lambda, signalTypeOnly);
     const scored = await scoreRows(engine, evaluationProfile, testRows, shouldContinue);
     if (!scored) return null;
     const thresholds = {};
@@ -254,7 +265,7 @@ export function createPairedRankingEvaluation(dependencies) {
     const rows = [];
     const seen = new Set();
     const initialTotal = Math.max(1, Math.ceil(sourceRatings.length / 16) + REPEATS * OUTER_FOLDS *
-      (FAMILY_DEFINITIONS.length + LAMBDAS.length + INNER_FOLDS * LAMBDAS.length + 1) + 1);
+      (FAMILY_DEFINITIONS.length + LAMBDAS.length + INNER_FOLDS * LAMBDAS.length + INNER_FOLDS + SIGNAL_FAMILIES.length + 1) + 1);
     let work = 0;
     const publishProgress = detail => {
       onProgress({ completedWork: Math.min(initialTotal, work), totalWork: initialTotal, detail });
@@ -301,6 +312,7 @@ export function createPairedRankingEvaluation(dependencies) {
     const repetitions = [];
     const familyAccumulators = Object.fromEntries(FAMILY_DEFINITIONS.map(family => [family.id, initMetricAccumulator()]));
     const lambdaAccumulators = Object.fromEntries(LAMBDAS.map(lambda => [String(lambda), initMetricAccumulator()]));
+    const signalFamilyAccumulators = Object.fromEntries(SIGNAL_FAMILIES.map(family => [family.id, initMetricAccumulator()]));
     const lambdaFoldRows = [];
     const selectedLambdaCounts = Object.fromEntries(LAMBDAS.map(lambda => [String(lambda), 0]));
     const selectedLambdaOutcomes = initMetricAccumulator();
@@ -391,6 +403,35 @@ export function createPairedRankingEvaluation(dependencies) {
           };
           work += 1;
           publishProgress("Contracción lambda=" + lambda + "; repetición " + (repeat + 1) + ", pliegue " + (foldIndex + 1));
+          await yieldToBrowser();
+        }
+
+        foldSummary.signalFamilies = {};
+        for (const family of SIGNAL_FAMILIES) {
+          if (!shouldContinue()) return null;
+          const evaluated = await metricAccumulatorFor(
+            fullEngine, trainRows, testRows, SIGNAL_FAMILY_LAMBDA, shouldContinue, family.id
+          );
+          if (!evaluated) return null;
+          const accumulator = signalFamilyAccumulators[family.id];
+          accumulator.errors.push(...evaluated.scored.errors);
+          accumulator.baselineErrors.push(...evaluated.baselineErrors);
+          accumulator.foldMae.push(evaluated.scored.mae);
+          accumulator.foldBaselineMae.push(mean(evaluated.baselineErrors));
+          for (const threshold of THRESHOLDS) {
+            for (const mode of MODES) {
+              const score = evaluated.thresholds[String(threshold)][mode];
+              if (score !== null) accumulator.ranking[String(threshold)][mode].scores.push(score);
+              accumulator.ranking[String(threshold)][mode].foldScores.push(score);
+            }
+          }
+          foldSummary.signalFamilies[family.id] = {
+            mae: evaluated.scored.mae,
+            ndcgAt5: evaluated.thresholds["7"],
+            ndcgAt5Threshold9: evaluated.thresholds["9"]
+          };
+          work += 1;
+          publishProgress("Contracción selectiva " + family.label + "; repetición " + (repeat + 1) + ", pliegue " + (foldIndex + 1));
           await yieldToBrowser();
         }
 
@@ -504,6 +545,33 @@ export function createPairedRankingEvaluation(dependencies) {
         }))
       };
     });
+    const signalFamilySummaries = SIGNAL_FAMILIES.map(family => {
+      const accumulator = signalFamilyAccumulators[family.id];
+      const control = lambdaAccumulators["0"];
+      return {
+        id: family.id,
+        label: family.label,
+        lambda: SIGNAL_FAMILY_LAMBDA,
+        available: accumulator.foldMae.length === REPEATS * OUTER_FOLDS,
+        foldsEvaluated: accumulator.foldMae.length,
+        mae: mean(accumulator.errors),
+        baselineMae: mean(accumulator.baselineErrors),
+        deltaMaeVsNoShrinkage: mean(control.errors) - mean(accumulator.errors),
+        foldMae: accumulator.foldMae.slice(),
+        maeWins: accumulator.foldMae.filter((value, index) => value < control.foldMae[index] - EPSILON).length,
+        ties: accumulator.foldMae.filter((value, index) => Math.abs(value - control.foldMae[index]) <= EPSILON).length,
+        maeLosses: accumulator.foldMae.filter((value, index) => value > control.foldMae[index] + EPSILON).length,
+        rankingModes: summariseRanking(accumulator, 7, control, rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT),
+        rankingByThreshold: Object.fromEntries(THRESHOLDS.map(threshold => [
+          String(threshold), summariseRanking(accumulator, threshold, control,
+            rows.length >= 50 && relevantCounts[String(threshold)] >= MIN_TUNING_RELEVANT)
+        ])),
+        repeatSummaries: repetitions.map(repeat => {
+          const folds = repeat.folds.filter(fold => fold.signalFamilies && fold.signalFamilies[family.id]);
+          return { repeat: repeat.repeat, mae: mean(folds.map(fold => fold.signalFamilies[family.id].mae)), foldCount: folds.length };
+        })
+      };
+    });
     const selectedLambdaSummary = {
       available: Object.values(selectedLambdaCounts).reduce((sum, count) => sum + count, 0) > 0,
       selectionCriterion: "mean inner-validation nDCG@5 across available ranking modes at relevance threshold 7",
@@ -537,6 +605,8 @@ export function createPairedRankingEvaluation(dependencies) {
       supportRegularization: {
         available: true, featureSupportWeightFormula: "weight * support / (support + lambda)",
         lambdas: LAMBDAS.slice(), results: lambdaSummaries, nestedSelection: selectedLambdaSummary,
+        signalFamilyLambda: SIGNAL_FAMILY_LAMBDA,
+        signalFamilyExperiments: signalFamilySummaries,
         featureSupportBySignalType: signalFeatures,
         interpretationLimits: [
           "Las repeticiones y los pliegues reutilizan el mismo historial personal y no son muestras independientes.",
