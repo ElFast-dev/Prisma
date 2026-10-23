@@ -9,7 +9,7 @@
 - [x] S7. Explicar contadores del pool remoto/local/elegible/disponible y reproducir el shortfall de diversidad.
 - [x] S8. Cambiar la privacidad compartible a featureLabelsIncluded=false por defecto y subir el esquema a v13.
 - [x] S9. Añadir tests sintéticos para 351 registros, duplicados/remakes, particiones idénticas, ausencia de fuga, soporte y thresholds, alpha anidado, cancelación, progreso y privacidad.
-- [x] S10. Ejecutar tests SDD/estáticos y Playwright; medir duración en el Laboratorio sintético y comprobar funcionamiento asíncrono.
+- [x] S10. Ejecutar tests SDD/estáticos y Playwright; medir duración en el Laboratorio sintético y comprobar funcionamiento asíncrono. Resultado en Playwright con 351 registros sintéticos: calidad 51/51 y UI 15/15; pipeline completo 76.601 ms, Ridge 52.504 ms, familias 21.017 ms, navegación al encabezado del Laboratorio 92 ms, primer render 6,5 ms y mayor intervalo de latido 91,7 ms. La fase temporal terminó como no disponible por ausencia de fechas de visionado fiables en la fixture sintética.
 - [ ] S11. Generar una comparación agregada local solo con datos presentes en el navegador; no inventar resultados del historial real si no está accesible a CI.
 
   **Pendiente de ejecución con el historial personal real:** la exportación JSON adjunta contiene valoraciones e identificadores, pero no el conjunto de características enriquecidas que utiliza el motor (géneros, etiquetas, sinopsis y créditos). CI valida solo perfiles sintéticos. La comparación personal no se considera completada hasta que el Laboratorio ejecute v13 en el navegador local y su informe agregado pueda revisarse.
