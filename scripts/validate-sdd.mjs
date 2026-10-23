@@ -335,10 +335,10 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-23-extract-ridge-kernel/design.md',
   'openspec/changes/archive/2026-10-23-extract-ridge-kernel/tasks.md',
   'openspec/changes/archive/2026-10-23-extract-ridge-kernel/specs/recommendations/spec.md',
-  'openspec/changes/2026-10-23-extract-storage-protection-actions/proposal.md',
-  'openspec/changes/2026-10-23-extract-storage-protection-actions/design.md',
-  'openspec/changes/2026-10-23-extract-storage-protection-actions/tasks.md',
-  'openspec/changes/2026-10-23-extract-storage-protection-actions/specs/architecture-modularity/spec.md'
+  'openspec/changes/archive/2026-10-23-extract-storage-protection-actions/proposal.md',
+  'openspec/changes/archive/2026-10-23-extract-storage-protection-actions/design.md',
+  'openspec/changes/archive/2026-10-23-extract-storage-protection-actions/tasks.md',
+  'openspec/changes/archive/2026-10-23-extract-storage-protection-actions/specs/architecture-modularity/spec.md'
 ];
 
 const errors = [];
