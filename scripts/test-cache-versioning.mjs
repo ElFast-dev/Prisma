@@ -134,6 +134,7 @@ const modules = [
   ['js/core/watch-streak.js', watchStreak],
   ['js/ui/person-filmography.js', personFilmography]
 ];
+modules.push(['js/app/lab-metrics-actions.js', await readFile('js/app/lab-metrics-actions.js', 'utf8')]);
 const cached = new Set([...serviceWorker.matchAll(/["'](\.\/(?:js\/[^"']+|app\.js\?[^"']+))["']/g)].map(match => match[1]));
 assert.ok(cached.has("./js/recommendations/features.js?v=rec-20261022-1"),
   "El extractor ampliado de características debe tener una URL versionada en caché.");
