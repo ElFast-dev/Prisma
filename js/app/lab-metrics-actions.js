@@ -235,6 +235,7 @@ export function createLabMetricsActions(ctx) {
     const seen = new Set();
     const supportByType = Object.create(null);
     const genreTotals = new Map();
+    const mappedProfileRows = [];
     let genreAggregationMs = 0;
     let validEntries = 0;
     let ratingSum = 0;
@@ -256,6 +257,7 @@ export function createLabMetricsActions(ctx) {
           ? ctx.findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year)
           : null;
         const features = typeof ctx.movieFeatures === "function" ? (ctx.movieFeatures(movie, entry) || []) : [];
+        mappedProfileRows.push({ entry: entry, movie: movie, features: features, rating: rating });
         const identity = ratingIdentity(entry, movie, ctx);
         if (identity && !seen.has(identity)) {
           seen.add(identity);
@@ -311,6 +313,7 @@ export function createLabMetricsActions(ctx) {
     if (typeof ctx.buildProfileAsync === "function") {
       profile = await ctx.buildProfileAsync(undefined, undefined, {
         shouldContinue: settings.shouldContinue,
+        mappedRows: mappedProfileRows,
         batchSize: 32,
         yieldToBrowser: function () { return yieldToBrowser(ctx.window); },
         onProgress: function (update) {
