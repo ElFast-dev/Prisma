@@ -46,6 +46,7 @@ jobs:
           node --check js/recommendations/feature-family-evaluation.js
           node --check js/recommendations/paired-ranking-evaluation.js
           node --check scripts/test-paired-ranking-evaluation.mjs
+          node --check scripts/test-recommendation-candidate-pool.mjs
           node --check js/recommendations/ridge-kernel.js
           node --check js/catalog/csv-parser.js
           node --check js/catalog/catalog-model.js
@@ -202,6 +203,9 @@ jobs:
 
       - name: Test recommendation ranking quality and diversity
         run: node scripts/test-recommendation-evaluation.mjs
+
+      - name: Test candidate pool and diversity shortfall accounting
+        run: node scripts/test-recommendation-candidate-pool.mjs
 
       - name: Test recommendation influence normalization experiment
         run: node scripts/test-recommendation-normalization-evaluation.mjs
