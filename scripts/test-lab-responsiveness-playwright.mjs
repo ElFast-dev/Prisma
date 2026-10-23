@@ -196,7 +196,7 @@ try {
   assert.equal(report.networkTransmission, false);
   assert.equal(report.containsSyntheticTitle, false);
   assert.equal(report.containsRawMovieIdentity, false);
-  assert.equal(report.diagnosticStatus, "completed");
+  assert.equal(report.diagnosticStatus, "completed-with-unavailable");
   assert.equal(report.diagnosticPhaseCount, 7);
   assert.equal(report.diagnosticPhaseStatuses.length, 7);
   assert.ok(report.diagnosticPhaseStatuses.every(status => ["completed", "unavailable"].includes(status)),
