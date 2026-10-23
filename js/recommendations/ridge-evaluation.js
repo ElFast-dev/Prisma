@@ -1176,7 +1176,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
 
     try {
       const workPerWindow = ALPHAS.length * INNER_FOLDS + 1;
-      const totalWork = TEMPORAL_OUTER_WINDOWS * workPerWindow;
+      const kernelWork = Math.max(1, rows.length);
+      const totalWork = kernelWork + TEMPORAL_OUTER_WINDOWS * workPerWindow;
       let completedWork = 0;
       const control = {
         shouldContinue: shouldContinue,
@@ -1199,8 +1200,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
         shouldContinue: shouldContinue,
         yieldToBrowser: yieldToBrowser,
         onProgress: function (update) {
+          completedWork = Math.max(completedWork, Number(update.completedWork) || 0);
           callback({
-            completedWork: 0,
+            completedWork: completedWork,
             totalWork: totalWork,
             completedWindows: 0,
             totalWindows: TEMPORAL_OUTER_WINDOWS,
