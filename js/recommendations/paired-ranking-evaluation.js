@@ -265,7 +265,7 @@ export function createPairedRankingEvaluation(dependencies) {
     const rows = [];
     const seen = new Set();
     const initialTotal = Math.max(1, Math.ceil(sourceRatings.length / 16) + REPEATS * OUTER_FOLDS *
-      (FAMILY_DEFINITIONS.length + LAMBDAS.length + INNER_FOLDS * LAMBDAS.length + INNER_FOLDS + SIGNAL_FAMILIES.length + 1) + 1);
+      (FAMILY_DEFINITIONS.length + LAMBDAS.length + INNER_FOLDS * LAMBDAS.length + SIGNAL_FAMILIES.length + 1));
     let work = 0;
     const publishProgress = detail => {
       onProgress({ completedWork: Math.min(initialTotal, work), totalWork: initialTotal, detail });
@@ -366,26 +366,27 @@ export function createPairedRankingEvaluation(dependencies) {
         }
 
         const fullEngine = createFamilyEngine(FAMILY_DEFINITIONS[3]);
-        const baseProfile = await createProfile(fullEngine, trainRows.map(row => row.entry), shouldContinue);
-        if (!baseProfile) return null;
-        const localFeatures = [];
-        if (baseProfile.features && typeof baseProfile.features.forEach === "function") {
-          baseProfile.features.forEach((item, name) => {
-            localFeatures.push({ type: signalType(name), support: Math.max(0, Number(item.count) || 0), weight: Number(item.weight) || 0 });
-          });
-        }
-        for (const item of localFeatures) {
-          const row = signalTotals[item.type] || { count: 0, supportOne: 0, supportSum: 0, absWeightSum: 0 };
-          row.count += 1;
-          if (item.support === 1) row.supportOne += 1;
-          row.supportSum += item.support;
-          row.absWeightSum += Math.abs(item.weight);
-          signalTotals[item.type] = row;
-        }
         for (const lambda of LAMBDAS) {
           if (!shouldContinue()) return null;
           const evaluated = await metricAccumulatorFor(fullEngine, trainRows, testRows, lambda, shouldContinue);
           if (!evaluated) return null;
+          if (lambda === 0) {
+            const localFeatures = [];
+            const baseProfile = evaluated.profile;
+            if (baseProfile.features && typeof baseProfile.features.forEach === "function") {
+              baseProfile.features.forEach((item, name) => {
+                localFeatures.push({ type: signalType(name), support: Math.max(0, Number(item.count) || 0), weight: Number(item.weight) || 0 });
+              });
+            }
+            for (const item of localFeatures) {
+              const row = signalTotals[item.type] || { count: 0, supportOne: 0, supportSum: 0, absWeightSum: 0 };
+              row.count += 1;
+              if (item.support === 1) row.supportOne += 1;
+              row.supportSum += item.support;
+              row.absWeightSum += Math.abs(item.weight);
+              signalTotals[item.type] = row;
+            }
+          }
           const accumulator = lambdaAccumulators[String(lambda)];
           accumulator.errors.push(...evaluated.scored.errors);
           accumulator.baselineErrors.push(...evaluated.baselineErrors);
@@ -490,11 +491,11 @@ export function createPairedRankingEvaluation(dependencies) {
             lambda: chosenLambda, mae: selected.scored.mae,
             ndcgAt5: selected.thresholds["7"], ndcgAt5Threshold9: selected.thresholds["9"]
           };
-          work += 1;
-          publishProgress("Validando lambda seleccionado en pliegue exterior");
         } else {
           foldSummary.selectedLambda = { available: false, reason: "Muestra relevante insuficiente en validación interna." };
         }
+        work += 1;
+        publishProgress("Selección anidada de lambda completada");
         lambdaFoldRows.push({ repeat: repeat + 1, fold: foldIndex + 1, lambdas: foldSummary.lambdas });
         repeatSummary.folds.push(foldSummary);
       }
