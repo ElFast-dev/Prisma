@@ -411,9 +411,10 @@ export function createPairedRankingEvaluation(dependencies) {
             const evaluated = await metricAccumulatorFor(fullEngine, innerTrain, innerTest, lambda, shouldContinue);
             if (!evaluated) return null;
             const availableScores = MODES.map(mode => evaluated.thresholds["7"][mode]).filter(Number.isFinite);
-            innerScores[String(lambda)].push(...availableScores);
+              innerScores[String(lambda)].push(...availableScores);
+            work += 1;
+            publishProgress("Evaluación interna lambda=" + lambda + "; pliegue " + (innerFold + 1));
           }
-          work += 1;
           publishProgress("Selección interna de lambda, pliegue " + (innerFold + 1));
           await yieldToBrowser();
         }
@@ -434,7 +435,9 @@ export function createPairedRankingEvaluation(dependencies) {
           const selected = await metricAccumulatorFor(fullEngine, trainRows, testRows, chosenLambda, shouldContinue);
           if (!selected) return null;
           selectedLambdaOutcomes.errors.push(...selected.scored.errors);
+          selectedLambdaOutcomes.baselineErrors.push(...selected.baselineErrors);
           selectedLambdaOutcomes.foldMae.push(selected.scored.mae);
+          selectedLambdaOutcomes.foldBaselineMae.push(mean(selected.baselineErrors));
           for (const threshold of THRESHOLDS) {
             for (const mode of MODES) {
               const score = selected.thresholds[String(threshold)][mode];
@@ -462,7 +465,7 @@ export function createPairedRankingEvaluation(dependencies) {
       const reference = familyAccumulators[FAMILY_DEFINITIONS[0].id];
       return {
         id: family.id, label: family.label, available: accumulator.foldMae.length === REPEATS * OUTER_FOLDS,
-        mae: mean(accumulator.errors), baselineMae: mean(accumulator.errors),
+        mae: mean(accumulator.errors), baselineMae: mean(accumulator.baselineErrors),
         deltaMaeVsGenres: familyIndex === 0 ? null : mean(reference.errors) - mean(accumulator.errors),
         foldsEvaluated: accumulator.foldMae.length,
         foldMae: accumulator.foldMae.slice(),
