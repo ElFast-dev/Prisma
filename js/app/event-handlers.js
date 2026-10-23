@@ -61,9 +61,13 @@ export function registerAppEvents(ctx) {
         return;
       }
       if (action === "copy-recommendation-diagnostics") {
+        await ctx.copyRecommendationDeveloperBrief();
+        return;
+      }
+      if (action === "copy-recommendation-diagnostics-json") {
         const includeLabels = Boolean(ctx.$("#diagnosticFeatureLabels") && ctx.$("#diagnosticFeatureLabels").checked);
         ctx.setRecommendationDiagnosticFeatureLabelsIncluded(includeLabels);
-        await ctx.copyRecommendationDiagnosticReport(includeLabels);
+        await ctx.copyRecommendationDiagnosticJson(includeLabels);
         return;
       }
       if (action === "clear-recommendation-diagnostics") { ctx.clearRecommendationDiagnosticReport(); return; }
