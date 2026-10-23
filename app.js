@@ -7,7 +7,7 @@ import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261023-3";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261023-4";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js?v=rec-20261023-3";
-import { createFeatureFamilyEvaluation } from "./js/recommendations/feature-family-evaluation.js?v=rec-20261023-1";
+import { createPairedRankingEvaluation } from "./js/recommendations/paired-ranking-evaluation.js?v=rec-20261023-1";
 import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261023-2";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js?v=rec-20261023-3";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
@@ -612,7 +612,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     titleKey: titleKey
   });
 
-  const featureFamilyEvaluation = createFeatureFamilyEvaluation({
+  const featureFamilyEvaluation = createPairedRankingEvaluation({
     getRatings: function () { return state.rated; },
     findMovie: findMovie,
     movieFeatures: movieFeatures,
