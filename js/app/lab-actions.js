@@ -151,7 +151,7 @@ export function createLabActions(ctx) {
       },
       profile: profile,
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
-      ctx.recommendationMode: ctx.recommendationMode,
+      recommendationMode: ctx.recommendationMode,
       ratingEvaluation: ctx.evaluateModel(),
       ridgeEvaluation: ctx.ridgeEvaluationResult,
       temporalRidgeEvaluation: ctx.temporalRidgeEvaluationResult,
