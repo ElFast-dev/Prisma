@@ -274,6 +274,102 @@ function ridgeRepeatedValidationEvaluation(source) {
   };
 }
 
+function ridgeAlphaSelectionEvaluation(source) {
+  const evaluation = source && typeof source === "object" ? source : null;
+  const available = Boolean(evaluation && evaluation.available);
+  const alphaGrid = evaluation && Array.isArray(evaluation.alphaGrid) ? evaluation.alphaGrid
+    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 12) : [];
+  const summarizeCounts = function (counts) {
+    const input = counts && typeof counts === "object" ? counts : {};
+    return Object.keys(input).sort(function (left, right) { return Number(left) - Number(right); }).reduce(function (all, alpha) {
+      const numericAlpha = Number(alpha);
+      if (Number.isFinite(numericAlpha) && numericAlpha > 0 && alphaGrid.includes(numericAlpha)) all[String(numericAlpha)] = nonNegativeInteger(input[alpha]);
+      return all;
+    }, {});
+  };
+  const summary = function (input, key) {
+    const item = input && typeof input === "object" ? input : {};
+    return {
+      available: Boolean(item.available),
+      mae: item.available ? rounded(item.mae, 4) : null,
+      baselineMaeSameFolds: item.available ? rounded(item.baselineMaeSameFolds, 4) : null,
+      deltaBaselineMinusSelected: item.available ? rounded(item[key], 4) : null
+    };
+  };
+  const rankingModes = (Array.isArray(evaluation && evaluation.rankingModes) ? evaluation.rankingModes : []).slice(0, 3).map(function (mode) {
+    const item = mode || {};
+    const modeAvailable = Boolean(item.available);
+    return {
+      mode: ["balanced", "affinity", "variety"].includes(item.mode) ? item.mode : "",
+      available: modeAvailable,
+      baselineNdcgAt5: modeAvailable ? rounded(item.baselineNdcgAt5, 4) : null,
+      maeSelectedNdcgAt5: modeAvailable ? rounded(item.maeSelectedNdcgAt5, 4) : null,
+      rankingSelectedNdcgAt5: modeAvailable ? rounded(item.rankingSelectedNdcgAt5, 4) : null,
+      deltaRankingSelectionMinusMaeSelection: modeAvailable ? rounded(item.deltaRankingSelectionMinusMaeSelection, 4) : null,
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      rankingSelectorWins: nonNegativeInteger(item.rankingSelectorWins),
+      ties: nonNegativeInteger(item.ties),
+      rankingSelectorLosses: nonNegativeInteger(item.rankingSelectorLosses)
+    };
+  });
+  const repeats = (Array.isArray(evaluation && evaluation.repeatSummaries) ? evaluation.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+    const item = repeat || {};
+    const modes = (Array.isArray(item.rankingModes) ? item.rankingModes : []).slice(0, 3).map(function (mode) {
+      return {
+        mode: ["balanced", "affinity", "variety"].includes(mode.mode) ? mode.mode : "",
+        available: Boolean(mode.available),
+        maeSelectedNdcgAt5: mode.available ? rounded(mode.maeSelectedNdcgAt5, 4) : null,
+        rankingSelectedNdcgAt5: mode.available ? rounded(mode.rankingSelectedNdcgAt5, 4) : null,
+        deltaRankingSelectionMinusMaeSelection: mode.available ? rounded(mode.deltaRankingSelectionMinusMaeSelection, 4) : null,
+        foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated),
+        rankingSelectorWins: nonNegativeInteger(mode.rankingSelectorWins),
+        ties: nonNegativeInteger(mode.ties),
+        rankingSelectorLosses: nonNegativeInteger(mode.rankingSelectorLosses)
+      };
+    });
+    return {
+      repeat: nonNegativeInteger(item.repeat),
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      selectedAlphaCountsByMae: summarizeCounts(item.selectedAlphaCountsByMae),
+      selectedAlphaCountsByRanking: summarizeCounts(item.selectedAlphaCountsByRanking),
+      maeSelectedMae: rounded(item.maeSelectedMae, 4),
+      rankingSelectedMae: rounded(item.rankingSelectedMae, 4),
+      deltaRankingSelectionMinusMaeSelection: rounded(item.deltaRankingSelectionMinusMaeSelection, 4),
+      rankingModes: modes
+    };
+  });
+  const paired = evaluation && evaluation.pairedMaeDifference || {};
+  return {
+    executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
+    available: available,
+    sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
+    selectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.selectionFoldsEvaluated),
+    outerFoldsPlanned: nonNegativeInteger(evaluation && evaluation.outerFoldsPlanned),
+    innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
+    alphaGrid: alphaGrid,
+    selectionCriteria: {
+      mae: "Menor MAE medio en validación interna del entrenamiento exterior.",
+      ranking: "Mayor nDCG@5 medio en validación interna entre los modos disponibles con relevancia ≥ 7."
+    },
+    selectedAlphaCountsByMae: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByMae),
+    selectedAlphaCountsByRanking: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByRanking),
+    maeSelected: summary(evaluation && evaluation.maeSelected, "deltaBaselineMinusMaeSelected"),
+    rankingSelected: summary(evaluation && evaluation.rankingSelected, "deltaBaselineMinusRankingSelected"),
+    pairedMaeDifference: {
+      available: Boolean(paired.available),
+      deltaRankingSelectionMinusMaeSelection: paired.available ? rounded(paired.deltaRankingSelectionMinusMaeSelection, 4) : null,
+      rankingSelectionMaeWins: nonNegativeInteger(paired.rankingSelectionMaeWins),
+      ties: nonNegativeInteger(paired.ties),
+      maeSelectionMaeWins: nonNegativeInteger(paired.maeSelectionMaeWins),
+      foldsEvaluated: nonNegativeInteger(paired.foldsEvaluated)
+    },
+    rankingModes: rankingModes,
+    repeatSummaries: repeats,
+    unavailableReason: available ? null : String(evaluation && evaluation.unavailableReason ||
+      "La selección interna de alpha por ranking no alcanza los mínimos de muestra.").slice(0, 220)
+  };
+}
+
 function ridgeEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
@@ -306,6 +402,7 @@ function ridgeEvaluation(source) {
     hybridFoldStability: hybridFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     repeatedValidation: ridgeRepeatedValidationEvaluation(evaluation && evaluation.repeatedValidation),
+    alphaSelectionComparison: ridgeAlphaSelectionEvaluation(evaluation && evaluation.alphaSelectionComparison),
     unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
       ? evaluation.reason : (evaluation ? "El experimento Ridge no está disponible." : "El experimento Ridge no se ha ejecutado."))
   };
