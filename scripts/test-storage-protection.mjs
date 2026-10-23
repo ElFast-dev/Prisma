@@ -139,12 +139,14 @@ assert.equal(hiddenPageHarness.renders.length, 0, "Inspeccionar no debe repintar
 // The request call starts synchronously before the first UI refresh. Repeating a
 // completed successful action must not call the underlying persist() twice.
 const actionEvents = [];
+const actionTimeline = [];
 let persistentState = false;
 const actionManager = {
   async persisted() { actionEvents.push("persisted"); return persistentState; },
   async estimate() { actionEvents.push("estimate"); return { usage: 2048, quota: 1048576 }; },
   persist() {
     actionEvents.push("persist-call");
+    actionTimeline.push("persist-call");
     persistentState = true;
     return true;
   }
@@ -152,12 +154,19 @@ const actionManager = {
 const actionHarness = createHarness({ storageProtection: createStorageProtection(actionManager) });
 await actionHarness.actions.refreshStorageProtectionSnapshot();
 assert.equal(actionEvents.includes("persist-call"), false);
+const previousRender = actionHarness.ctx.renderApp;
+actionHarness.ctx.renderApp = function () {
+  actionTimeline.push("render");
+  previousRender();
+};
 actionEvents.length = 0;
 actionHarness.events.length = 0;
+actionTimeline.length = 0;
 const grantedActionPromise = actionHarness.actions.requestStorageProtection();
+assert.deepEqual(actionTimeline.slice(0, 2), ["persist-call", "render"],
+  "El servicio debe iniciar persist() sincrónicamente antes del repintado.");
 assert.deepEqual(actionEvents.slice(0, 1), ["persist-call"]);
-assert.deepEqual(actionHarness.events.slice(0, 1), ["render"],
-  "El render inicial ocurre después de iniciar persist() sin await previo.");
+assert.deepEqual(actionHarness.events.slice(0, 1), ["render"]);
 assert.equal(actionHarness.ctx.storageProtectionBusy, true);
 await grantedActionPromise;
 assert.equal(actionHarness.ctx.storageProtectionSnapshot.granted, true);
