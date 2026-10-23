@@ -3,6 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createTMDBMovieDetails } from '../js/tmdb/movie-details.js';
+import { createCatalogViews } from '../js/ui/catalog-views.js';
 import { createCollectionViews } from '../js/ui/collection-views.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
