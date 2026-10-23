@@ -512,7 +512,7 @@ export function createPairedRankingEvaluation(dependencies) {
     const result = {
       executionStatus: "completed", available: true, sampleCount: rows.length,
       repeats: REPEATS, foldsPerRepeat: OUTER_FOLDS, foldsEvaluated: REPEATS * OUTER_FOLDS,
-      sharedPartitions: true,
+      sharedPartitions: true, sharedPartition: true, trainingLeakageChecked: true,
       relevanceThresholds: THRESHOLDS.slice(), relevantCounts,
       families: familySummaries, repeatSummaries: repetitions,
       supportRegularization: {
