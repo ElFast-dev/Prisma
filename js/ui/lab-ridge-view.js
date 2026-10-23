@@ -5,11 +5,12 @@ export function createLabRidgeView(ctx) {
     const result = ctx.ridgeEvaluationResult || null;
     const busy = Boolean(ctx.ridgeEvaluationBusy);
     const temporalBusy = Boolean(ctx.temporalRidgeEvaluationBusy);
+    const metricsBusy = Boolean(ctx.labMetricsBusy);
     const progress = ctx.ridgeEvaluationProgress || null;
     const completedRepeats = Number(progress && progress.completedRepeats || 0);
     const totalRepeats = Number(progress && progress.totalRepeats || 3);
-    const buttonLabel = busy ? "Ridge " + completedRepeats + "/" + totalRepeats + "…" :
-      (temporalBusy ? "Evaluación temporal en curso…" : (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge"));
+    const buttonLabel = metricsBusy ? "Preparando métricas iniciales…" : (busy ? "Ridge " + completedRepeats + "/" + totalRepeats + "…" :
+      (temporalBusy ? "Evaluación temporal en curso…" : (result ? "Volver a ejecutar" : "Ejecutar experimento Ridge")));
     let body = "";
     if (busy) {
       body = '<p class="metric-note" aria-live="polite">Validación repetida en curso: ' + completedRepeats + ' de ' +
@@ -212,7 +213,7 @@ export function createLabRidgeView(ctx) {
       '<div class="panel-head"><div><h3 id="ridge-experiment-heading">Experimento Ridge (regularización L2)</h3>' +
       '<p class="metric-note">Comparación local de la base aditiva, Ridge y una mezcla fija 50/50</p></div>' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="run-ridge-experiment"' +
-      (busy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      (metricsBusy || busy || temporalBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
       body + '</section>';
   }
 
