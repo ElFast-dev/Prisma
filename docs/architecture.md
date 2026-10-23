@@ -37,7 +37,11 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/lab-temporal-view.js` | Renderiza evaluación walk-forward temporal, ventanas futuras, procedencia y proxy exploratorio de incorporación; no cambia fechas guardadas. |
 | `js/ui/watch-streak-view.js` | Renderizador aislado de la racha personal: alinea cuadrículas mensuales, expone texto accesible y mantiene un solo mes abierto; recibe el estado y el escape HTML por inyección. |
 | `js/ui/theme-controller.js` | Aplica y persiste la preferencia de tema oscuro/claro localmente, sin mezclarla con el perfil cinematográfico. |
-| `js/ui/modal-views.js` | Renderizadores de fichas de película/persona, diálogo de puntuación y paneles auxiliares. |
+| `js/ui/modal-views.js` | Fachada que compone cuatro vistas modales y mantiene su API pública estable. |
+| `js/ui/utility-sheet-view.js` | Renderiza paneles auxiliares de información, orden y géneros mediante el contexto inyectado. |
+| `js/ui/movie-detail-view.js` | Renderiza la ficha detallada de película sin ejecutar las acciones que la modifican. |
+| `js/ui/person-detail-view.js` | Renderiza biografía y filmografía de personas con TMDB y la colección local. |
+| `js/ui/rating-sheet-view.js` | Renderiza el editor numérico de puntuación de 1 a 10. |
 | `js/ui/person-filmography.js` | Deduplica créditos por ID TMDB, filtra la colección por identidad y agrupa filmografías por año. |
 | `js/app/movie-actions.js` | Acciones de dominio para valorar, borrar notas, marcar vistas, gestionar pendientes y ocultar películas. |
 | `js/import-export/actions.js` | Orquestación de las importaciones JSON/CSV, copias de seguridad, restauración y restablecimiento local. |

@@ -55,6 +55,10 @@ jobs:
           node --check js/ui/watch-streak-view.js
           node --check js/ui/theme-controller.js
           node --check js/ui/modal-views.js
+          node --check js/ui/utility-sheet-view.js
+          node --check js/ui/movie-detail-view.js
+          node --check js/ui/person-detail-view.js
+          node --check js/ui/rating-sheet-view.js
           node --check js/ui/person-filmography.js
           node --check js/app/movie-actions.js
           node --check js/import-export/actions.js
@@ -136,6 +140,9 @@ jobs:
 
       - name: Test modal controller return target
         run: node scripts/test-modal-controller.mjs
+
+      - name: Test separated modal view APIs
+        run: node scripts/test-modal-views.mjs
 
       - name: Test design system tokens and motion preferences
         run: node scripts/test-design-system.mjs

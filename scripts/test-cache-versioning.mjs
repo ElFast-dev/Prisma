@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, utilitySheetView, movieDetailView, personDetailView, ratingSheetView, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -33,6 +33,10 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/ui/lab-temporal-view.js', 'utf8'),
   readFile('js/ui/watch-streak-view.js', 'utf8'),
   readFile('js/ui/modal-views.js', 'utf8'),
+  readFile('js/ui/utility-sheet-view.js', 'utf8'),
+  readFile('js/ui/movie-detail-view.js', 'utf8'),
+  readFile('js/ui/person-detail-view.js', 'utf8'),
+  readFile('js/ui/rating-sheet-view.js', 'utf8'),
   readFile('js/app/movie-actions.js', 'utf8'),
   readFile('js/import-export/actions.js', 'utf8'),
   readFile('js/app/event-handlers.js', 'utf8'),
@@ -102,6 +106,10 @@ const modules = [
   ['js/ui/lab-temporal-view.js', labTemporalView],
   ['js/ui/watch-streak-view.js', watchStreakView],
   ['js/ui/modal-views.js', modalViews],
+  ['js/ui/utility-sheet-view.js', utilitySheetView],
+  ['js/ui/movie-detail-view.js', movieDetailView],
+  ['js/ui/person-detail-view.js', personDetailView],
+  ['js/ui/rating-sheet-view.js', ratingSheetView],
   ['js/app/movie-actions.js', movieActions],
   ['js/import-export/actions.js', importExportActions],
   ['js/app/event-handlers.js', eventHandlers],
@@ -181,8 +189,16 @@ assert.ok(cached.has("./js/recommendations/normalization-evaluation.js?v=rec-202
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261022-8"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
-assert.ok(cached.has("./js/ui/modal-views.js?v=core-20261022-8"),
-  "La vista del modal debe quedar versionada al corregir las fechas de visionado.");
+assert.ok(cached.has("./js/ui/modal-views.js?v=ui-20261023-1"),
+  "La fachada modal debe quedar versionada y conservar su API pública.");
+assert.ok(cached.has("./js/ui/utility-sheet-view.js?v=ui-20261023-1"),
+  "La vista de paneles auxiliares debe estar versionada y precargada.");
+assert.ok(cached.has("./js/ui/movie-detail-view.js?v=ui-20261023-1"),
+  "La ficha de película debe estar versionada y precargada.");
+assert.ok(cached.has("./js/ui/person-detail-view.js?v=ui-20261023-1"),
+  "La ficha de persona debe estar versionada y precargada.");
+assert.ok(cached.has("./js/ui/rating-sheet-view.js?v=ui-20261023-1"),
+  "El editor de puntuación debe estar versionado y precargado.");
 assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261022-1"),
   "El helper de filmografía debe quedar versionado y precargado en la caché.");
 assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-4"),

@@ -117,6 +117,16 @@ Los renderizadores de fichas, personas, puntuaciones y paneles auxiliares DEBEN 
 - CUANDO se ejecuta Prisma
 - ENTONCES el marcado visual procede del módulo modal y las acciones siguen coordinadas mediante controladores separados.
 
+### Requirement: Renderizadores modales divididos por responsabilidad
+
+Los renderizadores de paneles auxiliares, fichas de película, fichas de persona y puntuación DEBEN residir en módulos específicos. La fachada `createModalViews(ctx)` DEBE conservar los cuatro métodos públicos existentes y delegar la presentación mediante contexto inyectado.
+
+#### Scenario: Se extrae un renderizador modal
+
+- DADO que una vista modal necesita una modificación visual
+- CUANDO se carga la fachada de composición
+- ENTONCES devuelve `renderUtilitySheet`, `renderMovieDetails`, `renderPersonDetails` y `renderRatingSheet` desde módulos separados, sin cambiar las acciones ni el estado personal.
+
 
 ### Requirement: Acciones de colección separadas del controlador
 
