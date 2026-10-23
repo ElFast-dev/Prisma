@@ -81,7 +81,7 @@ function emptyFamilyFold() {
 }
 function initMetricAccumulator() {
   return {
-    errors: [], foldMae: [],
+    errors: [], baselineErrors: [], foldMae: [], foldBaselineMae: [],
     ranking: Object.fromEntries(THRESHOLDS.map(threshold => [String(threshold), Object.fromEntries(
       MODES.map(mode => [mode, { scores: [], foldScores: [], wins: 0, ties: 0, losses: 0 }])
     )]))
@@ -136,7 +136,7 @@ function metricsForFold(testRows, scored, rankCandidates, threshold) {
   }
   return modes;
 }
-function summariseRanking(accumulator, threshold, reference) {
+function summariseRanking(accumulator, threshold, reference, eligible) {
   const modes = {};
   for (const mode of MODES) {
     const scores = accumulator.ranking[String(threshold)][mode].scores;
@@ -149,13 +149,13 @@ function summariseRanking(accumulator, threshold, reference) {
       else ties += 1;
     });
     modes[mode] = {
-      available: scores.length > 0,
-      ndcgAt5: mean(scores),
-      foldsEvaluated: scores.length,
+      available: eligible !== false && scores.length > 0,
+      ndcgAt5: eligible !== false ? mean(scores) : null,
+      foldsEvaluated: eligible !== false ? scores.length : 0,
       wins: reference ? wins : 0,
       ties: reference ? ties : 0,
       losses: reference ? losses : 0,
-      foldNdcgAt5: scores.slice()
+      foldNdcgAt5: eligible !== false ? scores.slice() : []
     };
   }
   return modes;
@@ -213,11 +213,12 @@ export function createPairedRankingEvaluation(dependencies) {
     for (let index = 0; index < testRows.length; index += 1) {
       if (!shouldContinue()) return null;
       const row = testRows[index];
-      const candidateForPrediction = Object.assign({}, row.movie || row.entry, {
+      const candidateForPrediction = Object.assign({}, row.movie || {}, {
         title: row.movie && row.movie.title || row.entry.title || "",
         genres: row.movie && row.movie.genres && row.movie.genres.length ? row.movie.genres : row.entry.genres || [],
         tags: row.movie && row.movie.tags && row.movie.tags.length ? row.movie.tags : row.entry.tags || []
       });
+      for (const key of ["rating", "userRating", "personalRating", "personal_rating", "note", "notes", "tmdbId", "tmdb_id", "tmId", "id"]) delete candidateForPrediction[key];
       const prediction = engine.predictRating(candidateForPrediction, profile);
       const score = Number.isFinite(prediction && prediction.score) ? prediction.score : profile.average;
       errors.push(Math.abs(score - row.rating));
@@ -236,7 +237,11 @@ export function createPairedRankingEvaluation(dependencies) {
     for (const threshold of THRESHOLDS) {
       thresholds[String(threshold)] = metricsForFold(testRows, scored.scored, rankCandidates, threshold);
     }
-    return { profile, scored, thresholds };
+    return {
+    profile, scored,
+    baselineErrors: testRows.map(row => Math.abs((Number.isFinite(profile.personalAverage) ? profile.personalAverage : profile.average) - row.rating)),
+    thresholds
+  };
   }
 
   async function evaluateAsync(control) {
@@ -249,7 +254,7 @@ export function createPairedRankingEvaluation(dependencies) {
     const rows = [];
     const seen = new Set();
     const initialTotal = Math.max(1, Math.ceil(sourceRatings.length / 16) + REPEATS * OUTER_FOLDS *
-      (FAMILY_DEFINITIONS.length + LAMBDAS.length + INNER_FOLDS + 1) + 1);
+      (FAMILY_DEFINITIONS.length + LAMBDAS.length + INNER_FOLDS * LAMBDAS.length + 1) + 1);
     let work = 0;
     const publishProgress = detail => {
       onProgress({ completedWork: Math.min(initialTotal, work), totalWork: initialTotal, detail });
@@ -327,7 +332,9 @@ export function createPairedRankingEvaluation(dependencies) {
           if (!evaluated) return null;
           const accumulator = familyAccumulators[family.id];
           accumulator.errors.push(...evaluated.scored.errors);
+          accumulator.baselineErrors.push(...evaluated.baselineErrors);
           accumulator.foldMae.push(evaluated.scored.mae);
+          accumulator.foldBaselineMae.push(mean(evaluated.baselineErrors));
           for (const threshold of THRESHOLDS) {
             const metrics = evaluated.thresholds[String(threshold)];
             for (const mode of MODES) {
@@ -369,7 +376,9 @@ export function createPairedRankingEvaluation(dependencies) {
           if (!evaluated) return null;
           const accumulator = lambdaAccumulators[String(lambda)];
           accumulator.errors.push(...evaluated.scored.errors);
+          accumulator.baselineErrors.push(...evaluated.baselineErrors);
           accumulator.foldMae.push(evaluated.scored.mae);
+          accumulator.foldBaselineMae.push(mean(evaluated.baselineErrors));
           for (const threshold of THRESHOLDS) {
             for (const mode of MODES) {
               const score = evaluated.thresholds[String(threshold)][mode];
@@ -409,7 +418,7 @@ export function createPairedRankingEvaluation(dependencies) {
           await yieldToBrowser();
         }
         let chosenLambda = null;
-        if (innerRelevantCount >= MIN_TUNING_RELEVANT && innerValidationRelevant >= MIN_TUNING_RELEVANT) {
+        if (trainRows.length >= 50 && innerRelevantCount >= MIN_TUNING_RELEVANT && innerValidationRelevant >= MIN_TUNING_RELEVANT) {
           let bestRanking = -Infinity;
           for (const lambda of LAMBDAS) {
             const score = mean(innerScores[String(lambda)]);
@@ -460,9 +469,11 @@ export function createPairedRankingEvaluation(dependencies) {
         maeWins: familyIndex === 0 ? 0 : accumulator.foldMae.filter((value, index) => value < reference.foldMae[index] - EPSILON).length,
         ties: familyIndex === 0 ? 0 : accumulator.foldMae.filter((value, index) => Math.abs(value - reference.foldMae[index]) <= EPSILON).length,
         maeLosses: familyIndex === 0 ? 0 : accumulator.foldMae.filter((value, index) => value > reference.foldMae[index] + EPSILON).length,
-        rankingModes: summariseRanking(accumulator, 7, familyIndex === 0 ? null : reference),
+        rankingModes: summariseRanking(accumulator, 7, familyIndex === 0 ? null : reference,
+          rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT),
         rankingByThreshold: Object.fromEntries(THRESHOLDS.map(threshold => [
-          String(threshold), summariseRanking(accumulator, threshold, familyIndex === 0 ? null : reference)
+          String(threshold), summariseRanking(accumulator, threshold, familyIndex === 0 ? null : reference,
+            rows.length >= 50 && relevantCounts[String(threshold)] >= MIN_TUNING_RELEVANT)
         ]))
       };
     });
@@ -473,6 +484,7 @@ export function createPairedRankingEvaluation(dependencies) {
         lambda,
         available: accumulator.foldMae.length === REPEATS * OUTER_FOLDS,
         mae: mean(accumulator.errors),
+        baselineMae: mean(accumulator.baselineErrors),
         foldMae: accumulator.foldMae.slice(),
         deltaMaeVsNoShrinkage: mean(control.errors) - mean(accumulator.errors),
         maeWins: lambda === 0 ? 0 : accumulator.foldMae.filter((value, index) => value < control.foldMae[index] - EPSILON).length,
@@ -495,9 +507,13 @@ export function createPairedRankingEvaluation(dependencies) {
       outerFoldsEvaluated: Object.values(selectedLambdaCounts).reduce((sum, count) => sum + count, 0),
       selectedLambdaCounts,
       mae: mean(selectedLambdaOutcomes.errors),
+      baselineMae: mean(selectedLambdaOutcomes.baselineErrors),
       foldMae: selectedLambdaOutcomes.foldMae.slice(),
-      rankingModes: summariseRanking(selectedLambdaOutcomes, 7, null),
-      rankingByThreshold: Object.fromEntries(THRESHOLDS.map(threshold => [String(threshold), summariseRanking(selectedLambdaOutcomes, threshold, null)]))
+      rankingModes: summariseRanking(selectedLambdaOutcomes, 7, null, rows.length >= 50 && relevantCounts["7"] >= MIN_TUNING_RELEVANT),
+      rankingByThreshold: Object.fromEntries(THRESHOLDS.map(threshold => [
+        String(threshold), summariseRanking(selectedLambdaOutcomes, threshold, null,
+          rows.length >= 50 && relevantCounts[String(threshold)] >= MIN_TUNING_RELEVANT)
+      ]))
     };
     const signalFeatures = Object.fromEntries(Object.keys(signalTotals).map(type => {
       const value = signalTotals[type];
