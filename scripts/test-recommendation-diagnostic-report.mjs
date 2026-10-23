@@ -163,7 +163,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v12");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v13");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -337,7 +337,7 @@ const integrated = buildRecommendationDiagnosticReport({
     unavailableReason: null
   }
 });
-assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v12");
+assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v13");
 assert.equal(integrated.generatedAt, "2026-10-23T14:00:00.000Z");
 assert.equal(integrated.applicationVersion, "prisma-web/2026.10.23-lab-diagnostic.1");
 assert.equal(integrated.diagnostic.status, "partial-error");
