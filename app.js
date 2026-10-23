@@ -553,7 +553,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get findMovie() { return findMovie; },
     get ratingValue() { return ratingValue; }
   });
-  const { getRecommendations, genreStats } = recommendationRanking;
+  const { getRecommendations, genreStats, getCandidatePoolCounts } = recommendationRanking;
 
   const ridgeRecommendationExperiment = createRidgeRecommendationExperiment({
     getRatings: function () { return state.rated; },
@@ -595,6 +595,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     predictRating: predictRating,
     getRecommendations: getRecommendations,
     rankCandidates: recommendationRanking.rankCandidates,
+    getCandidatePoolCounts: recommendationRanking.getCandidatePoolCounts,
     movieTmdbId: movieTmdbId,
     titleKey: titleKey
   });
@@ -630,6 +631,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get catalog() { return catalog; },
     get recommendationCandidates() { return tmdbRecommendationCandidates; },
     get recommendationMode() { return recommendationMode; },
+    get getCandidatePoolCounts() { return getCandidatePoolCounts; },
+    get getRecommendations() { return getRecommendations; },
     get summaryStats() { return summaryStats; },
     get buildProfile() { return buildProfile; },
     get buildProfileAsync() { return buildProfileAsync; },
