@@ -49,7 +49,8 @@ export function createPageViews(ctx) {
     if (ctx.currentPage === "lab" && typeof ctx.ensureLabMetrics === "function") {
       ctx.ensureLabMetrics();
     } else {
-      if (typeof ctx.cancelLabMetrics === "function") ctx.cancelLabMetrics();
+      // Leaving the Laboratory must not cancel a valid local diagnostic run.
+      // Data mutations invalidate it through the metrics coordinator itself.
       if (typeof ctx.cancelLabExperiments === "function") ctx.cancelLabExperiments();
     }
     if (ctx.currentPage === "catalog") {
