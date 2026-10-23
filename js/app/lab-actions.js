@@ -197,7 +197,7 @@ export function createLabActions(ctx) {
   }
 
   async function copyRecommendationDiagnosticReport(includeFeatureLabels, format) {
-    const outputFormat = format === "json" ? "json" : "brief";
+    const outputFormat = format === "brief" ? "brief" : "json";
     ctx.recommendationDiagnosticFeatureLabelsIncluded = outputFormat === "json" && Boolean(includeFeatureLabels);
     const snapshotBefore = ctx.labDiagnosticSnapshot;
     const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
