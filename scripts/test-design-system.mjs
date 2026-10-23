@@ -44,6 +44,7 @@ assert.ok(shellCacheVersion && Number(shellCacheVersion[1]) > 114,
   'La PWA debe incrementar la versión de caché al publicar los temas.');
 assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261023-27"'),
   'El service worker debe usar la misma versión de la hoja de temas.');
-assert.ok(serviceWorker.includes('"./app.js?v=ui-20261023-103"'),
+const appScript = html.match(/<script\b[^>]*\bsrc=["']([^"']*app\.js\?[^"']+)["'][^>]*><\/script>/);
+assert.ok(appScript && serviceWorker.includes('"' + appScript[1] + '"'),
   'El service worker debe usar la misma entrada de aplicación versionada.');
 console.log('Sistema visual Prisma correcto: negro, azul discreto, modo claro, selector accesible y caché PWA.');
