@@ -260,7 +260,7 @@ export function createLabDiagnosticCoordinator(options) {
       phaseState.finishedAt = finished;
       phaseState.durationMs = Math.max(0, finished - phaseState.startedAt);
       recordTiming(phase.id, phaseState.durationMs, sampleCount());
-      if (FINAL_STATUSES.has(phaseState.status)) {
+      if (snapshot && isCurrent(runGeneration, key) && FINAL_STATUSES.has(phaseState.status)) {
         snapshot.results[phase.id] = phaseState.result;
       }
       publish();
