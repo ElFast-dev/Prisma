@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, utilitySheetView, movieDetailView, personDetailView, ratingSheetView, movieActions, labActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, storageProtectionActions, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, utilitySheetView, movieDetailView, personDetailView, ratingSheetView, movieActions, labActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -10,6 +10,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/core/movie-utils.js', 'utf8'),
   readFile('js/core/storage.js', 'utf8'),
   readFile('js/core/storage-protection.js', 'utf8'),
+  readFile('js/app/storage-protection-actions.js', 'utf8'),
   readFile('js/diagnostics/recommendation-report.js', 'utf8'),
   readFile('js/core/state-model.js', 'utf8'),
   readFile('js/recommendations/features.js', 'utf8'),
@@ -83,6 +84,7 @@ const modules = [
   ['js/core/movie-utils.js', utils],
   ['js/core/storage.js', storage],
   ['js/core/storage-protection.js', storageProtection],
+  ['js/app/storage-protection-actions.js', storageProtectionActions],
   ['js/diagnostics/recommendation-report.js', diagnosticReport],
   ['js/core/state-model.js', stateModel],
   ['js/recommendations/features.js', features],
@@ -214,6 +216,8 @@ assert.ok(!cached.has("./js/import-export/actions.js?v=core-20261020-1"),
   "La caché PWA no debe conservar la URL antigua del módulo de importación.");
 assert.ok(cached.has("./js/app/lab-actions.js?v=core-20261023-1"),
   "Las acciones del Laboratorio deben estar versionadas y en la precaché.");
+assert.ok(cached.has("./js/app/storage-protection-actions.js?v=core-20261023-1"),
+  "Las acciones de protección del almacenamiento deben estar versionadas y en la precaché.");
 assert.ok(cached.has("./js/ui/modal-controller.js?v=core-20261022-6"),
   "El controlador del modal debe quedar versionado tras corregir su función de renderizado local.");
 for (const [filename, source] of modules) {

@@ -1,6 +1,7 @@
 import { escapeHTML, titleKey, movieTmdbId, movieIdentityKey, sameMovieRecord, sameDiscoveryMovie, uniqueDiscoveryMovies, splitList, displayGenre, normalizeMovie, uniqueStrings, ratingValue } from "./js/core/movie-utils.js";
 import { dbGet, dbSet } from "./js/core/storage.js?v=core-20261020-1";
 import { createStorageProtection } from "./js/core/storage-protection.js";
+import { createStorageProtectionActions } from "./js/app/storage-protection-actions.js?v=core-20261023-1";
 import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
 import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261022-2";
@@ -628,42 +629,17 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     return labActions.copyRecommendationDiagnosticReport(includeFeatureLabels);
   }
 
-  async function refreshStorageProtectionSnapshot() {
-    storageProtectionSnapshot = await storageProtection.inspect();
-    if (currentPage === "data") renderApp();
-    return storageProtectionSnapshot;
-  }
-
-  async function requestStorageProtection() {
-    if (storageProtectionBusy) return;
-    storageProtectionBusy = true;
-
-    // Invoke persist() immediately from the explicit click, before rendering or awaiting.
-    const requestPromise = storageProtection.request(storageProtectionSnapshot);
-    if (currentPage === "data") renderApp();
-
-    try {
-      const result = await requestPromise;
-      storageProtectionSnapshot = result;
-      if (result.granted) {
-        toast(result.reason === "already-persistent"
-          ? "El almacenamiento ya tenía persistencia concedida por el navegador."
-          : "El navegador concedió persistencia para el almacenamiento de Prisma.");
-      } else if (result.reason === "unsupported") {
-        toast("Este navegador no permite solicitar persistencia del almacenamiento.", true);
-      } else if (result.reason === "denied") {
-        toast("El navegador no concedió persistencia. Prisma seguirá funcionando; exporta una copia de seguridad.", true);
-      } else {
-        toast("No se pudo confirmar la protección del almacenamiento. Exporta una copia de seguridad.", true);
-      }
-    } catch (_) {
-      storageProtectionSnapshot = await storageProtection.inspect();
-      toast("No se pudo confirmar la protección del almacenamiento. Exporta una copia de seguridad.", true);
-    } finally {
-      storageProtectionBusy = false;
-      if (currentPage === "data") renderApp();
-    }
-  }
+  const storageProtectionActions = createStorageProtectionActions({
+    get storageProtection() { return storageProtection; },
+    get storageProtectionSnapshot() { return storageProtectionSnapshot; },
+    set storageProtectionSnapshot(value) { storageProtectionSnapshot = value; },
+    get storageProtectionBusy() { return storageProtectionBusy; },
+    set storageProtectionBusy(value) { storageProtectionBusy = value; },
+    get currentPage() { return currentPage; },
+    get renderApp() { return renderApp; },
+    get toast() { return toast; }
+  });
+  const { refreshStorageProtectionSnapshot, requestStorageProtection } = storageProtectionActions;
 
   const appLifecycle = createAppLifecycle({
     get state() { return state; },

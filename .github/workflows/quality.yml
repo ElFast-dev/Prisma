@@ -34,6 +34,7 @@ jobs:
           node --check js/core/watch-streak.js
           node --check js/core/storage.js
           node --check js/core/storage-protection.js
+          node --check js/app/storage-protection-actions.js
           node --check js/diagnostics/recommendation-report.js
           node --check js/core/state-model.js
           node --check js/recommendations/features.js
