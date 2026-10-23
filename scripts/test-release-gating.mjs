@@ -23,6 +23,8 @@ assert.match(quality, /node scripts\/test-modal-controller\.mjs/,
   "La batería debe probar el retorno del controlador del modal, incluida la calificación abierta desde una lista.");
 assert.match(quality, /node scripts\/test-release-gating\.mjs/,
   "La batería debe validar la propia compuerta de publicación.");
+assert.match(quality, /node scripts\/test-empty-profile-recommendations\.mjs/,
+  "La batería debe proteger el comportamiento sin recomendaciones con el perfil vacío.");
 assert.match(quality, /JSON\.parse\(require\('fs'\)\.readFileSync\('manifest\.webmanifest'/,
   "El workflow canónico debe validar el manifest PWA.");
 
