@@ -73,6 +73,7 @@ export function createLabMetricsActions(ctx) {
   let phaseResults = Object.create(null);
   const sourceIds = new WeakMap();
   let nextSourceId = 1;
+  let reportedPipelineKey = "";
 
   function sourceId(value) {
     if ((typeof value !== "object" || value === null) && typeof value !== "function") return "none";
@@ -169,7 +170,15 @@ export function createLabMetricsActions(ctx) {
         : null;
       if (nextSnapshot.phases.every(function (phase) {
         return ["completed", "unavailable", "cancelled", "error"].indexOf(phase.status) !== -1;
-      })) cachedKey = dataKey();
+      })) {
+        cachedKey = dataKey();
+        const pipelineKey = String(nextSnapshot.dataKey || "") + "|" + String(nextSnapshot.startedAt || "");
+        if (pipelineKey !== reportedPipelineKey && nextSnapshot.durationMs != null) {
+          reportedPipelineKey = pipelineKey;
+          writeTiming(ctx.window, "lab-metrics-pipeline", nextSnapshot.durationMs,
+            nextSnapshot.sampleCount, nextSnapshot.status === "partial-error" ? "partial-error" : "completed");
+        }
+      }
     } else {
       metrics = null;
       error = null;
@@ -260,10 +269,16 @@ export function createLabMetricsActions(ctx) {
       }
     }
 
+    let stageStartedAt = now(ctx.window);
     const stats = typeof ctx.summaryStats === "function"
       ? ctx.summaryStats() : { total: ratings.length, average: null };
+    writeTiming(ctx.window, "summaryStats", now(ctx.window) - stageStartedAt, validEntries, "completed");
+    stageStartedAt = now(ctx.window);
     const profile = typeof ctx.buildProfile === "function" ? ctx.buildProfile() : emptyProfile();
+    writeTiming(ctx.window, "buildProfile", now(ctx.window) - stageStartedAt, validEntries, "completed");
+    stageStartedAt = now(ctx.window);
     const genres = typeof ctx.genreStats === "function" ? ctx.genreStats() : [];
+    writeTiming(ctx.window, "genreStats", now(ctx.window) - stageStartedAt, validEntries, "completed");
     const features = profile.features && typeof profile.features.forEach === "function" ? profile.features : new Map();
     const supportDistribution = { once: 0, twoToFour: 0, fiveToNine: 0, tenOrMore: 0 };
     features.forEach(function (feature) {
@@ -300,20 +315,23 @@ export function createLabMetricsActions(ctx) {
       return { available: false, count: 0, mae: null, baselineMae: null, unavailableReason: "El evaluador heurístico asíncrono no está configurado." };
     }
     const n = Math.max(0, ratedEntries().length);
-    return ctx.evaluateModelAsync({
+    const startedAt = now(ctx.window);
+    const result = await ctx.evaluateModelAsync({
       batchSize: 8,
       shouldContinue: control.shouldContinue,
       onProgress: function (update) {
         if (!update) return;
-        const total = Math.max(1, Number(update.total) || n);
         const completed = Math.max(0, Number(update.completed) || 0);
         control.onProgress({
-          completedWork: update.phase === "mapping" ? completed * 2 : n + completed,
+          completedWork: update.phase === "mapping" ? completed : n + completed,
           totalWork: Math.max(1, n * 2),
           detail: update.phase === "mapping" ? "Enlazando metadatos" : "Validación de error absoluto"
         });
       }
     });
+    writeTiming(ctx.window, "rating-evaluation", now(ctx.window) - startedAt,
+      result && result.count || n, result == null ? "cancelled" : (result.available === false ? "unavailable" : "completed"));
+    return result;
   }
 
   async function runRanking(control) {
@@ -322,6 +340,7 @@ export function createLabMetricsActions(ctx) {
     if (typeof ctx.evaluateRecommendationQualityAsync !== "function") {
       return { available: false, ranking: emptyRecommendationQuality("El evaluador de ranking no está configurado.").ranking, diversity: [], unavailableReason: "El evaluador de ranking no está configurado." };
     }
+    const startedAt = now(ctx.window);
     const value = await ctx.evaluateRecommendationQualityAsync({
       profile: profile,
       shouldContinue: control.shouldContinue,
@@ -330,6 +349,8 @@ export function createLabMetricsActions(ctx) {
         writeTiming(ctx.window, operation, durationMs, sampleCount, status);
       }
     });
+    writeTiming(ctx.window, "recommendation-quality", now(ctx.window) - startedAt,
+      value && value.ranking && value.ranking.count || ratedEntries().length, value == null ? "cancelled" : "completed");
     if (!value) return null;
     const ranking = value.ranking || {};
     return {
