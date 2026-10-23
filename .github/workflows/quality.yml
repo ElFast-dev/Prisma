@@ -188,3 +188,6 @@ jobs:
 
       - name: Test temporary TMDB recommendation candidates
         run: node scripts/test-tmdb-recommendation-candidates.mjs
+
+      - name: Test empty-profile recommendation behavior
+        run: node scripts/test-empty-profile-recommendations.mjs

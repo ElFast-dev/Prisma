@@ -74,6 +74,7 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-21-recommend-tmdb-candidates/specs/recommendations/spec.md',
   'openspec/changes/archive/2026-10-21-recommend-tmdb-candidates/specs/catalog/spec.md',
   'scripts/test-tmdb-recommendation-candidates.mjs',
+  'scripts/test-empty-profile-recommendations.mjs',
   'openspec/changes/archive/2026-10-21-shareable-recommendation-diagnostics/proposal.md',
   'openspec/changes/archive/2026-10-21-shareable-recommendation-diagnostics/design.md',
   'openspec/changes/archive/2026-10-21-shareable-recommendation-diagnostics/tasks.md',
