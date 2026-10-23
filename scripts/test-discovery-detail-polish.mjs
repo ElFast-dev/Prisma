@@ -58,8 +58,8 @@ assert.deepEqual(collectedFilmography.flatMap(group => group.items).map(item => 
 
 assert.ok(catalogViewsSource.includes('return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
   'El catálogo de Descubrir debe ocultar películas vistas');
-assert.ok(rankingSource.includes('!ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history"'),
-  'El recomendador debe excluir vistas, pendientes y ocultas');
+assert.ok(rankingSource.includes('!ctx.isMovieInCollection(movie.title,movie.tmdbId,movie.year) && movie.source !== "history"'),
+  'El recomendador debe excluir vistas, pendientes y ocultas conservando el año para reconciliar filas heredadas');
 assert.ok(tmdbViewsSource.includes('return !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
   'Los resultados remotos de TMDB deben omitir películas ya vistas u ocultas');
 
