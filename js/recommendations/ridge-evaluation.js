@@ -313,6 +313,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
   const predictRating = dependencies.predictRating;
   const rankCandidates = dependencies.rankCandidates;
   const getWatched = dependencies.getWatched;
+  const requireExplicitTemporalDates = dependencies.requireExplicitTemporalDates === true;
 
   function rankRows(candidates, mode) {
     if (typeof rankCandidates === "function") return (rankCandidates(candidates, RANKING_CUTOFF, mode) || []).slice(0, RANKING_CUTOFF);
@@ -1020,10 +1021,10 @@ export function createRidgeRecommendationExperiment(dependencies) {
       } else if (useCollectionAddedAtProxy && history && history.day) {
         day = history.day;
         dateProvenance = "unverified";
-      } else if (entryDay) {
+      } else if (!requireExplicitTemporalDates && entryDay) {
         day = entryDay;
         dateProvenance = "unverified";
-      } else if (history && history.day) {
+      } else if (!requireExplicitTemporalDates && history && history.day) {
         day = history.day;
         dateProvenance = "unverified";
       }
