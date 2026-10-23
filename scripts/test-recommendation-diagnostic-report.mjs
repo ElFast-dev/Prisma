@@ -158,7 +158,13 @@ const baseInput = {
     },
     diversity: [
       { mode: "balanced", score: 0.4, pairs: 10, titles: 5, titlesWithGenres: 5, uniqueGenres: 3 }
-    ]
+    ],
+    candidateAvailability: [{
+      mode: "balanced", remoteCandidatesReceived: 4, localCatalogEntries: 20,
+      localCandidatesEligible: 8, eligibleCandidatePool: 10, rankedResultsAvailable: 10,
+      requestedResultLimit: 5, returnedResultCount: 4, profileAvailable: true,
+      shortfallReason: "balanced-genre-cap"
+    }]
   }
 };
 
@@ -169,6 +175,10 @@ assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
 assert.equal(compact.sample.metadataCoverage, 0.75);
 assert.equal(compact.model.activeRankingMode, "variety");
+assert.equal(compact.evaluation.rankingQuality.candidateAvailability[0].remoteCandidatesReceived, 4);
+assert.equal(compact.evaluation.rankingQuality.candidateAvailability[0].localCandidatesEligible, 8);
+assert.equal(compact.evaluation.rankingQuality.candidateAvailability[0].returnedResultCount, 4);
+assert.equal(compact.evaluation.rankingQuality.candidateAvailability[0].shortfallReason, "balanced-genre-cap");
 assert.equal(compact.model.featureAggregates.totalFeatures, 3);
 assert.equal(compact.model.featureAggregates.signalTypes.genre.featureCount, 1);
 assert.equal(compact.model.featureAggregates.signalTypes.theme.singleObservationFeatures, 1);
@@ -335,6 +345,23 @@ const integrated = buildRecommendationDiagnosticReport({
       }))
     })),
     unavailableReason: null
+  },
+  supportRegularization: {
+    available: true, featureSupportWeightFormula: "weight * support / (support + lambda)",
+    lambdas: [0, 0.5, 1, 2, 4, 8], signalFamilyLambda: 2,
+    results: [{ lambda: 0, available: true, mae: 1.2, deltaMaeVsNoShrinkage: 0,
+      foldMae: [1, 1.1, 1.2, 1.3, 1.4], maeWins: 0, ties: 15, maeLosses: 0,
+      rankingModes: {}, rankingByThreshold: {}, repeatSummaries: [] }],
+    nestedSelection: { available: false, selectedLambdaCounts: {}, outerFoldsEvaluated: 0 },
+    signalFamilyExperiments: [{
+      id: "theme", label: "Private film title", lambda: 2, available: true, foldsEvaluated: 15,
+      mae: 1.15, baselineMae: 1.2, deltaMaeVsNoShrinkage: 0.05,
+      foldMae: Array(15).fill(1.15), maeWins: 9, ties: 2, maeLosses: 4,
+      rankingModes: [{mode:"balanced",available:false,ndcgAt5:null,foldsEvaluated:0}],
+      rankingByThreshold: {}, repeatSummaries: [{repeat:1,mae:1.1,foldCount:5}]
+    }],
+    featureSupportBySignalType: {theme:{featureObservations:20,supportOneFeatures:10,meanSupport:1.4,meanAbsoluteWeight:0.12}},
+    interpretationLimits: []
   }
 });
 assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v13");
@@ -353,6 +380,12 @@ assert.equal(integrated.diagnostic.featureFamilyComparison.families.length, 4);
 assert.equal(integrated.diagnostic.featureFamilyComparison.families[2].id, "genres-tags-synopsis");
 assert.equal(integrated.diagnostic.featureFamilyComparison.sharedPartition, true);
 assert.equal(integrated.diagnostic.featureFamilyComparison.trainingLeakageChecked, true);
+assert.equal(integrated.diagnostic.coverage.remoteCandidatesReceived, 20);
+assert.equal(integrated.diagnostic.coverage.localCandidatesEligible, 40);
+assert.equal(integrated.diagnostic.featureFamilyComparison.repeats, 0);
+assert.equal(integrated.model.supportRegularization.signalFamilyExperiments.length, 1);
+assert.equal(integrated.model.supportRegularization.signalFamilyExperiments[0].label, "Temas");
+assert.equal(integrated.model.supportRegularization.signalFamilyExperiments[0].foldsEvaluated, 15);
 const integratedSerialized = JSON.stringify(integrated).toLowerCase();
 for (const forbidden of ["private diagnostic title", "personal film title", "998877", "123456", "personal title", "tmdbid"]) {
   assert.equal(integratedSerialized.includes(forbidden), false,
