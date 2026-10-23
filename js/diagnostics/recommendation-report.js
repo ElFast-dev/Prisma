@@ -477,7 +477,7 @@ function isoDate(value) {
 
 function safeStatus(value) {
   const status = String(value || "");
-  return ALLOWED_PHASE_STATUSES.has(status) || ["completed", "partial-error", "partial-cancelled", "incomplete", "unknown"].includes(status)
+  return ALLOWED_PHASE_STATUSES.has(status) || ["completed", "completed-with-unavailable", "partial-error", "partial-cancelled", "incomplete", "unknown"].includes(status)
     ? status : "unknown";
 }
 
@@ -505,7 +505,8 @@ function diagnosticRunSummary(run) {
   });
   const status = !allFinal ? (statusValues.includes("running") ? "incomplete" : "unknown")
     : (statusValues.includes("error") ? "partial-error"
-      : (statusValues.includes("cancelled") ? "partial-cancelled" : "completed"));
+      : (statusValues.includes("cancelled") ? "partial-cancelled"
+        : (statusValues.includes("unavailable") ? "completed-with-unavailable" : "completed")));
   return {
     schema: "prisma-lab-diagnostic-run/v1",
     status: status,
