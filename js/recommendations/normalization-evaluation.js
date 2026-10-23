@@ -489,5 +489,5 @@ export function createRecommendationNormalizationEvaluation(dependencies) {
     return result;
   }
 
-  return { evaluate: evaluate };
+  return { evaluate: evaluate, evaluateAsync: evaluateAsync };
 }
