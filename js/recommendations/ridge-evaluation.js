@@ -1176,6 +1176,18 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const rows = prepared.rows;
     const allIndices = rows.map(function (_, index) { return index; });
     const groups = groupIndicesByWatchedDay(rows, allIndices);
+    const abortedResult = function () {
+      if (!externalShouldContinue() || !callbackCancelled) return null;
+      return unavailableTemporalEvaluation(
+        prepared.featureRowCount,
+        rows.length,
+        prepared.missingDateCount,
+        "La evaluación temporal se canceló porque se detuvo el proceso durante la ejecución.",
+        groups.length,
+        prepared.explicitDateCount,
+        prepared.unverifiedDateCount
+      );
+    };
     if (rows.length < TEMPORAL_MIN_RECORDS) {
       return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
         "Se necesitan al menos " + TEMPORAL_MIN_RECORDS +
@@ -1217,7 +1229,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
           });
         }
       };
-      if (!shouldContinue()) return null;
+      if (!shouldContinue()) return abortedResult();
       const kernel = await buildKernelAsync(rows, {
         shouldContinue: shouldContinue,
         yieldToBrowser: yieldToBrowser,
@@ -1233,7 +1245,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
           });
         }
       });
-      if (!shouldContinue()) return null;
+      if (!shouldContinue()) return abortedResult();
       const ridgeErrors = [];
       const baselineErrors = [];
       const windowMaeDeltas = [];
@@ -1261,17 +1273,17 @@ export function createRidgeRecommendationExperiment(dependencies) {
         };
         starting.completedWork = completedWork;
         starting.totalWork = totalWork;
-        if (emitProgress(starting) === false || !shouldContinue()) return null;
+        if (emitProgress(starting) === false || !shouldContinue()) return abortedResult();
 
         const alpha = await selectTemporalAlphaAsync(rows, kernel, window.trainingIndices, control);
-        if (alpha == null || !shouldContinue()) return null;
+        if (alpha == null || !shouldContinue()) return abortedResult();
         selectedAlphaCounts[String(alpha)] += 1;
         const ridgeModel = await trainRidgeAsync(rows, kernel, window.trainingIndices, alpha, {
           shouldContinue: shouldContinue,
           yieldToBrowser: yieldToBrowser,
           batchSize: batchSize
         });
-        if (!ridgeModel || !shouldContinue()) return null;
+        if (!ridgeModel || !shouldContinue()) return abortedResult();
         control.onModelFit({ stage: "outer", windowIndex: windowIndex });
         const trainingRatings = window.trainingIndices.map(function (index) { return rows[index].entry; });
         const additiveProfile = buildProfile(trainingRatings);
@@ -1355,7 +1367,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
           totalWork: totalWork,
           phase: "completed"
         });
-        if (shouldKeepGoing === false || !shouldContinue()) return null;
+        if (shouldKeepGoing === false || !shouldContinue()) return abortedResult();
         if (windowIndex + 1 < schedule.windows.length) await yieldToBrowser();
       }
 
