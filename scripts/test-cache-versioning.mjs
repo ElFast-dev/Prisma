@@ -177,7 +177,7 @@ assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-2"),
   "El módulo del Laboratorio debe tener versión propia y estar en la precaché.");
 assert.ok(cached.has("./js/ui/watch-streak-view.js?v=core-20261023-1"),
   "La vista del calendario de racha debe estar versionada y precargada en la caché.");
-assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261022-1"),
+assert.ok(cached.has("./js/recommendations/ranking.js?v=core-20261023-1"),
   "El ranking debe usar búsqueda de perfil con identidad y año fiables.");
 assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-2"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
