@@ -25,6 +25,7 @@ const files = [
   'js/collection/collection-model.js',
   'js/ui/presentation-utils.js',
   'js/ui/page-views.js',
+  'js/ui/watch-streak-view.js',
   'js/ui/theme-controller.js',
   'js/ui/modal-views.js',
   'js/ui/person-filmography.js',
