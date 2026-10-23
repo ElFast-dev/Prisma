@@ -33,6 +33,7 @@ export function createLabMetricsActions(ctx) {
   let activePromise = null;
   let activeKey = "";
   let cachedKey = "";
+  let failedKey = "";
   let observed = null;
 
   function dataKey() {
@@ -83,6 +84,10 @@ export function createLabMetricsActions(ctx) {
       activePromise = null;
       activeKey = "";
     }
+    if (error) {
+      error = null;
+      failedKey = "";
+    }
   }
 
   function invalidateLabMetrics() {
@@ -90,6 +95,7 @@ export function createLabMetricsActions(ctx) {
     metrics = null;
     cachedKey = "";
     error = null;
+    failedKey = "";
     cancelLabMetrics();
   }
 
@@ -118,6 +124,7 @@ export function createLabMetricsActions(ctx) {
     observeSourceReferences();
     const key = dataKey();
     if (metrics && cachedKey === key) return metrics;
+    if (error && failedKey === key) return Promise.resolve(null);
     if (activePromise && activeKey === key) return activePromise;
     cancelLabMetrics();
 
@@ -181,7 +188,8 @@ export function createLabMetricsActions(ctx) {
 
     activePromise = Promise.resolve().then(work).catch(function () {
       if (thisRun === runId) {
-        error = "No se pudieron completar las métricas del Laboratorio. Puedes volver a intentarlo.";
+        error = "No se pudieron completar las métricas del Laboratorio. Sal del Laboratorio y vuelve a entrar para reintentarlo.";
+        failedKey = key;
         writeTiming(ctx.window, "lab-metrics", 0, (ctx.state && ctx.state.rated || []).length, "error");
       }
       return null;
