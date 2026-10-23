@@ -98,6 +98,7 @@ export function createLabDiagnosticCoordinator(options) {
       startedAt: null,
       finishedAt: null,
       durationMs: null,
+      priorDurationMs: 0,
       sampleCount: sampleCount(),
       globalPercent: 0,
       completedPhases: 0,
@@ -133,7 +134,8 @@ export function createLabDiagnosticCoordinator(options) {
     current.globalPercent = percent(work / totalWeight * 100);
     current.completedPhases = phases.filter(function (state) { return FINAL_STATUSES.has(state.status); }).length;
     current.totalPhases = phases.length;
-    current.elapsedMs = current.startedAt == null ? 0 : Math.max(0, nowValue - current.startedAt);
+    current.elapsedMs = (Number(current.priorDurationMs) || 0) +
+      (current.startedAt == null ? 0 : Math.max(0, nowValue - current.startedAt));
     const remaining = phases.filter(function (state) { return !FINAL_STATUSES.has(state.status); });
     const measured = phases.filter(function (state) { return Number.isFinite(state.durationMs) && state.durationMs > 0; });
     const rates = measured.map(function (state) {
@@ -164,9 +166,12 @@ export function createLabDiagnosticCoordinator(options) {
       phases.find(function (state) { return state.status === "pending"; });
     current.currentPhase = unfinished ? unfinished.id : null;
     if (phases.every(function (state) { return FINAL_STATUSES.has(state.status); })) {
-      current.status = phases.some(function (state) { return state.status === "error"; }) ? "partial-error" : "completed";
+      current.status = phases.some(function (state) { return state.status === "error"; })
+        ? "partial-error"
+        : (phases.some(function (state) { return state.status === "cancelled"; }) ? "partial-cancelled" : "completed");
       current.finishedAt = nowValue;
-      current.durationMs = Math.max(0, current.finishedAt - current.startedAt);
+      current.durationMs = (Number(current.priorDurationMs) || 0) +
+        Math.max(0, current.finishedAt - current.startedAt);
     } else {
       current.status = "running";
     }
@@ -259,11 +264,13 @@ export function createLabDiagnosticCoordinator(options) {
       const finished = now();
       phaseState.finishedAt = finished;
       phaseState.durationMs = Math.max(0, finished - phaseState.startedAt);
-      recordTiming(phase.id, phaseState.durationMs, sampleCount());
-      if (snapshot && isCurrent(runGeneration, key) && FINAL_STATUSES.has(phaseState.status)) {
-        snapshot.results[phase.id] = phaseState.result;
+      if (isCurrent(runGeneration, key)) {
+        recordTiming(phase.id, phaseState.durationMs, sampleCount());
+        if (snapshot && FINAL_STATUSES.has(phaseState.status)) {
+          snapshot.results[phase.id] = phaseState.result;
+        }
+        publish();
       }
-      publish();
     }
   }
 
@@ -286,6 +293,8 @@ export function createLabDiagnosticCoordinator(options) {
     const runGeneration = ++generation;
     if (request.retryFailures && snapshot && snapshotKey === key) {
       snapshot = clone(snapshot);
+      snapshot.priorDurationMs = (Number(snapshot.priorDurationMs) || 0) + (Number(snapshot.durationMs) || 0);
+      snapshot.startedAt = now();
       snapshot.status = "running";
       snapshot.finishedAt = null;
       snapshot.durationMs = null;
@@ -308,7 +317,8 @@ export function createLabDiagnosticCoordinator(options) {
       snapshot = initialSnapshot(key);
     }
     snapshotKey = key;
-    if (!request.retryFailures || !snapshot.startedAt) snapshot.startedAt = now();
+    if (!request.retryFailures) snapshot.priorDurationMs = 0;
+    if (!snapshot.startedAt) snapshot.startedAt = now();
     snapshot.sampleCount = sampleCount();
     activeKey = key;
     completedAt = null;
