@@ -12,10 +12,10 @@ const requiredFiles = [
   'openspec/specs/import-export/spec.md',
   'openspec/specs/recommendations/spec.md',
   'openspec/specs/release-process/spec.md',
-  'openspec/changes/2026-10-21-test-modal-controller-in-ci/proposal.md',
-  'openspec/changes/2026-10-21-test-modal-controller-in-ci/design.md',
-  'openspec/changes/2026-10-21-test-modal-controller-in-ci/tasks.md',
-  'openspec/changes/2026-10-21-test-modal-controller-in-ci/specs/release-process/spec.md',
+  'openspec/changes/archive/2026-10-21-test-modal-controller-in-ci/proposal.md',
+  'openspec/changes/archive/2026-10-21-test-modal-controller-in-ci/design.md',
+  'openspec/changes/archive/2026-10-21-test-modal-controller-in-ci/tasks.md',
+  'openspec/changes/archive/2026-10-21-test-modal-controller-in-ci/specs/release-process/spec.md',
   'openspec/changes/archive/2026-10-21-modal-actions-release-gate/proposal.md',
   'openspec/changes/archive/2026-10-21-modal-actions-release-gate/design.md',
   'openspec/changes/archive/2026-10-21-modal-actions-release-gate/tasks.md',
@@ -311,10 +311,10 @@ const requiredFiles = [
   'openspec/changes/archive/2026-10-23-split-lab-panel-views/design.md',
   'openspec/changes/archive/2026-10-23-split-lab-panel-views/tasks.md',
   'openspec/changes/archive/2026-10-23-split-lab-panel-views/specs/interface/spec.md',
-  'openspec/changes/2026-10-23-extract-ridge-kernel/proposal.md',
-  'openspec/changes/2026-10-23-extract-ridge-kernel/design.md',
-  'openspec/changes/2026-10-23-extract-ridge-kernel/tasks.md',
-  'openspec/changes/2026-10-23-extract-ridge-kernel/specs/recommendations/spec.md'
+  'openspec/changes/archive/2026-10-23-extract-ridge-kernel/proposal.md',
+  'openspec/changes/archive/2026-10-23-extract-ridge-kernel/design.md',
+  'openspec/changes/archive/2026-10-23-extract-ridge-kernel/tasks.md',
+  'openspec/changes/archive/2026-10-23-extract-ridge-kernel/specs/recommendations/spec.md'
 ];
 
 const errors = [];
