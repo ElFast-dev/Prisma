@@ -26,7 +26,8 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/catalog/catalog-model.js` | Combinación de fuentes, identidad en el catálogo, búsqueda y estadísticas del perfil. |
 | `js/collection/collection-model.js` | Derivación y filtrado de historial, pendientes, ocultos y estados relacionados con la colección. |
 | `js/ui/presentation-utils.js` | Utilidades puras de presentación: fechas, formatos, enlaces externos y fragmentos HTML reutilizables. |
-| `js/ui/page-views.js` | Composición de renderizadores de Progreso, Descubrir, Colección, Laboratorio, Ajustes y catálogo; delega la cuadrícula de racha al módulo específico y expone diferencias descriptivas de nDCG. |
+| `js/ui/page-views.js` | Composición de renderizadores de Progreso, Descubrir, Colección, Ajustes y catálogo; delega la cuadrícula de racha y el Laboratorio a módulos especializados. |
+| `js/ui/lab-views.js` | Renderizadores de diagnóstico de recomendaciones, Ridge, normalización de influencia y evaluación temporal; conserva la pantalla Laboratorio mediante `renderLab`. |
 | `js/ui/watch-streak-view.js` | Renderizador aislado de la racha personal: alinea cuadrículas mensuales, expone texto accesible y mantiene un solo mes abierto; recibe el estado y el escape HTML por inyección. |
 | `js/ui/theme-controller.js` | Aplica y persiste la preferencia de tema oscuro/claro localmente, sin mezclarla con el perfil cinematográfico. |
 | `js/ui/modal-views.js` | Renderizadores de fichas de película/persona, diálogo de puntuación y paneles auxiliares. |
