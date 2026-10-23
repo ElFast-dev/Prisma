@@ -177,7 +177,7 @@ assert.ok(cached.has("./js/ui/lab-ridge-view.js?v=core-20261023-2"),
   "El submódulo del experimento Ridge debe estar versionado y precargado.");
 assert.ok(cached.has("./js/ui/lab-temporal-view.js?v=core-20261023-2"),
   "El submódulo temporal de Ridge debe estar versionado y precargado.");
-assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-3"),
+assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-4"),
   "El módulo del Laboratorio debe tener versión propia y estar en la precaché.");
 assert.ok(cached.has("./js/ui/watch-streak-view.js?v=core-20261023-1"),
   "La vista del calendario de racha debe estar versionada y precargada en la caché.");
