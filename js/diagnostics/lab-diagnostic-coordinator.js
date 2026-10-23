@@ -169,9 +169,12 @@ export function createLabDiagnosticCoordinator(options) {
       current.status = phases.some(function (state) { return state.status === "error"; })
         ? "partial-error"
         : (phases.some(function (state) { return state.status === "cancelled"; }) ? "partial-cancelled" : "completed");
-      current.finishedAt = nowValue;
-      current.durationMs = (Number(current.priorDurationMs) || 0) +
-        Math.max(0, current.finishedAt - current.startedAt);
+      if (current.finishedAt == null) {
+        current.finishedAt = nowValue;
+        current.durationMs = (Number(current.priorDurationMs) || 0) +
+          Math.max(0, current.finishedAt - current.startedAt);
+      }
+      current.elapsedMs = Number(current.durationMs) || 0;
     } else {
       current.status = "running";
     }
