@@ -3,6 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createTMDBMovieDetails } from '../js/tmdb/movie-details.js';
+import { createLabActions } from '../js/app/lab-actions.js';
 import { createCatalogViews } from '../js/ui/catalog-views.js';
 import { createCollectionViews } from '../js/ui/collection-views.js';
 import { createSettingsViews } from '../js/ui/settings-views.js';
@@ -46,6 +47,7 @@ const files = [
   'js/ui/rating-sheet-view.js',
   'js/ui/person-filmography.js',
   'js/app/movie-actions.js',
+  'js/app/lab-actions.js',
   'js/import-export/actions.js',
   'js/app/event-handlers.js',
   'js/tmdb/settings-actions.js',
@@ -307,5 +309,10 @@ assert.doesNotMatch(ridgeKernelSource, /\b(?:document|window|localStorage|indexe
 assert.doesNotMatch(ridgeEvaluationSource, /function (?:buildKernel|solveCholesky|trainRidge|predictRidge)\(/,
   'El módulo de evaluación no debe volver a contener las rutinas numéricas extraídas.');
 
+const labActionsSource = await readFile('js/app/lab-actions.js', 'utf8');
+assert.equal(typeof createLabActions, 'function');
+assert.ok(labActionsSource.includes('export function createLabActions(ctx)'));
+assert.ok(app.includes('createLabActions('));
+assert.ok(app.includes('labActions.runRidgeExperiment()'));
 assert.ok(app.startsWith('import '));
 console.log('Arquitectura modular correcta: ' + files.length + ' módulos, importaciones y exports validados y lógica de dominio separada del DOM.');

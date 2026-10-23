@@ -21,6 +21,8 @@ assert.match(quality, /node scripts\/test-modal-event-handlers\.mjs/,
   "La batería debe probar los clics del modal con su contexto real.");
 assert.match(quality, /node scripts\/test-modal-controller\.mjs/,
   "La batería debe probar el retorno del controlador del modal, incluida la calificación abierta desde una lista.");
+assert.match(quality, /node scripts\/test-lab-actions\.mjs/,
+  "La batería debe ejecutar las regresiones de las acciones del Laboratorio extraídas.");
 assert.match(quality, /node scripts\/test-release-gating\.mjs/,
   "La batería debe validar la propia compuerta de publicación.");
 assert.match(quality, /node scripts\/test-empty-profile-recommendations\.mjs/,
