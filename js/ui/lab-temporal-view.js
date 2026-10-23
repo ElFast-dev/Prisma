@@ -105,8 +105,7 @@ export function createLabTemporalView(ctx) {
     return '<section class="panel temporal-ridge-panel" aria-labelledby="temporal-ridge-heading">' +
       '<div class="panel-head"><div><h3 id="temporal-ridge-heading">Validación temporal · Ridge frente al modelo aditivo</h3>' +
       '<p class="metric-note">' + (dateIsProxy ? 'Orden temporal exploratorio por fecha de incorporación; no equivale a la fecha real de visionado' : 'Entrenar con el pasado; probar con visionados posteriores') + '</p></div>' +
-      '<button class="btn btn-secondary btn-small" type="button" data-action="run-temporal-ridge-experiment"' +
-      (busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' + buttonLabel + '</button></div>' +
+      '<p class="metric-note lab-automatic-label">Incluida en el diagnóstico automático</p></div>' +
       dateProxyControl + body +
       '<p class="metric-note">Cautela con historiales antiguos: algunas versiones anteriores pudieron guardar ciertas fechas a partir de la edición de una nota. Las fechas watchedAt ya existentes no siempre permiten verificar esa procedencia. Las ediciones sin fecha fiable no crean watchedAt desde updatedAt.</p>' +
       '</section>';
