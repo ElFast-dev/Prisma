@@ -199,6 +199,7 @@ export function createRecommendationEvaluation(dependencies) {
     const settings = control || {};
     const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
     const onMeasure = typeof settings.onMeasure === "function" ? settings.onMeasure : function () {};
+    const onProgress = typeof settings.onProgress === "function" ? settings.onProgress : function () {};
     const yieldToBrowser = function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
     const startedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
     const seen = new Set();
@@ -218,7 +219,14 @@ export function createRecommendationEvaluation(dependencies) {
           rows.push({ entry: entry, movie: movie, identity: identity, rating: rating });
         }
       }
-      if ((index + 1) % 16 === 0) await yieldToBrowser();
+      if ((index + 1) % 16 === 0 || index + 1 === sourceRatings.length) {
+        onProgress({
+          completedWork: index + 1,
+          totalWork: Math.max(1, sourceRatings.length * 2 + RANKING_FOLDS + RECOMMENDATION_MODES.length),
+          detail: "Enlazando valoraciones y características"
+        });
+        await yieldToBrowser();
+      }
     }
 
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
@@ -284,6 +292,12 @@ export function createRecommendationEvaluation(dependencies) {
           totals[mode].foldsEvaluated += 1;
         }
       }
+      progressWork += testRows.length + 1;
+      onProgress({
+        completedWork: Math.min(progressTotal, progressWork),
+        totalWork: progressTotal,
+        detail: "Pliegue de ranking " + (foldIndex + 1) + " de " + folds.length
+      });
       await yieldToBrowser();
     }
 
@@ -329,17 +343,32 @@ export function createRecommendationEvaluation(dependencies) {
     const settings = control || {};
     const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
     const onMeasure = typeof settings.onMeasure === "function" ? settings.onMeasure : function () {};
+    const onProgress = typeof settings.onProgress === "function" ? settings.onProgress : function () {};
+    const sourceCount = (getRatings() || []).length;
+    const totalWork = Math.max(1, sourceCount * 2 + RANKING_FOLDS + RECOMMENDATION_MODES.length);
     const yieldToBrowser = function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
-    const ranking = await evaluateRankingQualityAsync(settings);
+    const ranking = await evaluateRankingQualityAsync(Object.assign({}, settings, {
+      onProgress: function (update) {
+        if (!update) return;
+        onProgress({
+          completedWork: Math.min(totalWork, Number(update.completedWork) || 0),
+          totalWork: totalWork,
+          detail: update.detail || "Validación del ranking"
+        });
+      }
+    }));
     if (!ranking || !shouldContinue()) return null;
 
     const diversityStartedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
     const profile = settings.profile || buildProfile();
     const diversity = [];
+    let completedWork = sourceCount + (Number(ranking.count) || 0) + (Number(ranking.foldsEvaluated) || 0);
     for (const mode of RECOMMENDATION_MODES) {
       if (!shouldContinue()) return null;
       const movies = (getRecommendations(RANKING_CUTOFF, mode, profile) || []).slice(0, RANKING_CUTOFF);
       diversity.push(Object.assign({ mode: mode }, pairwiseGenreDiversity(movies)));
+      completedWork += 1;
+      onProgress({ completedWork: Math.min(totalWork, completedWork), totalWork: totalWork, detail: "Diversidad del modo " + mode });
       await yieldToBrowser();
     }
     onMeasure("ranking-diversity", elapsedSince(diversityStartedAt), diversity.reduce(function (sum, item) { return sum + item.titles; }, 0), "completed");
