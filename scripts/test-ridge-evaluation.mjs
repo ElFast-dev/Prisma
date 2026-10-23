@@ -231,23 +231,23 @@ const duplicateResult = harness(duplicated, records).evaluate();
 assert.equal(duplicateResult.count, records.length,
   "Registros repetidos con el mismo ID TMDB no deben inflar la muestra.");
 
-const [engineSource, appSource, viewsSource, reportSource, eventSource] = await Promise.all([
+const [engineSource, appSource, labViewsSource, reportSource, eventSource] = await Promise.all([
   import("node:fs/promises").then(fs => fs.readFile("js/recommendations/engine.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("app.js", "utf8")),
-  import("node:fs/promises").then(fs => fs.readFile("js/ui/page-views.js", "utf8")),
+  import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-views.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/diagnostics/recommendation-report.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/app/event-handlers.js", "utf8"))
 ]);
 assert.match(appSource, /createRidgeRecommendationExperiment/);
 assert.match(appSource, /ridgeEvaluationResult = null/);
-assert.match(viewsSource, /data-action="run-ridge-experiment"/);
-assert.match(viewsSource, /Validación repetida/);
-assert.match(viewsSource, /3 × 5/);
+assert.match(labViewsSource, /data-action="run-ridge-experiment"/);
+assert.match(labViewsSource, /Validación repetida/);
+assert.match(labViewsSource, /3 × 5/);
 assert.match(eventSource, /action === "run-ridge-experiment"/);
 assert.match(appSource, /3 repeticiones de 5 pliegues/);
 assert.match(appSource, /ridgeRecommendationExperiment\.evaluateAsync/);
 assert.match(appSource, /ridgeEvaluationProgress = progress/);
-assert.match(viewsSource, /ridgeEvaluationProgress/);
+assert.match(labViewsSource, /ridgeEvaluationProgress/);
 assert.match(reportSource, /ridgeExperiment: ridgeEvaluation/);
 assert.match(reportSource, /repeatedValidation: ridgeRepeatedValidationEvaluation/);
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
@@ -315,10 +315,10 @@ assert.equal(balancedWithMissing.repeatsEvaluated, 1,
 assert.equal(balancedWithMissing.minDelta, 0.02,
   "Una métrica ausente no debe introducir un cero ficticio en el rango.");
 
-assert.match(viewsSource, /Consistencia por repetición/);
-assert.match(viewsSource, /intervalo de confianza/);
-assert.match(viewsSource, /baselineFavorableRepeats/);
-assert.match(viewsSource, /summary\.ties/);
+assert.match(labViewsSource, /Consistencia por repetición/);
+assert.match(labViewsSource, /intervalo de confianza/);
+assert.match(labViewsSource, /baselineFavorableRepeats/);
+assert.match(labViewsSource, /summary\.ties/);
 
 
 const temporalAudit = { violations: 0, predictions: 0 };
@@ -486,12 +486,12 @@ assert.doesNotMatch(JSON.stringify(temporalResult.windowSummaries), /2020-|watch
 
 assert.match(appSource, /runTemporalRidgeExperiment/);
 assert.match(appSource, /evaluateTemporalAsync/);
-assert.match(viewsSource, /data-action="run-temporal-ridge-experiment"/);
-assert.match(viewsSource, /data-action="toggle-temporal-added-date-proxy"/);
-assert.match(viewsSource, /el reto de 280 días permanece limitado del 15 de enero al 21 de octubre de 2026/i);
-assert.match(viewsSource, /Ventana por incorporación/);
-assert.match(viewsSource, /Orden temporal exploratorio por fecha de incorporación/);
-assert.match(viewsSource, /Calidad del orden por fecha de incorporación/);
+assert.match(labViewsSource, /data-action="run-temporal-ridge-experiment"/);
+assert.match(labViewsSource, /data-action="toggle-temporal-added-date-proxy"/);
+assert.match(labViewsSource, /el reto de 280 días permanece limitado del 15 de enero al 21 de octubre de 2026/i);
+assert.match(labViewsSource, /Ventana por incorporación/);
+assert.match(labViewsSource, /Orden temporal exploratorio por fecha de incorporación/);
+assert.match(labViewsSource, /Calidad del orden por fecha de incorporación/);
 assert.match(eventSource, /action === "run-temporal-ridge-experiment"/);
 assert.match(eventSource, /action === "toggle-temporal-added-date-proxy"/);
 assert.match(appSource, /getUseCollectionAddedAtProxy/);
