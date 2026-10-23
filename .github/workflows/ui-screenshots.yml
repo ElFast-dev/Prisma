@@ -33,6 +33,15 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
+      - name: Checkout pre-fix baseline for synthetic timing
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          ref: edcaaf63e1a79506deeda369f26646ba6633af67
+          path: baseline-prisma
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Serve the tested commit for browser tests
         if: github.event_name == 'pull_request' || github.event_name == 'workflow_run'
         run: |
@@ -43,6 +52,24 @@ jobs:
           done
           cat /tmp/prisma-preview.log
           exit 1
+
+      - name: Serve pre-fix baseline for synthetic timing comparison
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          python3 -m http.server 8766 --directory baseline-prisma > /tmp/prisma-baseline-preview.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8766/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/prisma-baseline-preview.log
+          exit 1
+
+      - name: Measure the pre-fix synchronous Lab render with synthetic data
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          PRISMA_BASELINE_URL: http://127.0.0.1:8766/
+          PRISMA_BASELINE_TIMEOUT_MS: "20000"
+        run: node scripts/measure-lab-baseline-playwright.mjs
 
       - name: Record the exact source SHA under test
         env:
