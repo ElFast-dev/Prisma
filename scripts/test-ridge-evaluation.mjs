@@ -119,7 +119,7 @@ assert.match(result.rankingQuality.reason, /al menos 50/);
 assert.equal(result.outerFolds, 5);
 assert.equal(result.foldsEvaluated, 5);
 assert.equal(result.innerFolds, 3);
-assert.deepEqual(result.alphaGrid, [0.1, 1, 10, 100]);
+assert.deepEqual(result.alphaGrid, [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100]);
 assert.ok(Number.isFinite(result.mae));
 assert.ok(Number.isFinite(result.baselineMae));
 assert.ok(Number.isFinite(result.deltaBaseMinusRidge));
@@ -172,6 +172,26 @@ assert.deepEqual(repeated.repeatedValidation, result.repeatedValidation,
   "Las tres repeticiones de validación anidada deben ser deterministas.");
 assert.deepEqual(repeated.rankingQuality, result.rankingQuality,
   "Disponibilidad y motivo de nDCG deben ser deterministas.");
+const alphaSelectionRecords = fixtures(100);
+const alphaSelectionResult = await harness(alphaSelectionRecords, alphaSelectionRecords).evaluateAsync(() => true);
+const alphaComparison = alphaSelectionResult.alphaSelectionComparison;
+assert.equal(alphaSelectionResult.available, true);
+assert.equal(alphaComparison.available, true,
+  "Con 100 películas sintéticas y suficientes notas relevantes, ambas estrategias de selección de alpha deben ser comparables.");
+assert.deepEqual(alphaComparison.alphaGrid, [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100]);
+assert.equal(alphaComparison.selectionFoldsEvaluated, 15);
+assert.equal(Object.values(alphaComparison.selectedAlphaCountsByMae).reduce((sum, value) => sum + value, 0), 15);
+assert.equal(Object.values(alphaComparison.selectedAlphaCountsByRanking).reduce((sum, value) => sum + value, 0), 15);
+assert.equal(alphaComparison.rankingModes.length, 3);
+assert.ok(alphaComparison.rankingModes.every(item => item.available && item.foldsEvaluated >= 9),
+  "La comparación exterior de ranking debe incluir suficientes pliegues comunes.");
+assert.ok(Number.isFinite(alphaComparison.maeSelected.mae));
+assert.ok(Number.isFinite(alphaComparison.rankingSelected.mae));
+assert.ok(Number.isFinite(alphaComparison.pairedMaeDifference.deltaRankingSelectionMinusMaeSelection));
+assert.equal(alphaComparison.repeatSummaries.length, 3);
+assert.ok(alphaComparison.repeatSummaries.every(item => item.foldsEvaluated === 5));
+assert.equal(alphaSelectionResult.alphaSelectionComparison.sampleCount, 100);
+
 const asyncProgress = [];
 const asyncResult = await experiment.evaluateAsync(progress => asyncProgress.push(progress));
 assert.deepEqual(asyncResult.repeatedValidation, result.repeatedValidation,

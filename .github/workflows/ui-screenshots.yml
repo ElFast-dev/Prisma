@@ -32,7 +32,16 @@ jobs:
       - name: Install Playwright
         run: |
           npm install --no-save playwright
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
+          # Most GitHub-hosted Ubuntu images already have Chromium's shared libraries.
+          # Probe the browser before invoking apt, whose mirrors can occasionally stall.
+          if node -e 'const { chromium } = require("playwright"); (async () => { const browser = await chromium.launch({ headless: true }); await browser.close(); })().catch(() => process.exit(1));'; then
+            echo "Chromium launch preflight passed; skipping system-package installation."
+          else
+            echo "Chromium requires additional system packages; installing Playwright dependencies."
+            npx playwright install-deps chromium
+            node -e 'const { chromium } = require("playwright"); (async () => { const browser = await chromium.launch({ headless: true }); await browser.close(); })().catch(error => { console.error(error); process.exit(1); });'
+          fi
 
       - name: Checkout pre-fix baseline for synthetic timing
         if: github.event_name != 'workflow_dispatch'
@@ -137,7 +146,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261023-27") &&
-                  lastUI.appSrc.includes("v=ui-20261023-105") &&
+                  lastUI.appSrc.includes("v=ui-20261023-106") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -336,7 +345,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v12" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v13" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||

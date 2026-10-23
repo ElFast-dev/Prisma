@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v115"
+const CACHE_NAME = "prisma-shell-v116"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,7 @@ const APP_ASSETS = [
   "./styles/watch-streak.css?v=ui-20261023-27",
   "./styles/prisma-design-system.css?v=ui-20261023-27",
 
-  "./app.js?v=ui-20261023-105",
+  "./app.js?v=ui-20261023-106",
   "./js/tmdb/client.js?v=core-20261022-3",
   "./js/core/movie-utils.js",
   "./js/core/date-utils.js",
@@ -25,14 +25,15 @@ const APP_ASSETS = [
   "./js/core/state-model.js?v=core-20261022-2",
   "./js/recommendations/features.js?v=rec-20261022-1",
   "./js/recommendations/engine.js?v=rec-20261023-3",
-  "./js/recommendations/ridge-evaluation.js?v=rec-20261023-4",
+  "./js/recommendations/ridge-evaluation.js?v=rec-20261023-5",
   "./js/recommendations/ridge-kernel.js?v=rec-20261023-2",
   "./js/recommendations/repeated-validation-summary.js?v=core-20261021-1",
   "./js/recommendations/evaluation.js?v=rec-20261023-3",
   "./js/recommendations/normalization-evaluation.js?v=rec-20261023-3",
   "./js/diagnostics/lab-diagnostic-coordinator.js?v=diag-20261023-2",
   "./js/recommendations/feature-family-evaluation.js?v=rec-20261023-1",
-  "./js/diagnostics/recommendation-report.js?v=core-20261023-2",
+  "./js/recommendations/paired-ranking-evaluation.js?v=rec-20261023-1",
+  "./js/diagnostics/recommendation-report.js?v=core-20261023-3",
   "./js/catalog/csv-parser.js",
   "./js/catalog/catalog-model.js?v=core-20261022-4",
   "./js/collection/collection-model.js?v=core-20261023-1",

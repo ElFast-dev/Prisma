@@ -90,6 +90,40 @@ export function createRecommendationRanking(ctx) {
     return getBalancedRecommendations(candidates, requestedLimit);
   }
 
+  function eligibleCandidates(source) {
+    const rows = Array.isArray(source) ? source : [];
+    return ctx.uniqueDiscoveryMovies(rows).filter(function (movie) {
+      return !ctx.isMovieInCollection(movie.title,movie.tmdbId,movie.year) && movie.source !== "history";
+    });
+  }
+
+  // Aggregate-only pool accounting for diagnostics. This deliberately does not alter active ranking.
+  function getCandidatePoolCounts(limit, mode, profileOverride) {
+    const requestedResultLimit = Math.max(1, Number(limit) || 8);
+    const localSource = Array.isArray(ctx.catalog) ? ctx.catalog : [];
+    const remoteSource = Array.isArray(ctx.recommendationCandidates) ? ctx.recommendationCandidates : [];
+    const localCandidatesEligible = eligibleCandidates(localSource).length;
+    const eligibleCandidatePool = eligibleCandidates(localSource.concat(remoteSource)).length;
+    const profile = profileOverride || ctx.buildProfile();
+    const profileAvailable = Boolean(profile && profile.count > 0);
+    const rankedResultsAvailable = profileAvailable ? eligibleCandidatePool : 0;
+    let shortfallReason = null;
+    if (!profileAvailable) shortfallReason = "empty-personal-profile";
+    else if (eligibleCandidatePool < requestedResultLimit) shortfallReason = "eligible-pool-too-small";
+    return {
+      mode: requestedMode(mode),
+      remoteCandidatesReceived: remoteSource.length,
+      localCatalogEntries: localSource.length,
+      localCandidatesEligible: localCandidatesEligible,
+      eligibleCandidatePool: eligibleCandidatePool,
+      rankedResultsAvailable: rankedResultsAvailable,
+      requestedResultLimit: requestedResultLimit,
+      returnedResultCount: 0,
+      profileAvailable: profileAvailable,
+      shortfallReason: shortfallReason
+    };
+  }
+
   function getRecommendations(limit, mode, profileOverride) {
     const requestedLimit = Math.max(1, Number(limit) || 8);
     const profile = profileOverride || ctx.buildProfile();
@@ -100,13 +134,11 @@ export function createRecommendationRanking(ctx) {
     // can still rank explicit, already-scored synthetic candidates.
     if (profile && profile.count === 0) return [];
 
-    const candidates = (ctx.catalog || []).concat(ctx.recommendationCandidates || []);
-    const results = ctx.uniqueDiscoveryMovies(candidates).filter(function (movie) {
-      return !ctx.isMovieInCollection(movie.title,movie.tmdbId,movie.year) && movie.source !== "history";
-    }).map(function (movie) {
-      const prediction = ctx.predictRating(movie, profile);
-      return Object.assign({}, movie, { prediction: prediction });
-    });
+    const results = eligibleCandidates((ctx.catalog || []).concat(ctx.recommendationCandidates || []))
+      .map(function (movie) {
+        const prediction = ctx.predictRating(movie, profile);
+        return Object.assign({}, movie, { prediction: prediction });
+      });
     return rankCandidates(results, requestedLimit, mode);
   }
 
@@ -129,5 +161,5 @@ export function createRecommendationRanking(ctx) {
     }).filter(function (item) { return item.count >= 2; }).sort(function (a, b) { return b.average - a.average; });
   }
 
-  return { getRecommendations, genreStats, rankCandidates };
+  return { getRecommendations, genreStats, rankCandidates, getCandidatePoolCounts };
 }

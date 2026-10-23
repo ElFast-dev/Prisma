@@ -343,6 +343,15 @@ export function createLabMetricsActions(ctx) {
       else supportDistribution.tenOrMore += 1;
     });
     const metadataCount = Math.min(validEntries, linkedEntries);
+    const requestedResultLimit = 5;
+    const candidateCounts = typeof ctx.getCandidatePoolCounts === "function"
+      ? ctx.getCandidatePoolCounts(requestedResultLimit, ctx.recommendationMode || "balanced", profile)
+      : {
+          remoteCandidatesReceived: Array.isArray(ctx.recommendationCandidates) ? ctx.recommendationCandidates.length : 0,
+          localCatalogEntries: Array.isArray(ctx.catalog) ? ctx.catalog.length : 0,
+          localCandidatesEligible: 0, eligibleCandidatePool: 0, rankedResultsAvailable: 0,
+          requestedResultLimit: requestedResultLimit, profileAvailable: Boolean(profile && profile.count > 0)
+        };
     const report = {
       ratingEntries: ratings.length,
       validRatingEntries: validEntries,
@@ -358,6 +367,11 @@ export function createLabMetricsActions(ctx) {
       signalTypeCounts: supportByType,
       catalogMovies: Array.isArray(ctx.catalog) ? ctx.catalog.length : 0,
       candidatesAvailable: Array.isArray(ctx.recommendationCandidates) ? ctx.recommendationCandidates.length : 0,
+      remoteCandidatesReceived: Number(candidateCounts.remoteCandidatesReceived) || 0,
+      localCandidatesEligible: Number(candidateCounts.localCandidatesEligible) || 0,
+      eligibleCandidatePool: Number(candidateCounts.eligibleCandidatePool) || 0,
+      rankedResultsAvailable: Number(candidateCounts.rankedResultsAvailable) || 0,
+      requestedResultLimit: requestedResultLimit,
       metadataCoverage: validEntries ? metadataCount / validEntries : 0,
       featureLinkedCoverage: uniqueRatings ? uniqueFeatureRows / uniqueRatings : 0
     };
@@ -411,6 +425,7 @@ export function createLabMetricsActions(ctx) {
       available: Boolean(ranking.available),
       ranking: ranking,
       diversity: Array.isArray(value.diversity) ? value.diversity : [],
+      candidateAvailability: Array.isArray(value.candidateAvailability) ? value.candidateAvailability : [],
       unavailableReason: ranking.available ? null : (ranking.reason || "nDCG@5 no disponible con la muestra retenida.")
     };
   }

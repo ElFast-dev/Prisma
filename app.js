@@ -5,10 +5,10 @@ import { createStorageProtectionActions } from "./js/app/storage-protection-acti
 import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
 import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261023-3";
-import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261023-4";
+import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261023-5";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js?v=rec-20261023-3";
-import { createFeatureFamilyEvaluation } from "./js/recommendations/feature-family-evaluation.js?v=rec-20261023-1";
-import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261023-2";
+import { createPairedRankingEvaluation } from "./js/recommendations/paired-ranking-evaluation.js?v=rec-20261023-1";
+import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261023-3";
 import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js?v=rec-20261023-3";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
@@ -553,7 +553,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get findMovie() { return findMovie; },
     get ratingValue() { return ratingValue; }
   });
-  const { getRecommendations, genreStats } = recommendationRanking;
+  const { getRecommendations, genreStats, getCandidatePoolCounts } = recommendationRanking;
 
   const ridgeRecommendationExperiment = createRidgeRecommendationExperiment({
     getRatings: function () { return state.rated; },
@@ -595,6 +595,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     predictRating: predictRating,
     getRecommendations: getRecommendations,
     rankCandidates: recommendationRanking.rankCandidates,
+    getCandidatePoolCounts: recommendationRanking.getCandidatePoolCounts,
     movieTmdbId: movieTmdbId,
     titleKey: titleKey
   });
@@ -612,7 +613,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     titleKey: titleKey
   });
 
-  const featureFamilyEvaluation = createFeatureFamilyEvaluation({
+  const featureFamilyEvaluation = createPairedRankingEvaluation({
     getRatings: function () { return state.rated; },
     findMovie: findMovie,
     movieFeatures: movieFeatures,
@@ -630,6 +631,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get catalog() { return catalog; },
     get recommendationCandidates() { return tmdbRecommendationCandidates; },
     get recommendationMode() { return recommendationMode; },
+    get getCandidatePoolCounts() { return getCandidatePoolCounts; },
+    get getRecommendations() { return getRecommendations; },
     get summaryStats() { return summaryStats; },
     get buildProfile() { return buildProfile; },
     get buildProfileAsync() { return buildProfileAsync; },

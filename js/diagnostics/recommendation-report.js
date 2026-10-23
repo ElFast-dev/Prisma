@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v12";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v13";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -274,6 +274,102 @@ function ridgeRepeatedValidationEvaluation(source) {
   };
 }
 
+function ridgeAlphaSelectionEvaluation(source) {
+  const evaluation = source && typeof source === "object" ? source : null;
+  const available = Boolean(evaluation && evaluation.available);
+  const alphaGrid = evaluation && Array.isArray(evaluation.alphaGrid) ? evaluation.alphaGrid
+    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 12) : [];
+  const summarizeCounts = function (counts) {
+    const input = counts && typeof counts === "object" ? counts : {};
+    return Object.keys(input).sort(function (left, right) { return Number(left) - Number(right); }).reduce(function (all, alpha) {
+      const numericAlpha = Number(alpha);
+      if (Number.isFinite(numericAlpha) && numericAlpha > 0 && alphaGrid.includes(numericAlpha)) all[String(numericAlpha)] = nonNegativeInteger(input[alpha]);
+      return all;
+    }, {});
+  };
+  const summary = function (input, key) {
+    const item = input && typeof input === "object" ? input : {};
+    return {
+      available: Boolean(item.available),
+      mae: item.available ? rounded(item.mae, 4) : null,
+      baselineMaeSameFolds: item.available ? rounded(item.baselineMaeSameFolds, 4) : null,
+      deltaBaselineMinusSelected: item.available ? rounded(item[key], 4) : null
+    };
+  };
+  const rankingModes = (Array.isArray(evaluation && evaluation.rankingModes) ? evaluation.rankingModes : []).slice(0, 3).map(function (mode) {
+    const item = mode || {};
+    const modeAvailable = Boolean(item.available);
+    return {
+      mode: ["balanced", "affinity", "variety"].includes(item.mode) ? item.mode : "",
+      available: modeAvailable,
+      baselineNdcgAt5: modeAvailable ? rounded(item.baselineNdcgAt5, 4) : null,
+      maeSelectedNdcgAt5: modeAvailable ? rounded(item.maeSelectedNdcgAt5, 4) : null,
+      rankingSelectedNdcgAt5: modeAvailable ? rounded(item.rankingSelectedNdcgAt5, 4) : null,
+      deltaRankingSelectionMinusMaeSelection: modeAvailable ? rounded(item.deltaRankingSelectionMinusMaeSelection, 4) : null,
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      rankingSelectorWins: nonNegativeInteger(item.rankingSelectorWins),
+      ties: nonNegativeInteger(item.ties),
+      rankingSelectorLosses: nonNegativeInteger(item.rankingSelectorLosses)
+    };
+  });
+  const repeats = (Array.isArray(evaluation && evaluation.repeatSummaries) ? evaluation.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+    const item = repeat || {};
+    const modes = (Array.isArray(item.rankingModes) ? item.rankingModes : []).slice(0, 3).map(function (mode) {
+      return {
+        mode: ["balanced", "affinity", "variety"].includes(mode.mode) ? mode.mode : "",
+        available: Boolean(mode.available),
+        maeSelectedNdcgAt5: mode.available ? rounded(mode.maeSelectedNdcgAt5, 4) : null,
+        rankingSelectedNdcgAt5: mode.available ? rounded(mode.rankingSelectedNdcgAt5, 4) : null,
+        deltaRankingSelectionMinusMaeSelection: mode.available ? rounded(mode.deltaRankingSelectionMinusMaeSelection, 4) : null,
+        foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated),
+        rankingSelectorWins: nonNegativeInteger(mode.rankingSelectorWins),
+        ties: nonNegativeInteger(mode.ties),
+        rankingSelectorLosses: nonNegativeInteger(mode.rankingSelectorLosses)
+      };
+    });
+    return {
+      repeat: nonNegativeInteger(item.repeat),
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      selectedAlphaCountsByMae: summarizeCounts(item.selectedAlphaCountsByMae),
+      selectedAlphaCountsByRanking: summarizeCounts(item.selectedAlphaCountsByRanking),
+      maeSelectedMae: rounded(item.maeSelectedMae, 4),
+      rankingSelectedMae: rounded(item.rankingSelectedMae, 4),
+      deltaRankingSelectionMinusMaeSelection: rounded(item.deltaRankingSelectionMinusMaeSelection, 4),
+      rankingModes: modes
+    };
+  });
+  const paired = evaluation && evaluation.pairedMaeDifference || {};
+  return {
+    executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
+    available: available,
+    sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
+    selectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.selectionFoldsEvaluated),
+    outerFoldsPlanned: nonNegativeInteger(evaluation && evaluation.outerFoldsPlanned),
+    innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
+    alphaGrid: alphaGrid,
+    selectionCriteria: {
+      mae: "Menor MAE medio en validación interna del entrenamiento exterior.",
+      ranking: "Mayor nDCG@5 medio en validación interna entre los modos disponibles con relevancia ≥ 7."
+    },
+    selectedAlphaCountsByMae: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByMae),
+    selectedAlphaCountsByRanking: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByRanking),
+    maeSelected: summary(evaluation && evaluation.maeSelected, "deltaBaselineMinusMaeSelected"),
+    rankingSelected: summary(evaluation && evaluation.rankingSelected, "deltaBaselineMinusRankingSelected"),
+    pairedMaeDifference: {
+      available: Boolean(paired.available),
+      deltaRankingSelectionMinusMaeSelection: paired.available ? rounded(paired.deltaRankingSelectionMinusMaeSelection, 4) : null,
+      rankingSelectionMaeWins: nonNegativeInteger(paired.rankingSelectionMaeWins),
+      ties: nonNegativeInteger(paired.ties),
+      maeSelectionMaeWins: nonNegativeInteger(paired.maeSelectionMaeWins),
+      foldsEvaluated: nonNegativeInteger(paired.foldsEvaluated)
+    },
+    rankingModes: rankingModes,
+    repeatSummaries: repeats,
+    unavailableReason: available ? null : String(evaluation && evaluation.unavailableReason ||
+      "La selección interna de alpha por ranking no alcanza los mínimos de muestra.").slice(0, 220)
+  };
+}
+
 function ridgeEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
@@ -306,6 +402,7 @@ function ridgeEvaluation(source) {
     hybridFoldStability: hybridFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
     rankingQuality: ridgeRankingEvaluation(evaluation && evaluation.rankingQuality),
     repeatedValidation: ridgeRepeatedValidationEvaluation(evaluation && evaluation.repeatedValidation),
+    alphaSelectionComparison: ridgeAlphaSelectionEvaluation(evaluation && evaluation.alphaSelectionComparison),
     unavailableReason: available ? null : (evaluation && typeof evaluation.reason === "string"
       ? evaluation.reason : (evaluation ? "El experimento Ridge no está disponible." : "El experimento Ridge no se ha ejecutado."))
   };
@@ -429,7 +526,25 @@ function rankingEvaluation(source) {
   const ranking = wrapper.ranking || wrapper;
   const modes = Array.isArray(ranking.modes) ? ranking.modes : [];
   const diversity = Array.isArray(wrapper.diversity) ? wrapper.diversity : [];
+  const candidateAvailability = Array.isArray(wrapper.candidateAvailability) ? wrapper.candidateAvailability : [];
   return {
+    candidateAvailability: candidateAvailability.slice(0, 3).map(function (item) {
+      const source = item || {};
+      const mode = ["balanced", "affinity", "variety"].includes(source.mode) ? source.mode : "";
+      return {
+        mode: mode,
+        remoteCandidatesReceived: nonNegativeInteger(source.remoteCandidatesReceived),
+        localCatalogEntries: nonNegativeInteger(source.localCatalogEntries),
+        localCandidatesEligible: nonNegativeInteger(source.localCandidatesEligible),
+        eligibleCandidatePool: nonNegativeInteger(source.eligibleCandidatePool),
+        rankedResultsAvailable: nonNegativeInteger(source.rankedResultsAvailable),
+        requestedResultLimit: nonNegativeInteger(source.requestedResultLimit),
+        returnedResultCount: nonNegativeInteger(source.returnedResultCount),
+        profileAvailable: Boolean(source.profileAvailable),
+        shortfallReason: ["empty-personal-profile", "eligible-pool-too-small", "balanced-genre-cap", "ranking-policy-shortfall"].includes(source.shortfallReason)
+          ? source.shortfallReason : null
+      };
+    }),
     ranking: {
       available: Boolean(ranking.available),
       sampleCount: nonNegativeInteger(ranking.count),
@@ -534,12 +649,21 @@ function coverageSummary(input) {
     "ratingEntries", "validRatingEntries", "invalidRatingEntries", "uniqueRatedMovies",
     "featureLinkedRatingEntries", "uniqueFeatureMovies", "ratingsWithoutUsefulFeatures",
     "featurelessUniqueMovies", "profileFeatureCount", "featureObservations", "catalogMovies",
-    "candidatesAvailable"
+    "candidatesAvailable", "remoteCandidatesReceived", "localCandidatesEligible", "eligibleCandidatePool",
+    "rankedResultsAvailable", "requestedResultLimit"
   ];
   const result = {};
   nonNegativeKeys.forEach(function (key) { result[key] = nonNegativeInteger(input[key]); });
   result.metadataCoverage = rounded(input.metadataCoverage, 4);
   result.featureLinkedCoverage = rounded(input.featureLinkedCoverage, 4);
+  result.shortfallReason = ["empty-personal-profile", "eligible-pool-too-small", "balanced-genre-cap", "ranking-policy-shortfall"].includes(input.shortfallReason)
+    ? input.shortfallReason : null;
+  result.candidateCountsMeaning = {
+    candidatesAvailable: "Compatibilidad heredada: solo candidatas remotas temporales de TMDB; no equivale al catálogo local.",
+    localCandidatesEligible: "Películas del catálogo local que siguen siendo elegibles tras deduplicación y exclusión de la colección.",
+    eligibleCandidatePool: "Candidatas locales y remotas únicas que superan los filtros.",
+    rankedResultsAvailable: "Tamaño del pool elegible cuando existe perfil personal; cero si el perfil está vacío."
+  };
   const distribution = input.supportDistribution || {};
   result.supportDistribution = {
     once: nonNegativeInteger(distribution.once),
@@ -556,24 +680,36 @@ function coverageSummary(input) {
 }
 
 function featureFamilySummary(input) {
-  if (!input || typeof input !== "object") return { available: false, sampleCount: 0, foldsPlanned: 5, foldsEvaluated: 0, sharedPartition: true, families: [], unavailableReason: "La fase no produjo resultados." };
+  if (!input || typeof input !== "object") return {
+    available: false, sampleCount: 0, repeats: 3, foldsPerRepeat: 5, foldsEvaluated: 0,
+    sharedPartition: true, trainingLeakageChecked: false, families: [],
+    unavailableReason: "La fase no produjo resultados."
+  };
   const sourceFamilies = Array.isArray(input.families) ? input.families : [];
   const expected = ["genres-only", "genres-tags", "genres-tags-synopsis", "full-current"];
-  const families = expected.map(function (id) {
-    const row = sourceFamilies.find(function (item) { return item && item.id === id; }) || {};
-    const modes = ["balanced", "affinity", "variety"].map(function (mode) {
-      const current = (Array.isArray(row.rankingModes) ? row.rankingModes : []).find(function (item) { return item && item.mode === mode; }) || {};
+  const summarizeModes = function (row, threshold, reference) {
+    const modesSource = row && row.rankingByThreshold && row.rankingByThreshold[String(threshold)]
+      ? row.rankingByThreshold[String(threshold)]
+      : (threshold === 7 && row ? row.rankingModes : null);
+    return ["balanced", "affinity", "variety"].map(function (mode) {
+      const current = modesSource && modesSource[mode] ? modesSource[mode] :
+        ((Array.isArray(row && row.rankingModes) ? row.rankingModes : []).find(function (item) { return item && item.mode === mode; }) || {});
       return {
         mode: mode,
         available: Boolean(current.available),
-        ndcgAt5: rounded(current.ndcgAt5, 5),
-        deltaNdcgVsGenres: rounded(current.deltaNdcgVsGenres, 5),
+        ndcgAt5: current.available ? rounded(current.ndcgAt5, 5) : null,
+        deltaNdcgVsGenres: current.available ? rounded(current.deltaNdcgVsGenres, 5) : null,
         foldsEvaluated: nonNegativeInteger(current.foldsEvaluated),
+        pairedFoldsEvaluated: nonNegativeInteger(current.pairedFoldsEvaluated),
         wins: nonNegativeInteger(current.wins),
         ties: nonNegativeInteger(current.ties),
-        losses: nonNegativeInteger(current.losses)
+        losses: nonNegativeInteger(current.losses),
+        foldNdcgAt5: Array.isArray(current.foldNdcgAt5) ? current.foldNdcgAt5.slice(0, 15).map(function (v) { return v == null ? null : rounded(v, 5); }) : []
       };
     });
+  };
+  const families = expected.map(function (id) {
+    const row = sourceFamilies.find(function (item) { return item && item.id === id; }) || {};
     return {
       id: id,
       label: FEATURE_FAMILY_LABELS[id],
@@ -585,26 +721,205 @@ function featureFamilySummary(input) {
       maeWins: nonNegativeInteger(row.maeWins),
       ties: nonNegativeInteger(row.ties),
       maeLosses: nonNegativeInteger(row.maeLosses),
-      foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 5).map(function (value) { return rounded(value, 5); }) : [],
-      rankingModes: modes
+      foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 15).map(function (value) { return rounded(value, 5); }) : [],
+      rankingModes: summarizeModes(row, 7),
+      rankingByThreshold: {
+        "7": summarizeModes(row, 7),
+        "9": summarizeModes(row, 9)
+      }
     };
   });
+  const repeatSummaries = (Array.isArray(input.repeatSummaries) ? input.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+    const folds = (Array.isArray(repeat && repeat.folds) ? repeat.folds : []).slice(0, 5).map(function (fold) {
+      const foldFamilies = {};
+      const sourceFoldFamilies = fold && fold.families && typeof fold.families === "object" ? fold.families : {};
+      expected.forEach(function (id) {
+        const row = sourceFoldFamilies[id] || {};
+        foldFamilies[id] = {
+          mae: rounded(row.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(row.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(row.ndcgAt5Threshold9)
+        };
+      });
+      const lambdas = {};
+      const sourceLambdas = fold && fold.lambdas && typeof fold.lambdas === "object" ? fold.lambdas : {};
+      const signalFamilies = {};
+      const sourceSignalFamilies = fold && fold.signalFamilies && typeof fold.signalFamilies === "object" ? fold.signalFamilies : {};
+      ["genre", "theme", "synopsis", "actor", "director", "writer", "composer"].forEach(function (id) {
+        const row = sourceSignalFamilies[id] || {};
+        signalFamilies[id] = {
+          mae: rounded(row.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(row.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(row.ndcgAt5Threshold9)
+        };
+      });
+      Object.keys(sourceLambdas).filter(function (key) { return ["0", "0.5", "1", "2", "4", "8"].includes(key); }).forEach(function (key) {
+        const row = sourceLambdas[key] || {};
+        lambdas[key] = {
+          mae: rounded(row.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(row.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(row.ndcgAt5Threshold9)
+        };
+      });
+      const selected = fold && fold.selectedLambda || {};
+      return {
+        fold: nonNegativeInteger(fold && fold.fold),
+        trainingCount: nonNegativeInteger(fold && fold.trainCount),
+        testCount: nonNegativeInteger(fold && fold.testCount),
+        families: foldFamilies,
+        lambdas: lambdas,
+        signalFamilies: signalFamilies,
+        selectedLambda: {
+          available: Number.isFinite(Number(selected.lambda)),
+          lambda: Number.isFinite(Number(selected.lambda)) ? rounded(selected.lambda, 4) : null,
+          mae: rounded(selected.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(selected.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(selected.ndcgAt5Threshold9),
+          unavailableReason: selected.available === false ? String(selected.reason || "La selección interna no está disponible.").slice(0, 180) : null
+        }
+      };
+    });
+    return {
+      repeat: nonNegativeInteger(repeat && repeat.repeat),
+      foldsEvaluated: folds.length,
+      maeByFamily: expected.reduce(function (all, id) {
+        const values = folds.map(function (fold) { return fold.families[id].mae; }).filter(Number.isFinite);
+        all[id] = rounded(values.length ? values.reduce(function (sum, value) { return sum + value; }, 0) / values.length : null, 5);
+        return all;
+      }, {}),
+      folds: folds
+    };
+  });
+  const support = input.supportRegularization && typeof input.supportRegularization === "object" ? input.supportRegularization : null;
+  const supportRegularization = support ? {
+    available: Boolean(support.available),
+    featureSupportWeightFormula: support.featureSupportWeightFormula === "weight * support / (support + lambda)"
+      ? support.featureSupportWeightFormula : null,
+    lambdas: Array.isArray(support.lambdas) ? support.lambdas.map(numeric).filter(function (v) { return v != null && v >= 0; }).slice(0, 10) : [],
+    results: (Array.isArray(support.results) ? support.results : []).slice(0, 10).map(function (row) {
+      return {
+        lambda: rounded(row.lambda, 4),
+        available: Boolean(row.available),
+        foldsEvaluated: nonNegativeInteger(row.foldsEvaluated),
+        mae: rounded(row.mae, 5),
+        deltaMaeVsNoShrinkage: rounded(row.deltaMaeVsNoShrinkage, 5),
+        foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
+        maeWins: nonNegativeInteger(row.maeWins),
+        ties: nonNegativeInteger(row.ties),
+        maeLosses: nonNegativeInteger(row.maeLosses),
+        rankingModes: summarizeModes(row, 7),
+        rankingByThreshold: { "7": summarizeModes(row, 7), "9": summarizeModes(row, 9) },
+        repeatSummaries: (Array.isArray(row.repeatSummaries) ? row.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+          return { repeat: nonNegativeInteger(repeat.repeat), mae: rounded(repeat.mae, 5), foldsEvaluated: nonNegativeInteger(repeat.foldCount) };
+        })
+      };
+    }),
+    signalFamilyLambda: rounded(support.signalFamilyLambda, 4),
+    signalFamilyExperiments: (Array.isArray(support.signalFamilyExperiments) ? support.signalFamilyExperiments : []).slice(0, 7).map(function (row) {
+      const id = ["genre", "theme", "synopsis", "actor", "director", "writer", "composer"].includes(row && row.id) ? row.id : "";
+      return {
+        id: id,
+        label: ({
+          genre: "Géneros", theme: "Temas", synopsis: "Sinopsis", actor: "Reparto",
+          director: "Dirección", writer: "Guion", composer: "Música"
+        })[id] || "",
+        lambda: rounded(row.lambda, 4),
+        available: Boolean(row.available),
+        foldsEvaluated: nonNegativeInteger(row.foldsEvaluated),
+        mae: rounded(row.mae, 5),
+        baselineMae: rounded(row.baselineMae, 5),
+        deltaMaeVsNoShrinkage: rounded(row.deltaMaeVsNoShrinkage, 5),
+        foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
+        maeWins: nonNegativeInteger(row.maeWins),
+        ties: nonNegativeInteger(row.ties),
+        maeLosses: nonNegativeInteger(row.maeLosses),
+        rankingModes: summarizeModes(row, 7),
+        rankingByThreshold: {
+          "7": summarizeModes(row, 7),
+          "9": summarizeModes(row, 9)
+        },
+        repeatSummaries: (Array.isArray(row.repeatSummaries) ? row.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+          return {
+            repeat: nonNegativeInteger(repeat.repeat),
+            mae: rounded(repeat.mae, 5),
+            foldCount: nonNegativeInteger(repeat.foldCount)
+          };
+        })
+      };
+    }),
+    nestedSelection: support.nestedSelection ? {
+      available: Boolean(support.nestedSelection.available),
+      selectionCriterion: String(support.nestedSelection.selectionCriterion || "").slice(0, 180),
+      outerFoldsEvaluated: nonNegativeInteger(support.nestedSelection.outerFoldsEvaluated),
+      selectedLambdaCounts: Object.keys(support.nestedSelection.selectedLambdaCounts || {}).filter(function (key) {
+        return ["0", "0.5", "1", "2", "4", "8"].includes(key);
+      }).reduce(function (all, key) {
+        all[key] = nonNegativeInteger(support.nestedSelection.selectedLambdaCounts[key]);
+        return all;
+      }, {}),
+      mae: rounded(support.nestedSelection.mae, 5),
+      baselineMaeSameFolds: rounded(support.nestedSelection.baselineMaeSameFolds, 5),
+      deltaMaeVsNoShrinkage: rounded(support.nestedSelection.deltaMaeVsNoShrinkage, 5),
+      maeWins: nonNegativeInteger(support.nestedSelection.maeWins),
+      ties: nonNegativeInteger(support.nestedSelection.ties),
+      maeLosses: nonNegativeInteger(support.nestedSelection.maeLosses),
+      foldMae: Array.isArray(support.nestedSelection.foldMae) ? support.nestedSelection.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
+      rankingModes: summarizeModes(support.nestedSelection, 7),
+      rankingByThreshold: { "7": summarizeModes(support.nestedSelection, 7), "9": summarizeModes(support.nestedSelection, 9) }
+    } : null,
+    featureSupportBySignalType: summarizeSupportSignalTypes(support.featureSupportBySignalType),
+    interpretationLimits: Array.isArray(support.interpretationLimits) ? support.interpretationLimits.map(function (v) { return String(v).slice(0, 220); }).slice(0, 8) : []
+  } : null;
   return {
     executionStatus: input.executionStatus === "completed" ? "completed" : "unavailable",
     available: Boolean(input.available),
     sampleCount: nonNegativeInteger(input.sampleCount),
-    foldsPlanned: 5,
-    foldsEvaluated: Math.min(5, nonNegativeInteger(input.foldsEvaluated)),
-    sharedPartition: input.sharedPartition === true,
+    repeats: nonNegativeInteger(input.repeats),
+    foldsPerRepeat: nonNegativeInteger(input.foldsPerRepeat),
+    foldsPlanned: nonNegativeInteger(input.foldsPerRepeat),
+    foldsEvaluated: Math.min(15, nonNegativeInteger(input.foldsEvaluated)),
+    sharedPartition: input.sharedPartition === true || input.sharedPartitions === true,
     trainingLeakageChecked: input.trainingLeakageChecked === true,
+    relevanceThresholds: Array.isArray(input.relevanceThresholds) ? input.relevanceThresholds.map(numeric).filter(function (v) { return v != null; }).slice(0, 4) : [7],
+    relevantCounts: {
+      "7": nonNegativeInteger(input.relevantCounts && input.relevantCounts["7"]),
+      "9": nonNegativeInteger(input.relevantCounts && input.relevantCounts["9"])
+    },
+    durationMs: rounded(input.durationMs, 1),
     families: families,
+    repeatSummaries: repeatSummaries,
+    supportRegularization: supportRegularization,
     unavailableReason: input.available ? null : String(input.unavailableReason || "La muestra no cumple los requisitos.").slice(0, 220),
     interpretationLimits: [
-      "Las cuatro familias comparten las mismas películas con género enlazado y los mismos cinco pliegues.",
-      "Las notas del pliegue retenido solo intervienen en el cálculo de error y ganancia, nunca en el perfil que predice ese pliegue.",
-      "La comparación es descriptiva y no demuestra significación estadística ni causalidad."
+      "Las cuatro familias comparten las mismas identidades y particiones exteriores dentro de cada repetición.",
+      "Las notas del pliegue exterior se usan solo para métricas; la selección de lambda emplea únicamente particiones internas del entrenamiento.",
+      "Tres repeticiones y quince pliegues reutilizan el mismo historial personal: no son quince muestras independientes.",
+      "El umbral 9 puede tener baja potencia con pocos ratings muy altos; las dos notas 10 no bastan para estimar predicción de obras excepcionales.",
+      "Una mejora descriptiva en este historial no demuestra significación estadística ni causalidad."
     ]
   };
+}
+function summarizeRawFoldModes(source) {
+  const input = source && typeof source === "object" ? source : {};
+  return ["balanced", "affinity", "variety"].reduce(function (all, mode) {
+    const value = input[mode];
+    all[mode] = value != null && Number.isFinite(Number(value)) ? rounded(value, 5) : null;
+    return all;
+  }, {});
+}
+function summarizeSupportSignalTypes(source) {
+  const input = source && typeof source === "object" ? source : {};
+  const allowed = ["genre", "theme", "synopsis", "actor", "director", "writer", "composer", "company", "country", "language", "spokenLanguage", "collection", "runtime", "decade", "other"];
+  return allowed.reduce(function (all, type) {
+    const row = input[type] || {};
+    all[type] = {
+      featureObservations: nonNegativeInteger(row.featureObservations),
+      supportOneFeatures: nonNegativeInteger(row.supportOneFeatures),
+      meanSupport: rounded(row.meanSupport, 4),
+      meanAbsoluteWeight: rounded(row.meanAbsoluteWeight, 5)
+    };
+    return all;
+  }, {});
 }
 
 /**
@@ -699,6 +1014,7 @@ export function buildRecommendationDiagnosticReport(input) {
       temporalRidgeExperiment: temporalRidgeEvaluation(source.temporalRidgeEvaluation),
       influenceNormalizationExperiment: influenceNormalizationEvaluation(source.influenceNormalizationEvaluation),
       rankingQuality: quality.ranking,
+      candidateAvailability: quality.candidateAvailability,
       currentListDiversity: quality.diversity
     },
     diagnostic: {

@@ -158,17 +158,27 @@ const baseInput = {
     },
     diversity: [
       { mode: "balanced", score: 0.4, pairs: 10, titles: 5, titlesWithGenres: 5, uniqueGenres: 3 }
-    ]
+    ],
+    candidateAvailability: [{
+      mode: "balanced", remoteCandidatesReceived: 4, localCatalogEntries: 20,
+      localCandidatesEligible: 8, eligibleCandidatePool: 10, rankedResultsAvailable: 10,
+      requestedResultLimit: 5, returnedResultCount: 4, profileAvailable: true,
+      shortfallReason: "balanced-genre-cap"
+    }]
   }
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v12");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v13");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
 assert.equal(compact.sample.metadataCoverage, 0.75);
 assert.equal(compact.model.activeRankingMode, "variety");
+assert.equal(compact.evaluation.candidateAvailability[0].remoteCandidatesReceived, 4);
+assert.equal(compact.evaluation.candidateAvailability[0].localCandidatesEligible, 8);
+assert.equal(compact.evaluation.candidateAvailability[0].returnedResultCount, 4);
+assert.equal(compact.evaluation.candidateAvailability[0].shortfallReason, "balanced-genre-cap");
 assert.equal(compact.model.featureAggregates.totalFeatures, 3);
 assert.equal(compact.model.featureAggregates.signalTypes.genre.featureCount, 1);
 assert.equal(compact.model.featureAggregates.signalTypes.theme.singleObservationFeatures, 1);
@@ -316,28 +326,48 @@ const integrated = buildRecommendationDiagnosticReport({
     uniqueRatedMovies: 351, featureLinkedRatingEntries: 351,
     uniqueFeatureMovies: 351, ratingsWithoutUsefulFeatures: 0,
     featurelessUniqueMovies: 0, profileFeatureCount: 48, featureObservations: 1800,
-    catalogMovies: 351, candidatesAvailable: 20, metadataCoverage: 1,
+    catalogMovies: 351, candidatesAvailable: 20, remoteCandidatesReceived: 20, localCandidatesEligible: 40,
+    eligibleCandidatePool: 55, rankedResultsAvailable: 55, requestedResultLimit: 5, metadataCoverage: 1,
     featureLinkedCoverage: 1, supportDistribution: { once: 2, twoToFour: 4, fiveToNine: 8, tenOrMore: 34 },
     signalTypeCounts: { genre: 351, theme: 351, synopsis: 900, "personal title": 123456 }
   },
   featureFamilyEvaluation: {
     available: true, executionStatus: "completed", sampleCount: 351,
-    foldsPlanned: 5, foldsEvaluated: 5, sharedPartition: true,
+    repeats: 3, foldsPerRepeat: 5, relevanceThresholds: [7, 9], foldsPlanned: 5, foldsEvaluated: 15, sharedPartition: true,
     trainingLeakageChecked: true,
     families: ["genres-only", "genres-tags", "genres-tags-synopsis", "full-current"].map((id, index) => ({
       id, label: "Personal film title", available: true, mae: 1 + index * 0.1, baselineMae: 1.5,
-      deltaMaeVsGenres: index ? 0.2 - index * 0.1 : null, foldsEvaluated: 5,
-      maeWins: 3, ties: 1, maeLosses: 1, foldMae: [1, 1.1, 0.9, 1.2, 1.05],
+      deltaMaeVsGenres: index ? 0.2 - index * 0.1 : null, foldsEvaluated: 15,
+      maeWins: 8, ties: 3, maeLosses: 4, foldMae: Array(15).fill(1 + index * 0.1),
       title: "Private diagnostic title", tmdbId: "998877",
       rankingModes: ["balanced", "affinity", "variety"].map(mode => ({
         mode, available: true, ndcgAt5: 0.7, deltaNdcgVsGenres: 0.03,
-        foldsEvaluated: 5, wins: 3, ties: 1, losses: 1, title: "Private film title"
+        foldsEvaluated: 15, pairedFoldsEvaluated: 14, wins: 8, ties: 3, losses: 3,
+        foldNdcgAt5: [0.7, null, 0.6, 0.7, 0.8, 0.9, 0.6, 0.7, 0.8, 0.9, 0.6, 0.7, 0.8, 0.9, 0.6],
+        title: "Private film title"
       }))
     })),
+    supportRegularization: {
+      available: true, featureSupportWeightFormula: "weight * support / (support + lambda)",
+      lambdas: [0, 0.5, 1, 2, 4, 8], signalFamilyLambda: 2,
+      results: [{ lambda: 0, available: true, mae: 1.2, deltaMaeVsNoShrinkage: 0,
+        foldsEvaluated: 15, foldMae: Array(15).fill(1.2), maeWins: 0, ties: 15, maeLosses: 0,
+        rankingModes: {}, rankingByThreshold: {}, repeatSummaries: [] }],
+      nestedSelection: { available: false, selectedLambdaCounts: {}, outerFoldsEvaluated: 0 },
+      signalFamilyExperiments: [{
+        id: "theme", label: "Private film title", lambda: 2, available: true, foldsEvaluated: 15,
+        mae: 1.15, baselineMae: 1.2, deltaMaeVsNoShrinkage: 0.05,
+        foldMae: Array(15).fill(1.15), maeWins: 9, ties: 2, maeLosses: 4,
+        rankingModes: { balanced: {available:false,ndcgAt5:null,foldsEvaluated:0} },
+        rankingByThreshold: {}, repeatSummaries: [{repeat:1,mae:1.1,foldCount:5}]
+      }],
+      featureSupportBySignalType: {theme:{featureObservations:20,supportOneFeatures:10,meanSupport:1.4,meanAbsoluteWeight:0.12}},
+      interpretationLimits: []
+    },
     unavailableReason: null
   }
 });
-assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v12");
+assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v13");
 assert.equal(integrated.generatedAt, "2026-10-23T14:00:00.000Z");
 assert.equal(integrated.applicationVersion, "prisma-web/2026.10.23-lab-diagnostic.1");
 assert.equal(integrated.diagnostic.status, "partial-error");
@@ -351,8 +381,18 @@ assert.equal(integrated.diagnostic.coverage.uniqueRatedMovies, 351);
 assert.equal(integrated.diagnostic.coverage.signalTypeCounts.genre, 351);
 assert.equal(integrated.diagnostic.featureFamilyComparison.families.length, 4);
 assert.equal(integrated.diagnostic.featureFamilyComparison.families[2].id, "genres-tags-synopsis");
+assert.equal(integrated.diagnostic.featureFamilyComparison.families[0].rankingModes[0].foldNdcgAt5.length, 15);
+assert.equal(integrated.diagnostic.featureFamilyComparison.families[0].rankingModes[0].foldNdcgAt5[1], null);
+assert.equal(integrated.diagnostic.featureFamilyComparison.families[1].rankingModes[0].pairedFoldsEvaluated, 14);
 assert.equal(integrated.diagnostic.featureFamilyComparison.sharedPartition, true);
 assert.equal(integrated.diagnostic.featureFamilyComparison.trainingLeakageChecked, true);
+assert.equal(integrated.diagnostic.coverage.remoteCandidatesReceived, 20);
+assert.equal(integrated.diagnostic.coverage.localCandidatesEligible, 40);
+assert.equal(integrated.diagnostic.featureFamilyComparison.repeats, 3);
+assert.equal(integrated.diagnostic.featureFamilyComparison.foldsEvaluated, 15);
+assert.equal(integrated.diagnostic.featureFamilyComparison.supportRegularization.signalFamilyExperiments.length, 1);
+assert.equal(integrated.diagnostic.featureFamilyComparison.supportRegularization.signalFamilyExperiments[0].label, "Temas");
+assert.equal(integrated.diagnostic.featureFamilyComparison.supportRegularization.signalFamilyExperiments[0].foldsEvaluated, 15);
 const integratedSerialized = JSON.stringify(integrated).toLowerCase();
 for (const forbidden of ["private diagnostic title", "personal film title", "998877", "123456", "personal title", "tmdbid"]) {
   assert.equal(integratedSerialized.includes(forbidden), false,
