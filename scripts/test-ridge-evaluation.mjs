@@ -272,7 +272,7 @@ assert.match(appSource, /ridgeEvaluationResult = null/);
 assert.doesNotMatch(labViewsSource, /data-action="run-ridge-experiment"/, "Ridge must run as part of the automatic battery, not from a separate button.");
 assert.match(labViewsSource, /lab-automatic-label/, "Ridge must be clearly identified as an automatic diagnostic phase.");
 assert.match(labViewsSource, /Validación repetida/);
-assert.match(labViewsSource, /3 × 5/);
+assert.match(labViewsSource, /cinco pliegues externos, tres internos y tres repeticiones/i);
 assert.match(eventSource, /action === "run-ridge-experiment"/);
 assert.match(labActionsSource, /3 repeticiones de 5 pliegues/);
 assert.ok(labActionsSource.includes('ctx.ridgeRecommendationExperiment.evaluateAsync'));
