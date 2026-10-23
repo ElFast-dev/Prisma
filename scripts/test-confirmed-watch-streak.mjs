@@ -8,6 +8,7 @@ import { buildConfirmedWatchStreakDays, normalizeConfirmedWatchStreak } from "..
 import { createCollectionModel } from "../js/collection/collection-model.js";
 import { movieIdentityKey, movieTmdbId, normalizeMovie, ratingValue, sameMovieRecord, titleKey } from "../js/core/movie-utils.js";
 import { createPageViews } from "../js/ui/page-views.js";
+import { createWatchStreakView } from "../js/ui/watch-streak-view.js";
 import { createModalViews } from "../js/ui/modal-views.js";
 
 const exportFixture = {
@@ -177,6 +178,9 @@ const escapeHTML = value => String(value).replaceAll("&", "&amp;").replaceAll("<
   .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 const pageViews = createPageViews({ state, escapeHTML });
 const panel = pageViews.renderConfirmedWatchStreakPanel();
+const isolatedPanel = createWatchStreakView({ state, escapeHTML }).renderConfirmedWatchStreakPanel();
+assert.equal(isolatedPanel, panel,
+  "El módulo de vista aislado debe generar exactamente el mismo marcado que la API de createPageViews.");
 assert.match(panel, /15 de enero de 2026 – 21 de octubre de 2026/);
 assert.match(panel, /280/);
 assert.match(panel, /1 película cada día/);
