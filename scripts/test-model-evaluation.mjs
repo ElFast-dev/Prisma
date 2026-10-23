@@ -3,12 +3,14 @@ import { readFile } from 'node:fs/promises';
 import { createRecommendationEngine } from '../js/recommendations/engine.js';
 import { ratingValue } from '../js/core/movie-utils.js';
 
-const [appSource, pageViewsSource, labViewsSource] = await Promise.all([
+const [appSource, pageViewsSource, labViewsBaseSource, labRidgeViewSource, labTemporalViewSource] = await Promise.all([
   readFile('app.js', 'utf8'),
   readFile('js/ui/page-views.js', 'utf8'),
-  readFile('js/ui/lab-views.js', 'utf8')
+  readFile('js/ui/lab-views.js', 'utf8'),
+  readFile('js/ui/lab-ridge-view.js', 'utf8'),
+  readFile('js/ui/lab-temporal-view.js', 'utf8')
 ]);
-const uiSource = appSource + '\\n' + pageViewsSource + '\\n' + labViewsSource;
+const uiSource = [appSource, pageViewsSource, labViewsBaseSource, labRidgeViewSource, labTemporalViewSource].join('\\n');
 const engineSource = await readFile('js/recommendations/engine.js', 'utf8');
 
 function runEvaluation(entries, movieRecords) {
