@@ -4,7 +4,7 @@ import { createStorageProtection } from "./js/core/storage-protection.js";
 import { createStorageProtectionActions } from "./js/app/storage-protection-actions.js?v=core-20261023-1";
 import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
 import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1";
-import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261023-1";
+import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261023-2";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261023-3";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js?v=rec-20261023-2";
 import { createFeatureFamilyEvaluation } from "./js/recommendations/feature-family-evaluation.js?v=rec-20261023-1";
@@ -535,7 +535,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   });
   const { renderTMDBHistoryPanel, renderTMDBAttribution, renderTMDBResults } = tmdbViews;
 
-     const { buildProfile, predictRating, evaluateModel, evaluateModelAsync } = createRecommendationEngine({
+     const { buildProfile, buildProfileAsync, predictRating, evaluateModel, evaluateModelAsync } = createRecommendationEngine({
     getRatings: function () { return state.rated; },
     findMovie: findMovie,
     movieFeatures: movieFeatures,
@@ -632,6 +632,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get recommendationMode() { return recommendationMode; },
     get summaryStats() { return summaryStats; },
     get buildProfile() { return buildProfile; },
+    get buildProfileAsync() { return buildProfileAsync; },
     get genreStats() { return genreStats; },
     get findMovie() { return findMovie; },
     get movieFeatures() { return movieFeatures; },
