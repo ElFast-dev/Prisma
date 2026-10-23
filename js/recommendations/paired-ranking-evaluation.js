@@ -528,6 +528,7 @@ export function createPairedRankingEvaluation(dependencies) {
       return {
         lambda,
         available: accumulator.foldMae.length === REPEATS * OUTER_FOLDS,
+        foldsEvaluated: accumulator.foldMae.length,
         mae: mean(accumulator.errors),
         baselineMae: mean(accumulator.baselineErrors),
         foldMae: accumulator.foldMae.slice(),
