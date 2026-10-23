@@ -183,7 +183,7 @@ export function createLabDiagnosticCoordinator(options) {
     if (!remaining.length) {
       current.estimatedRemainingMs = 0;
       current.estimateStatus = "measured";
-    } else if (measured.length >= 2 && rate != null) {
+    } else if ((measured.length >= 2 || historyRates.length >= 2) && rate != null) {
       current.estimatedRemainingMs = Math.round(remaining.reduce(function (sum, state) {
         const phase = PHASES.find(function (item) { return item.id === state.id; });
         const fraction = state.status === "running" ? Math.max(0, Math.min(1, state.progress.fraction)) : 0;
