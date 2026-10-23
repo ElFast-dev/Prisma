@@ -31,7 +31,9 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/catalog-views.js` | Tarjetas de película, filtros de catálogo local, recomendaciones presentadas en Descubrir, selector de modos y composición de resultados; delega los cálculos del ranking al motor. |
 | `js/ui/settings-views.js` | Renderiza Apariencia, conexión TMDB, estado de protección del almacenamiento, importación/exportación y la página Ajustes; recibe el contexto y no contiene las acciones de persistencia. |
 | `js/ui/collection-views.js` | Renderizadores de filas, tarjetas compactas, pósteres recientes, pestañas y listas de la Colección; conserva las mismas funciones públicas a través de `createPageViews(ctx)`. |
-| `js/ui/lab-views.js` | Renderizadores de diagnóstico de recomendaciones, Ridge, normalización de influencia y evaluación temporal; conserva la pantalla Laboratorio mediante `renderLab`. |
+| `js/ui/lab-views.js` | Compone los paneles del Laboratorio y delega la validación Ridge y la evaluación temporal a submódulos. |
+| `js/ui/lab-ridge-view.js` | Renderiza validación Ridge repetida, métricas MAE/nDCG, estabilidad y progreso; no ejecuta el modelo. |
+| `js/ui/lab-temporal-view.js` | Renderiza evaluación walk-forward temporal, ventanas futuras, procedencia y proxy exploratorio de incorporación; no cambia fechas guardadas. |
 | `js/ui/watch-streak-view.js` | Renderizador aislado de la racha personal: alinea cuadrículas mensuales, expone texto accesible y mantiene un solo mes abierto; recibe el estado y el escape HTML por inyección. |
 | `js/ui/theme-controller.js` | Aplica y persiste la preferencia de tema oscuro/claro localmente, sin mezclarla con el perfil cinematográfico. |
 | `js/ui/modal-views.js` | Renderizadores de fichas de película/persona, diálogo de puntuación y paneles auxiliares. |

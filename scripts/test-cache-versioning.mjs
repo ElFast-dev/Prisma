@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, watchStreakView, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, diagnosticReport, stateModel, features, engine, evaluation, normalizationEvaluation, ridgeEvaluation, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, movieActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -28,6 +28,8 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/ui/catalog-views.js', 'utf8'),
   readFile('js/ui/collection-views.js', 'utf8'),
   readFile('js/ui/lab-views.js', 'utf8'),
+  readFile('js/ui/lab-ridge-view.js', 'utf8'),
+  readFile('js/ui/lab-temporal-view.js', 'utf8'),
   readFile('js/ui/watch-streak-view.js', 'utf8'),
   readFile('js/ui/modal-views.js', 'utf8'),
   readFile('js/app/movie-actions.js', 'utf8'),
@@ -94,6 +96,8 @@ const modules = [
   ['js/ui/catalog-views.js', catalogViews],
   ['js/ui/collection-views.js', collectionViews],
   ['js/ui/lab-views.js', labViews],
+  ['js/ui/lab-ridge-view.js', labRidgeView],
+  ['js/ui/lab-temporal-view.js', labTemporalView],
   ['js/ui/watch-streak-view.js', watchStreakView],
   ['js/ui/modal-views.js', modalViews],
   ['js/app/movie-actions.js', movieActions],
@@ -143,7 +147,7 @@ assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=core-20261022-1
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261023-6"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261023-7"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/ui/progress-views.js?v=core-20261023-1"),
   "La vista de Progreso debe tener su propia URL versionada y estar precargada.");
@@ -153,7 +157,11 @@ assert.ok(cached.has("./js/ui/catalog-views.js?v=core-20261023-1"),
   "El módulo de Descubrir y catálogo debe tener URL versionada y estar precargado.");
 assert.ok(cached.has("./js/ui/collection-views.js?v=core-20261023-1"),
   "El módulo de Colección debe tener una URL versionada y estar precargado.");
-assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-1"),
+assert.ok(cached.has("./js/ui/lab-ridge-view.js?v=core-20261023-1"),
+  "El submódulo del experimento Ridge debe estar versionado y precargado.");
+assert.ok(cached.has("./js/ui/lab-temporal-view.js?v=core-20261023-1"),
+  "El submódulo temporal de Ridge debe estar versionado y precargado.");
+assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-2"),
   "El módulo del Laboratorio debe tener versión propia y estar en la precaché.");
 assert.ok(cached.has("./js/ui/watch-streak-view.js?v=core-20261023-1"),
   "La vista del calendario de racha debe estar versionada y precargada en la caché.");
