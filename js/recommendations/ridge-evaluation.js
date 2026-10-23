@@ -866,7 +866,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
       return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
     }
     if (!shouldContinue()) return null;
-    const totalWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1);
+    const fitWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1);
+    const kernelWork = Math.max(1, rows.length);
+    const totalWork = kernelWork + fitWork;
     let completedWork = 0;
     const canContinue = function () { return shouldContinue(); };
     const reportWork = function (detail) {
@@ -901,8 +903,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
         shouldContinue: canContinue,
         yieldToBrowser: yieldToBrowser,
         onProgress: function (update) {
+          completedWork = Math.max(completedWork, Number(update.completedWork) || 0);
           callback({
-            completedWork: 0,
+            completedWork: completedWork,
             totalWork: totalWork,
             completedRepeats: 0,
             totalRepeats: REPEATED_VALIDATION_RUNS,
