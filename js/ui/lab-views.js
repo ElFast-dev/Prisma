@@ -94,12 +94,31 @@ export function createLabViews(ctx) {
   const { renderTemporalRidgePanel } = createLabTemporalView(ctx);
 
   function renderLab() {
-    const stats = ctx.summaryStats();
-    const profile = ctx.buildProfile();
-    const evaluation = ctx.evaluateModel();
-    const recommendationQuality = ctx.evaluateRecommendationQuality();
+    const renderStartedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+    const metrics = ctx.labMetrics || null;
+    const metricsBusy = Boolean(ctx.labMetricsBusy);
+    const stats = metrics ? metrics.stats : ctx.summaryStats();
+    const profile = metrics ? metrics.profile : { withMetadata: 0, count: (ctx.state.rated || []).length, features: new Map() };
+    const evaluation = metrics ? metrics.evaluation : {
+      available: false, count: 0, mae: null, baselineMae: null, improvementPct: null,
+      withoutDecadeMae: null, decadeImprovement: null, themeShrinkageMae: null,
+      themeShrinkageDelta: null, themeShrinkagePrior: 2, decadeExamples: 0
+    };
+    const recommendationQuality = metrics ? metrics.recommendationQuality : {
+      ranking: {
+        available: false,
+        reason: "Las métricas se calculan en segundo plano después del primer renderizado.",
+        count: 0, relevantCount: 0, folds: 5, foldsEvaluated: 0,
+        modes: ["balanced", "affinity", "variety"].map(function (mode) {
+          return { mode: mode, available: false, ndcgAt5: null, foldsEvaluated: 0 };
+        })
+      },
+      diversity: ["balanced", "affinity", "variety"].map(function (mode) {
+        return { mode: mode, score: null, pairs: 0, titles: 0, titlesWithGenres: 0, uniqueGenres: 0 };
+      })
+    };
     const affinityReference = recommendationQuality.ranking.modes.find(function (item) { return item.mode === "affinity"; });
-    const genres = ctx.genreStats();
+    const genres = metrics ? metrics.genres : [];
     const overall = stats.average || 6.5;
     const top = genres.slice().sort(function (a,b) { return b.average-a.average; }).slice(0,7);
     const bottom = genres.slice().sort(function (a,b) { return a.average-b.average; }).slice(0,7);
@@ -111,15 +130,19 @@ export function createLabViews(ctx) {
       : (Math.abs(evaluation.improvementPct) < 0.05
         ? '<div class="metric-note">Rendimiento igual a la referencia.</div>'
         : '<div class="metric-note">' + (evaluation.improvementPct > 0 ? 'Mejora relativa del ' : 'Error relativo mayor en ') + Math.abs(evaluation.improvementPct).toFixed(1).replace(".",",") + '% respecto a la referencia.</div>');
-    const decadeEvaluationMarkup = evaluation.decadeImprovement == null
+    const decadeEvaluationMarkup = !metrics
+      ? '<div class="metric-note">La comparación con y sin década se calculará en segundo plano.</div>'
+      : (evaluation.decadeImprovement == null
       ? '<div class="metric-note">Se necesitan al menos 5 valoraciones evaluadas con año válido para medir la señal de década · n=' + (evaluation.decadeExamples || 0) + '</div>'
       : '<div class="metric-note">Sin señal de década: ' + evaluation.withoutDecadeMae.toFixed(2).replace(".",",") + ' MAE</div>' +
         '<div class="metric-note">' + (Math.abs(evaluation.decadeImprovement) < 0.005
           ? 'La década no cambia el MAE en esta muestra.'
           : (evaluation.decadeImprovement > 0
             ? 'Con década, el MAE baja ' : 'Con década, el MAE sube ') +
-              Math.abs(evaluation.decadeImprovement).toFixed(2).replace(".",",") + ' puntos frente a la variante sin década.') + '</div>';
-    const themeShrinkageEvaluationMarkup = evaluation.themeShrinkageMae == null
+              Math.abs(evaluation.decadeImprovement).toFixed(2).replace(".",",") + ' puntos frente a la variante sin década.') + '</div>');
+    const themeShrinkageEvaluationMarkup = !metrics
+      ? '<div class="metric-note">El experimento de soporte de temas se actualizará cuando terminen las métricas iniciales.</div>'
+      : (evaluation.themeShrinkageMae == null
       ? '<div class="metric-note">Regularización experimental de temas: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>'
       : '<div class="metric-note">Experimento (temas atenuados por soporte): ' + evaluation.themeShrinkageMae.toFixed(2).replace(".",",") + ' MAE · n=' + evaluation.count + ' · n/(n+' + evaluation.themeShrinkagePrior + ')</div>' +
         '<div class="metric-note">' + (Math.abs(evaluation.themeShrinkageDelta) < 0.005
@@ -127,15 +150,29 @@ export function createLabViews(ctx) {
           : (evaluation.themeShrinkageDelta > 0
             ? 'La variante experimental reduce el MAE en ' : 'La variante experimental aumenta el MAE en ') +
               Math.abs(evaluation.themeShrinkageDelta).toFixed(2).replace(".",",") + ' puntos frente al modelo base.') + '</div>' +
-        '<div class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo base. Diferencia descriptiva, no una prueba de significación estadística.</div>';
-    const evaluationMarkup = (evaluation.available ?
-      '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".",",") + '</div>' +
-      '<div class="metric-note">MAE del modelo · n=' + evaluation.count + '</div>' +
-      '<div class="metric-note">Referencia (media de entrenamiento): ' + evaluation.baselineMae.toFixed(2).replace(".",",") + '</div>' +
-      evaluationComparison + decadeEvaluationMarkup :
-      '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>') + themeShrinkageEvaluationMarkup;
-    return '<section class="page-heading"><h1>Laboratorio</h1>' + ctx.infoButton("lab","Información sobre el Laboratorio") + '</section>' +
-      '<div class="metrics-grid">' + ctx.metric("Historial enlazado",profile.withMetadata + "/" + stats.total,"") + ctx.metric("Señales",String(profile.features.size),"") + ctx.metric("Nota media",overall.toFixed(1).replace(".",","),"") + '</div>' +
+        '<div class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo base. Diferencia descriptiva, no una prueba de significación estadística.</div>');
+    const evaluationMarkup = (!metrics
+      ? '<div class="metric-value">—</div><div class="metric-note">' +
+        (ctx.labMetricsError
+          ? ctx.escapeHTML(ctx.labMetricsError)
+          : (metricsBusy ? 'Calculando la validación en segundo plano…' : 'La validación estará disponible al terminar el cálculo inicial.')) +
+        '</div>'
+      : (evaluation.available ?
+        '<div class="metric-value">' + evaluation.mae.toFixed(2).replace(".",",") + '</div>' +
+        '<div class="metric-note">MAE del modelo · n=' + evaluation.count + '</div>' +
+        '<div class="metric-note">Referencia (media de entrenamiento): ' + evaluation.baselineMae.toFixed(2).replace(".",",") + '</div>' +
+        evaluationComparison + decadeEvaluationMarkup :
+        '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>')) + themeShrinkageEvaluationMarkup;
+    const labMetricsStatusMarkup = metrics
+      ? '<p class="metric-note" data-lab-metrics-state="ready" aria-live="polite">Métricas actualizadas con el perfil local. Los cálculos usan únicamente datos de este dispositivo.</p>'
+      : '<p class="metric-note" data-lab-metrics-state="' + (ctx.labMetricsError ? "error" : (metricsBusy ? "loading" : "pending")) + '" aria-live="polite">' +
+        (ctx.labMetricsError
+          ? ctx.escapeHTML(ctx.labMetricsError)
+          : (metricsBusy ? 'Calculando métricas en segundo plano; puedes seguir navegando mientras terminan…' : 'Preparando las métricas del Laboratorio…')) +
+        '</p>';
+    const markup = '<section class="page-heading"><h1>Laboratorio</h1>' + ctx.infoButton("lab","Información sobre el Laboratorio") + '</section>' +
+      labMetricsStatusMarkup +
+      '<div class="metrics-grid">' + ctx.metric("Historial enlazado",metrics ? profile.withMetadata + "/" + stats.total : "Calculando…","") + ctx.metric("Señales",metrics ? String(profile.features.size) : "…","") + ctx.metric("Nota media",overall.toFixed(1).replace(".",","),"") + '</div>' +
       '<div class="lab-metadata-host">' + ctx.renderTMDBHistoryPanel() + '</div>' +
       '<div class="two-col lab-charts"><section class="panel"><div class="panel-head"><h3>Géneros mejor valorados</h3></div>' +
       (top.length ? '<div class="bar-list">' + top.map(function (item) { return ctx.barRow(ctx.displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Datos insuficientes</strong></div>') +
@@ -144,8 +181,8 @@ export function createLabViews(ctx) {
       '</section></div>' +
       '<section class="panel lab-ranking-diagnostics"><div class="panel-head"><div><h3>Calidad del ranking</h3><p class="metric-note">Diagnóstico offline, no una garantía de gusto futuro.</p></div>' + ctx.infoButton("lab","Información sobre la calidad del ranking y la diversidad") + '</div>' +
       '<div class="metrics-grid">' +
-      ctx.metric("Películas evaluables", String(recommendationQuality.ranking.count), "Con características enlazadas") +
-      ctx.metric("Notas relevantes", String(recommendationQuality.ranking.relevantCount), "Puntuación personal de 7 a 10") +
+      ctx.metric("Películas evaluables", metrics ? String(recommendationQuality.ranking.count) : "…", "Con características enlazadas") +
+      ctx.metric("Notas relevantes", metrics ? String(recommendationQuality.ranking.relevantCount) : "…", "Puntuación personal de 7 a 10") +
       ctx.metric("Particiones", String(recommendationQuality.ranking.folds), "Mismas cinco para los tres modos") +
       '</div>' +
       '<div class="metric-note">' + ctx.escapeHTML(recommendationQuality.ranking.available
@@ -182,6 +219,16 @@ export function createLabViews(ctx) {
       '<div class="two-col lab-bottom"><section class="panel"><div class="panel-head"><h3>Validación de notas</h3>' + ctx.infoButton("lab","Información sobre la validación") + '</div>' + evaluationMarkup + '</section>' +
       '<section class="panel"><div class="panel-head"><h3>Actividad reciente</h3></div>' + (events ? '<div class="event-list">' + events + '</div>' : '<div class="empty-inline"><strong>Sin actividad reciente</strong></div>') + '</section></div>' +
       renderRidgeExperimentPanel() + renderInfluenceNormalizationPanel() + renderTemporalRidgePanel() + renderRecommendationDiagnosticPanel();
+    const renderFinishedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+    if (typeof console !== "undefined" && typeof console.info === "function") {
+      console.info("[Prisma performance]", JSON.stringify({
+        operation: "renderLab",
+        durationMs: Math.round(Math.max(0, renderFinishedAt - renderStartedAt) * 10) / 10,
+        sampleCount: (ctx.state.rated || []).length,
+        status: "completed"
+      }));
+    }
+    return markup;
   }
 
   return { renderLab };
