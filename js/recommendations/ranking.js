@@ -90,9 +90,9 @@ export function createRecommendationRanking(ctx) {
     return getBalancedRecommendations(candidates, requestedLimit);
   }
 
-  function getRecommendations(limit, mode) {
+  function getRecommendations(limit, mode, profileOverride) {
     const requestedLimit = Math.max(1, Number(limit) || 8);
-    const profile = ctx.buildProfile();
+    const profile = profileOverride || ctx.buildProfile();
 
     // A profile with no valid personal ratings must not receive fabricated
     // personalized recommendations. Discovery remains available elsewhere.
