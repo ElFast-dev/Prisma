@@ -650,7 +650,7 @@ function coverageSummary(input) {
     "featureLinkedRatingEntries", "uniqueFeatureMovies", "ratingsWithoutUsefulFeatures",
     "featurelessUniqueMovies", "profileFeatureCount", "featureObservations", "catalogMovies",
     "candidatesAvailable", "remoteCandidatesReceived", "localCandidatesEligible", "eligibleCandidatePool",
-    "rankedResultsAvailable", "requestedResultLimit", "returnedResultCount"
+    "rankedResultsAvailable", "requestedResultLimit"
   ];
   const result = {};
   nonNegativeKeys.forEach(function (key) { result[key] = nonNegativeInteger(input[key]); });
