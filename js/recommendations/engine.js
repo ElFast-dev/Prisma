@@ -95,6 +95,68 @@ export function createRecommendationEngine(dependencies) {
     };
   }
 
+  async function buildProfileAsync(trainingRatings, options, control) {
+    const settings = control || {};
+    const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    const onProgress = typeof settings.onProgress === "function" ? settings.onProgress : function () {};
+    const batchSize = Math.max(8, Math.min(64, Number(settings.batchSize) || 32));
+    const yieldToBrowser = typeof settings.yieldToBrowser === "function"
+      ? settings.yieldToBrowser
+      : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
+    const source = trainingRatings || getRatings();
+    const valid = source.filter(function (entry) { return ratingValue(entry) != null; });
+    const ratingSum = valid.reduce(function (sum, entry) { return sum + ratingValue(entry); }, 0);
+    const personalAverage = valid.length ? ratingSum / valid.length : RECOMMENDATION_PRIOR_RATING;
+    const average = (ratingSum + RECOMMENDATION_PRIOR_RATING * RECOMMENDATION_PRIOR_STRENGTH) /
+      (valid.length + RECOMMENDATION_PRIOR_STRENGTH);
+    const features = new Map();
+    let withMetadata = 0;
+
+    for (let index = 0; index < valid.length; index += 1) {
+      if (!shouldContinue()) return null;
+      const entry = valid[index];
+      const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
+      const names = movieFeatures(movie, entry, options);
+      if (names.length) {
+        withMetadata += 1;
+        const deviation = (ratingValue(entry) - average) / 4;
+        names.forEach(function (name) {
+          const item = features.get(name) || { sum: 0, count: 0, sumRating: 0 };
+          item.sum += deviation;
+          item.count += 1;
+          item.sumRating += ratingValue(entry);
+          features.set(name, item);
+        });
+      }
+      if ((index + 1) % batchSize === 0 || index + 1 === valid.length) {
+        onProgress({
+          completedWork: index + 1,
+          totalWork: Math.max(1, valid.length),
+          phase: "profile",
+          detail: "Construcción cooperativa del perfil"
+        });
+        await yieldToBrowser();
+        if (!shouldContinue()) return null;
+      }
+    }
+
+    features.forEach(function (item, name) {
+      item.weight = item.sum / (item.count + 0.4);
+      if (options && options.themeSupportShrinkage && name.indexOf("tema: ") === 0) {
+        item.weight *= item.count / (item.count + THEME_SUPPORT_SHRINKAGE_PRIOR);
+      }
+      item.mean = item.sumRating / item.count;
+    });
+    return {
+      average: average,
+      personalAverage: personalAverage,
+      priorStrength: RECOMMENDATION_PRIOR_STRENGTH,
+      features: features,
+      count: valid.length,
+      withMetadata: withMetadata
+    };
+  }
+
   function predictRating(movie, profile, options) {
     const features = movieFeatures(movie, null, options);
     const matchingFeatures = features.map(function (feature) {
@@ -317,5 +379,5 @@ export function createRecommendationEngine(dependencies) {
     };
   }
 
-  return { buildProfile, predictRating, evaluateModel, evaluateModelAsync };
+  return { buildProfile, buildProfileAsync, predictRating, evaluateModel, evaluateModelAsync };
 }
