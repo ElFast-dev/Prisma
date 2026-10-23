@@ -163,7 +163,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v11");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v12");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -281,6 +281,86 @@ for (const forbidden of ["about time", "tmdbid", "tmdb_id", "title", "ratingentr
     "La validación repetida solo debe exportar agregados; no debe incluir " + forbidden);
 }
 
+const automaticPhases = [
+  "coverage", "baseline", "ranking", "normalization", "ridge", "temporal", "featureFamilies"
+].map((id, index) => ({
+  id,
+  status: id === "temporal" ? "unavailable" : (id === "ridge" ? "error" : "completed"),
+  durationMs: index + 1,
+  progress: { completed: 10 + index, total: 10 + index },
+  unavailableReason: id === "temporal" ? "No hay fechas de visionado suficientes." : null,
+  error: id === "ridge" ? "Diagnostic private title must not escape" : null,
+  title: "Private diagnostic title",
+  tmdbId: "998877"
+}));
+const integrated = buildRecommendationDiagnosticReport({
+  ...baseInput,
+  generatedAt: "2026-10-23T14:00:00.000Z",
+  applicationVersion: "prisma-web/2026.10.23-lab-diagnostic.1",
+  diagnosticSnapshot: {
+    schema: "prisma-lab-diagnostic-run/v1",
+    status: "partial-error",
+    startedAt: 1792764000000,
+    finishedAt: 1792764100000,
+    durationMs: 100000,
+    sampleCount: 351,
+    globalPercent: 100,
+    completedPhases: 7,
+    totalPhases: 7,
+    estimatedRemainingMs: 0,
+    estimateStatus: "measured",
+    phases: automaticPhases
+  },
+  coverage: {
+    ratingEntries: 351, validRatingEntries: 351, invalidRatingEntries: 0,
+    uniqueRatedMovies: 351, featureLinkedRatingEntries: 351,
+    uniqueFeatureMovies: 351, ratingsWithoutUsefulFeatures: 0,
+    featurelessUniqueMovies: 0, profileFeatureCount: 48, featureObservations: 1800,
+    catalogMovies: 351, candidatesAvailable: 20, metadataCoverage: 1,
+    featureLinkedCoverage: 1, supportDistribution: { once: 2, twoToFour: 4, fiveToNine: 8, tenOrMore: 34 },
+    signalTypeCounts: { genre: 351, theme: 351, synopsis: 900, "personal title": 123456 }
+  },
+  featureFamilyEvaluation: {
+    available: true, executionStatus: "completed", sampleCount: 351,
+    foldsPlanned: 5, foldsEvaluated: 5, sharedPartition: true,
+    trainingLeakageChecked: true,
+    families: ["genres-only", "genres-tags", "genres-tags-synopsis", "full-current"].map((id, index) => ({
+      id, label: "Personal film title", available: true, mae: 1 + index * 0.1, baselineMae: 1.5,
+      deltaMaeVsGenres: index ? 0.2 - index * 0.1 : null, foldsEvaluated: 5,
+      maeWins: 3, ties: 1, maeLosses: 1, foldMae: [1, 1.1, 0.9, 1.2, 1.05],
+      title: "Private diagnostic title", tmdbId: "998877",
+      rankingModes: ["balanced", "affinity", "variety"].map(mode => ({
+        mode, available: true, ndcgAt5: 0.7, deltaNdcgVsGenres: 0.03,
+        foldsEvaluated: 5, wins: 3, ties: 1, losses: 1, title: "Private film title"
+      }))
+    })),
+    unavailableReason: null
+  }
+});
+assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v12");
+assert.equal(integrated.generatedAt, "2026-10-23T14:00:00.000Z");
+assert.equal(integrated.applicationVersion, "prisma-web/2026.10.23-lab-diagnostic.1");
+assert.equal(integrated.diagnostic.status, "partial-error");
+assert.equal(integrated.diagnostic.run.phases.length, 7);
+assert.equal(integrated.diagnostic.run.completedPhases, 7);
+assert.equal(integrated.diagnostic.run.globalPercent, 100);
+assert.equal(integrated.diagnostic.run.estimatedRemainingMs, 0);
+assert.equal(integrated.diagnostic.run.phases.find(phase => phase.id === "temporal").status, "unavailable");
+assert.equal(integrated.diagnostic.run.phases.find(phase => phase.id === "ridge").status, "error");
+assert.equal(integrated.diagnostic.coverage.uniqueRatedMovies, 351);
+assert.equal(integrated.diagnostic.coverage.signalTypeCounts.genre, 351);
+assert.equal(integrated.diagnostic.featureFamilyComparison.families.length, 4);
+assert.equal(integrated.diagnostic.featureFamilyComparison.families[2].id, "genres-tags-synopsis");
+assert.equal(integrated.diagnostic.featureFamilyComparison.sharedPartition, true);
+assert.equal(integrated.diagnostic.featureFamilyComparison.trainingLeakageChecked, true);
+const integratedSerialized = JSON.stringify(integrated).toLowerCase();
+for (const forbidden of ["private diagnostic title", "personal film title", "998877", "123456", "personal title", "tmdbid"]) {
+  assert.equal(integratedSerialized.includes(forbidden), false,
+    "El informe integral debe filtrar valores no permitidos: " + forbidden);
+}
+assert.equal(integrated.privacy.networkTransmission, false);
+assert.equal(integrated.privacy.featureLabelsIncluded, false);
+
 const unavailable = buildRecommendationDiagnosticReport({
   ratedCount: 2,
   ratingValues: [7, 4],
@@ -313,7 +393,7 @@ const [appSource, labViewsSource, eventHandlersSource, reportSource, labActionsS
 assert.match(appSource, /buildRecommendationDiagnosticReport/);
 assert.match(labActionsSource, /ctx\.navigator\.clipboard\.writeText/);
 assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
-assert.match(labViewsSource, /No incluye títulos de películas, IDs TMDB/);
+assert.match(labViewsSource, /Excluye títulos, identificadores de películas/);
 assert.match(labViewsSource, /Experimento \(temas atenuados por soporte\)/);
 assert.match(reportSource, /themeShrinkageDeltaBaseMinusRegularized/);
 assert.match(labViewsSource, /Incluir hasta 40 nombres de señales agregadas/);
