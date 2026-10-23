@@ -120,8 +120,8 @@ try {
   results.maxHeartbeatGapMs = Math.round(heartbeat.maxGapMs * 10) / 10;
   assert.equal(results.metricsStatus, "ready", "Synthetic 351-rating profile must finish all automatic metrics");
   assert.ok(results.responsiveTicks >= 3, "UI task heartbeat must continue while metrics compute: ticks=" + results.responsiveTicks);
-  assert.ok(results.maxHeartbeatGapMs < 1000,
-    "The main thread must yield at least once per second while metrics compute; max heartbeat gap=" + results.maxHeartbeatGapMs + "ms");
+  assert.ok(results.maxHeartbeatGapMs < 500,
+    "The main thread must yield at least every 500ms while metrics compute; max heartbeat gap=" + results.maxHeartbeatGapMs + "ms");
 
   const countBefore = operation => countOperations(operation).length;
   results.metricRunCountsBeforeReport = {
