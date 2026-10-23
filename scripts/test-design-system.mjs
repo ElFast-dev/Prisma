@@ -12,7 +12,7 @@ const [html, serviceWorker, css, interfaceSpec, pageViews, settingsViews, themeC
 ]);
 
 const links = [...html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/g)].map(match => match[1]);
-assert.equal(links.at(-1), './styles/prisma-design-system.css?v=ui-20261022-26',
+assert.equal(links.at(-1), './styles/prisma-design-system.css?v=ui-20261023-27',
   'El sistema visual debe ser la última hoja y utilizar la nueva versión.');
 assert.match(html, /<html\b[^>]*data-theme=["']dark["']/, 'El HTML debe iniciar en modo oscuro.');
 assert.match(css, /--bg:\s*#050505;/, 'El fondo oscuro debe ser negro.');
@@ -34,7 +34,7 @@ assert.match(settingsViews, /aria-pressed=/, 'El selector debe comunicar el modo
 assert.match(themeController, /const THEME_KEY = "prisma:theme"/, 'La preferencia de tema debe persistirse aparte del perfil de cine.');
 assert.match(themeController, /currentTheme = "dark"/, 'El tema oscuro debe ser el fallback predeterminado.');
 assert.match(serviceWorker, /const CACHE_NAME = "prisma-shell-v114"/, 'La PWA debe renovar caché al publicar los temas.');
-assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261022-26"'),
+assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261023-27"'),
   'El service worker debe usar la misma versión de la hoja de temas.');
 assert.ok(serviceWorker.includes('"./app.js?v=ui-20261023-103"'),
   'El service worker debe usar la misma entrada de aplicación versionada.');
