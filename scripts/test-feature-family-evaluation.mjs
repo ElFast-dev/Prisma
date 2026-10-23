@@ -127,12 +127,18 @@ for (let fold = 0; fold < 5; fold += 1) {
   }
 }
 assert.ok(progress.length > 1);
-assert.ok(progress.every(update => update.totalWork === progress[0].totalWork),
-  "Progress denominator must remain stable while the sample is being mapped");
+assert.ok(progress.every(update => Number.isFinite(update.completedWork) &&
+  Number.isFinite(update.totalWork) && update.totalWork > 0 && update.completedWork <= update.totalWork),
+  "Progress must use bounded, verifiable work units");
+const workDenominators = [...new Set(progress.map(update => update.totalWork))];
+assert.ok(workDenominators.length <= 2,
+  "The denominator may be refined once the deduplicated sample has been measured, then must remain stable");
 for (let index = 1; index < progress.length; index += 1) {
   assert.ok(progress[index].completedWork >= progress[index - 1].completedWork,
-    "Feature-family progress must not move backwards");
+    "Completed feature-family work units must not move backwards");
 }
+assert.equal(progress.at(-1).completedWork, progress.at(-1).totalWork,
+  "The final feature-family progress event must correspond to the completed work");
 const safeJson = JSON.stringify(full).toLowerCase();
 for (const forbidden of ["synthetic film", "820000", "tmdbid", "heldoutidentity", "trainingidentities", "rating"]) {
   assert.equal(safeJson.includes(forbidden), false,
