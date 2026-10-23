@@ -108,7 +108,7 @@ assert.match(root.innerHTML, /Filmografía/);
 
 views.renderRatingSheet();
 assert.match(root.innerHTML, /Guardar nota/);
-assert.equal((root.innerHTML.match(/class="rating-star(?:\\s|")/g) || []).length, 10);
+assert.equal((root.innerHTML.match(/class="rating-star(?:\s|")/g) || []).length, 10);
 assert.match(root.innerHTML, /data-action="save-rating"/);
 
 console.log("Vistas modales correctas: cuatro APIs separadas, fachada compatible y marcado sintético verificado.");
