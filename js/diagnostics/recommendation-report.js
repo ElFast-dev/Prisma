@@ -799,6 +799,7 @@ function featureFamilySummary(input) {
       return {
         lambda: rounded(row.lambda, 4),
         available: Boolean(row.available),
+        foldsEvaluated: nonNegativeInteger(row.foldsEvaluated),
         mae: rounded(row.mae, 5),
         deltaMaeVsNoShrinkage: rounded(row.deltaMaeVsNoShrinkage, 5),
         foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
