@@ -269,7 +269,8 @@ const [engineSource, appSource, labActionsSource, labViewsBaseSource, labRidgeVi
 const labViewsSource = [labViewsBaseSource, labRidgeViewSource, labTemporalViewSource].join("\\n");
 assert.match(appSource, /createRidgeRecommendationExperiment/);
 assert.match(appSource, /ridgeEvaluationResult = null/);
-assert.match(labViewsSource, /data-action="run-ridge-experiment"/);
+assert.doesNotMatch(labViewsSource, /data-action="run-ridge-experiment"/, "Ridge must run as part of the automatic battery, not from a separate button.");
+assert.match(labViewsSource, /lab-automatic-label/, "Ridge must be clearly identified as an automatic diagnostic phase.");
 assert.match(labViewsSource, /Validación repetida/);
 assert.match(labViewsSource, /3 × 5/);
 assert.match(eventSource, /action === "run-ridge-experiment"/);
