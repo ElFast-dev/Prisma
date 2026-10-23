@@ -100,3 +100,14 @@ Prisma DEBE almacenar la declaración de racha confirmada dentro del estado pers
 - DADO que no se ha importado la exportación reconocida
 - CUANDO se inicia Prisma o se importa otro archivo que no declara la racha
 - ENTONCES no se muestra una racha personal confirmada de forma predeterminada
+
+
+### Requirement: Liberación del estado de protección tras errores
+
+La acción de protección del almacenamiento DEBE permitir operaciones futuras después de una concesión, denegación o error y DEBE impedir que dos solicitudes estén activas simultáneamente. Un error de inspección de recuperación NO DEBE borrar el último snapshot conocido ni dejar el control permanentemente bloqueado.
+
+#### Scenario: Recuperación después de un error
+
+- DADO que la solicitud de persistencia o la inspección de recuperación falla
+- CUANDO termina el intento actual
+- ENTONCES el estado ocupado se libera, se comunica el error y se permite volver a activar el control.

@@ -4,6 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createTMDBMovieDetails } from '../js/tmdb/movie-details.js';
 import { createLabActions } from '../js/app/lab-actions.js';
+import { createStorageProtectionActions } from '../js/app/storage-protection-actions.js';
 import { createCatalogViews } from '../js/ui/catalog-views.js';
 import { createCollectionViews } from '../js/ui/collection-views.js';
 import { createSettingsViews } from '../js/ui/settings-views.js';
@@ -48,6 +49,7 @@ const files = [
   'js/ui/person-filmography.js',
   'js/app/movie-actions.js',
   'js/app/lab-actions.js',
+  'js/app/storage-protection-actions.js',
   'js/import-export/actions.js',
   'js/app/event-handlers.js',
   'js/tmdb/settings-actions.js',
@@ -314,5 +316,12 @@ assert.equal(typeof createLabActions, 'function');
 assert.ok(labActionsSource.includes('export function createLabActions(ctx)'));
 assert.ok(app.includes('createLabActions('));
 assert.ok(app.includes('labActions.runRidgeExperiment()'));
+const storageProtectionActionsSource = await readFile('js/app/storage-protection-actions.js', 'utf8');
+assert.equal(typeof createStorageProtectionActions, 'function');
+assert.ok(storageProtectionActionsSource.includes('export function createStorageProtectionActions(ctx)'));
+assert.ok(app.includes('createStorageProtectionActions('));
+assert.ok(!app.includes('async function refreshStorageProtectionSnapshot('));
+assert.ok(!app.includes('async function requestStorageProtection('));
+assert.ok(!app.includes('storageProtection.request(storageProtectionSnapshot)'));
 assert.ok(app.startsWith('import '));
 console.log('Arquitectura modular correcta: ' + files.length + ' módulos, importaciones y exports validados y lógica de dominio separada del DOM.');

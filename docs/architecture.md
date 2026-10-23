@@ -45,6 +45,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/person-filmography.js` | Deduplica créditos por ID TMDB, filtra la colección por identidad y agrupa filmografías por año. |
 | `js/app/movie-actions.js` | Acciones de dominio para valorar, borrar notas, marcar vistas, gestionar pendientes y ocultar películas. |
 | `js/app/lab-actions.js` | Coordina los experimentos del Laboratorio, su progreso y cancelación, y la copia explícita del informe diagnóstico mediante dependencias inyectadas; no redefine el ranking ni envía datos. |
+| `js/app/storage-protection-actions.js` | Coordina la inspección del almacenamiento y la solicitud explícita de persistencia, con guardas de concurrencia, avisos y repintado inyectados; no persiste datos personales ni accede al DOM directamente. |
 | `js/import-export/actions.js` | Orquestación de las importaciones JSON/CSV, copias de seguridad, restauración y restablecimiento local. |
 | `js/app/event-handlers.js` | Listeners globales de click, input, errores de imágenes y selección de archivos, conectados mediante un contexto explícito. |
 | `js/tmdb/settings-actions.js` | Guardado, prueba y eliminación de credenciales TMDB sin mezclar acciones con el coordinador. |

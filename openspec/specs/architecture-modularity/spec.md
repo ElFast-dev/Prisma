@@ -275,3 +275,14 @@ La orquestación de las evaluaciones Ridge, temporales y de normalización, así
 - DADO que la persona activa la generación y copia del informe
 - CUANDO el módulo reúne métricas agregadas y solicita el portapapeles
 - ENTONCES no transmite ni persiste automáticamente el informe y mantiene el texto visible para copia manual si el portapapeles falla.
+
+
+### Requirement: Acciones de protección del almacenamiento separadas del coordinador
+
+La coordinación de inspección y solicitud explícita de persistencia DEBE residir en `js/app/storage-protection-actions.js` con dependencias explícitas y sin acceso directo al DOM. `app.js` DEBE limitarse a componer las dependencias y el estado compartido. La extracción NO DEBE cambiar la persistencia del perfil, ni los datos de películas, ni el recomendador.
+
+#### Scenario: La solicitud termina o falla
+
+- DADO que una solicitud de persistencia se inicia mediante el control explícito de Ajustes
+- CUANDO se concede, deniega, falla o la inspección de recuperación también falla
+- ENTONCES el resultado se comunica con seguridad y el bloqueo de operación se libera para futuras acciones.
