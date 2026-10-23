@@ -234,6 +234,7 @@ export function createLabMetricsActions(ctx) {
     const seen = new Set();
     const supportByType = Object.create(null);
     const genreTotals = new Map();
+    let genreAggregationMs = 0;
     let validEntries = 0;
     let ratingSum = 0;
     let linkedEntries = 0;
@@ -268,6 +269,7 @@ export function createLabMetricsActions(ctx) {
             supportByType[type] = (supportByType[type] || 0) + 1;
           });
         }
+        const genreAggregationStartedAt = now(ctx.window);
         const genres = entry.genres && entry.genres.length ? entry.genres : (movie && movie.genres) || [];
         genres.forEach(function (genre) {
           const key = String(genre == null ? "" : genre).trim();
@@ -277,6 +279,7 @@ export function createLabMetricsActions(ctx) {
           current.count += 1;
           genreTotals.set(key, current);
         });
+        genreAggregationMs += Math.max(0, now(ctx.window) - genreAggregationStartedAt);
       }
       if ((index + 1) % 16 === 0 || index + 1 === ratings.length) {
         settings.onProgress({
@@ -324,7 +327,7 @@ export function createLabMetricsActions(ctx) {
     }
     writeTiming(ctx.window, "buildProfile", now(ctx.window) - profileStartedAt,
       profile && profile.count || validEntries, "completed");
-    writeTiming(ctx.window, "genreStats", now(ctx.window) - statsStartedAt, validEntries, "completed");
+    writeTiming(ctx.window, "genreStats", genreAggregationMs, validEntries, "completed");
 
     const features = profile.features && typeof profile.features.forEach === "function" ? profile.features : new Map();
     const supportDistribution = { once: 0, twoToFour: 0, fiveToNine: 0, tenOrMore: 0 };
