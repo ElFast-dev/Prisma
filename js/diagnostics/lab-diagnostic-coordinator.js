@@ -32,11 +32,43 @@ function clone(value) {
 }
 
 function publicSnapshot(value) {
-  const copy = clone(value);
-  if (!copy) return null;
-  copy.phases.forEach(function (phase) { phase.result = null; });
-  delete copy.results;
-  return copy;
+  if (!value) return null;
+  return {
+    schema: value.schema,
+    dataKey: value.dataKey,
+    status: value.status,
+    startedAt: value.startedAt,
+    finishedAt: value.finishedAt,
+    durationMs: value.durationMs,
+    priorDurationMs: Number(value.priorDurationMs) || 0,
+    sampleCount: value.sampleCount,
+    globalPercent: value.globalPercent,
+    completedPhases: value.completedPhases,
+    totalPhases: value.totalPhases,
+    currentPhase: value.currentPhase,
+    elapsedMs: value.elapsedMs,
+    estimatedRemainingMs: value.estimatedRemainingMs,
+    estimateStatus: value.estimateStatus,
+    phases: value.phases.map(function (phase) {
+      return {
+        id: phase.id,
+        label: phase.label,
+        status: phase.status,
+        startedAt: phase.startedAt,
+        finishedAt: phase.finishedAt,
+        durationMs: phase.durationMs,
+        progress: {
+          completed: phase.progress && phase.progress.completed || 0,
+          total: phase.progress && phase.progress.total || 1,
+          fraction: phase.progress && phase.progress.fraction || 0,
+          detail: phase.progress && phase.progress.detail || null
+        },
+        error: phase.error,
+        unavailableReason: phase.unavailableReason,
+        result: null
+      };
+    })
+  };
 }
 
 function percent(value) {
@@ -290,7 +322,7 @@ export function createLabDiagnosticCoordinator(options) {
     if (!request.force && !request.retryFailures && snapshot && snapshotKey === key &&
         snapshot.phases.every(function (state) { return FINAL_STATUSES.has(state.status); })) {
       cache.set(key, clone(snapshot));
-      return clone(snapshot);
+      return publicSnapshot(snapshot);
     }
 
     const runGeneration = ++generation;
@@ -342,7 +374,7 @@ export function createLabDiagnosticCoordinator(options) {
         cache.set(key, clone(snapshot));
         completedAt = snapshot.finishedAt;
       }
-      return clone(snapshot);
+      return publicSnapshot(snapshot);
     })().finally(function () {
       if (runGeneration === generation) {
         activePromise = null;
