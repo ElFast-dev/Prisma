@@ -248,8 +248,8 @@ export function createPairedRankingEvaluation(dependencies) {
     const sourceRatings = getRatings() || [];
     const rows = [];
     const seen = new Set();
-    const initialTotal = Math.max(1, sourceRatings.length * 2 + REPEATS * OUTER_FOLDS *
-      (FAMILY_DEFINITIONS.length + LAMBDAS.length + LAMBDAS.length * INNER_FOLDS) + 1);
+    const initialTotal = Math.max(1, Math.ceil(sourceRatings.length / 16) + REPEATS * OUTER_FOLDS *
+      (FAMILY_DEFINITIONS.length + LAMBDAS.length + INNER_FOLDS + 1) + 1);
     let work = 0;
     const publishProgress = detail => {
       onProgress({ completedWork: Math.min(initialTotal, work), totalWork: initialTotal, detail });
@@ -437,6 +437,8 @@ export function createPairedRankingEvaluation(dependencies) {
             lambda: chosenLambda, mae: selected.scored.mae,
             ndcgAt5: selected.thresholds["7"], ndcgAt5Threshold9: selected.thresholds["9"]
           };
+          work += 1;
+          publishProgress("Validando lambda seleccionado en pliegue exterior");
         } else {
           foldSummary.selectedLambda = { available: false, reason: "Muestra relevante insuficiente en validación interna." };
         }
