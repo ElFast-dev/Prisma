@@ -21,9 +21,12 @@ export function createLabTemporalView(ctx) {
       '<button class="btn btn-secondary btn-small" type="button" data-action="toggle-temporal-added-date-proxy" aria-pressed="' +
       (useCollectionAddedAtProxy ? "true" : "false") + '"' +
       (metricsBusy || busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' +
-      (useCollectionAddedAtProxy ? "Proxy de fecha añadida: activado" : "Activar proxy de fecha añadida") + '</button>' +
+      (useCollectionAddedAtProxy ? "Proxy exploratorio: activado" : "Permitir experimento exploratorio con fecha añadida") + '</button>' +
       '<p class="metric-note">' + dateSourceDescription + '</p>' +
-      '<p class="metric-note">La elección es temporal y local. No modifica watchedAt, las fechas guardadas ni las recomendaciones activas.</p></div>';
+      '<p class="metric-note">El diagnóstico automático nunca usa este proxy; solo habilita una exploración manual identificada expresamente. La elección es local y no modifica watchedAt, las fechas guardadas ni el motor de producción.</p></div>' +
+      (useCollectionAddedAtProxy ? '<button class="btn btn-secondary btn-small" type="button" data-action="run-temporal-ridge-experiment"' +
+        (metricsBusy || busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') +
+        '>Ejecutar evaluación exploratoria con proxy</button>' : '');
     const modeNames = { balanced: "Equilibrado", affinity: "Más afines", variety: "Más variedad" };
     let body = "";
     if (busy) {
@@ -32,7 +35,7 @@ export function createLabTemporalView(ctx) {
     } else if (ridgeBusy) {
       body = '<p class="metric-note" aria-live="polite">El experimento temporal se ejecutará cuando termine la validación Ridge estándar.</p>';
     } else if (!result) {
-      body = '<p class="metric-note">Esta prueba se ejecuta solo al solicitarla. Necesita al menos 100 valoraciones con características y fecha utilizable, repartidas en 12 días distintos. ' +
+      body = '<p class="metric-note">Esta fase se intenta automáticamente usando solo fechas de visionado explícitas o confirmadas. Necesita una muestra suficiente de valoraciones fechadas repartidas en días distintos. ' +
         (dateIsProxy ? 'El modo elegido ordena por fecha de incorporación a la lista y siempre produce resultados exploratorios; no representa necesariamente el orden real de visionado.' : 'Usa watchedAt/watched_at por defecto. Si tu JSON solo contiene la fecha de incorporación a la lista, puedes activar el proxy anterior para hacer una comparación exploratoria.') +
         '</p>';
     } else if (!result.available) {
