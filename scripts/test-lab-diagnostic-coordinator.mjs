@@ -77,7 +77,7 @@ assert.equal(result.phases.find(phase => phase.id === "temporal").status, "unava
   "Not available is a final, distinguishable status and must not be converted to success");
 const afterRetryCounts = { ...counts };
 await coordinator.ensure();
-assert.deepEqual(counts, afterRetryCounts, "A valid result must be reused from cache");
+assert.deepEqual({ ...counts }, afterRetryCounts, "A valid result must be reused from cache");
 
 dataKey = "synthetic-profile-v2";
 invalidateDuringCoverage = true;
