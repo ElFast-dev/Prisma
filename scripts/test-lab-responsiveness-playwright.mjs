@@ -299,6 +299,50 @@ try {
   if (errors.length) throw new Error("Browser exceptions in empty-profile scenario: " + errors.join(" | "));
   await emptyContext.close();
 
+  // Few-rating profile: phases with unmet sample thresholds must end explicitly unavailable.
+  const fewContext = await browser.newContext({ viewport: { width: 900, height: 800 }, serviceWorkers: "block" });
+  const fewPage = await fewContext.newPage();
+  captureLogs(fewPage);
+  await fewPage.goto(baseUrl + (baseUrl.includes("?") ? "&" : "?") + "lab-few=" + Date.now(),
+    { waitUntil: "networkidle", timeout: 60000 });
+  await fewPage.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
+  const fewFixture = makeLabSyntheticFixture();
+  fewFixture.state.rated = fewFixture.state.rated.slice(0, 3);
+  fewFixture.catalog = fewFixture.catalog.slice(0, 43);
+  await seedLabSyntheticProfile(fewPage, fewFixture);
+  await fewPage.reload({ waitUntil: "networkidle", timeout: 60000 });
+  await fewPage.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
+  await fewPage.locator(".topbar [data-nav='lab']").click({ timeout: 5000 });
+  await fewPage.waitForFunction(() => {
+    const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
+    return state === "ready" || state === "error";
+  }, null, { timeout: 30000 });
+  assert.equal(await fewPage.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state"), "ready",
+    "A sparse profile must finish the battery rather than remain pending");
+  const sparseStates = await fewPage.locator(".lab-diagnostic-phase").evaluateAll(nodes =>
+    nodes.map(node => ({ label: node.querySelector("strong")?.innerText || "", text: node.innerText }))
+  );
+  assert.equal(sparseStates.length, 7);
+  assert.ok(sparseStates.some(phase => /Ridge/i.test(phase.label) && /No disponible/.test(phase.text)));
+  assert.ok(sparseStates.some(phase => /temporal/i.test(phase.label) && /No disponible/.test(phase.text)));
+  assert.equal(await fewPage.locator("[data-action='copy-recommendation-diagnostics']").isEnabled(), true,
+    "The single copy button must become available after all phases reach final states, even when unavailable");
+  await fewPage.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async text => { window.__sparseDiagnosticReport = text; } }
+    });
+  });
+  await fewPage.locator("[data-action='copy-recommendation-diagnostics']").click({ timeout: 5000 });
+  await fewPage.waitForFunction(() => typeof window.__sparseDiagnosticReport === "string", null, { timeout: 10000 });
+  const sparseReport = await fewPage.evaluate(() => JSON.parse(window.__sparseDiagnosticReport));
+  assert.equal(sparseReport.diagnostic.run.phases.length, 7);
+  assert.ok(sparseReport.diagnostic.run.phases.some(phase => phase.status === "unavailable"));
+  assert.equal(sparseReport.diagnostic.status, "completed-with-unavailable");
+  results.fewRatingProfilePassed = true;
+  if (errors.length) throw new Error("Browser exceptions in few-rating scenario: " + errors.join(" | "));
+  await fewContext.close();
+
   await mkdir("artifacts", { recursive: true });
   await writeFile("artifacts/lab-responsiveness.json", JSON.stringify(results, null, 2) + "\n", "utf8");
   console.log("Prisma Lab responsiveness regression passed:", JSON.stringify(results));
