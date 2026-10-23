@@ -126,6 +126,7 @@ export function createFeatureFamilyEvaluation(dependencies) {
     const sourceRatings = getRatings() || [];
     const rows = [];
     const seen = new Set();
+    const totalWork = Math.max(1, sourceRatings.length * (FAMILIES.length + 1) + 1);
 
     for (let index = 0; index < sourceRatings.length; index += 1) {
       if (!shouldContinue()) return null;
@@ -145,7 +146,7 @@ export function createFeatureFamilyEvaluation(dependencies) {
       if ((index + 1) % 16 === 0 || index + 1 === sourceRatings.length) {
         onProgress({
           completedWork: index + 1,
-          totalWork: sourceRatings.length + Math.max(1, rows.length) * FAMILIES.length,
+          totalWork: totalWork,
           detail: "Preparando la muestra emparejada"
         });
         await yieldToBrowser();
@@ -165,7 +166,6 @@ export function createFeatureFamilyEvaluation(dependencies) {
     const familyResults = FAMILIES.map(function (family) {
       return { family: family, errors: [], baselineErrors: [], foldMae: [], foldNdcg: { balanced: [], affinity: [], variety: [] } };
     });
-    const totalWork = Math.max(1, sourceRatings.length * (FAMILIES.length + 1) + 1);
     let completedWork = sourceRatings.length;
 
     for (let familyIndex = 0; familyIndex < FAMILIES.length; familyIndex += 1) {
