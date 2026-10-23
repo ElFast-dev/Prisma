@@ -472,17 +472,25 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { logEvent, persistState: persistStateToStorage, toast } = appRuntime;
 
   function cancelLabExperiments() {
-    ridgeEvaluationRunId += 1;
-    ridgeEvaluationResult = null;
-    ridgeEvaluationBusy = false;
-    ridgeEvaluationProgress = null;
-    temporalRidgeEvaluationRunId += 1;
-    temporalRidgeEvaluationResult = null;
-    temporalRidgeEvaluationBusy = false;
-    temporalRidgeEvaluationProgress = null;
-    influenceNormalizationEvaluationRunId += 1;
-    influenceNormalizationEvaluationResult = null;
-    influenceNormalizationEvaluationBusy = false;
+    // Invalidate only unfinished runs. Previously completed diagnostic results remain available
+    // when the user returns to the Lab; navigation must not erase completed work.
+    if (ridgeEvaluationBusy) {
+      ridgeEvaluationRunId += 1;
+      ridgeEvaluationResult = null;
+      ridgeEvaluationBusy = false;
+      ridgeEvaluationProgress = null;
+    }
+    if (temporalRidgeEvaluationBusy) {
+      temporalRidgeEvaluationRunId += 1;
+      temporalRidgeEvaluationResult = null;
+      temporalRidgeEvaluationBusy = false;
+      temporalRidgeEvaluationProgress = null;
+    }
+    if (influenceNormalizationEvaluationBusy) {
+      influenceNormalizationEvaluationRunId += 1;
+      influenceNormalizationEvaluationResult = null;
+      influenceNormalizationEvaluationBusy = false;
+    }
   }
 
   function persistState() {
