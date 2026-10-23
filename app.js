@@ -655,6 +655,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
 
   const labActions = createLabActions({
     get currentPage() { return currentPage; },
+    get labDiagnosticSnapshot() { return labMetricsActions ? labMetricsActions.labDiagnosticSnapshot : null; },
     get renderApp() { return renderApp; },
     get window() { return window; },
     get navigator() { return navigator; },
