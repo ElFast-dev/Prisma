@@ -94,6 +94,14 @@ for (const family of result.families) {
   assert.equal(family.rankingByThreshold["7"].balanced.foldsEvaluated, 15);
   assert.equal(family.rankingByThreshold["9"].balanced.foldsEvaluated, 15,
     "Synthetic fixture should make threshold-9 ranking available for all common folds");
+  assert.equal(family.rankingByThreshold["9"].balanced.foldNdcgAt5.length, 15,
+    "Per-fold NDCG output must preserve the shared outer-fold positions");
+  assert.equal(family.rankingByThreshold["9"].balanced.pairedFoldsEvaluated, family.id === "genres-only" ? 0 : 15,
+    "Wins/ties/losses must compare only the exact same available held-out folds");
+  assert.equal(family.rankingByThreshold["9"].balanced.wins +
+    family.rankingByThreshold["9"].balanced.ties +
+    family.rankingByThreshold["9"].balanced.losses,
+    family.id === "genres-only" ? 0 : family.rankingByThreshold["9"].balanced.pairedFoldsEvaluated);
   assert.equal(family.maeWins + family.ties + family.maeLosses, family.id === "genres-only" ? 0 : 15);
 }
 for (const repeat of result.repeatSummaries) {
@@ -121,6 +129,7 @@ for (const lambda of support.results) {
   assert.ok(Number.isFinite(lambda.mae));
   assert.equal(lambda.rankingModes.balanced.foldsEvaluated, 15);
   assert.equal(lambda.rankingByThreshold["9"].balanced.foldsEvaluated, 15);
+  assert.equal(lambda.rankingByThreshold["9"].balanced.foldNdcgAt5.length, 15);
 }
 assert.ok(support.featureSupportBySignalType.genre.featureObservations > 0);
 assert.ok(support.featureSupportBySignalType.actor.featureObservations > 0);
