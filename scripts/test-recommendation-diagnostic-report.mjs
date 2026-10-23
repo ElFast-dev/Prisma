@@ -303,19 +303,19 @@ assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
 assert.equal(unavailable.evaluation.rankingQuality.unavailableReason, "Muestra insuficiente");
 assert.equal(unavailable.sample.ratingsWithoutFeatures, 2);
 
-const [appSource, pageViewsSource, eventHandlersSource, reportSource] = await Promise.all([
+const [appSource, labViewsSource, eventHandlersSource, reportSource] = await Promise.all([
   readFile("app.js", "utf8"),
-  readFile("js/ui/page-views.js", "utf8"),
+  readFile("js/ui/lab-views.js", "utf8"),
   readFile("js/app/event-handlers.js", "utf8"),
   readFile("js/diagnostics/recommendation-report.js", "utf8")
 ]);
 assert.match(appSource, /buildRecommendationDiagnosticReport/);
 assert.match(appSource, /navigator\.clipboard\.writeText/);
-assert.match(pageViewsSource, /data-action="copy-recommendation-diagnostics"/);
-assert.match(pageViewsSource, /No incluye títulos de películas, IDs TMDB/);
-assert.match(pageViewsSource, /Experimento \(temas atenuados por soporte\)/);
+assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
+assert.match(labViewsSource, /No incluye títulos de películas, IDs TMDB/);
+assert.match(labViewsSource, /Experimento \(temas atenuados por soporte\)/);
 assert.match(reportSource, /themeShrinkageDeltaBaseMinusRegularized/);
-assert.match(pageViewsSource, /Incluir hasta 40 nombres de señales agregadas/);
+assert.match(labViewsSource, /Incluir hasta 40 nombres de señales agregadas/);
 assert.match(eventHandlersSource, /action === "copy-recommendation-diagnostics"/);
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
   "El constructor del informe debe ser puro: sin DOM, persistencia, red ni portapapeles");
