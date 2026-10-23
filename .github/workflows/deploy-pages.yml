@@ -44,22 +44,57 @@ jobs:
             echo "Playwright approval artifact does not contain a valid source SHA." >&2
             exit 1
           fi
-          echo "Deploying SHA verified by quality and Playwright: $source_sha"
+          current_main_sha="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NR == 1 {print $1}')"
+          if [[ ! "$current_main_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Unable to resolve the current main SHA; refusing to deploy." >&2
+            exit 1
+          fi
           echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+          if [[ "$source_sha" != "$current_main_sha" ]]; then
+            echo "Skipping stale Pages approval: tested=$source_sha current-main=$current_main_sha"
+            echo "is_current=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Approved SHA is the current main head: $source_sha"
+            echo "is_current=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Checkout the exact commit verified by Playwright
+        if: steps.tested-source.outputs.is_current == 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.tested-source.outputs.sha }}
 
       - name: Configure GitHub Pages
+        if: steps.tested-source.outputs.is_current == 'true'
         uses: actions/configure-pages@v5
 
       - name: Upload static site
+        if: steps.tested-source.outputs.is_current == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
+      - name: Revalidate current main SHA before publishing
+        id: latest-source
+        if: steps.tested-source.outputs.is_current == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="${{ steps.tested-source.outputs.sha }}"
+          current_main_sha="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk 'NR == 1 {print $1}')"
+          if [[ ! "$current_main_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Unable to revalidate the current main SHA; refusing to deploy." >&2
+            exit 1
+          fi
+          if [[ "$source_sha" != "$current_main_sha" ]]; then
+            echo "Skipping stale publication: tested=$source_sha current-main=$current_main_sha"
+            echo "is_current=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Publication SHA still matches main: $source_sha"
+            echo "is_current=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy to GitHub Pages
         id: deployment
+        if: steps.latest-source.outputs.is_current == 'true'
         uses: actions/deploy-pages@v4
