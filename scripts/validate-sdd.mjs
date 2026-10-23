@@ -293,7 +293,11 @@ const requiredFiles = [
   'openspec/changes/2026-10-23-extract-catalog-views/proposal.md',
   'openspec/changes/2026-10-23-extract-catalog-views/design.md',
   'openspec/changes/2026-10-23-extract-catalog-views/tasks.md',
-  'openspec/changes/2026-10-23-extract-catalog-views/specs/interface/spec.md'
+  'openspec/changes/2026-10-23-extract-catalog-views/specs/interface/spec.md',
+  'openspec/changes/2026-10-23-extract-settings-views/proposal.md',
+  'openspec/changes/2026-10-23-extract-settings-views/design.md',
+  'openspec/changes/2026-10-23-extract-settings-views/tasks.md',
+  'openspec/changes/2026-10-23-extract-settings-views/specs/interface/spec.md'
 ];
 
 const errors = [];
