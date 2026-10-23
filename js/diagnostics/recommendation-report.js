@@ -429,7 +429,25 @@ function rankingEvaluation(source) {
   const ranking = wrapper.ranking || wrapper;
   const modes = Array.isArray(ranking.modes) ? ranking.modes : [];
   const diversity = Array.isArray(wrapper.diversity) ? wrapper.diversity : [];
+  const candidateAvailability = Array.isArray(wrapper.candidateAvailability) ? wrapper.candidateAvailability : [];
   return {
+    candidateAvailability: candidateAvailability.slice(0, 3).map(function (item) {
+      const source = item || {};
+      const mode = ["balanced", "affinity", "variety"].includes(source.mode) ? source.mode : "";
+      return {
+        mode: mode,
+        remoteCandidatesReceived: nonNegativeInteger(source.remoteCandidatesReceived),
+        localCatalogEntries: nonNegativeInteger(source.localCatalogEntries),
+        localCandidatesEligible: nonNegativeInteger(source.localCandidatesEligible),
+        eligibleCandidatePool: nonNegativeInteger(source.eligibleCandidatePool),
+        rankedResultsAvailable: nonNegativeInteger(source.rankedResultsAvailable),
+        requestedResultLimit: nonNegativeInteger(source.requestedResultLimit),
+        returnedResultCount: nonNegativeInteger(source.returnedResultCount),
+        profileAvailable: Boolean(source.profileAvailable),
+        shortfallReason: ["empty-personal-profile", "eligible-pool-too-small", "balanced-genre-cap", "ranking-policy-shortfall"].includes(source.shortfallReason)
+          ? source.shortfallReason : null
+      };
+    }),
     ranking: {
       available: Boolean(ranking.available),
       sampleCount: nonNegativeInteger(ranking.count),
@@ -534,12 +552,21 @@ function coverageSummary(input) {
     "ratingEntries", "validRatingEntries", "invalidRatingEntries", "uniqueRatedMovies",
     "featureLinkedRatingEntries", "uniqueFeatureMovies", "ratingsWithoutUsefulFeatures",
     "featurelessUniqueMovies", "profileFeatureCount", "featureObservations", "catalogMovies",
-    "candidatesAvailable"
+    "candidatesAvailable", "remoteCandidatesReceived", "localCandidatesEligible", "eligibleCandidatePool",
+    "rankedResultsAvailable", "requestedResultLimit", "returnedResultCount"
   ];
   const result = {};
   nonNegativeKeys.forEach(function (key) { result[key] = nonNegativeInteger(input[key]); });
   result.metadataCoverage = rounded(input.metadataCoverage, 4);
   result.featureLinkedCoverage = rounded(input.featureLinkedCoverage, 4);
+  result.shortfallReason = ["empty-personal-profile", "eligible-pool-too-small", "balanced-genre-cap", "ranking-policy-shortfall"].includes(input.shortfallReason)
+    ? input.shortfallReason : null;
+  result.candidateCountsMeaning = {
+    candidatesAvailable: "Compatibilidad heredada: solo candidatas remotas temporales de TMDB; no equivale al catálogo local.",
+    localCandidatesEligible: "Películas del catálogo local que siguen siendo elegibles tras deduplicación y exclusión de la colección.",
+    eligibleCandidatePool: "Candidatas locales y remotas únicas que superan los filtros.",
+    rankedResultsAvailable: "Tamaño del pool elegible cuando existe perfil personal; cero si el perfil está vacío."
+  };
   const distribution = input.supportDistribution || {};
   result.supportDistribution = {
     once: nonNegativeInteger(distribution.once),
