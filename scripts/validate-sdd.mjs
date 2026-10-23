@@ -160,6 +160,7 @@ const requiredFiles = [
   'js/tmdb/movie-details.js',
   'js/tmdb/client.js',
   'scripts/test-modular-architecture.mjs',
+  'scripts/test-collection-views.mjs',
   'scripts/test-tmdb-client.mjs',
   'scripts/test-storage-protection.mjs',
   'scripts/test-recommendation-diagnostic-report.mjs',
