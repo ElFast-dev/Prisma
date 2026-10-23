@@ -694,7 +694,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
           batchSize: control.batchSize
         });
         if (!rankingSelectedModel || !control.shouldContinue()) return null;
-        control.onModelFit({
+        if (rankingAlpha !== alpha) control.onModelFit({
           stage: "outer-ranking-alpha",
           alpha: rankingAlpha,
           repetitionIndex: repetitionIndex,
@@ -907,6 +907,149 @@ export function createRidgeRecommendationExperiment(dependencies) {
     };
   }
 
+  function summarizeAlphaSelectionComparison(foldSets, sampleCount, relevantCount) {
+    const maeCounts = Object.create(null);
+    const rankingCounts = Object.create(null);
+    ALPHAS.forEach(function (alpha) {
+      maeCounts[String(alpha)] = 0;
+      rankingCounts[String(alpha)] = 0;
+    });
+    const maeSelectorErrors = [];
+    const baselineErrors = [];
+    const rankingSelectorErrors = [];
+    const foldMaeDeltas = [];
+    const rankingTotals = Object.create(null);
+    RANKING_MODES.forEach(function (mode) {
+      rankingTotals[mode] = {
+        baselineDcg: 0, maeSelectedDcg: 0, rankingSelectedDcg: 0, idealDcg: 0, foldsEvaluated: 0,
+        rankingSelectorWins: 0, rankingSelectorTies: 0, rankingSelectorLosses: 0
+      };
+    });
+    (foldSets || []).forEach(function (result) {
+      Object.keys(result.selectedAlphaCounts || {}).forEach(function (alpha) {
+        maeCounts[alpha] = (maeCounts[alpha] || 0) + (Number(result.selectedAlphaCounts[alpha]) || 0);
+      });
+      Object.keys(result.rankingSelectedAlphaCounts || {}).forEach(function (alpha) {
+        rankingCounts[alpha] = (rankingCounts[alpha] || 0) + (Number(result.rankingSelectedAlphaCounts[alpha]) || 0);
+      });
+      (result.alphaComparisonMaeSelectorErrors || []).forEach(function (value) { maeSelectorErrors.push(value); });
+      (result.alphaComparisonBaselineErrors || []).forEach(function (value) { baselineErrors.push(value); });
+      (result.alphaComparisonRankingErrors || []).forEach(function (value) { rankingSelectorErrors.push(value); });
+      (result.alphaComparisonFoldMaeDeltas || []).forEach(function (value) { foldMaeDeltas.push(value); });
+      RANKING_MODES.forEach(function (mode) {
+        const source = result.rankingSelectionTotals && result.rankingSelectionTotals[mode];
+        if (!source) return;
+        const target = rankingTotals[mode];
+        target.baselineDcg += source.baselineDcg || 0;
+        target.maeSelectedDcg += source.maeSelectedDcg || 0;
+        target.rankingSelectedDcg += source.rankingSelectedDcg || 0;
+        target.idealDcg += source.idealDcg || 0;
+        target.foldsEvaluated += source.foldsEvaluated || 0;
+        target.rankingSelectorWins += source.rankingSelectorWins || 0;
+        target.rankingSelectorTies += source.rankingSelectorTies || 0;
+        target.rankingSelectorLosses += source.rankingSelectorLosses || 0;
+      });
+    });
+    const selectedFolds = foldMaeDeltas.length;
+    let rankingSelectorMaeWins = 0;
+    let ties = 0;
+    let maeSelectorMaeWins = 0;
+    foldMaeDeltas.forEach(function (delta) {
+      if (delta < -1e-10) rankingSelectorMaeWins += 1;
+      else if (delta > 1e-10) maeSelectorMaeWins += 1;
+      else ties += 1;
+    });
+    const enoughForRanking = sampleCount >= MIN_RANKING_RECORDS && relevantCount >= MIN_RELEVANT_RECORDS && selectedFolds >= Math.ceil(REPEATED_VALIDATION_RUNS * OUTER_FOLDS * 0.6);
+    const rankingModes = RANKING_MODES.map(function (mode) {
+      const total = rankingTotals[mode];
+      const available = enoughForRanking && total.idealDcg > 0 && total.foldsEvaluated >= Math.ceil(REPEATED_VALIDATION_RUNS * OUTER_FOLDS * 0.6);
+      return {
+        mode: mode,
+        available: available,
+        baselineNdcgAt5: available ? total.baselineDcg / total.idealDcg : null,
+        maeSelectedNdcgAt5: available ? total.maeSelectedDcg / total.idealDcg : null,
+        rankingSelectedNdcgAt5: available ? total.rankingSelectedDcg / total.idealDcg : null,
+        deltaRankingSelectionMinusMaeSelection: available
+          ? (total.rankingSelectedDcg - total.maeSelectedDcg) / total.idealDcg : null,
+        foldsEvaluated: total.foldsEvaluated,
+        rankingSelectorWins: total.rankingSelectorWins,
+        ties: total.rankingSelectorTies,
+        rankingSelectorLosses: total.rankingSelectorLosses
+      };
+    });
+    const byRepeat = (foldSets || []).map(function (result) {
+      const foldCount = (result.alphaComparisonFoldMaeDeltas || []).length;
+      return {
+        repeat: nonNegativeInteger(result.repetitionIndex) + 1,
+        foldsEvaluated: foldCount,
+        selectedAlphaCountsByMae: result.selectedAlphaCounts || {},
+        selectedAlphaCountsByRanking: result.rankingSelectedAlphaCounts || {},
+        maeSelectedMae: result.alphaComparisonMaeSelectorErrors && result.alphaComparisonMaeSelectorErrors.length
+          ? meanAbsoluteError(result.alphaComparisonMaeSelectorErrors) : null,
+        rankingSelectedMae: result.alphaComparisonRankingErrors && result.alphaComparisonRankingErrors.length
+          ? meanAbsoluteError(result.alphaComparisonRankingErrors) : null,
+        deltaRankingSelectionMinusMaeSelection: result.alphaComparisonRankingErrors && result.alphaComparisonRankingErrors.length
+          ? meanAbsoluteError(result.alphaComparisonRankingErrors) - meanAbsoluteError(result.alphaComparisonMaeSelectorErrors) : null,
+        rankingModes: RANKING_MODES.map(function (mode) {
+          const total = result.rankingSelectionTotals && result.rankingSelectionTotals[mode] || {};
+          const available = foldCount > 0 && Number(total.idealDcg) > 0 && Number(total.foldsEvaluated) > 0;
+          return {
+            mode: mode,
+            available: available,
+            maeSelectedNdcgAt5: available ? total.maeSelectedDcg / total.idealDcg : null,
+            rankingSelectedNdcgAt5: available ? total.rankingSelectedDcg / total.idealDcg : null,
+            deltaRankingSelectionMinusMaeSelection: available
+              ? (total.rankingSelectedDcg - total.maeSelectedDcg) / total.idealDcg : null,
+            foldsEvaluated: Number(total.foldsEvaluated) || 0,
+            rankingSelectorWins: Number(total.rankingSelectorWins) || 0,
+            ties: Number(total.rankingSelectorTies) || 0,
+            rankingSelectorLosses: Number(total.rankingSelectorLosses) || 0
+          };
+        })
+      };
+    });
+    const comparisonAvailable = enoughForRanking && rankingSelectorErrors.length > 0 && maeSelectorErrors.length === rankingSelectorErrors.length;
+    return {
+      available: comparisonAvailable,
+      sampleCount: sampleCount,
+      selectionFoldsEvaluated: selectedFolds,
+      outerFoldsPlanned: REPEATED_VALIDATION_RUNS * OUTER_FOLDS,
+      innerFolds: INNER_FOLDS,
+      alphaGrid: ALPHAS.slice(),
+      selectionCriteria: {
+        mae: "Menor MAE medio en validación interna del entrenamiento exterior.",
+        ranking: "Mayor nDCG@5 medio en validación interna entre los modos disponibles con relevancia >= 7; sin acceso a notas del pliegue exterior."
+      },
+      selectedAlphaCountsByMae: maeCounts,
+      selectedAlphaCountsByRanking: rankingCounts,
+      maeSelected: {
+        available: comparisonAvailable,
+        mae: comparisonAvailable ? meanAbsoluteError(maeSelectorErrors) : null,
+        baselineMaeSameFolds: comparisonAvailable ? meanAbsoluteError(baselineErrors) : null,
+        deltaBaselineMinusMaeSelected: comparisonAvailable ? meanAbsoluteError(baselineErrors) - meanAbsoluteError(maeSelectorErrors) : null
+      },
+      rankingSelected: {
+        available: comparisonAvailable,
+        mae: comparisonAvailable ? meanAbsoluteError(rankingSelectorErrors) : null,
+        baselineMaeSameFolds: comparisonAvailable ? meanAbsoluteError(baselineErrors) : null,
+        deltaBaselineMinusRankingSelected: comparisonAvailable ? meanAbsoluteError(baselineErrors) - meanAbsoluteError(rankingSelectorErrors) : null
+      },
+      pairedMaeDifference: {
+        available: comparisonAvailable,
+        deltaRankingSelectionMinusMaeSelection: comparisonAvailable
+          ? meanAbsoluteError(rankingSelectorErrors) - meanAbsoluteError(maeSelectorErrors) : null,
+        rankingSelectionMaeWins: comparisonAvailable ? rankingSelectorMaeWins : 0,
+        ties: comparisonAvailable ? ties : 0,
+        maeSelectionMaeWins: comparisonAvailable ? maeSelectorMaeWins : 0,
+        foldsEvaluated: selectedFolds
+      },
+      rankingModes: rankingModes,
+      repeatSummaries: byRepeat,
+      unavailableReason: comparisonAvailable ? null :
+        "La selección interna por ranking requiere al menos 50 películas únicas, 10 relevantes y suficientes pliegues con nDCG disponible; se conserva la evaluación por MAE."
+    };
+  }
+
   function completedEvaluation(rows, repeatedRuns, relevantCount) {
     const primary = repeatedRuns[0];
     const mae = meanAbsoluteError(primary.ridgeErrors);
@@ -931,6 +1074,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       hybridFoldStability: summarizeHybridMaeFoldStability(primary.hybridFoldMaeDeltas),
       rankingQuality: primary.rankingQuality,
       repeatedValidation: summarizeRepeatedValidation(repeatedRuns, rows.length, relevantCount),
+      alphaSelectionComparison: summarizeAlphaSelectionComparison(repeatedRuns, rows.length, relevantCount),
       reason: null
     };
   }
@@ -993,7 +1137,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
     }
     if (!shouldContinue()) return null;
-    const fitWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1);
+    const fitWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 2);
     const kernelWork = Math.max(1, rows.length);
     const totalWork = kernelWork + fitWork;
     let completedWork = 0;
