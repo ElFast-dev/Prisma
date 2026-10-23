@@ -66,9 +66,10 @@ assert.ok(tmdbViewsSource.includes('return !ctx.isInHistory(movie.title,movie.tm
 console.log('Pruebas de Descubrir y ficha correctas: identidades únicas, historial excluido y fecha sin hora.');
 
 
-const [detailStyles, modalViewsSource, interfaceSpec] = await Promise.all([
+const [detailStyles, movieDetailViewSource, personDetailViewSource, interfaceSpec] = await Promise.all([
   readFile('styles/movie-details.css', 'utf8'),
-  readFile('js/ui/modal-views.js', 'utf8'),
+  readFile('js/ui/movie-detail-view.js', 'utf8'),
+  readFile('js/ui/person-detail-view.js', 'utf8'),
   readFile('openspec/specs/interface/spec.md', 'utf8')
 ]);
 assert.match(detailStyles, /\.detail-meta-line\s*\{[^}]*display:\s*grid/s,
@@ -85,13 +86,13 @@ assert.match(detailStyles, /\.detail-state-actions > \.btn\s*\{[^}]*min-height:\
   'Las acciones de estado deben mantener objetivos táctiles de 44 px');
 assert.match(detailStyles, /\.detail-action-strip > \.btn\s*\{[^}]*min-height:\s*44px/s,
   'Las acciones principales deben mantener objetivos táctiles de 44 px');
-assert.match(modalViewsSource, /var\(--bg-elevated\) 100%\),url/,
+assert.match(movieDetailViewSource, /var\(--bg-elevated\) 100%\),url/,
   'El fondo del encabezado debe terminar en la superficie activa del tema');
-assert.doesNotMatch(modalViewsSource, /35%,#08101b 100%/,
+assert.doesNotMatch(movieDetailViewSource, /35%,#08101b 100%/,
   'La ficha no debe forzar un color terminal azul fijo');
-assert.match(modalViewsSource, /groupPersonFilmography/,
+assert.match(personDetailViewSource, /groupPersonFilmography/,
   'La ficha de persona debe reutilizar el agrupador de filmografía.');
-assert.match(modalViewsSource, /person-filmography-group/,
+assert.match(personDetailViewSource, /person-filmography-group/,
   'Los grupos de filmografía deben incluir un encabezado por año.');
 assert.match(interfaceSpec, /Ficha de película con jerarquía y lectura cómoda/,
   'La mejora visual debe estar recogida en la especificación vigente');
