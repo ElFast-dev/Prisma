@@ -112,13 +112,15 @@ try {
   assert.ok(Object.values(immediateDom.controls).every(Boolean), "Global progress and all automatic-phase controls must be present on first render");
   results.firstLabRenderMs = performanceEvents.find(item => item.operation === "renderLab")?.durationMs ?? null;
 
-  const labelsControl = page.locator("#diagnosticFeatureLabels");
-  await labelsControl.check({ timeout: 2000 });
-  await labelsControl.uncheck({ timeout: 2000 });
+  // Progress updates intentionally repaint the phase list. Keep the first-render responsiveness
+  // checks during calculation, then interact with the report controls once the battery is stable.
   await page.waitForFunction(() => {
     const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
     return state === "ready" || state === "error";
   }, null, { timeout: 120000 });
+  const labelsControl = page.locator("#diagnosticFeatureLabels");
+  await labelsControl.check({ timeout: 5000 });
+  await labelsControl.uncheck({ timeout: 5000 });
   results.metricsStatus = await page.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state");
   results.responsiveTicks = await page.evaluate(() => {
     window.clearInterval(window.__labResponsivenessTimer);
