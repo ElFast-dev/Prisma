@@ -6,5 +6,13 @@
 - [x] SH4. Ampliar pruebas para fechas anteriores, dentro y posteriores a la racha, y para los cuatro visionados del 18 al 21 de octubre.
 - [x] SH5. Renovar versiones del módulo, CSS, entrada de aplicación y shell PWA.
 - [x] SH6. Actualizar especificaciones y documentación SDD.
-- [ ] SH7. Ejecutar CI completo (SDD/calidad, regresiones, caché y Playwright) y corregir cualquier fallo.
-- [ ] SH8. Integrar y comprobar despliegue; archivar el cambio SDD solo después de la validación de integración.
+- [x] SH7. Ejecutar CI completo (SDD/calidad, regresiones, caché y Playwright) y corregir los fallos detectados.
+- [x] SH8. Integrar, comprobar despliegue y archivar el cambio SDD después de la validación de integración.
+
+## Evidencia de integración y publicación
+
+- PR #86 integrado: https://github.com/ElFast-dev/Prisma/pull/86.
+- SHA integrado y publicado: `6b6b4a9fe11077bbab098eef89b318b0f32677d1`.
+- Calidad/SDD postintegración: [run 39876156563](https://github.com/ElFast-dev/Prisma/actions/runs/39876156563), resultado satisfactorio sobre el SHA integrado.
+- Playwright de escritorio/móvil postintegración: [run 39876222470](https://github.com/ElFast-dev/Prisma/actions/runs/39876222470), resultado satisfactorio; capturas subidas y SHA verificado.
+- GitHub Pages: [run 39876830478](https://github.com/ElFast-dev/Prisma/actions/runs/39876830478), resultado satisfactorio. El registro confirma `pages_build_version=6b6b4a9fe11077bbab098eef89b318b0f32677d1`, igual al commit probado.
