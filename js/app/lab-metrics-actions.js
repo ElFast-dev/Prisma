@@ -363,7 +363,7 @@ export function createLabMetricsActions(ctx) {
       }, {
         shouldContinue: control.shouldContinue,
         yieldToBrowser: function () { return yieldToBrowser(ctx.window); },
-        batchSize: 12
+        batchSize: 48
       });
     },
     temporal: async function (control) {
