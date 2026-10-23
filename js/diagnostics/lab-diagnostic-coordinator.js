@@ -365,6 +365,7 @@ export function createLabDiagnosticCoordinator(options) {
     snapshot = null;
     snapshotKey = "";
     completedAt = null;
+    cache.clear();
     onUpdate(null);
   }
 
