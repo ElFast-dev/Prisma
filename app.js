@@ -31,6 +31,7 @@ import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-8";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js?v=core-20261022-3";
 import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-1";
+import { createLabMetricsActions } from "./js/app/lab-metrics-actions.js?v=core-20261023-1";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
 (function () {
@@ -53,6 +54,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const storageProtection = createStorageProtection(typeof navigator !== "undefined" ? navigator.storage : null);
   let storageProtectionSnapshot = { supported: null, statusSupported: null, persisted: null, usage: null, quota: null };
   let storageProtectionBusy = false;
+  let labMetricsActions = null;
   let recommendationDiagnosticReportText = "";
   let recommendationDiagnosticCopyMessage = "";
   let recommendationDiagnosticFeatureLabelsIncluded = false;
@@ -175,6 +177,12 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get recommendationDiagnosticReportText() { return recommendationDiagnosticReportText; },
     get recommendationDiagnosticCopyMessage() { return recommendationDiagnosticCopyMessage; },
     get recommendationDiagnosticFeatureLabelsIncluded() { return recommendationDiagnosticFeatureLabelsIncluded; },
+    get labMetrics() { return labMetricsActions ? labMetricsActions.labMetrics : null; },
+    get labMetricsBusy() { return Boolean(labMetricsActions && labMetricsActions.labMetricsBusy); },
+    get labMetricsProgress() { return labMetricsActions ? labMetricsActions.labMetricsProgress : null; },
+    get labMetricsError() { return labMetricsActions ? labMetricsActions.labMetricsError : null; },
+    get ensureLabMetrics() { return labMetricsActions ? labMetricsActions.ensureLabMetrics : null; },
+    get cancelLabMetrics() { return labMetricsActions ? labMetricsActions.cancelLabMetrics : null; },
     get escapeHTML() { return escapeHTML; },
     get titleKey() { return titleKey; },
     get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
@@ -460,6 +468,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const { logEvent, persistState: persistStateToStorage, toast } = appRuntime;
 
   function persistState() {
+    if (labMetricsActions) labMetricsActions.invalidateLabMetrics();
     ridgeEvaluationRunId += 1;
     ridgeEvaluationResult = null;
     ridgeEvaluationBusy = false;
@@ -496,7 +505,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   });
   const { renderTMDBHistoryPanel, renderTMDBAttribution, renderTMDBResults } = tmdbViews;
 
-     const { buildProfile, predictRating, evaluateModel } = createRecommendationEngine({
+     const { buildProfile, predictRating, evaluateModel, evaluateModelAsync } = createRecommendationEngine({
     getRatings: function () { return state.rated; },
     findMovie: findMovie,
     movieFeatures: movieFeatures,
@@ -542,7 +551,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     movieTmdbId: movieTmdbId,
     titleKey: titleKey
   });
-  const { evaluateRecommendationQuality } = recommendationEvaluation;
+  const { evaluateRecommendationQuality, evaluateRecommendationQualityAsync } = recommendationEvaluation;
 
   const recommendationNormalizationEvaluation = createRecommendationNormalizationEvaluation({
     getRatings: function () { return state.rated; },
@@ -554,6 +563,21 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     rankCandidates: recommendationRanking.rankCandidates,
     movieTmdbId: movieTmdbId,
     titleKey: titleKey
+  });
+
+  labMetricsActions = createLabMetricsActions({
+    get window() { return window; },
+    get currentPage() { return currentPage; },
+    get state() { return state; },
+    get catalog() { return catalog; },
+    get recommendationCandidates() { return tmdbRecommendationCandidates; },
+    get recommendationMode() { return recommendationMode; },
+    get summaryStats() { return summaryStats; },
+    get buildProfile() { return buildProfile; },
+    get genreStats() { return genreStats; },
+    get evaluateModelAsync() { return evaluateModelAsync; },
+    get evaluateRecommendationQualityAsync() { return evaluateRecommendationQualityAsync; },
+    get renderApp() { return renderApp; }
   });
 
   const labActions = createLabActions({
@@ -573,6 +597,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get recommendationMode() { return recommendationMode; },
     get evaluateModel() { return evaluateModel; },
     get evaluateRecommendationQuality() { return evaluateRecommendationQuality; },
+    get ensureLabMetrics() { return labMetricsActions.ensureLabMetrics; },
+    get labMetrics() { return labMetricsActions.labMetrics; },
     get influenceNormalizationEvaluationBusy() { return influenceNormalizationEvaluationBusy; },
     set influenceNormalizationEvaluationBusy(value) { influenceNormalizationEvaluationBusy = value; },
     get ridgeEvaluationBusy() { return ridgeEvaluationBusy; },
