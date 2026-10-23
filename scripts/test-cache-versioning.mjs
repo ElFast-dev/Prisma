@@ -146,9 +146,9 @@ assert.ok(cached.has("./js/tmdb/browser-actions.js?v=core-20261022-3"),
 assert.ok(cached.has("./js/app/movie-actions.js?v=core-20261022-5"),
   "El registro de notas sin emociones debe estar versionado.");
 assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=rec-20261023-1"),
+  "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/ridge-kernel.js?v=rec-20261023-1"),
   "El kernel numérico de Ridge debe estar incluido en la precaché versionada.");
-  "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
 assert.ok(cached.has("./js/ui/page-views.js?v=core-20261023-7"),
