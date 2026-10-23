@@ -166,7 +166,7 @@ assert.ok(cached.has("./js/diagnostics/lab-diagnostic-coordinator.js?v=diag-2026
   "El coordinador de diagnóstico debe estar en la precaché.");
 assert.ok(cached.has("./js/recommendations/feature-family-evaluation.js?v=rec-20261023-1"),
   "La comparación emparejada de familias debe estar en la precaché.");
-assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=rec-20261023-2"),
+assert.ok(cached.has("./js/recommendations/ridge-evaluation.js?v=rec-20261023-3"),
   "El módulo Ridge debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/ridge-kernel.js?v=rec-20261023-2"),
   "El kernel numérico de Ridge debe estar incluido en la precaché versionada.");
