@@ -199,6 +199,12 @@ jobs:
               page.on("console", message => {
                 if (message.type() === "error") console.log("BROWSER_CONSOLE_ERROR:", message.text());
               });
+              // Pair generic browser-console failures with concrete HTTP status and URL.
+              page.on("response", response => {
+                if (response.status() >= 400) {
+                  console.log("BROWSER_HTTP_RESPONSE:", response.status(), response.url());
+                }
+              });
               page.on("requestfailed", request => {
                 console.log("BROWSER_REQUEST_FAILED:", request.url(), request.failure()?.errorText || "");
               });
@@ -836,6 +842,16 @@ jobs:
             process.exit(1);
           });
           NODE
+
+      - name: Report static preview HTTP errors
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_run')
+        shell: bash
+        run: |
+          if [[ -f /tmp/prisma-preview.log ]]; then
+            awk '$9 >= 400 { print "PREVIEW_HTTP_RESPONSE:", $9, $7 }' /tmp/prisma-preview.log
+          else
+            echo "Static preview server log was not available."
+          fi
 
       - name: Upload screenshots
         if: always()
