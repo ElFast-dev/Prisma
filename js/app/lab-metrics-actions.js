@@ -129,6 +129,7 @@ export function createLabMetricsActions(ctx) {
     cancelLabMetrics();
 
     const thisRun = ++runId;
+    const pipelineStartedAt = now(ctx.window);
     activeKey = key;
     busy = true;
     error = null;
@@ -139,6 +140,8 @@ export function createLabMetricsActions(ctx) {
 
     const work = async function () {
       await nextTask(ctx.window);
+      writeTiming(ctx.window, "lab-first-render-yield", now(ctx.window) - pipelineStartedAt,
+        (ctx.state && ctx.state.rated || []).length, isCurrent() ? "ready-for-calculation" : "cancelled");
       if (!isCurrent()) return null;
 
       const stats = await timed("summaryStats", function () { return ctx.summaryStats(); },
@@ -194,6 +197,9 @@ export function createLabMetricsActions(ctx) {
       }
       return null;
     }).then(function (result) {
+      const status = thisRun !== runId || !isCurrent() ? "cancelled" : (result ? "completed" : "unavailable");
+      writeTiming(ctx.window, "lab-metrics-pipeline", now(ctx.window) - pipelineStartedAt,
+        (ctx.state && ctx.state.rated || []).length, status);
       if (thisRun === runId) {
         busy = false;
         progress = null;
