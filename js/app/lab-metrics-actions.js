@@ -446,6 +446,9 @@ export function createLabMetricsActions(ctx) {
         if (result == null || !control.shouldContinue()) status = "cancelled";
         else if (result.available === false) status = "unavailable";
         return result;
+      } catch (error) {
+        status = control.shouldContinue() ? "error" : "cancelled";
+        throw error;
       } finally {
         writeTiming(ctx.window, "lab-diagnostic-" + phaseId, now(ctx.window) - startedAt,
           result && (result.sampleCount || result.count) || ratedEntries().length, status);
