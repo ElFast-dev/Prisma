@@ -95,6 +95,7 @@ assert.match(pendingContent, /Pendiente &lt;futura&gt;/);
 assert.doesNotMatch(pendingContent, /personal-score/);
 
 // Empty hidden state and Lists mode retain their user-facing content/actions.
+hidden.length = 0;
 ctx.collectionTab = "hidden";
 ctx.collectionLayout = "list";
 const hiddenMarkup = views.renderCollectionContent();
