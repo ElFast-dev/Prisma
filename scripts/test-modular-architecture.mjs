@@ -3,6 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createTMDBMovieDetails } from '../js/tmdb/movie-details.js';
+import { createCollectionViews } from '../js/ui/collection-views.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const entry = resolve(root, 'app.js');
@@ -151,5 +152,22 @@ assert.equal(typeof movieDetailsApi.loadMovieDetail, 'function');
 assert.equal(typeof movieDetailsApi.persistMovieMetadata, 'function');
 assert.equal(typeof movieDetailsApi.openPersonDetails, 'function');
 assert.ok(!app.includes('persistMovieMetadata, mergeMatching, openPersonDetails'));
+const collectionFixture = {
+  collectionMode: 'lists',
+  collectionTab: 'history',
+  getCollectionItems(tab) {
+    return { history: [{ title: 'Una película' }], pending: [], hidden: [{ title: 'Otra película' }] }[tab] || [];
+  }
+};
+const collectionViews = createCollectionViews(collectionFixture);
+assert.equal(typeof collectionViews.renderLibrary, 'function');
+assert.equal(typeof collectionViews.refreshCollectionContent, 'function');
+const listsMarkup = collectionViews.renderLibrary();
+assert.match(listsMarkup, /Historial/);
+assert.match(listsMarkup, /Pendientes/);
+assert.match(listsMarkup, /Ocultos/);
+assert.match(listsMarkup, /data-action="collection-open-tab"/,
+  'El módulo debe conservar las acciones de las listas de Colección.');
+
 assert.ok(app.startsWith('import '));
 console.log('Arquitectura modular correcta: ' + files.length + ' módulos, importaciones y exports validados y lógica de dominio separada del DOM.');
