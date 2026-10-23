@@ -42,6 +42,14 @@ export function createLabMetricsActions(ctx) {
   let cachedKey = "";
   let failedKey = "";
   let observed = null;
+  const sourceIds = new WeakMap();
+  let nextSourceId = 1;
+
+  function sourceId(value) {
+    if ((typeof value !== "object" || value === null) && typeof value !== "function") return "none";
+    if (!sourceIds.has(value)) sourceIds.set(value, nextSourceId++);
+    return sourceIds.get(value);
+  }
 
   function dataKey() {
     const state = ctx.state || {};
@@ -52,7 +60,8 @@ export function createLabMetricsActions(ctx) {
     const pending = Array.isArray(state.watchlist) ? state.watchlist.length : 0;
     const hidden = Array.isArray(state.hidden) ? state.hidden.length : 0;
     return [
-      revision, state.updatedAt || "", ratings.length, catalog.length, candidates.length,
+      revision, sourceId(state), sourceId(state.rated), sourceId(ctx.catalog), sourceId(ctx.recommendationCandidates),
+      state.updatedAt || "", ratings.length, catalog.length, candidates.length,
       watched, pending, hidden, ctx.recommendationMode || "balanced"
     ].join("|");
   }
