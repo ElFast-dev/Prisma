@@ -362,7 +362,7 @@ export function createRecommendationEvaluation(dependencies) {
     const diversityStartedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
     const profile = settings.profile || buildProfile();
     const diversity = [];
-    let completedWork = sourceCount + (Number(ranking.count) || 0) + (Number(ranking.foldsEvaluated) || 0);
+    let completedWork = sourceCount + (ranking.available ? (Number(ranking.count) || 0) : 0) + (Number(ranking.foldsEvaluated) || 0);
     for (const mode of RECOMMENDATION_MODES) {
       if (!shouldContinue()) return null;
       const movies = (getRecommendations(RANKING_CUTOFF, mode, profile) || []).slice(0, RANKING_CUTOFF);
