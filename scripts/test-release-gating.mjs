@@ -19,6 +19,8 @@ assert.match(quality, /node scripts\/validate-sdd\.mjs/,
   "La compuerta debe validar SDD.");
 assert.match(quality, /node scripts\/test-modal-event-handlers\.mjs/,
   "La batería debe probar los clics del modal con su contexto real.");
+assert.match(quality, /node scripts\/test-modal-controller\.mjs/,
+  "La batería debe probar el retorno del controlador del modal, incluida la calificación abierta desde una lista.");
 assert.match(quality, /node scripts\/test-release-gating\.mjs/,
   "La batería debe validar la propia compuerta de publicación.");
 assert.match(quality, /JSON\.parse\(require\('fs'\)\.readFileSync\('manifest\.webmanifest'/,
