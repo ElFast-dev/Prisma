@@ -4,7 +4,7 @@ import { sameDiscoveryMovie, uniqueDiscoveryMovies } from '../js/core/movie-util
 import { createPresentationUtils } from '../js/ui/presentation-utils.js';
 import { groupPersonFilmography } from '../js/ui/person-filmography.js';
 
-const [source, collectionSource, pageViewsSource, tmdbViewsSource, rankingSource] = await Promise.all([readFile('app.js', 'utf8'), readFile('js/collection/collection-model.js', 'utf8'), readFile('js/ui/page-views.js', 'utf8'), readFile('js/ui/tmdb-views.js', 'utf8'), readFile('js/recommendations/ranking.js', 'utf8')]);
+const [source, collectionSource, pageViewsSource, catalogViewsSource, tmdbViewsSource, rankingSource] = await Promise.all([readFile('app.js', 'utf8'), readFile('js/collection/collection-model.js', 'utf8'), readFile('js/ui/page-views.js', 'utf8'), readFile('js/ui/catalog-views.js', 'utf8'), readFile('js/ui/tmdb-views.js', 'utf8'), readFile('js/recommendations/ranking.js', 'utf8')]);
 
 const identity = { sameDiscoveryMovie, uniqueDiscoveryMovies };
 assert.equal(identity.sameDiscoveryMovie({ title: 'Título alternativo', tmdbId: '123' }, { title: 'Original Title', tmdbId: '123' }), true,
@@ -56,7 +56,7 @@ const collectedFilmography = groupPersonFilmography(syntheticCredits, {
 assert.deepEqual(collectedFilmography.flatMap(group => group.items).map(item => String(item.id)), ['10', '14'],
   'El filtro Colección compara el ID TMDB en vez de aceptar cualquier título homónimo.');
 
-assert.ok(pageViewsSource.includes('return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
+assert.ok(catalogViewsSource.includes('return queryOkay && genreOkay && !ctx.isInHistory(movie.title,movie.tmdbId) && !ctx.isHidden(movie.title,movie.tmdbId);'),
   'El catálogo de Descubrir debe ocultar películas vistas');
 assert.ok(rankingSource.includes('!ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history"'),
   'El recomendador debe excluir vistas, pendientes y ocultas');

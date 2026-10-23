@@ -3,6 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createTMDBMovieDetails } from '../js/tmdb/movie-details.js';
+import { createCatalogViews } from '../js/ui/catalog-views.js';
 import { createCollectionViews } from '../js/ui/collection-views.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,6 +27,7 @@ const files = [
   'js/collection/collection-model.js',
   'js/ui/presentation-utils.js',
   'js/ui/page-views.js',
+  'js/ui/catalog-views.js',
   'js/ui/collection-views.js',
   'js/ui/lab-views.js',
   'js/ui/watch-streak-view.js',
@@ -114,11 +116,37 @@ assert.ok(app.includes('createModalController('));
 assert.ok(app.includes('createRecommendationRanking('));
 assert.ok(app.includes('createAppRuntime('));
 assert.ok(app.includes('createAppLifecycle('));
-const [pageViewsSource, collectionViewsSource, labViewsSource] = await Promise.all([
+const [pageViewsSource, catalogViewsSource, collectionViewsSource, labViewsSource] = await Promise.all([
   readFile('js/ui/page-views.js', 'utf8'),
+  readFile('js/ui/catalog-views.js', 'utf8'),
   readFile('js/ui/collection-views.js', 'utf8'),
   readFile('js/ui/lab-views.js', 'utf8')
 ]);
+assert.match(pageViewsSource, /createCatalogViews\(ctx\)/,
+  'La composición general debe delegar Descubrir y catálogo a su módulo especializado.');
+assert.doesNotMatch(pageViewsSource, /function (?:movieCard|movieGrid|filterCatalog|renderCatalogResults|renderCatalog)\(/,
+  'Los renderizadores de catálogo no deben volver a concentrarse en page-views.js.');
+assert.match(catalogViewsSource, /export function createCatalogViews\(ctx\)/,
+  'El catálogo debe exponer una fábrica de vistas con contexto inyectado.');
+assert.match(catalogViewsSource, /data-action="recommendation-mode"/,
+  'La vista de catálogo debe conservar el selector de modos de recomendación.');
+
+const catalogFixture = {
+  catalogQuery: '',
+  catalog: [
+    { title: 'Drama incluido', genres: ['Drama'], tags: [], year: 2020, tmdbId: '990001' },
+    { title: 'Drama visto', genres: ['Drama'], tags: [], year: 2021, tmdbId: '990002' }
+  ],
+  activeGenre: 'Todos',
+  titleKey(value) { return String(value == null ? '' : value).toLowerCase(); },
+  uniqueDiscoveryMovies(items) { return items; },
+  isInHistory(title) { return title === 'Drama visto'; },
+  isHidden() { return false; }
+};
+const catalogViews = createCatalogViews(catalogFixture);
+assert.deepEqual(catalogViews.filterCatalog().map(movie => movie.title), ['Drama incluido'],
+  'Descubrir debe seguir excluyendo películas ya vistas después de aislar el renderizador.');
+
 assert.match(pageViewsSource, /createCollectionViews\(ctx\)/,
   'La composición general debe delegar Colección a su módulo especializado.');
 assert.doesNotMatch(pageViewsSource, /function (?:renderCollectionContent|renderLibrary|collectionRow|collectionCompactCard)\(/,

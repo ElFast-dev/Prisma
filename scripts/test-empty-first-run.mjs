@@ -20,11 +20,12 @@ await assert.rejects(
 const lifecycleSource = await readFile(resolve(root, "js/app/lifecycle.js"), "utf8");
 const appSource = await readFile(resolve(root, "app.js"), "utf8");
 const pageViewsSource = await readFile(resolve(root, "js/ui/page-views.js"), "utf8");
+const catalogViewsSource = await readFile(resolve(root, "js/ui/catalog-views.js"), "utf8");
 assert.doesNotMatch(lifecycleSource, /data\/catalog\.json|seedCatalog|catálogo de muestra/i);
 assert.doesNotMatch(appSource, /seedCatalog|getSeedCatalog/);
-assert.match(pageViewsSource, /Tu catálogo personal está vacío/);
-assert.match(pageViewsSource, /Tu espacio empieza vacío/);
-assert.match(pageViewsSource, /Conecta TMDB desde Ajustes \/ Datos/);
+assert.match(catalogViewsSource, /Tu catálogo personal está vacío/);
+assert.match(catalogViewsSource, /Tu espacio empieza vacío/);
+assert.match(catalogViewsSource, /Conecta TMDB desde Ajustes \/ Datos/);
 
 async function initializeWithStorage(storageValues) {
   let state = emptyState();
