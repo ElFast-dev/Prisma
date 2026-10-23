@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createTMDBMovieDetails } from '../js/tmdb/movie-details.js';
 import { createCatalogViews } from '../js/ui/catalog-views.js';
 import { createCollectionViews } from '../js/ui/collection-views.js';
+import { createSettingsViews } from '../js/ui/settings-views.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const entry = resolve(root, 'app.js');
@@ -27,6 +28,7 @@ const files = [
   'js/collection/collection-model.js',
   'js/ui/presentation-utils.js',
   'js/ui/page-views.js',
+  'js/ui/settings-views.js',
   'js/ui/catalog-views.js',
   'js/ui/collection-views.js',
   'js/ui/lab-views.js',
@@ -116,12 +118,41 @@ assert.ok(app.includes('createModalController('));
 assert.ok(app.includes('createRecommendationRanking('));
 assert.ok(app.includes('createAppRuntime('));
 assert.ok(app.includes('createAppLifecycle('));
-const [pageViewsSource, catalogViewsSource, collectionViewsSource, labViewsSource] = await Promise.all([
+const [pageViewsSource, settingsViewsSource, catalogViewsSource, collectionViewsSource, labViewsSource] = await Promise.all([
   readFile('js/ui/page-views.js', 'utf8'),
+  readFile('js/ui/settings-views.js', 'utf8'),
   readFile('js/ui/catalog-views.js', 'utf8'),
   readFile('js/ui/collection-views.js', 'utf8'),
   readFile('js/ui/lab-views.js', 'utf8')
 ]);
+assert.match(pageViewsSource, /createSettingsViews\(ctx\)/,
+  'La composición general debe delegar Ajustes y Datos al módulo especializado.');
+assert.doesNotMatch(pageViewsSource, /function (?:renderAppearanceSettings|renderTMDBSettings|formatStorageBytes|renderStorageProtectionSettings|renderData)\(/,
+  'Los renderizadores de Ajustes no deben volver a concentrarse en page-views.js.');
+assert.match(settingsViewsSource, /export function createSettingsViews\(ctx\)/,
+  'Ajustes debe exponer una fábrica de vistas con contexto inyectado.');
+assert.match(settingsViewsSource, /data-action="protect-storage"/,
+  'La vista de protección del almacenamiento debe conservar su acción explícita.');
+const settingsFixture = {
+  theme: 'dark',
+  tmdbCredential: null,
+  storageProtectionSnapshot: { supported: true, persisted: false, usage: 2048, quota: 1048576 },
+  storageProtectionBusy: false,
+  state: { updatedAt: '2026-10-20T12:00:00.000Z' },
+  summaryStats() { return { total: 0, matched: 0 }; },
+  infoButton() { return ''; },
+  escapeHTML(value) { return String(value == null ? '' : value); },
+  formatDate() { return '20/10/2026'; },
+  renderTMDBHistoryPanel() { return '<div></div>'; }
+};
+const settingsViews = createSettingsViews(settingsFixture);
+assert.equal(typeof settingsViews.renderTMDBSettings, 'function');
+assert.equal(typeof settingsViews.renderData, 'function');
+const settingsMarkup = settingsViews.renderData();
+assert.match(settingsMarkup, /Apariencia/);
+assert.match(settingsMarkup, /Importar historial JSON/);
+assert.match(settingsMarkup, /Protección de datos locales/);
+
 assert.match(pageViewsSource, /createCatalogViews\(ctx\)/,
   'La composición general debe delegar Descubrir y catálogo a su módulo especializado.');
 assert.doesNotMatch(pageViewsSource, /function (?:movieCard|movieGrid|filterCatalog|renderCatalogResults|renderCatalog)\(/,
