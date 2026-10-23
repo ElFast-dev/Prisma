@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, storageProtectionActions, diagnosticReport, labDiagnosticCoordinator, stateModel, features, engine, evaluation, normalizationEvaluation, featureFamilyEvaluation, pairedRankingEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, utilitySheetView, movieDetailView, personDetailView, ratingSheetView, movieActions, labActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, storageProtectionActions, diagnosticReport, handoffReport, labDiagnosticCoordinator, stateModel, features, engine, evaluation, normalizationEvaluation, featureFamilyEvaluation, pairedRankingEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, utilitySheetView, movieDetailView, personDetailView, ratingSheetView, movieActions, labActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -12,6 +12,7 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/core/storage-protection.js', 'utf8'),
   readFile('js/app/storage-protection-actions.js', 'utf8'),
   readFile('js/diagnostics/recommendation-report.js', 'utf8'),
+  readFile('js/diagnostics/recommendation-handoff.js', 'utf8'),
   readFile('js/diagnostics/lab-diagnostic-coordinator.js', 'utf8'),
   readFile('js/core/state-model.js', 'utf8'),
   readFile('js/recommendations/features.js', 'utf8'),
@@ -89,6 +90,7 @@ const modules = [
   ['js/core/storage-protection.js', storageProtection],
   ['js/app/storage-protection-actions.js', storageProtectionActions],
   ['js/diagnostics/recommendation-report.js', diagnosticReport],
+  ['js/diagnostics/recommendation-handoff.js', handoffReport],
   ['js/diagnostics/lab-diagnostic-coordinator.js', labDiagnosticCoordinator],
   ['js/core/state-model.js', stateModel],
   ['js/recommendations/features.js', features],
@@ -174,7 +176,7 @@ assert.ok(cached.has("./js/recommendations/ridge-kernel.js?v=rec-20261023-2"),
   "El kernel numérico de Ridge debe estar incluido en la precaché versionada.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261023-9"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261023-10"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/ui/progress-views.js?v=core-20261023-1"),
   "La vista de Progreso debe tener su propia URL versionada y estar precargada.");
@@ -188,7 +190,7 @@ assert.ok(cached.has("./js/ui/lab-ridge-view.js?v=core-20261023-3"),
   "El submódulo del experimento Ridge debe estar versionado y precargado.");
 assert.ok(cached.has("./js/ui/lab-temporal-view.js?v=core-20261023-3"),
   "El submódulo temporal de Ridge debe estar versionado y precargado.");
-assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-5"),
+assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261023-6"),
   "El módulo del Laboratorio debe tener versión propia y estar en la precaché.");
 assert.ok(cached.has("./js/ui/watch-streak-view.js?v=core-20261023-1"),
   "La vista del calendario de racha debe estar versionada y precargada en la caché.");
@@ -198,6 +200,8 @@ assert.ok(cached.has("./js/core/state-model.js?v=core-20261022-2"),
   "El modelo de estado debe quedar versionado al añadir la racha confirmada.");
 assert.ok(cached.has("./js/core/watch-streak.js"),
   "La lógica de racha confirmada debe quedar disponible en la caché.");
+assert.ok(cached.has("./js/diagnostics/recommendation-handoff.js?v=diag-20261023-1"),
+  "El resumen técnico para la IA debe estar precargado en la caché PWA.");
 assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261023-3"),
   "El informe de diagnóstico v13 debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/normalization-evaluation.js?v=rec-20261023-3"),
@@ -206,7 +210,7 @@ assert.ok(cached.has("./js/recommendations/evaluation.js?v=rec-20261023-3"),
   "El evaluador cooperativo de ranking debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/lab-metrics-actions.js?v=core-20261023-4"),
   "El orquestador no bloqueante del Laboratorio debe estar precargado en la caché PWA.");
-assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261023-1"),
+assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261023-2"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
 assert.ok(cached.has("./js/ui/modal-views.js?v=ui-20261023-1"),
   "La fachada modal debe quedar versionada y conservar su API pública.");
@@ -229,7 +233,7 @@ assert.ok(cached.has(actionsImportUrl),
   "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
 assert.ok(!cached.has("./js/import-export/actions.js?v=core-20261020-1"),
   "La caché PWA no debe conservar la URL antigua del módulo de importación.");
-assert.ok(cached.has("./js/app/lab-actions.js?v=core-20261023-4"),
+assert.ok(cached.has("./js/app/lab-actions.js?v=core-20261023-5"),
   "Las acciones del Laboratorio deben estar versionadas y en la precaché.");
 assert.ok(cached.has("./js/app/storage-protection-actions.js?v=core-20261023-1"),
   "Las acciones de protección del almacenamiento deben estar versionadas y en la precaché.");
