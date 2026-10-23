@@ -1,5 +1,5 @@
 import { createWatchStreakView } from "./watch-streak-view.js?v=core-20261023-1";
-import { createLabViews } from "./lab-views.js?v=core-20261023-4";
+import { createLabViews } from "./lab-views.js?v=core-20261023-5";
 import { createCollectionViews } from "./collection-views.js?v=core-20261023-1";
 import { createCatalogViews } from "./catalog-views.js?v=core-20261023-1";
 import { createSettingsViews } from "./settings-views.js?v=core-20261023-1";
