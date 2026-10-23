@@ -199,7 +199,7 @@ export function createFeatureFamilyEvaluation(dependencies) {
           const learned = engine.predictRating(candidate, profile);
           const prediction = asNumber(learned && learned.score);
           const score = prediction == null ? profile.average : prediction;
-          candidate.prediction.score = score;
+          candidate.prediction = Object.assign({}, learned || {}, { score: score });
           const gain = row.rating >= RELEVANT_THRESHOLD ? row.rating - 6 : 0;
           gainByIdentity.set(row.identity, gain);
           ideal.push({ evaluationIdentity: row.identity, gain: gain });
