@@ -57,13 +57,13 @@ assert.match(deploy, /name: prisma-published-ui-screenshots/,
   "El nombre del artefacto de deploy debe coincidir con el de Playwright.");
 assert.match(deploy, /release-approval\/tested-sha\.txt/,
   "El SHA desplegable debe proceder del artefacto validado.");
-assert.match(deploy, /git ls-remote[\s\S]*?refs\\/heads\\/main/,
+assert.match(deploy, /git ls-remote[\s\S]*?refs\/heads\/main/,
   "El deploy debe contrastar el SHA aprobado con el head actual de main.");
 assert.match(deploy, /name: Revalidate current main SHA before publishing/,
   "Pages debe volver a comprobar main justo antes de publicar.");
-assert.match(deploy, /if: steps\\.tested-source\\.outputs\\.is_current == 'true'/,
+assert.match(deploy, /if: steps\.tested-source\.outputs\.is_current == 'true'/,
   "Una aprobación obsoleta no debe preparar ni subir un sitio.");
-assert.match(deploy, /if: steps\\.latest-source\\.outputs\\.is_current == 'true'/,
+assert.match(deploy, /if: steps\.latest-source\.outputs\.is_current == 'true'/,
   "Una publicación cuyo SHA ya no sea main debe omitirse.");
 assert.match(deploy, /ref:\s*\$\{\{ steps\.tested-source\.outputs\.sha \}\}/,
   "Pages debe desplegar el SHA aprobado, no un head SHA móvil de main.");
