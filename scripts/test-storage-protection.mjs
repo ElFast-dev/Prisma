@@ -205,8 +205,8 @@ assert.deepEqual(deniedHarness.toasts.at(-1), {
 
 // A browser without the API produces a controlled outcome.
 const unsupportedService = createStorageProtection(null);
-const unsupportedSnapshot = await unsupportedService.inspect();
-const unsupportedHarness = createHarness({ storageProtection: unsupportedService, snapshot: unsupportedSnapshot });
+const unsupportedActionSnapshot = await unsupportedService.inspect();
+const unsupportedHarness = createHarness({ storageProtection: unsupportedService, snapshot: unsupportedActionSnapshot });
 await unsupportedHarness.actions.requestStorageProtection();
 assert.equal(unsupportedHarness.ctx.storageProtectionSnapshot.reason, "unsupported");
 assert.equal(unsupportedHarness.ctx.storageProtectionBusy, false);
