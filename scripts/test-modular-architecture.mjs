@@ -40,6 +40,10 @@ const files = [
   'js/ui/watch-streak-view.js',
   'js/ui/theme-controller.js',
   'js/ui/modal-views.js',
+  'js/ui/utility-sheet-view.js',
+  'js/ui/movie-detail-view.js',
+  'js/ui/person-detail-view.js',
+  'js/ui/rating-sheet-view.js',
   'js/ui/person-filmography.js',
   'js/app/movie-actions.js',
   'js/import-export/actions.js',
@@ -95,6 +99,23 @@ assert.ok(!app.includes('function renderPersonDetails('));
 assert.ok(!app.includes('function renderRatingSheet('));
 assert.ok(!app.includes('function renderUtilitySheet('));
 assert.ok(app.includes('createModalViews('));
+const [modalSplitFacadeSource, utilitySheetSplitSource, movieDetailSplitSource, personDetailSplitSource, ratingSheetSplitSource] = await Promise.all([
+  readFile('js/ui/modal-views.js', 'utf8'),
+  readFile('js/ui/utility-sheet-view.js', 'utf8'),
+  readFile('js/ui/movie-detail-view.js', 'utf8'),
+  readFile('js/ui/person-detail-view.js', 'utf8'),
+  readFile('js/ui/rating-sheet-view.js', 'utf8')
+]);
+assert.doesNotMatch(modalSplitFacadeSource, /function render(?:UtilitySheet|MovieDetails|PersonDetails|RatingSheet)\(/,
+  'La fachada modal no debe volver a concentrar los renderizadores concretos.');
+assert.match(modalSplitFacadeSource, /createUtilitySheetView\(ctx\)/);
+assert.match(modalSplitFacadeSource, /createMovieDetailView\(ctx\)/);
+assert.match(modalSplitFacadeSource, /createPersonDetailView\(ctx\)/);
+assert.match(modalSplitFacadeSource, /createRatingSheetView\(ctx\)/);
+assert.match(utilitySheetSplitSource, /export function createUtilitySheetView\(ctx\)/);
+assert.match(movieDetailSplitSource, /export function createMovieDetailView\(ctx\)/);
+assert.match(personDetailSplitSource, /export function createPersonDetailView\(ctx\)/);
+assert.match(ratingSheetSplitSource, /export function createRatingSheetView\(ctx\)/);
 assert.ok(!app.includes('async function saveRating('));
 assert.ok(!app.includes('async function toggleWatchlist('));
 assert.ok(app.includes('createMovieActions('));
