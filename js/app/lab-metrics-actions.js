@@ -175,7 +175,7 @@ export function createLabMetricsActions(ctx) {
       progress = { phase: "rating-evaluation", completed: 0, total: (ctx.state && ctx.state.rated || []).length };
       const evaluation = await timed("rating-evaluation", function () {
         return ctx.evaluateModelAsync({
-          batchSize: 3,
+          batchSize: 1,
           shouldContinue: isCurrent,
           onProgress: function (update) { if (isCurrent()) progress = update; }
         });
