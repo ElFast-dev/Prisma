@@ -21,6 +21,7 @@ const files = [
   'js/recommendations/features.js',
   'js/recommendations/engine.js',
   'js/recommendations/ridge-evaluation.js',
+  'js/recommendations/ridge-kernel.js',
   'js/recommendations/evaluation.js',
   'js/recommendations/normalization-evaluation.js',
   'js/recommendations/preferences.js',
