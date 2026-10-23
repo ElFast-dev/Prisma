@@ -6,7 +6,7 @@ La aplicación DEBE insertar primero el encabezado, los controles principales y 
 
 #### Scenario: Abrir el Laboratorio con historial grande
 
-- DADO un perfil sintético con al menos 351 valoraciones enlazadas a metadatos
+- DADO un perfil con al menos 351 valoraciones enlazadas a metadatos
 - CUANDO la persona entra al Laboratorio mediante la navegación principal
 - ENTONCES el encabezado «Laboratorio» y sus controles quedan visibles antes de finalizar las evaluaciones, el estado indica que hay cálculos en curso y la interfaz puede procesar otras tareas
 
