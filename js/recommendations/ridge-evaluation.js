@@ -1101,7 +1101,52 @@ export function createRidgeRecommendationExperiment(dependencies) {
     return bestAlpha;
   }
 
-  async function evaluateTemporalAsync(onProgress) {
+  async function selectTemporalAlphaAsync(rows, kernel, outerTrainingIndices, control) {
+    const inner = forwardValidationWindows(rows, outerTrainingIndices, INNER_FOLDS, TEMPORAL_WARMUP_RATIO);
+    if (!inner) throw new Error("No hay suficientes días anteriores para seleccionar alpha con validación temporal interna.");
+    let bestAlpha = null;
+    let bestMae = Infinity;
+    for (let alphaIndex = 0; alphaIndex < ALPHAS.length; alphaIndex += 1) {
+      if (!control.shouldContinue()) return null;
+      const alpha = ALPHAS[alphaIndex];
+      const errors = [];
+      for (let innerIndex = 0; innerIndex < inner.windows.length; innerIndex += 1) {
+        if (!control.shouldContinue()) return null;
+        const innerWindow = inner.windows[innerIndex];
+        const model = await trainRidgeAsync(rows, kernel, innerWindow.trainingIndices, alpha, {
+          shouldContinue: control.shouldContinue,
+          yieldToBrowser: control.yieldToBrowser,
+          batchSize: control.batchSize
+        });
+        if (!model) return null;
+        for (let index = 0; index < innerWindow.testIndices.length; index += 1) {
+          const rowIndex = innerWindow.testIndices[index];
+          const prediction = predictRidge(rows, model, rows[rowIndex].candidateVector);
+          errors.push(Math.abs(prediction - rows[rowIndex].rating));
+        }
+        control.onModelFit({ stage: "inner", alpha: alpha, innerWindow: innerIndex });
+        await control.yieldToBrowser();
+      }
+      if (!errors.length) throw new Error("No hay ventanas internas válidas para seleccionar alpha.");
+      const mae = meanAbsoluteError(errors);
+      if (mae < bestMae - 1e-10 || (Math.abs(mae - bestMae) <= 1e-10 && alpha > bestAlpha)) {
+        bestMae = mae;
+        bestAlpha = alpha;
+      }
+    }
+    if (bestAlpha == null) throw new Error("No se pudo seleccionar alpha en el pasado del entrenamiento.");
+    return bestAlpha;
+  }
+
+  async function evaluateTemporalAsync(onProgress, options) {
+    const callback = typeof onProgress === "function" ? onProgress :
+      (onProgress && typeof onProgress.onProgress === "function" ? onProgress.onProgress : function () {});
+    const settings = options || (onProgress && typeof onProgress === "object" ? onProgress : {});
+    const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    const yieldToBrowser = typeof settings.yieldToBrowser === "function"
+      ? settings.yieldToBrowser
+      : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
+    const batchSize = Math.max(4, Math.min(24, Number(settings.batchSize) || 12));
     const prepared = temporalRows();
     const rows = prepared.rows;
     const allIndices = rows.map(function (_, index) { return index; });
@@ -1127,7 +1172,41 @@ export function createRidgeRecommendationExperiment(dependencies) {
     }
 
     try {
-      const kernel = buildKernel(rows);
+      const workPerWindow = ALPHAS.length * INNER_FOLDS + 1;
+      const totalWork = TEMPORAL_OUTER_WINDOWS * workPerWindow;
+      let completedWork = 0;
+      const control = {
+        shouldContinue: shouldContinue,
+        yieldToBrowser: yieldToBrowser,
+        batchSize: batchSize,
+        onModelFit: function (detail) {
+          completedWork = Math.min(totalWork, completedWork + 1);
+          callback({
+            completedWork: completedWork,
+            totalWork: totalWork,
+            completedWindows: Math.min(TEMPORAL_OUTER_WINDOWS, Math.floor(completedWork / workPerWindow)),
+            totalWindows: TEMPORAL_OUTER_WINDOWS,
+            phase: "fit",
+            detail: detail && detail.stage === "inner" ? "Selección interna de alpha" : "Ajuste Ridge temporal"
+          });
+        }
+      };
+      if (!shouldContinue()) return null;
+      const kernel = await buildKernelAsync(rows, {
+        shouldContinue: shouldContinue,
+        yieldToBrowser: yieldToBrowser,
+        onProgress: function (update) {
+          callback({
+            completedWork: 0,
+            totalWork: totalWork,
+            completedWindows: 0,
+            totalWindows: TEMPORAL_OUTER_WINDOWS,
+            phase: "kernel",
+            detail: "Matriz temporal " + update.completedWork + "/" + update.totalWork
+          });
+        }
+      });
+      if (!shouldContinue()) return null;
       const ridgeErrors = [];
       const baselineErrors = [];
       const windowMaeDeltas = [];
@@ -1153,15 +1232,20 @@ export function createRidgeRecommendationExperiment(dependencies) {
           windowsPlanned: TEMPORAL_OUTER_WINDOWS,
           phase: "starting"
         };
-        if (typeof onProgress === "function" && onProgress(starting) === false) {
-          return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
-            "La evaluación temporal se canceló porque cambiaron los datos personales durante el cálculo.",
-            groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
-        }
+        starting.completedWork = completedWork;
+        starting.totalWork = totalWork;
+        if (callback(starting) === false || !shouldContinue()) return null;
 
-        const alpha = selectTemporalAlpha(rows, kernel, window.trainingIndices);
+        const alpha = await selectTemporalAlphaAsync(rows, kernel, window.trainingIndices, control);
+        if (alpha == null || !shouldContinue()) return null;
         selectedAlphaCounts[String(alpha)] += 1;
-        const ridgeModel = trainRidge(rows, kernel, window.trainingIndices, alpha);
+        const ridgeModel = await trainRidgeAsync(rows, kernel, window.trainingIndices, alpha, {
+          shouldContinue: shouldContinue,
+          yieldToBrowser: yieldToBrowser,
+          batchSize: batchSize
+        });
+        if (!ridgeModel || !shouldContinue()) return null;
+        control.onModelFit({ stage: "outer", windowIndex: windowIndex });
         const trainingRatings = window.trainingIndices.map(function (index) { return rows[index].entry; });
         const additiveProfile = buildProfile(trainingRatings);
         const baselineCandidates = [];
@@ -1236,19 +1320,16 @@ export function createRidgeRecommendationExperiment(dependencies) {
           deltaBaseMinusRidge: deltaBaseMinusRidge,
           rankingAvailable: windowRankingAvailable
         });
-        if (typeof onProgress === "function" && onProgress({
+        const shouldKeepGoing = callback({
           completedWindows: windowIndex + 1,
           totalWindows: TEMPORAL_OUTER_WINDOWS,
           windowsPlanned: TEMPORAL_OUTER_WINDOWS,
+          completedWork: completedWork,
+          totalWork: totalWork,
           phase: "completed"
-        }) === false) {
-          return unavailableTemporalEvaluation(prepared.featureRowCount, rows.length, prepared.missingDateCount,
-            "La evaluación temporal se canceló porque cambiaron los datos personales durante el cálculo.",
-            groups.length, prepared.explicitDateCount, prepared.unverifiedDateCount);
-        }
-        if (windowIndex + 1 < schedule.windows.length) {
-          await new Promise(function (resolve) { setTimeout(resolve, 0); });
-        }
+        });
+        if (shouldKeepGoing === false || !shouldContinue()) return null;
+        if (windowIndex + 1 < schedule.windows.length) await yieldToBrowser();
       }
 
       const testCount = testIndicesAll.length;
