@@ -93,6 +93,13 @@ export function createRecommendationRanking(ctx) {
   function getRecommendations(limit, mode) {
     const requestedLimit = Math.max(1, Number(limit) || 8);
     const profile = ctx.buildProfile();
+
+    // A profile with no valid personal ratings must not receive fabricated
+    // personalized recommendations. Discovery remains available elsewhere.
+    // Keep this guard here (rather than in rankCandidates) so offline evaluation
+    // can still rank explicit, already-scored synthetic candidates.
+    if (profile && profile.count === 0) return [];
+
     const candidates = (ctx.catalog || []).concat(ctx.recommendationCandidates || []);
     const results = ctx.uniqueDiscoveryMovies(candidates).filter(function (movie) {
       return !ctx.isMovieInCollection(movie.title,movie.tmdbId) && movie.source !== "history";
