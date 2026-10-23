@@ -1,11 +1,36 @@
 import assert from "node:assert/strict";
 import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
+import { buildKernel, clampRating, predictRidge, trainRidge, vectorize } from "../js/recommendations/ridge-kernel.js";
 import { summarizeRepeatedRidgeStability } from "../js/recommendations/repeated-validation-summary.js";
 import { createRecommendationEngine } from "../js/recommendations/engine.js";
 import { createRecommendationRanking } from "../js/recommendations/ranking.js";
 import { movieFeatures } from "../js/recommendations/features.js";
 import { ratingValue, movieTmdbId, titleKey } from "../js/core/movie-utils.js";
 import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../js/core/date-utils.js";
+
+
+// Regression of the isolated numeric kernel: feature scales and predictions must stay stable.
+const scaled = vectorize(["género: Drama", "tema: misterio", "década: 1990"]);
+assert.equal(scaled.get("género: Drama"), 1);
+assert.equal(scaled.get("tema: misterio"), 0.35);
+assert.equal(scaled.get("década: 1990"), 0.2);
+assert.equal(clampRating(-2), 1);
+assert.equal(clampRating(12), 10);
+
+const dramaVector = vectorize(["género: Drama"]);
+const comedyVector = vectorize(["género: Comedia"]);
+const numericRows = [
+  { rating: 8, trainingVector: dramaVector, candidateVector: dramaVector },
+  { rating: 4, trainingVector: comedyVector, candidateVector: comedyVector }
+];
+const numericKernel = buildKernel(numericRows);
+assert.deepEqual(Array.from(numericKernel[0]), [1, 0]);
+assert.deepEqual(Array.from(numericKernel[1]), [0, 1]);
+const numericModel = trainRidge(numericRows, numericKernel, [0, 1], 1);
+assert.ok(Math.abs(numericModel.coefficients[0] - 1) < 1e-10);
+assert.ok(Math.abs(numericModel.coefficients[1] + 1) < 1e-10);
+assert.ok(Math.abs(predictRidge(numericRows, numericModel, dramaVector) - 7) < 1e-10);
+assert.ok(Math.abs(predictRidge(numericRows, numericModel, comedyVector) - 5) < 1e-10);
 
 function fixtures(count) {
   return Array.from({ length: count }, function (_, index) {
