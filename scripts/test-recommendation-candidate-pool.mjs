@@ -61,11 +61,11 @@ assert.equal(fourVariety.returnedResultCount, 4);
 assert.equal(fourVariety.shortfallReason, "eligible-pool-too-small",
   "Four results out of five are explained by only four eligible unique candidates.");
 
-const diverse = fixture({ localCount: 8, remoteCount: 0, sameGenre: true });
+const diverse = fixture({ localCount: 9, remoteCount: 0, sameGenre: true });
 const balanced = await diverse.evaluation.evaluateRecommendationQualityAsync();
 const balancedCounts = balanced.candidateAvailability.find(item => item.mode === "balanced");
-assert.equal(balancedCounts.eligibleCandidatePool, 7,
-  "The in-collection local entry is excluded, but seven candidates remain");
+assert.equal(balancedCounts.eligibleCandidatePool, 8,
+  "The in-collection local entry is excluded, but eight candidates remain");
 assert.equal(balancedCounts.returnedResultCount, 2,
   "When a large same-genre pool is present, the balanced two-per-main-genre policy can intentionally return fewer than requested");
 assert.equal(balancedCounts.shortfallReason, "balanced-genre-cap");
