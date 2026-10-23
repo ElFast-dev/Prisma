@@ -302,7 +302,11 @@ const requiredFiles = [
   'openspec/changes/2026-10-23-extract-settings-views/proposal.md',
   'openspec/changes/2026-10-23-extract-settings-views/design.md',
   'openspec/changes/2026-10-23-extract-settings-views/tasks.md',
-  'openspec/changes/2026-10-23-extract-settings-views/specs/interface/spec.md'
+  'openspec/changes/2026-10-23-extract-settings-views/specs/interface/spec.md',
+  'openspec/changes/2026-10-23-split-lab-panel-views/proposal.md',
+  'openspec/changes/2026-10-23-split-lab-panel-views/design.md',
+  'openspec/changes/2026-10-23-split-lab-panel-views/tasks.md',
+  'openspec/changes/2026-10-23-split-lab-panel-views/specs/interface/spec.md'
 ];
 
 const errors = [];
