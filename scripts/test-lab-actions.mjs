@@ -49,12 +49,22 @@ function createFixture() {
         }
       }
     },
+    labMetrics: {
+      stats: { total: 2, average: 6 },
+      profile: { count: 2, withMetadata: 2, average: 6, features: new Map() },
+      evaluation: { available: true, count: 2, mae: 1.25, baselineMae: 1.5, improvementPct: 16.67 },
+      recommendationQuality: {
+        ranking: { available: true, count: 2, relevantCount: 1, folds: 5, foldsEvaluated: 0, modes: [] },
+        diversity: []
+      }
+    },
+    async ensureLabMetrics() { return this.labMetrics; },
     buildProfile() { return { count: 2, features: new Map() }; },
     ratingValue(record) { return record && Number.isFinite(record.rating) ? record.rating : null; },
     evaluateModel() { return { mae: 1.25 }; },
     evaluateRecommendationQuality() { return { available: true, ndcg: 0.7 }; },
     recommendationNormalizationEvaluation: {
-      evaluate() {
+      async evaluateAsync() {
         normalizationCalls += 1;
         return { available: true, sampleCount: 8 };
       }
@@ -138,14 +148,14 @@ assert.equal(fixture.normalizationCalls, 1);
 assert.deepEqual(ctx.influenceNormalizationEvaluationResult, { available: true, sampleCount: 8 });
 assert.equal(ctx.influenceNormalizationEvaluationBusy, false);
 
-// Clipboard must be invoked synchronously during the explicit action, before the first await.
+// The report awaits the current cached metrics snapshot, then copies the aggregate report.
 const copyPromise = actions.copyRecommendationDiagnosticReport(true);
+await copyPromise;
 assert.equal(clipboardWrites.length, 1);
 assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, true);
 assert.equal(JSON.parse(ctx.recommendationDiagnosticReportText).privacy.networkTransmission, false);
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
-  "Informe generado localmente. Revisa su contenido antes de compartirlo; Prisma no lo envía a ningún servidor.");
-await copyPromise;
+  "Copiado al portapapeles. Revisa el contenido de abajo antes de pegarlo en otra conversación.");
 assert.equal(fixture.diagnosticInput.ratedCount, 2);
 assert.equal(fixture.diagnosticInput.catalogCount, 1);
 assert.deepEqual(fixture.diagnosticInput.collectionCounts, { watched: 1, pending: 1, hidden: 1 });
