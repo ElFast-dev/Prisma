@@ -226,5 +226,96 @@ export function createRecommendationEngine(dependencies) {
     };
   }
 
-  return { buildProfile, predictRating, evaluateModel };
+
+  async function evaluateModelAsync(control) {
+    const settings = control || {};
+    const batchSize = Math.max(1, Math.min(8, Number(settings.batchSize) || 3));
+    const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
+    const onProgress = typeof settings.onProgress === "function" ? settings.onProgress : function () {};
+    const yieldToBrowser = function () {
+      return new Promise(function (resolve) { setTimeout(resolve, 0); });
+    };
+    const sourceRatings = getRatings() || [];
+    const mapped = [];
+    let decadeExamples = 0;
+
+    for (let index = 0; index < sourceRatings.length; index += 1) {
+      if (!shouldContinue()) return null;
+      const entry = sourceRatings[index];
+      if (ratingValue(entry) != null) {
+        const movie = findMovie(entry.title, entry.tmdbId || entry.tmId, entry.year || entry.releaseYear || entry.release_year);
+        const names = movieFeatures(movie, entry);
+        if (names.length) {
+          mapped.push({ entry: entry, movie: movie, features: names });
+          if (names.some(function (feature) { return feature.indexOf("década: ") === 0; })) decadeExamples += 1;
+        }
+      }
+      if ((index + 1) % 16 === 0) {
+        onProgress({ phase: "mapping", completed: index + 1, total: sourceRatings.length });
+        await yieldToBrowser();
+      }
+    }
+
+    if (mapped.length < 5) {
+      return {
+        available: false, count: mapped.length, mae: null, baselineMae: null,
+        improvementPct: null, withoutDecadeMae: null, decadeImprovement: null,
+        themeShrinkageMae: null, themeShrinkageDelta: null,
+        themeShrinkagePrior: THEME_SUPPORT_SHRINKAGE_PRIOR,
+        decadeExamples: decadeExamples
+      };
+    }
+
+    const errors = [];
+    const baselineErrors = [];
+    const withoutDecadeErrors = [];
+    const themeShrinkageErrors = [];
+
+    for (let index = 0; index < mapped.length; index += 1) {
+      if (!shouldContinue()) return null;
+      const heldOut = mapped[index];
+      const training = mapped.filter(function (_, trainingIndex) { return trainingIndex !== index; });
+      const profile = buildProfile(training.map(function (row) { return row.entry; }));
+      const candidate = heldOut.movie || heldOut.entry;
+      const predicted = predictRating(candidate, profile).score;
+      errors.push(Math.abs(predicted - ratingValue(heldOut.entry)));
+      baselineErrors.push(Math.abs(profile.personalAverage - ratingValue(heldOut.entry)));
+
+      const shrinkageProfile = buildProfile(training.map(function (row) { return row.entry; }), { themeSupportShrinkage: true });
+      const shrinkagePrediction = predictRating(candidate, shrinkageProfile).score;
+      themeShrinkageErrors.push(Math.abs(shrinkagePrediction - ratingValue(heldOut.entry)));
+
+      const profileWithoutDecade = buildProfile(training.map(function (row) { return row.entry; }), { includeDecade: false });
+      const predictedWithoutDecade = predictRating(candidate, profileWithoutDecade, { includeDecade: false }).score;
+      withoutDecadeErrors.push(Math.abs(predictedWithoutDecade - ratingValue(heldOut.entry)));
+
+      if ((index + 1) % batchSize === 0 || index + 1 === mapped.length) {
+        onProgress({ phase: "validation", completed: index + 1, total: mapped.length });
+        await yieldToBrowser();
+      }
+    }
+
+    const mae = errors.reduce(function (sum, error) { return sum + error; }, 0) / errors.length;
+    const baselineMae = baselineErrors.reduce(function (sum, error) { return sum + error; }, 0) / baselineErrors.length;
+    const withoutDecadeMae = withoutDecadeErrors.reduce(function (sum, error) { return sum + error; }, 0) / withoutDecadeErrors.length;
+    const themeShrinkageMae = themeShrinkageErrors.reduce(function (sum, error) { return sum + error; }, 0) / themeShrinkageErrors.length;
+    const themeShrinkageDelta = mae - themeShrinkageMae;
+    const improvementPct = baselineMae > 0 ? ((baselineMae - mae) / baselineMae) * 100 : null;
+
+    return {
+      available: true,
+      count: errors.length,
+      mae: mae,
+      baselineMae: baselineMae,
+      improvementPct: improvementPct,
+      withoutDecadeMae: withoutDecadeMae,
+      decadeImprovement: decadeExamples >= 5 ? withoutDecadeMae - mae : null,
+      themeShrinkageMae: themeShrinkageMae,
+      themeShrinkageDelta: themeShrinkageDelta,
+      themeShrinkagePrior: THEME_SUPPORT_SHRINKAGE_PRIOR,
+      decadeExamples: decadeExamples
+    };
+  }
+
+  return { buildProfile, predictRating, evaluateModel, evaluateModelAsync };
 }
