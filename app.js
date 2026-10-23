@@ -4,17 +4,17 @@ import { createStorageProtection } from "./js/core/storage-protection.js";
 import { createStorageProtectionActions } from "./js/app/storage-protection-actions.js?v=core-20261023-1";
 import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
 import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1";
-import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261022-2";
+import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261023-1";
 import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261023-1";
-import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js?v=rec-20261022-2";
+import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js?v=rec-20261023-1";
 import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261022-2";
-import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js?v=rec-20261022-2";
+import { createRecommendationEvaluation } from "./js/recommendations/evaluation.js?v=rec-20261023-1";
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261022-4";
 import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261023-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261022-4";
-import { createPageViews } from "./js/ui/page-views.js?v=core-20261023-7";
+import { createPageViews } from "./js/ui/page-views.js?v=core-20261023-8";
 import { createModalViews } from "./js/ui/modal-views.js?v=ui-20261023-1";
 import { createMovieActions } from "./js/app/movie-actions.js?v=core-20261022-5";
 import { createImportExportActions } from "./js/import-export/actions.js?v=core-20261022-4";
@@ -25,12 +25,13 @@ import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261022
 import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261022-3";
 import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-20261022-3";
 import { createModalController } from "./js/ui/modal-controller.js?v=core-20261022-6";
-import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261023-2";
+import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261023-3";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-8";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js?v=core-20261022-3";
-import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-1";
+import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-2";
+import { createLabMetricsActions } from "./js/app/lab-metrics-actions.js?v=core-20261023-1";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
 (function () {
@@ -53,6 +54,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   const storageProtection = createStorageProtection(typeof navigator !== "undefined" ? navigator.storage : null);
   let storageProtectionSnapshot = { supported: null, statusSupported: null, persisted: null, usage: null, quota: null };
   let storageProtectionBusy = false;
+  let labMetricsActions = null;
   let recommendationDiagnosticReportText = "";
   let recommendationDiagnosticCopyMessage = "";
   let recommendationDiagnosticFeatureLabelsIncluded = false;
@@ -119,7 +121,10 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     getState: function () { return state; },
     getCatalog: function () { return catalog; },
     getCatalogByTitle: function () { return catalogByTitle; },
-    setCatalog: function (value) { catalog = value; },
+    setCatalog: function (value) {
+      if (catalog !== value && labMetricsActions) labMetricsActions.invalidateLabMetrics();
+      catalog = value;
+    },
     setCatalogByTitle: function (value) { catalogByTitle = value; },
     normalizeMovie: normalizeMovie,
     titleKey: titleKey,
@@ -175,6 +180,13 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get recommendationDiagnosticReportText() { return recommendationDiagnosticReportText; },
     get recommendationDiagnosticCopyMessage() { return recommendationDiagnosticCopyMessage; },
     get recommendationDiagnosticFeatureLabelsIncluded() { return recommendationDiagnosticFeatureLabelsIncluded; },
+    get labMetrics() { return labMetricsActions ? labMetricsActions.labMetrics : null; },
+    get labMetricsBusy() { return Boolean(labMetricsActions && labMetricsActions.labMetricsBusy); },
+    get labMetricsProgress() { return labMetricsActions ? labMetricsActions.labMetricsProgress : null; },
+    get labMetricsError() { return labMetricsActions ? labMetricsActions.labMetricsError : null; },
+    get ensureLabMetrics() { return labMetricsActions ? labMetricsActions.ensureLabMetrics : null; },
+    get cancelLabMetrics() { return labMetricsActions ? labMetricsActions.cancelLabMetrics : null; },
+    get cancelLabExperiments() { return cancelLabExperiments; },
     get escapeHTML() { return escapeHTML; },
     get titleKey() { return titleKey; },
     get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
@@ -459,7 +471,30 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   });
   const { logEvent, persistState: persistStateToStorage, toast } = appRuntime;
 
+  function cancelLabExperiments() {
+    // Invalidate only unfinished runs. Previously completed diagnostic results remain available
+    // when the user returns to the Lab; navigation must not erase completed work.
+    if (ridgeEvaluationBusy) {
+      ridgeEvaluationRunId += 1;
+      ridgeEvaluationResult = null;
+      ridgeEvaluationBusy = false;
+      ridgeEvaluationProgress = null;
+    }
+    if (temporalRidgeEvaluationBusy) {
+      temporalRidgeEvaluationRunId += 1;
+      temporalRidgeEvaluationResult = null;
+      temporalRidgeEvaluationBusy = false;
+      temporalRidgeEvaluationProgress = null;
+    }
+    if (influenceNormalizationEvaluationBusy) {
+      influenceNormalizationEvaluationRunId += 1;
+      influenceNormalizationEvaluationResult = null;
+      influenceNormalizationEvaluationBusy = false;
+    }
+  }
+
   function persistState() {
+    if (labMetricsActions) labMetricsActions.invalidateLabMetrics();
     ridgeEvaluationRunId += 1;
     ridgeEvaluationResult = null;
     ridgeEvaluationBusy = false;
@@ -496,7 +531,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
   });
   const { renderTMDBHistoryPanel, renderTMDBAttribution, renderTMDBResults } = tmdbViews;
 
-     const { buildProfile, predictRating, evaluateModel } = createRecommendationEngine({
+     const { buildProfile, predictRating, evaluateModel, evaluateModelAsync } = createRecommendationEngine({
     getRatings: function () { return state.rated; },
     findMovie: findMovie,
     movieFeatures: movieFeatures,
@@ -542,7 +577,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     movieTmdbId: movieTmdbId,
     titleKey: titleKey
   });
-  const { evaluateRecommendationQuality } = recommendationEvaluation;
+  const { evaluateRecommendationQuality, evaluateRecommendationQualityAsync } = recommendationEvaluation;
 
   const recommendationNormalizationEvaluation = createRecommendationNormalizationEvaluation({
     getRatings: function () { return state.rated; },
@@ -554,6 +589,21 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     rankCandidates: recommendationRanking.rankCandidates,
     movieTmdbId: movieTmdbId,
     titleKey: titleKey
+  });
+
+  labMetricsActions = createLabMetricsActions({
+    get window() { return window; },
+    get currentPage() { return currentPage; },
+    get state() { return state; },
+    get catalog() { return catalog; },
+    get recommendationCandidates() { return tmdbRecommendationCandidates; },
+    get recommendationMode() { return recommendationMode; },
+    get summaryStats() { return summaryStats; },
+    get buildProfile() { return buildProfile; },
+    get genreStats() { return genreStats; },
+    get evaluateModelAsync() { return evaluateModelAsync; },
+    get evaluateRecommendationQualityAsync() { return evaluateRecommendationQualityAsync; },
+    get renderApp() { return renderApp; }
   });
 
   const labActions = createLabActions({
@@ -573,6 +623,8 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get recommendationMode() { return recommendationMode; },
     get evaluateModel() { return evaluateModel; },
     get evaluateRecommendationQuality() { return evaluateRecommendationQuality; },
+    get ensureLabMetrics() { return labMetricsActions.ensureLabMetrics; },
+    get labMetrics() { return labMetricsActions.labMetrics; },
     get influenceNormalizationEvaluationBusy() { return influenceNormalizationEvaluationBusy; },
     set influenceNormalizationEvaluationBusy(value) { influenceNormalizationEvaluationBusy = value; },
     get ridgeEvaluationBusy() { return ridgeEvaluationBusy; },

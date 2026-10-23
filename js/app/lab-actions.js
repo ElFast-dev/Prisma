@@ -1,7 +1,26 @@
+function performanceNow(windowRef) {
+  return windowRef && windowRef.performance && typeof windowRef.performance.now === "function"
+    ? windowRef.performance.now()
+    : Date.now();
+}
+
+function logLabEvaluationTiming(windowRef, operation, startedAt, sampleCount, status) {
+  const logger = windowRef && windowRef.console && windowRef.console.info;
+  if (typeof logger !== "function") return;
+  logger.call(windowRef.console, "[Prisma performance]", JSON.stringify({
+    operation: operation,
+    durationMs: Math.round(Math.max(0, performanceNow(windowRef) - startedAt) * 10) / 10,
+    sampleCount: Number.isFinite(sampleCount) ? Math.max(0, Math.floor(sampleCount)) : 0,
+    status: status || "completed"
+  }));
+}
+
 export function createLabActions(ctx) {
   async function runInfluenceNormalizationExperiment() {
     if (ctx.influenceNormalizationEvaluationBusy || ctx.ridgeEvaluationBusy || ctx.temporalRidgeEvaluationBusy) return;
     const runId = ++ctx.influenceNormalizationEvaluationRunId;
+    const timingStartedAt = performanceNow(ctx.window);
+    let timingStatus = "completed";
     ctx.influenceNormalizationEvaluationBusy = true;
     if (ctx.currentPage === "lab") ctx.renderApp();
     await new Promise(function (resolve) {
@@ -9,14 +28,33 @@ export function createLabActions(ctx) {
       else ctx.window.setTimeout(resolve, 0);
     });
     try {
-      const evaluationResult = ctx.recommendationNormalizationEvaluation.evaluate();
-      if (runId !== ctx.influenceNormalizationEvaluationRunId) return;
+      const evaluationResult = await ctx.recommendationNormalizationEvaluation.evaluateAsync({
+        shouldContinue: function () { return runId === ctx.influenceNormalizationEvaluationRunId && ctx.currentPage === "lab"; },
+        onMeasure: function (operation, durationMs, sampleCount, status) {
+          const logger = ctx.window && ctx.window.console && ctx.window.console.info;
+          if (typeof logger === "function") logger.call(ctx.window.console, "[Prisma performance]", JSON.stringify({
+            operation: operation,
+            durationMs: Math.round(Math.max(0, durationMs) * 10) / 10,
+            sampleCount: Number.isFinite(sampleCount) ? Math.max(0, Math.floor(sampleCount)) : 0,
+            status: status || "completed"
+          }));
+        }
+      });
+      if (runId !== ctx.influenceNormalizationEvaluationRunId || ctx.currentPage !== "lab") {
+        timingStatus = "cancelled";
+        return;
+      }
+      if (!evaluationResult) {
+        timingStatus = "cancelled";
+        return;
+      }
       ctx.influenceNormalizationEvaluationResult = evaluationResult;
       ctx.toast(evaluationResult.available
         ? "Calibración de influencia terminada: tres variantes y los mismos pliegues comparados."
         : (evaluationResult.unavailableReason || "No se pudo evaluar la normalización de influencia."),
       !evaluationResult.available);
     } catch (_) {
+      timingStatus = "error";
       if (runId !== ctx.influenceNormalizationEvaluationRunId) return;
       ctx.influenceNormalizationEvaluationResult = {
         executionStatus: "unavailable",
@@ -27,6 +65,8 @@ export function createLabActions(ctx) {
       };
       ctx.toast("No se pudo completar el experimento de normalización de forma estable.", true);
     } finally {
+      logLabEvaluationTiming(ctx.window, "influence-normalization", timingStartedAt,
+        ctx.state && ctx.state.rated ? ctx.state.rated.length : 0, timingStatus);
       if (runId === ctx.influenceNormalizationEvaluationRunId) {
         ctx.influenceNormalizationEvaluationBusy = false;
         if (ctx.currentPage === "lab") ctx.renderApp();
@@ -37,6 +77,8 @@ export function createLabActions(ctx) {
   async function runRidgeExperiment() {
     if (ctx.ridgeEvaluationBusy || ctx.temporalRidgeEvaluationBusy) return;
     const runId = ++ctx.ridgeEvaluationRunId;
+    const timingStartedAt = performanceNow(ctx.window);
+    let timingStatus = "completed";
     ctx.ridgeEvaluationBusy = true;
     ctx.ridgeEvaluationProgress = { completedRepeats: 0, totalRepeats: 3, foldsPerRepeat: 5 };
     if (ctx.currentPage === "lab") ctx.renderApp();
@@ -53,12 +95,16 @@ export function createLabActions(ctx) {
         }
         return true;
       });
-      if (runId !== ctx.ridgeEvaluationRunId) return;
+      if (runId !== ctx.ridgeEvaluationRunId || ctx.currentPage !== "lab") {
+        timingStatus = "cancelled";
+        return;
+      }
       ctx.ridgeEvaluationResult = evaluationResult;
       ctx.toast(ctx.ridgeEvaluationResult.available
         ? "Validación Ridge terminada: se evaluaron 3 repeticiones de 5 pliegues. Revisa los agregados en el Laboratorio."
         : (ctx.ridgeEvaluationResult.reason || "No se pudo evaluar Ridge con esta muestra."), !ctx.ridgeEvaluationResult.available);
     } catch (_) {
+      timingStatus = "error";
       if (runId !== ctx.ridgeEvaluationRunId) return;
       ctx.ridgeEvaluationResult = { available: false, count: 0, mae: null, baselineMae: null,
         deltaBaseMinusRidge: null, outerFolds: 5, foldsEvaluated: 0, innerFolds: 3,
@@ -67,6 +113,8 @@ export function createLabActions(ctx) {
         reason: "No se pudo completar el experimento Ridge de forma estable." };
       ctx.toast("No se pudo completar el experimento Ridge de forma estable.", true);
     } finally {
+      logLabEvaluationTiming(ctx.window, "ridge-evaluation", timingStartedAt,
+        ctx.state && ctx.state.rated ? ctx.state.rated.length : 0, timingStatus);
       if (runId === ctx.ridgeEvaluationRunId) {
         ctx.ridgeEvaluationBusy = false;
         ctx.ridgeEvaluationProgress = null;
@@ -90,6 +138,8 @@ export function createLabActions(ctx) {
   async function runTemporalRidgeExperiment() {
     if (ctx.temporalRidgeEvaluationBusy || ctx.ridgeEvaluationBusy) return;
     const runId = ++ctx.temporalRidgeEvaluationRunId;
+    const timingStartedAt = performanceNow(ctx.window);
+    let timingStatus = "completed";
     ctx.temporalRidgeEvaluationBusy = true;
     ctx.temporalRidgeEvaluationProgress = { completedWindows: 0, totalWindows: 5 };
     if (ctx.currentPage === "lab") ctx.renderApp();
@@ -106,13 +156,17 @@ export function createLabActions(ctx) {
         }
         return true;
       });
-      if (runId !== ctx.temporalRidgeEvaluationRunId) return;
+      if (runId !== ctx.temporalRidgeEvaluationRunId || ctx.currentPage !== "lab") {
+        timingStatus = "cancelled";
+        return;
+      }
       ctx.temporalRidgeEvaluationResult = evaluationResult;
       ctx.toast(ctx.temporalRidgeEvaluationResult.available
         ? "Validación temporal terminada. Revisa las ventanas futuras en el Laboratorio."
         : (ctx.temporalRidgeEvaluationResult.unavailableReason || "No se pudo completar la evaluación temporal."),
       !ctx.temporalRidgeEvaluationResult.available);
     } catch (_) {
+      timingStatus = "error";
       if (runId !== ctx.temporalRidgeEvaluationRunId) return;
       ctx.temporalRidgeEvaluationResult = {
         available: false, sampleCount: 0, featureRowCount: 0, timestampedFeatureCount: 0,
@@ -123,6 +177,8 @@ export function createLabActions(ctx) {
       };
       ctx.toast("No se pudo completar la evaluación temporal de forma estable.", true);
     } finally {
+      logLabEvaluationTiming(ctx.window, "temporal-ridge-evaluation", timingStartedAt,
+        ctx.state && ctx.state.rated ? ctx.state.rated.length : 0, timingStatus);
       if (runId === ctx.temporalRidgeEvaluationRunId) {
         ctx.temporalRidgeEvaluationBusy = false;
         ctx.temporalRidgeEvaluationProgress = null;
@@ -139,7 +195,14 @@ export function createLabActions(ctx) {
 
   async function copyRecommendationDiagnosticReport(includeFeatureLabels) {
     ctx.recommendationDiagnosticFeatureLabelsIncluded = Boolean(includeFeatureLabels);
-    const profile = ctx.buildProfile();
+    const metrics = await ctx.ensureLabMetrics();
+    if (!metrics || ctx.currentPage !== "lab") {
+      if (ctx.currentPage === "lab") {
+        ctx.toast(ctx.labMetricsError || "El diagnóstico aún no está disponible; espera a que terminen las métricas iniciales.", true);
+      }
+      return;
+    }
+    const profile = metrics.profile;
     const report = ctx.buildRecommendationDiagnosticReport({
       ratedCount: ctx.state.rated.length,
       ratingValues: ctx.state.rated.map(ctx.ratingValue).filter(function (value) { return value != null; }),
@@ -152,11 +215,11 @@ export function createLabActions(ctx) {
       profile: profile,
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
-      ratingEvaluation: ctx.evaluateModel(),
+      ratingEvaluation: metrics.evaluation,
       ridgeEvaluation: ctx.ridgeEvaluationResult,
       temporalRidgeEvaluation: ctx.temporalRidgeEvaluationResult,
       influenceNormalizationEvaluation: ctx.influenceNormalizationEvaluationResult,
-      recommendationQuality: ctx.evaluateRecommendationQuality(),
+      recommendationQuality: metrics.recommendationQuality,
       includeFeatureLabels: ctx.recommendationDiagnosticFeatureLabelsIncluded
     });
     const reportText = JSON.stringify(report, null, 2);

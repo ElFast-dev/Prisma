@@ -68,6 +68,10 @@ jobs:
           node --check js/ui/tmdb-views.js
           node --check js/tmdb/history-sync.js
           node --check js/tmdb/browser-actions.js
+          node --check js/app/lab-metrics-actions.js
+          node --check scripts/lab-regression-fixtures.mjs
+          node --check scripts/test-lab-responsiveness-playwright.mjs
+          node --check scripts/measure-lab-baseline-playwright.mjs
           node --check js/app/lifecycle.js
           node --check js/app/pwa-update.js
           node --check js/app/runtime.js

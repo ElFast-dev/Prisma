@@ -3,12 +3,13 @@ export function createLabTemporalView(ctx) {
     const result = ctx.temporalRidgeEvaluationResult || null;
     const busy = Boolean(ctx.temporalRidgeEvaluationBusy);
     const ridgeBusy = Boolean(ctx.ridgeEvaluationBusy);
+    const metricsBusy = Boolean(ctx.labMetricsBusy);
     const useCollectionAddedAtProxy = Boolean(ctx.temporalUseCollectionAddedAtProxy);
     const progress = ctx.temporalRidgeEvaluationProgress || null;
     const completedWindows = Number(progress && progress.completedWindows || 0);
     const totalWindows = Number(progress && progress.totalWindows || 5);
-    const buttonLabel = busy ? "Ventana " + completedWindows + "/" + totalWindows + "…" :
-      (ridgeBusy ? "Validación Ridge en curso…" : (result ? "Volver a evaluar" : "Evaluar historial temporal"));
+    const buttonLabel = metricsBusy ? "Preparando métricas iniciales…" : (busy ? "Ventana " + completedWindows + "/" + totalWindows + "…" :
+      (ridgeBusy ? "Validación Ridge en curso…" : (result ? "Volver a evaluar" : "Evaluar historial temporal")));
     const dateSourceMode = result && result.dateSourceMode
       ? result.dateSourceMode
       : (useCollectionAddedAtProxy ? "collection-added-proxy" : "watchedAt-only");
@@ -19,7 +20,7 @@ export function createLabTemporalView(ctx) {
     const dateProxyControl = '<div class="temporal-date-proxy-control">' +
       '<button class="btn btn-secondary btn-small" type="button" data-action="toggle-temporal-added-date-proxy" aria-pressed="' +
       (useCollectionAddedAtProxy ? "true" : "false") + '"' +
-      (busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' +
+      (metricsBusy || busy || ridgeBusy ? ' disabled aria-disabled="true"' : '') + '>' +
       (useCollectionAddedAtProxy ? "Proxy de fecha añadida: activado" : "Activar proxy de fecha añadida") + '</button>' +
       '<p class="metric-note">' + dateSourceDescription + '</p>' +
       '<p class="metric-note">La elección es temporal y local. No modifica watchedAt, las fechas guardadas ni las recomendaciones activas.</p></div>';

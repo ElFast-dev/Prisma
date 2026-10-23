@@ -101,6 +101,10 @@ assert.ok(result.methods.every(item => item.rankingModes.every(mode =>
 assert.ok(result.methods.every(item => item.mae >= 0 && item.mae <= 9));
 assert.deepEqual(result, evaluator.evaluate(),
   "La evaluación debe ser determinista con las mismas valoraciones y características.");
+const asyncNormalization = await evaluator.evaluateAsync();
+assert.deepEqual(asyncNormalization, result,
+  "La evaluación cooperativa debe devolver las mismas métricas, folds y estados que la implementación síncrona.");
+
 
 const smallRatings = ratings.slice(0, 20);
 const smallCatalog = new Map(smallRatings.map(entry => [entry.title, catalog.get(entry.title)]));

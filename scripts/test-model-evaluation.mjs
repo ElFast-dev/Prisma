@@ -151,4 +151,14 @@ assert.ok(engineSource.includes('predictRating(candidate, profile).score'));
 assert.ok(uiSource.includes('Referencia (media de entrenamiento): '));
 assert.ok(uiSource.includes('Sin señal de década: '));
 assert.ok(uiSource.includes('Se necesitan al menos 5 valoraciones evaluadas con año válido para medir la señal de década'));
+const asyncPhases = [];
+const asyncEvaluation = await evaluated.engine.evaluateModelAsync({
+  batchSize: 2,
+  onProgress: update => asyncPhases.push(update.phase)
+});
+assert.deepEqual(asyncEvaluation, evaluated.result,
+  "La evaluación cooperativa debe preservar exactamente las métricas, umbrales y ablaciones de la versión síncrona.");
+assert.ok(asyncPhases.includes("validation"),
+  "La evaluación de notas debe exponer progreso agregado por lote sin incluir títulos ni puntuaciones individuales.");
+
 console.log('Pruebas de evaluación correctas: identidad TMDB, referencia, ablación de década, muestra insuficiente y efecto temporal.');

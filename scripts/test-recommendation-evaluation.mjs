@@ -28,7 +28,7 @@ function createDataset({ count = 60, reverse = false, lowRatings = false } = {})
   function findMovie(title, id) {
     return id ? (movies.get(String(id)) || null) : (ratings.find(entry => entry.title === title) || null);
   }
-  function buildProfile(trainingRatings) {
+  function buildProfile(trainingRatings = ratings) {
     const seenIds = new Set(trainingRatings.map(entry => String(entry.tmdbId)));
     const sums = new Map();
     const counts = new Map();
@@ -183,5 +183,14 @@ const shortList = createRecommendationEvaluation({
 });
 assert.equal(shortList.evaluateDiversityModes()[0].score, null,
   "Una lista de un solo título no tiene pares con los que medir diversidad.");
+const asyncMeasures = [];
+const asyncQuality = await ideal.evaluation.evaluateRecommendationQualityAsync({
+  onMeasure: (operation, durationMs, sampleCount, status) => asyncMeasures.push({ operation, durationMs, sampleCount, status })
+});
+assert.deepEqual(asyncQuality, { ranking: idealResult, diversity },
+  "El ranking cooperativo y la diversidad deben preservar los resultados calculados de forma síncrona.");
+assert.ok(asyncMeasures.some(item => item.operation === "ranking-cross-validation" && item.status === "completed"));
+assert.ok(asyncMeasures.some(item => item.operation === "ranking-diversity" && item.status === "completed"));
+
 
 console.log("Evaluación de recomendaciones correcta: nDCG@5 por modo con las mismas candidatas, pliegues sin fuga de notas, umbrales, determinismo y diversidad Jaccard.");
