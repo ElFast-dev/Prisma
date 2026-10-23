@@ -44,6 +44,7 @@ Prisma es una aplicación estática de cliente escrita con HTML, CSS y JavaScrip
 | `js/ui/rating-sheet-view.js` | Renderiza el editor numérico de puntuación de 1 a 10. |
 | `js/ui/person-filmography.js` | Deduplica créditos por ID TMDB, filtra la colección por identidad y agrupa filmografías por año. |
 | `js/app/movie-actions.js` | Acciones de dominio para valorar, borrar notas, marcar vistas, gestionar pendientes y ocultar películas. |
+| `js/app/lab-metrics-actions.js` | Orquesta las métricas iniciales del Laboratorio después del primer render, las cachea por estado/catálogo, cancela resultados obsoletos y registra tiempos agregados sin datos de películas. |
 | `js/app/lab-actions.js` | Coordina los experimentos del Laboratorio, su progreso y cancelación, y la copia explícita del informe diagnóstico mediante dependencias inyectadas; no redefine el ranking ni envía datos. |
 | `js/app/storage-protection-actions.js` | Coordina la inspección del almacenamiento y la solicitud explícita de persistencia, con guardas de concurrencia, avisos y repintado inyectados; no persiste datos personales ni accede al DOM directamente. |
 | `js/import-export/actions.js` | Orquestación de las importaciones JSON/CSV, copias de seguridad, restauración y restablecimiento local. |
