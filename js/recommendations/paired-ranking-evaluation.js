@@ -150,23 +150,36 @@ function metricsForFold(testRows, scored, rankCandidates, threshold) {
 function summariseRanking(accumulator, threshold, reference, eligible) {
   const modes = {};
   for (const mode of MODES) {
-    const scores = accumulator.ranking[String(threshold)][mode].scores;
-    const referenceScores = reference ? reference.ranking[String(threshold)][mode].scores : [];
-    let wins = 0, ties = 0, losses = 0;
-    if (reference) scores.forEach((score, index) => {
-      const delta = score - referenceScores[index];
-      if (delta > EPSILON) wins += 1;
-      else if (delta < -EPSILON) losses += 1;
-      else ties += 1;
-    });
+    // Keep the 15 outer-fold positions, including unavailable folds, so a paired
+    // win/tie/loss always compares the same held-out set between variants.
+    const metric = accumulator.ranking[String(threshold)][mode];
+    const foldScores = metric.foldScores.slice(0, REPEATS * OUTER_FOLDS);
+    const validScores = foldScores.filter(Number.isFinite);
+    const referenceFoldScores = reference
+      ? reference.ranking[String(threshold)][mode].foldScores.slice(0, REPEATS * OUTER_FOLDS)
+      : [];
+    let wins = 0, ties = 0, losses = 0, pairedFolds = 0;
+    if (reference) {
+      const count = Math.min(foldScores.length, referenceFoldScores.length);
+      for (let index = 0; index < count; index += 1) {
+        const score = foldScores[index], baseline = referenceFoldScores[index];
+        if (!Number.isFinite(score) || !Number.isFinite(baseline)) continue;
+        pairedFolds += 1;
+        const delta = score - baseline;
+        if (delta > EPSILON) wins += 1;
+        else if (delta < -EPSILON) losses += 1;
+        else ties += 1;
+      }
+    }
     modes[mode] = {
-      available: eligible !== false && scores.length > 0,
-      ndcgAt5: eligible !== false ? mean(scores) : null,
-      foldsEvaluated: eligible !== false ? scores.length : 0,
+      available: eligible !== false && validScores.length > 0,
+      ndcgAt5: eligible !== false ? mean(validScores) : null,
+      foldsEvaluated: eligible !== false ? validScores.length : 0,
+      pairedFoldsEvaluated: eligible !== false && reference ? pairedFolds : 0,
       wins: eligible !== false && reference ? wins : 0,
       ties: eligible !== false && reference ? ties : 0,
       losses: eligible !== false && reference ? losses : 0,
-      foldNdcgAt5: eligible !== false ? scores.slice() : []
+      foldNdcgAt5: eligible !== false ? foldScores : []
     };
   }
   return modes;
