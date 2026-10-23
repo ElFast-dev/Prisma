@@ -137,7 +137,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261023-27") &&
-                  lastUI.appSrc.includes("v=ui-20261023-105") &&
+                  lastUI.appSrc.includes("v=ui-20261023-106") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -336,7 +336,7 @@ jobs:
                     reportsLocalGeneration: report.privacy.generatedLocally
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v12" ||
+                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v13" ||
                     !diagnosticReport.featureLabelsIncluded ||
                     diagnosticReport.networkTransmission !== false ||
                     diagnosticReport.hasRawTitle ||
