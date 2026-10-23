@@ -37,12 +37,15 @@ jobs:
           node --check js/app/storage-protection-actions.js
           node --check js/diagnostics/recommendation-report.js
           node --check js/diagnostics/lab-diagnostic-coordinator.js
+          node --check js/diagnostics/lab-diagnostic-coordinator.js
           node --check js/core/state-model.js
           node --check js/recommendations/features.js
           node --check js/recommendations/engine.js
           node --check js/recommendations/ridge-evaluation.js
           node --check js/recommendations/evaluation.js
           node --check js/recommendations/normalization-evaluation.js
+          node --check js/recommendations/feature-family-evaluation.js
+          node --check js/recommendations/ridge-kernel.js
           node --check js/recommendations/feature-family-evaluation.js
           node --check js/recommendations/ridge-kernel.js
           node --check js/catalog/csv-parser.js
@@ -74,6 +77,8 @@ jobs:
           node --check js/app/lab-metrics-actions.js
           node --check scripts/lab-regression-fixtures.mjs
           node --check scripts/test-lab-responsiveness-playwright.mjs
+          node --check scripts/test-lab-diagnostic-coordinator.mjs
+          node --check scripts/test-feature-family-evaluation.mjs
           node --check scripts/test-lab-diagnostic-coordinator.mjs
           node --check scripts/test-feature-family-evaluation.mjs
           node --check scripts/measure-lab-baseline-playwright.mjs
@@ -183,6 +188,12 @@ jobs:
 
       - name: Test separated laboratory actions
         run: node scripts/test-lab-actions.mjs
+
+      - name: Test integrated diagnostic coordinator
+        run: node scripts/test-lab-diagnostic-coordinator.mjs
+
+      - name: Test paired feature-family evaluation
+        run: node scripts/test-feature-family-evaluation.mjs
 
       - name: Test shareable recommendation diagnostic report
         run: node scripts/test-recommendation-diagnostic-report.mjs
