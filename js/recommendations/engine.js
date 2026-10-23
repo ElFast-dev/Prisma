@@ -314,7 +314,7 @@ export function createRecommendationEngine(dependencies) {
           if (names.some(function (feature) { return feature.indexOf("década: ") === 0; })) decadeExamples += 1;
         }
       }
-      if ((index + 1) % 16 === 0) {
+      if ((index + 1) % 16 === 0 || index + 1 === sourceRatings.length) {
         onProgress({ phase: "mapping", completed: index + 1, total: sourceRatings.length });
         await yieldToBrowser();
       }
