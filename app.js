@@ -11,7 +11,7 @@ import { createRecommendationEvaluation } from "./js/recommendations/evaluation.
 import { createRecommendationPreferences } from "./js/recommendations/preferences.js?v=core-20261021-1";
 import { parseCSVLine, parseCatalogCSV } from "./js/catalog/csv-parser.js";
 import { createCatalogModel } from "./js/catalog/catalog-model.js?v=core-20261022-4";
-import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261022-4";
+import { createCollectionModel } from "./js/collection/collection-model.js?v=core-20261023-1";
 import { createPresentationUtils } from "./js/ui/presentation-utils.js?v=core-20261022-4";
 import { createPageViews } from "./js/ui/page-views.js?v=core-20261023-7";
 import { createModalViews } from "./js/ui/modal-views.js?v=ui-20261023-1";
@@ -24,7 +24,7 @@ import { createTMDBHistorySync } from "./js/tmdb/history-sync.js?v=core-20261022
 import { createTMDBBrowserActions } from "./js/tmdb/browser-actions.js?v=core-20261022-3";
 import { createTMDBMovieDetails } from "./js/tmdb/movie-details.js?v=core-20261022-3";
 import { createModalController } from "./js/ui/modal-controller.js?v=core-20261022-6";
-import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261023-1";
+import { createRecommendationRanking } from "./js/recommendations/ranking.js?v=core-20261023-2";
 import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-8";

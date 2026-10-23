@@ -63,3 +63,20 @@ Prisma DEBE preferir un ID TMDB fiable para emparejar registros cuando está pre
 - DADO que ambos registros tienen IDs TMDB positivos distintos
 - CUANDO se emparejan para actualizar la colección
 - ENTONCES no se transfieren campos personales de una película a la otra solo por el título
+
+
+### Requirement: Exclusión de recomendaciones con identidad contextual
+
+Al comprobar si una candidata ya pertenece a una colección personal, Prisma DEBE conservar el año conocido en la consulta de identidad para reconciliar filas antiguas sin ID TMDB de forma contextual. Esta reconciliación NO DEBE ocultar remakes distintos cuando sus años permiten separarlos.
+
+#### Scenario: Candidata TMDB y fila personal heredada
+
+- DADO que la colección contiene una fila sin ID TMDB con título y año conocidos
+- CUANDO una candidata con ID TMDB y el mismo título y año se evalúa para recomendaciones
+- ENTONCES la candidata se excluye de las recomendaciones
+
+#### Scenario: Remake distinto de una fila heredada
+
+- DADO que una fila personal heredada tiene el mismo título pero un año distinto del de la candidata
+- CUANDO Prisma evalúa la candidata
+- ENTONCES no la excluye solo por el título
