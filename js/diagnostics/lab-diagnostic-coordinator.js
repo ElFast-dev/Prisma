@@ -11,7 +11,32 @@ const FINAL_STATUSES = new Set(["completed", "unavailable", "cancelled", "error"
 const ROUNDING = 10;
 
 function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+  if (typeof structuredClone === "function") {
+    try { return structuredClone(value); } catch (_) { /* older WebViews */ }
+  }
+  if (value == null || typeof value !== "object") return value;
+  if (value instanceof Map) {
+    const copy = new Map();
+    value.forEach(function (item, key) { copy.set(clone(key), clone(item)); });
+    return copy;
+  }
+  if (value instanceof Set) {
+    const copy = new Set();
+    value.forEach(function (item) { copy.add(clone(item)); });
+    return copy;
+  }
+  if (Array.isArray(value)) return value.map(clone);
+  const copy = {};
+  Object.keys(value).forEach(function (key) { copy[key] = clone(value[key]); });
+  return copy;
+}
+
+function publicSnapshot(value) {
+  const copy = clone(value);
+  if (!copy) return null;
+  copy.phases.forEach(function (phase) { phase.result = null; });
+  delete copy.results;
+  return copy;
 }
 
 function percent(value) {
@@ -151,7 +176,7 @@ export function createLabDiagnosticCoordinator(options) {
   function publish() {
     if (!snapshot) return;
     calculateProgress(snapshot, now());
-    onUpdate(clone(snapshot));
+    onUpdate(publicSnapshot(snapshot), snapshot.results);
   }
 
   function recordTiming(phaseId, durationMs, count) {
