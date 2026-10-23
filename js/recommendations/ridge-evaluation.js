@@ -1163,7 +1163,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const yieldToBrowser = typeof settings.yieldToBrowser === "function"
       ? settings.yieldToBrowser
       : function () { return new Promise(function (resolve) { setTimeout(resolve, 0); }); };
-    const batchSize = Math.max(4, Math.min(24, Number(settings.batchSize) || 12));
+    const batchSize = Math.max(8, Math.min(64, Number(settings.batchSize) || 48));
     const prepared = temporalRows();
     const rows = prepared.rows;
     const allIndices = rows.map(function (_, index) { return index; });
@@ -1202,7 +1202,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
           emitProgress({
             completedWork: completedWork,
             totalWork: totalWork,
-            completedWindows: Math.min(TEMPORAL_OUTER_WINDOWS, Math.floor(completedWork / workPerWindow)),
+            completedWindows: Math.min(TEMPORAL_OUTER_WINDOWS, Math.floor(Math.max(0, completedWork - kernelWork) / workPerWindow)),
             totalWindows: TEMPORAL_OUTER_WINDOWS,
             phase: "fit",
             detail: detail && detail.stage === "inner" ? "Selección interna de alpha" : "Ajuste Ridge temporal"
