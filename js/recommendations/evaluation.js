@@ -14,6 +14,7 @@ export function createRecommendationEvaluation(dependencies) {
   const predictRating = dependencies.predictRating;
   const getRecommendations = dependencies.getRecommendations;
   const rankCandidates = dependencies.rankCandidates;
+  const getCandidatePoolCounts = dependencies.getCandidatePoolCounts;
   const movieTmdbId = dependencies.movieTmdbId;
   const titleKey = dependencies.titleKey;
 
@@ -366,17 +367,31 @@ export function createRecommendationEvaluation(dependencies) {
     const diversityStartedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
     const profile = settings.profile || buildProfile();
     const diversity = [];
+    const candidateAvailability = [];
     let completedWork = sourceCount + (ranking.available ? (Number(ranking.count) || 0) : 0) + (Number(ranking.foldsEvaluated) || 0);
     for (const mode of RECOMMENDATION_MODES) {
       if (!shouldContinue()) return null;
       const movies = (getRecommendations(RANKING_CUTOFF, mode, profile) || []).slice(0, RANKING_CUTOFF);
       diversity.push(Object.assign({ mode: mode }, pairwiseGenreDiversity(movies)));
+      const counts = typeof getCandidatePoolCounts === "function"
+        ? getCandidatePoolCounts(RANKING_CUTOFF, mode, profile)
+        : { mode: mode, remoteCandidatesReceived: 0, localCatalogEntries: 0, localCandidatesEligible: 0,
+            eligibleCandidatePool: movies.length, rankedResultsAvailable: movies.length,
+            requestedResultLimit: RANKING_CUTOFF, profileAvailable: Boolean(profile && profile.count > 0) };
+      counts.returnedResultCount = movies.length;
+      if (movies.length < RANKING_CUTOFF && counts.profileAvailable) {
+        if (counts.eligibleCandidatePool < RANKING_CUTOFF) counts.shortfallReason = "eligible-pool-too-small";
+        else if (mode === "balanced") counts.shortfallReason = "balanced-genre-cap";
+        else counts.shortfallReason = "ranking-policy-shortfall";
+      } else if (!counts.profileAvailable) counts.shortfallReason = "empty-personal-profile";
+      else counts.shortfallReason = null;
+      candidateAvailability.push(counts);
       completedWork += 1;
       onProgress({ completedWork: Math.min(totalWork, completedWork), totalWork: totalWork, detail: "Diversidad del modo " + mode });
       await yieldToBrowser();
     }
     onMeasure("ranking-diversity", elapsedSince(diversityStartedAt), diversity.reduce(function (sum, item) { return sum + item.titles; }, 0), "completed");
-    return { ranking: ranking, diversity: diversity };
+    return { ranking: ranking, diversity: diversity, candidateAvailability: candidateAvailability };
   }
 
   function genreSet(movie) {
@@ -424,9 +439,21 @@ export function createRecommendationEvaluation(dependencies) {
   }
 
   function evaluateRecommendationQuality() {
+    const diversity = evaluateDiversityModes();
+    const profile = buildProfile();
+    const candidateAvailability = diversity.map(function (item) {
+      const counts = typeof getCandidatePoolCounts === "function"
+        ? getCandidatePoolCounts(RANKING_CUTOFF, item.mode, profile)
+        : { mode: item.mode, eligibleCandidatePool: item.titles, rankedResultsAvailable: item.titles, requestedResultLimit: RANKING_CUTOFF };
+      counts.returnedResultCount = item.titles;
+      counts.shortfallReason = item.titles >= RANKING_CUTOFF ? null :
+        (counts.eligibleCandidatePool < RANKING_CUTOFF ? "eligible-pool-too-small" : (item.mode === "balanced" ? "balanced-genre-cap" : "ranking-policy-shortfall"));
+      return counts;
+    });
     return {
       ranking: evaluateRankingQuality(),
-      diversity: evaluateDiversityModes()
+      diversity: diversity,
+      candidateAvailability: candidateAvailability
     };
   }
 
