@@ -39,7 +39,9 @@ assert.match(settingsViews, /data-action="set-theme"/, 'Ajustes debe ofrecer con
 assert.match(settingsViews, /aria-pressed=/, 'El selector debe comunicar el modo activo con semántica accesible.');
 assert.match(themeController, /const THEME_KEY = "prisma:theme"/, 'La preferencia de tema debe persistirse aparte del perfil de cine.');
 assert.match(themeController, /currentTheme = "dark"/, 'El tema oscuro debe ser el fallback predeterminado.');
-assert.match(serviceWorker, /const CACHE_NAME = "prisma-shell-v114"/, 'La PWA debe renovar caché al publicar los temas.');
+const shellCacheVersion = serviceWorker.match(/const CACHE_NAME = "prisma-shell-v(\\d+)"/);
+assert.ok(shellCacheVersion && Number(shellCacheVersion[1]) > 114,
+  'La PWA debe incrementar la versión de caché al publicar los temas.');
 assert.ok(serviceWorker.includes('"./styles/prisma-design-system.css?v=ui-20261023-27"'),
   'El service worker debe usar la misma versión de la hoja de temas.');
 assert.ok(serviceWorker.includes('"./app.js?v=ui-20261023-103"'),
