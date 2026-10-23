@@ -342,7 +342,9 @@ const integrated = buildRecommendationDiagnosticReport({
       title: "Private diagnostic title", tmdbId: "998877",
       rankingModes: ["balanced", "affinity", "variety"].map(mode => ({
         mode, available: true, ndcgAt5: 0.7, deltaNdcgVsGenres: 0.03,
-        foldsEvaluated: 15, wins: 8, ties: 3, losses: 4, title: "Private film title"
+        foldsEvaluated: 15, pairedFoldsEvaluated: 14, wins: 8, ties: 3, losses: 3,
+        foldNdcgAt5: [0.7, null, 0.6, 0.7, 0.8, 0.9, 0.6, 0.7, 0.8, 0.9, 0.6, 0.7, 0.8, 0.9, 0.6],
+        title: "Private film title"
       }))
     })),
     supportRegularization: {
@@ -379,6 +381,9 @@ assert.equal(integrated.diagnostic.coverage.uniqueRatedMovies, 351);
 assert.equal(integrated.diagnostic.coverage.signalTypeCounts.genre, 351);
 assert.equal(integrated.diagnostic.featureFamilyComparison.families.length, 4);
 assert.equal(integrated.diagnostic.featureFamilyComparison.families[2].id, "genres-tags-synopsis");
+assert.equal(integrated.diagnostic.featureFamilyComparison.families[0].rankingModes[0].foldNdcgAt5.length, 15);
+assert.equal(integrated.diagnostic.featureFamilyComparison.families[0].rankingModes[0].foldNdcgAt5[1], null);
+assert.equal(integrated.diagnostic.featureFamilyComparison.families[1].rankingModes[0].pairedFoldsEvaluated, 14);
 assert.equal(integrated.diagnostic.featureFamilyComparison.sharedPartition, true);
 assert.equal(integrated.diagnostic.featureFamilyComparison.trainingLeakageChecked, true);
 assert.equal(integrated.diagnostic.coverage.remoteCandidatesReceived, 20);
