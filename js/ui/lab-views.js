@@ -97,7 +97,7 @@ export function createLabViews(ctx) {
     const renderStartedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
     const metrics = ctx.labMetrics || null;
     const metricsBusy = Boolean(ctx.labMetricsBusy);
-    const stats = metrics ? metrics.stats : ctx.summaryStats();
+    const stats = metrics ? metrics.stats : { total: (ctx.state.rated || []).length, average: null };
     const profile = metrics ? metrics.profile : { withMetadata: 0, count: (ctx.state.rated || []).length, features: new Map() };
     const evaluation = metrics ? metrics.evaluation : {
       available: false, count: 0, mae: null, baselineMae: null, improvementPct: null,
@@ -119,7 +119,7 @@ export function createLabViews(ctx) {
     };
     const affinityReference = recommendationQuality.ranking.modes.find(function (item) { return item.mode === "affinity"; });
     const genres = metrics ? metrics.genres : [];
-    const overall = stats.average || 6.5;
+    const overall = Number.isFinite(stats.average) ? stats.average : 6.5;
     const top = genres.slice().sort(function (a,b) { return b.average-a.average; }).slice(0,7);
     const bottom = genres.slice().sort(function (a,b) { return a.average-b.average; }).slice(0,7);
     const events = ctx.state.events.slice(0,8).map(function (event) {
@@ -172,7 +172,7 @@ export function createLabViews(ctx) {
         '</p>';
     const markup = '<section class="page-heading"><h1>Laboratorio</h1>' + ctx.infoButton("lab","Información sobre el Laboratorio") + '</section>' +
       labMetricsStatusMarkup +
-      '<div class="metrics-grid">' + ctx.metric("Historial enlazado",metrics ? profile.withMetadata + "/" + stats.total : "Calculando…","") + ctx.metric("Señales",metrics ? String(profile.features.size) : "…","") + ctx.metric("Nota media",overall.toFixed(1).replace(".",","),"") + '</div>' +
+      '<div class="metrics-grid">' + ctx.metric("Historial enlazado",metrics ? profile.withMetadata + "/" + stats.total : "Calculando…","") + ctx.metric("Señales",metrics ? String(profile.features.size) : "…","") + ctx.metric("Nota media",metrics ? overall.toFixed(1).replace(".",",") : "…","") + '</div>' +
       '<div class="lab-metadata-host">' + ctx.renderTMDBHistoryPanel() + '</div>' +
       '<div class="two-col lab-charts"><section class="panel"><div class="panel-head"><h3>Géneros mejor valorados</h3></div>' +
       (top.length ? '<div class="bar-list">' + top.map(function (item) { return ctx.barRow(ctx.displayGenre(item.name),item.average,10,item.average.toFixed(1).replace(".",",") + " · " + item.count); }).join("") + '</div>' : '<div class="empty-inline"><strong>Datos insuficientes</strong></div>') +
