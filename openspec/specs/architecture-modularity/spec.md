@@ -258,3 +258,20 @@ La navegación principal, la carga inicial de datos y el registro del service wo
 - DADO que el navegador carga la entrada de la aplicación
 - CUANDO finaliza la lectura de catálogo, estado y credencial opcional
 - ENTONCES el ciclo de vida normaliza los datos, construye el catálogo, renderiza la vista inicial y registra la PWA si procede.
+
+
+### Requirement: Acciones del Laboratorio separadas del coordinador
+
+La orquestación de las evaluaciones Ridge, temporales y de normalización, así como la preparación y copia del informe diagnóstico, DEBE residir en un módulo de acciones del Laboratorio con dependencias explícitas. `app.js` DEBE limitarse a componer el contexto y delegar a través de la API del módulo. Esta separación NO DEBE alterar el ranking, los pesos, las candidatas ni los protocolos de evaluación; los informes DEBEN permanecer locales hasta la acción explícita de la persona.
+
+#### Scenario: Ejecución y progreso de los experimentos
+
+- DADO que la persona inicia una evaluación en el Laboratorio
+- CUANDO la acción delegada la coordina
+- ENTONCES mantiene las guardas contra ejecuciones incompatibles, comunica el progreso y no aplica resultados obsoletos de una ejecución anterior.
+
+#### Scenario: Copia del informe diagnóstico
+
+- DADO que la persona activa la generación y copia del informe
+- CUANDO el módulo reúne métricas agregadas y solicita el portapapeles
+- ENTONCES no transmite ni persiste automáticamente el informe y mantiene el texto visible para copia manual si el portapapeles falla.
