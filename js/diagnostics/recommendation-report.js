@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v12";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v13";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
