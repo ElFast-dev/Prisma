@@ -17,6 +17,8 @@ const requiredFiles = [
   'openspec/changes/2026-10-23-unblock-laboratory-rendering/specs/interface/spec.md',
   'js/app/lab-metrics-actions.js',
   'scripts/test-lab-responsiveness-playwright.mjs',
+  'scripts/lab-regression-fixtures.mjs',
+  'scripts/measure-lab-baseline-playwright.mjs',
   'openspec/specs/release-process/spec.md',
   'openspec/changes/archive/2026-10-23-extract-lab-actions/proposal.md',
   'openspec/changes/archive/2026-10-23-extract-lab-actions/design.md',
