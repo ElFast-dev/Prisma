@@ -436,6 +436,7 @@ export function createLabMetricsActions(ctx) {
       available: Boolean(ranking.available),
       ranking: ranking,
       diversity: Array.isArray(value.diversity) ? value.diversity : [],
+      candidateAvailability: Array.isArray(value.candidateAvailability) ? value.candidateAvailability : [],
       unavailableReason: ranking.available ? null : (ranking.reason || "nDCG@5 no disponible con la muestra retenida.")
     };
   }
