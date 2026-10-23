@@ -95,6 +95,48 @@ export function createRecommendationEngine(dependencies) {
     };
   }
 
+  function buildProfileFromMappedRows(mappedRows, options) {
+    const rows = mappedRows || [];
+    const valid = rows.filter(function (row) { return row && ratingValue(row.entry) != null; });
+    const ratingSum = valid.reduce(function (sum, row) { return sum + ratingValue(row.entry); }, 0);
+    const personalAverage = valid.length ? ratingSum / valid.length : RECOMMENDATION_PRIOR_RATING;
+    const average = (ratingSum + RECOMMENDATION_PRIOR_RATING * RECOMMENDATION_PRIOR_STRENGTH) /
+      (valid.length + RECOMMENDATION_PRIOR_STRENGTH);
+    const features = new Map();
+    let withMetadata = 0;
+
+    valid.forEach(function (row) {
+      const names = (Array.isArray(row.features) ? row.features : []).filter(function (name) {
+        return !options || options.includeDecade !== false || name.indexOf("década: ") !== 0;
+      });
+      if (!names.length) return;
+      withMetadata += 1;
+      const deviation = (ratingValue(row.entry) - average) / 4;
+      names.forEach(function (name) {
+        const item = features.get(name) || { sum: 0, count: 0, sumRating: 0 };
+        item.sum += deviation;
+        item.count += 1;
+        item.sumRating += ratingValue(row.entry);
+        features.set(name, item);
+      });
+    });
+    features.forEach(function (item, name) {
+      item.weight = item.sum / (item.count + 0.4);
+      if (options && options.themeSupportShrinkage && name.indexOf("tema: ") === 0) {
+        item.weight *= item.count / (item.count + THEME_SUPPORT_SHRINKAGE_PRIOR);
+      }
+      item.mean = item.sumRating / item.count;
+    });
+    return {
+      average: average,
+      personalAverage: personalAverage,
+      priorStrength: RECOMMENDATION_PRIOR_STRENGTH,
+      features: features,
+      count: valid.length,
+      withMetadata: withMetadata
+    };
+  }
+
   async function buildProfileAsync(trainingRatings, options, control) {
     const settings = control || {};
     const shouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
@@ -339,17 +381,17 @@ export function createRecommendationEngine(dependencies) {
       if (!shouldContinue()) return null;
       const heldOut = mapped[index];
       const training = mapped.filter(function (_, trainingIndex) { return trainingIndex !== index; });
-      const profile = buildProfile(training.map(function (row) { return row.entry; }));
+      const profile = buildProfileFromMappedRows(training);
       const candidate = heldOut.movie || heldOut.entry;
       const predicted = predictRating(candidate, profile).score;
       errors.push(Math.abs(predicted - ratingValue(heldOut.entry)));
       baselineErrors.push(Math.abs(profile.personalAverage - ratingValue(heldOut.entry)));
 
-      const shrinkageProfile = buildProfile(training.map(function (row) { return row.entry; }), { themeSupportShrinkage: true });
+      const shrinkageProfile = buildProfileFromMappedRows(training, { themeSupportShrinkage: true });
       const shrinkagePrediction = predictRating(candidate, shrinkageProfile).score;
       themeShrinkageErrors.push(Math.abs(shrinkagePrediction - ratingValue(heldOut.entry)));
 
-      const profileWithoutDecade = buildProfile(training.map(function (row) { return row.entry; }), { includeDecade: false });
+      const profileWithoutDecade = buildProfileFromMappedRows(training, { includeDecade: false });
       const predictedWithoutDecade = predictRating(candidate, profileWithoutDecade, { includeDecade: false }).score;
       withoutDecadeErrors.push(Math.abs(predictedWithoutDecade - ratingValue(heldOut.entry)));
 
