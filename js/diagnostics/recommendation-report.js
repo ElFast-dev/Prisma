@@ -742,6 +742,16 @@ function featureFamilySummary(input) {
       });
       const lambdas = {};
       const sourceLambdas = fold && fold.lambdas && typeof fold.lambdas === "object" ? fold.lambdas : {};
+      const signalFamilies = {};
+      const sourceSignalFamilies = fold && fold.signalFamilies && typeof fold.signalFamilies === "object" ? fold.signalFamilies : {};
+      ["genre", "theme", "synopsis", "actor", "director", "writer", "composer"].forEach(function (id) {
+        const row = sourceSignalFamilies[id] || {};
+        signalFamilies[id] = {
+          mae: rounded(row.mae, 5),
+          ndcgAt5: summarizeRawFoldModes(row.ndcgAt5),
+          ndcgAt5Threshold9: summarizeRawFoldModes(row.ndcgAt5Threshold9)
+        };
+      });
       Object.keys(sourceLambdas).filter(function (key) { return ["0", "0.5", "1", "2", "4", "8"].includes(key); }).forEach(function (key) {
         const row = sourceLambdas[key] || {};
         lambdas[key] = {
@@ -757,6 +767,7 @@ function featureFamilySummary(input) {
         testCount: nonNegativeInteger(fold && fold.testCount),
         families: foldFamilies,
         lambdas: lambdas,
+        signalFamilies: signalFamilies,
         selectedLambda: {
           available: Number.isFinite(Number(selected.lambda)),
           lambda: Number.isFinite(Number(selected.lambda)) ? rounded(selected.lambda, 4) : null,
@@ -798,6 +809,39 @@ function featureFamilySummary(input) {
         rankingByThreshold: { "7": summarizeModes(row, 7), "9": summarizeModes(row, 9) },
         repeatSummaries: (Array.isArray(row.repeatSummaries) ? row.repeatSummaries : []).slice(0, 3).map(function (repeat) {
           return { repeat: nonNegativeInteger(repeat.repeat), mae: rounded(repeat.mae, 5), foldsEvaluated: nonNegativeInteger(repeat.foldCount) };
+        })
+      };
+    }),
+    signalFamilyLambda: rounded(support.signalFamilyLambda, 4),
+    signalFamilyExperiments: (Array.isArray(support.signalFamilyExperiments) ? support.signalFamilyExperiments : []).slice(0, 7).map(function (row) {
+      const id = ["genre", "theme", "synopsis", "actor", "director", "writer", "composer"].includes(row && row.id) ? row.id : "";
+      return {
+        id: id,
+        label: ({
+          genre: "Géneros", theme: "Temas", synopsis: "Sinopsis", actor: "Reparto",
+          director: "Dirección", writer: "Guion", composer: "Música"
+        })[id] || "",
+        lambda: rounded(row.lambda, 4),
+        available: Boolean(row.available),
+        foldsEvaluated: nonNegativeInteger(row.foldsEvaluated),
+        mae: rounded(row.mae, 5),
+        baselineMae: rounded(row.baselineMae, 5),
+        deltaMaeVsNoShrinkage: rounded(row.deltaMaeVsNoShrinkage, 5),
+        foldMae: Array.isArray(row.foldMae) ? row.foldMae.slice(0, 15).map(function (v) { return rounded(v, 5); }) : [],
+        maeWins: nonNegativeInteger(row.maeWins),
+        ties: nonNegativeInteger(row.ties),
+        maeLosses: nonNegativeInteger(row.maeLosses),
+        rankingModes: summarizeModes(row, 7),
+        rankingByThreshold: {
+          "7": summarizeModes(row, 7),
+          "9": summarizeModes(row, 9)
+        },
+        repeatSummaries: (Array.isArray(row.repeatSummaries) ? row.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+          return {
+            repeat: nonNegativeInteger(repeat.repeat),
+            mae: rounded(repeat.mae, 5),
+            foldCount: nonNegativeInteger(repeat.foldCount)
+          };
         })
       };
     }),
