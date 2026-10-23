@@ -406,7 +406,7 @@ export function createLabDiagnosticCoordinator(options) {
 
   function getSnapshot() {
     if (!snapshot || snapshotKey !== getDataKey()) return null;
-    return clone(snapshot);
+    return publicSnapshot(snapshot);
   }
 
   return {
