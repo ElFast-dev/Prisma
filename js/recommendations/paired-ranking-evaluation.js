@@ -163,9 +163,9 @@ function summariseRanking(accumulator, threshold, reference, eligible) {
       available: eligible !== false && scores.length > 0,
       ndcgAt5: eligible !== false ? mean(scores) : null,
       foldsEvaluated: eligible !== false ? scores.length : 0,
-      wins: reference ? wins : 0,
-      ties: reference ? ties : 0,
-      losses: reference ? losses : 0,
+      wins: eligible !== false && reference ? wins : 0,
+      ties: eligible !== false && reference ? ties : 0,
+      losses: eligible !== false && reference ? losses : 0,
       foldNdcgAt5: eligible !== false ? scores.slice() : []
     };
   }
