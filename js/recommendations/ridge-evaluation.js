@@ -14,7 +14,7 @@ const TEMPORAL_OUTER_WINDOWS = 5;
 const TEMPORAL_MIN_RECORDS = 100;
 const TEMPORAL_MIN_DATE_GROUPS = 12;
 const TEMPORAL_WARMUP_RATIO = 0.5;
-const ALPHAS = Object.freeze([0.1, 1, 10, 100]);
+const ALPHAS = Object.freeze([0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100]);
 
 function nonNegativeInteger(value) {
   const number = Number(value);
@@ -515,10 +515,17 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const folds = foldIndices(outerTraining, rows, INNER_FOLDS, innerSalt);
     let bestAlpha = null;
     let bestMae = Infinity;
+    let bestRankingAlpha = null;
+    let bestRankingScore = -Infinity;
+    const canSelectRanking = outerTraining.length >= MIN_RANKING_RECORDS &&
+      outerTraining.filter(function (index) { return rows[index].rating >= RELEVANT_RATING_THRESHOLD; }).length >= MIN_RELEVANT_RECORDS;
+
     for (let alphaIndex = 0; alphaIndex < ALPHAS.length; alphaIndex += 1) {
       if (!control.shouldContinue()) return null;
       const alpha = ALPHAS[alphaIndex];
       const errors = [];
+      const rankingScores = [];
+      let rankingFoldsEvaluated = 0;
       for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
         if (!control.shouldContinue()) return null;
         const validationIndices = folds[foldIndex];
@@ -530,10 +537,38 @@ export function createRidgeRecommendationExperiment(dependencies) {
           yieldToBrowser: control.yieldToBrowser,
           batchSize: control.batchSize
         });
+        const validationScores = [];
         validationIndices.forEach(function (index) {
           const prediction = predictRidge(rows, model, rows[index].candidateVector);
           errors.push(Math.abs(prediction - rows[index].rating));
+          validationScores.push({ index: index, score: prediction });
         });
+        if (canSelectRanking) {
+          const tokenByIndex = new Map(validationIndices.map(function (index) { return [index, "inner-candidate-" + index]; }));
+          const gains = new Map(validationIndices.map(function (index) {
+            return [tokenByIndex.get(index), relevanceGain(rows[index].rating)];
+          }));
+          const ideal = validationIndices.map(function (index) {
+            return { token: tokenByIndex.get(index), gain: gains.get(tokenByIndex.get(index)) || 0 };
+          }).sort(function (left, right) {
+            return right.gain - left.gain || left.token.localeCompare(right.token);
+          });
+          const idealDcg = dcgAt5(ideal);
+          if (idealDcg > 0) {
+            const candidates = validationScores.map(function (item) {
+              const row = rows[item.index];
+              return rankingCandidate(row, { score: item.score }, item.score, tokenByIndex.get(item.index));
+            });
+            RANKING_MODES.forEach(function (mode) {
+              const top = rankRows(candidates, mode);
+              const dcg = dcgAt5(top.map(function (candidate) {
+                return { gain: gains.get(candidate.evaluationToken) || 0 };
+              }));
+              rankingScores.push(dcg / idealDcg);
+            });
+            rankingFoldsEvaluated += 1;
+          }
+        }
         control.onModelFit({
           stage: "inner",
           alpha: alpha,
@@ -549,9 +584,17 @@ export function createRidgeRecommendationExperiment(dependencies) {
         bestMae = mae;
         bestAlpha = alpha;
       }
+      if (canSelectRanking && rankingFoldsEvaluated >= 2 && rankingScores.length) {
+        const score = rankingScores.reduce(function (sum, value) { return sum + value; }, 0) / rankingScores.length;
+        if (score > bestRankingScore + 1e-10 ||
+          (Math.abs(score - bestRankingScore) <= 1e-10 && (bestRankingAlpha == null || alpha > bestRankingAlpha))) {
+          bestRankingScore = score;
+          bestRankingAlpha = alpha;
+        }
+      }
     }
     if (bestAlpha == null) throw new Error("No se pudo seleccionar alpha");
-    return bestAlpha;
+    return { mae: bestAlpha, ranking: bestRankingAlpha };
   }
 
   async function evaluateFoldSetAsync(rows, kernel, indices, repetitionIndex, relevantCount, control) {
