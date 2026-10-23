@@ -896,7 +896,7 @@ function summarizeRawFoldModes(source) {
   const input = source && typeof source === "object" ? source : {};
   return ["balanced", "affinity", "variety"].reduce(function (all, mode) {
     const value = input[mode];
-    all[mode] = Number.isFinite(Number(value)) ? rounded(value, 5) : null;
+    all[mode] = value != null && Number.isFinite(Number(value)) ? rounded(value, 5) : null;
     return all;
   }, {});
 }
