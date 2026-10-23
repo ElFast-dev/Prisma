@@ -74,12 +74,12 @@ assert.equal(failed.persisted, null);
 assert.equal(failed.usage, null);
 assert.equal(failed.quota, null);
 
-const [appSource, pageSource, eventSource] = await Promise.all([
-  readFile("app.js", "utf8"), readFile("js/ui/page-views.js", "utf8"), readFile("js/app/event-handlers.js", "utf8")
+const [appSource, pageSource, settingsSource, eventSource] = await Promise.all([
+  readFile("app.js", "utf8"), readFile("js/ui/page-views.js", "utf8"), readFile("js/ui/settings-views.js", "utf8"), readFile("js/app/event-handlers.js", "utf8")
 ]);
 assert.match(appSource, /storageProtection\.inspect\(\)/);
 assert.match(appSource, /storageProtection\.request\(storageProtectionSnapshot\)/);
-assert.match(pageSource, /data-action="protect-storage"/);
-assert.match(pageSource, /Exporta una copia de seguridad/);
+assert.match(settingsSource, /data-action="protect-storage"/);
+assert.match(settingsSource, /Exporta una copia de seguridad/);
 assert.match(eventSource, /action === "protect-storage"/);
 console.log("Protección del almacenamiento correcta: inspección de solo lectura, solicitud explícita, denegación, API ausente y errores controlados.");
