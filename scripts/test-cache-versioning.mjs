@@ -141,7 +141,7 @@ assert.ok(cached.has("./js/tmdb/client.js?v=core-20261022-3"),
   "El cliente TMDB ampliado debe estar versionado.");
 assert.ok(cached.has("./js/tmdb/movie-details.js?v=core-20261022-3"),
   "Los detalles de película deben guardar los marcadores de créditos y keywords.");
-assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261023-1"),
+assert.ok(cached.has("./js/catalog/catalog-model.js?v=core-20261022-4"),
   "El catálogo debe fusionar las nuevas familias de metadatos.");
 assert.ok(cached.has("./js/collection/collection-model.js?v=core-20261023-1"),
   "El modelo de colección debe usar la identidad contextual y filtrar fechas automáticas.");
@@ -199,12 +199,12 @@ assert.ok(cached.has("./js/ui/person-detail-view.js?v=ui-20261023-1"),
   "La ficha de persona debe estar versionada y precargada.");
 assert.ok(cached.has("./js/ui/rating-sheet-view.js?v=ui-20261023-1"),
   "El editor de puntuación debe estar versionado y precargado.");
-assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261023-2"),
+assert.ok(cached.has("./js/ui/person-filmography.js?v=core-20261022-1"),
   "El helper de filmografía debe quedar versionado y precargado en la caché.");
-assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261023-1"),
+assert.ok(cached.has("./js/ui/presentation-utils.js?v=core-20261022-4"),
   "El formateador de fechas explícitas debe quedar versionado en la caché.");
 const actionsImportUrl = singleMatch(/from\s+["\'](\.\/js\/import-export\/actions\.js\?[^"\']+)["\']/g, app, "módulo de importación y exportación")[1];
-assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261023-1",
+assert.equal(actionsImportUrl, "./js/import-export/actions.js?v=core-20261022-4",
   "La reconciliación del historial debe invalidar la URL de módulo obsoleta.");
 assert.ok(cached.has(actionsImportUrl),
   "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
