@@ -837,6 +837,12 @@ jobs:
           });
           NODE
 
+      - name: Verify non-blocking Lab with synthetic large and empty profiles
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          PRISMA_URL: http://127.0.0.1:8765/
+        run: node scripts/test-lab-responsiveness-playwright.mjs
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
