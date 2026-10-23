@@ -245,13 +245,23 @@ export function createLabViews(ctx) {
         evaluationComparison + decadeEvaluationMarkup :
         '<div class="metric-value">—</div><div class="metric-note">Datos insuficientes: se necesitan al menos 5 películas valoradas con características · n=' + evaluation.count + '</div>')) + themeShrinkageEvaluationMarkup;
     const metricsReady = Boolean(metrics && metrics.coverage);
-    const labMetricsStatusMarkup = metricsReady
-      ? '<p class="metric-note" data-lab-metrics-state="ready" aria-live="polite">Cobertura medida. Las pruebas se ejecutan localmente y el motor de producción no se modifica.</p>'
-      : '<p class="metric-note" data-lab-metrics-state="' + (ctx.labMetricsError ? "error" : (metricsBusy ? "loading" : "pending")) + '" aria-live="polite">' +
-        (ctx.labMetricsError
-          ? ctx.escapeHTML(ctx.labMetricsError)
-          : (metricsBusy ? 'Calculando métricas en segundo plano; puedes seguir navegando mientras terminan…' : 'Preparando las métricas del Laboratorio…')) +
-        '</p>';
+    const diagnostic = ctx.labDiagnosticSnapshot || null;
+    const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
+    const batteryFinal = Boolean(diagnostic && Array.isArray(diagnostic.phases) &&
+      diagnostic.phases.length === 7 && diagnostic.phases.every(function (phase) { return finalStatuses.includes(phase.status); }));
+    const statusState = batteryFinal ? (ctx.labMetricsError ? "error" : "ready")
+      : (metricsBusy ? "loading" : "pending");
+    const statusMessage = batteryFinal
+      ? (ctx.labMetricsError
+        ? ctx.labMetricsError
+        : (diagnostic.phases.some(function (phase) { return phase.status === "unavailable"; })
+          ? "Diagnóstico terminado; algunas métricas no estaban disponibles por cobertura."
+          : "Diagnóstico completo. El motor de producción permanece sin cambios."))
+      : (metricsReady ? "Cobertura medida; el diagnóstico automático continúa en segundo plano."
+        : (metricsBusy ? "Calculando métricas en segundo plano; puedes seguir navegando mientras terminan…"
+          : "Preparando las métricas del Laboratorio…"));
+    const labMetricsStatusMarkup = '<p class="metric-note" data-lab-metrics-state="' + statusState + '" aria-live="polite">' +
+      ctx.escapeHTML(statusMessage) + '</p>';
     const markup = '<section class="page-heading"><h1>Laboratorio</h1>' + ctx.infoButton("lab","Información sobre el Laboratorio") + '</section>' +
       renderLabDiagnosticProgressPanel() +
       labMetricsStatusMarkup +
