@@ -183,6 +183,7 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get labMetricsError() { return labMetricsActions ? labMetricsActions.labMetricsError : null; },
     get ensureLabMetrics() { return labMetricsActions ? labMetricsActions.ensureLabMetrics : null; },
     get cancelLabMetrics() { return labMetricsActions ? labMetricsActions.cancelLabMetrics : null; },
+    get cancelLabExperiments() { return cancelLabExperiments; },
     get escapeHTML() { return escapeHTML; },
     get titleKey() { return titleKey; },
     get uniqueDiscoveryMovies() { return uniqueDiscoveryMovies; },
@@ -466,6 +467,20 @@ import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261
     get toast() { return toast; }
   });
   const { logEvent, persistState: persistStateToStorage, toast } = appRuntime;
+
+  function cancelLabExperiments() {
+    ridgeEvaluationRunId += 1;
+    ridgeEvaluationResult = null;
+    ridgeEvaluationBusy = false;
+    ridgeEvaluationProgress = null;
+    temporalRidgeEvaluationRunId += 1;
+    temporalRidgeEvaluationResult = null;
+    temporalRidgeEvaluationBusy = false;
+    temporalRidgeEvaluationProgress = null;
+    influenceNormalizationEvaluationRunId += 1;
+    influenceNormalizationEvaluationResult = null;
+    influenceNormalizationEvaluationBusy = false;
+  }
 
   function persistState() {
     if (labMetricsActions) labMetricsActions.invalidateLabMetrics();
