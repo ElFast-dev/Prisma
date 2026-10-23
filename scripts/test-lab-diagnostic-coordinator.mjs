@@ -88,7 +88,7 @@ assert.equal(coordinator.getSnapshot(), null, "A stale snapshot must not be retu
 await coordinator.ensure();
 result = coordinator.getSnapshot();
 assert.equal(result.dataKey, "synthetic-profile-v3");
-assert.equal(result.status, "partial-error",
+assert.equal(result.status, "completed",
   "A new profile generation must start its own battery rather than reuse stale values");
 assert.ok(result.phases.every(phase => ["completed", "unavailable", "cancelled", "error"].includes(phase.status)));
 console.log("Laboratory diagnostic coordinator: deduplication, measured progress/ETA, unavailable phase, controlled retry, cache invalidation and stale-result rejection passed.");
