@@ -42,7 +42,7 @@ export function createPageViews(ctx) {
     const viewStartedAt = clockNow();
     const renderedView = renderView();
     const viewFinishedAt = clockNow();
-    if (ctx.currentPage === "lab" && typeof console !== "undefined" && typeof console.info === "function") {
+    if (renderView === renderLab && typeof console !== "undefined" && typeof console.info === "function") {
       console.info("[Prisma performance]", JSON.stringify({
         operation: "renderLab",
         durationMs: Math.round(Math.max(0, viewFinishedAt - viewStartedAt) * 10) / 10,
