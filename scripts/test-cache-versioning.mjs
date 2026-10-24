@@ -174,7 +174,7 @@ assert.ok(cached.has("./js/recommendations/ridge-kernel.js?v=rec-20261024-alpha-
   "El kernel numérico de Ridge debe estar incluido en la precaché versionada.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261024-4"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261024-5"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/ui/progress-views.js?v=core-20261023-1"),
   "La vista de Progreso debe tener su propia URL versionada y estar precargada.");
@@ -204,7 +204,7 @@ assert.ok(cached.has("./js/recommendations/evaluation.js?v=rec-20261023-3"),
   "El evaluador cooperativo de ranking debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/app/lab-metrics-actions.js?v=core-20261024-5"),
   "El orquestador no bloqueante del Laboratorio debe estar precargado en la caché PWA.");
-assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261024-4"),
+assert.ok(cached.has("./js/app/event-handlers.js?v=core-20261024-5"),
   "El manejador de acciones corregido debe quedar versionado en la caché de la aplicación.");
 assert.ok(cached.has("./js/ui/modal-views.js?v=ui-20261023-1"),
   "La fachada modal debe quedar versionada y conservar su API pública.");
