@@ -1,5 +1,5 @@
 import { createWatchStreakView } from "./watch-streak-view.js?v=core-20261023-1";
-import { createLabViews } from "./lab-views.js?v=core-20261024-1";
+import { createLabViews } from "./lab-views.js?v=core-20261024-2";
 import { createCollectionViews } from "./collection-views.js?v=core-20261023-1";
 import { createCatalogViews } from "./catalog-views.js?v=core-20261023-1";
 import { createSettingsViews } from "./settings-views.js?v=core-20261023-1";
@@ -33,10 +33,25 @@ export function createPageViews(ctx) {
       if (active) button.setAttribute("aria-current","page");
       else button.removeAttribute("aria-current");
     });
-    const startedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+    const clockNow = function () {
+      return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+    };
+    const startedAt = clockNow();
     const views = {home:renderHome,catalog:renderCatalog,library:renderLibrary,lab:renderLab,data:renderData};
-    root.innerHTML = (views[ctx.currentPage] || renderHome)() + (ctx.currentPage === "data" ? ctx.renderTMDBAttribution() : "");
-    const finishedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+    const renderView = views[ctx.currentPage] || renderHome;
+    const viewStartedAt = clockNow();
+    const renderedView = renderView();
+    const viewFinishedAt = clockNow();
+    if (renderView === renderLab && typeof console !== "undefined" && typeof console.info === "function") {
+      console.info("[Prisma performance]", JSON.stringify({
+        operation: "renderLab",
+        durationMs: Math.round(Math.max(0, viewFinishedAt - viewStartedAt) * 10) / 10,
+        sampleCount: (ctx.state && ctx.state.rated || []).length,
+        status: "completed"
+      }));
+    }
+    root.innerHTML = renderedView + (ctx.currentPage === "data" ? ctx.renderTMDBAttribution() : "");
+    const finishedAt = clockNow();
     if (typeof console !== "undefined" && typeof console.info === "function") {
       console.info("[Prisma performance]", JSON.stringify({
         operation: "navigation-render",

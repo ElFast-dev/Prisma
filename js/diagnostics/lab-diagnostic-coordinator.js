@@ -3,7 +3,7 @@ const PHASES = Object.freeze([
   { id: "baseline", label: "Línea base heurística", cost: 4 },
   { id: "ranking", label: "Calidad del ranking", cost: 7 },
   { id: "normalization", label: "Calibración de normalización", cost: 7 },
-  { id: "ridge", label: "Validación Ridge", cost: 25 },
+  { id: "ridge", label: "Ridge ampliado y escala relativa", cost: 60 },
   { id: "temporal", label: "Evaluación temporal", cost: 12 },
   { id: "featureFamilies", label: "Familias de características", cost: 8 }
 ]);

@@ -60,8 +60,6 @@ jobs:
           node --check js/ui/catalog-views.js
           node --check js/ui/collection-views.js
           node --check js/ui/lab-views.js
-          node --check js/ui/lab-ridge-view.js
-          node --check js/ui/lab-temporal-view.js
           node --check js/ui/watch-streak-view.js
           node --check js/ui/theme-controller.js
           node --check js/ui/modal-views.js

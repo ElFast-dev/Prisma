@@ -191,7 +191,7 @@ export function createLabActions(ctx) {
 
   function clearRecommendationDiagnosticReport() {
     ctx.recommendationDiagnosticReportText = "";
-    ctx.recommendationDiagnosticReportFormat = "brief";
+    ctx.recommendationDiagnosticReportFormat = "json";
     ctx.recommendationDiagnosticCopyMessage = "";
     if (ctx.currentPage === "lab") ctx.renderApp();
   }
@@ -206,7 +206,8 @@ export function createLabActions(ctx) {
       ctx.toast("El diagnóstico aún tiene fases pendientes o en ejecución.", true);
       return;
     }
-    const metrics = await ctx.ensureLabMetrics();
+    let metrics = ctx.labMetrics || null;
+    if (!metrics && typeof ctx.ensureLabMetrics === "function") metrics = await ctx.ensureLabMetrics();
     const snapshot = ctx.labDiagnosticSnapshot;
     if (!snapshot || !Array.isArray(snapshot.phases) ||
         !snapshot.phases.every(function (phase) { return finalStatuses.indexOf(phase.status) !== -1; })) {
@@ -230,7 +231,7 @@ export function createLabActions(ctx) {
       coverage: sourceMetrics.coverage,
       featureFamilyEvaluation: sourceMetrics.featureFamilyEvaluation,
       diagnosticSnapshot: snapshot,
-      applicationVersion: "prisma-web/2026.10.24-lab-diagnostic.2",
+      applicationVersion: "prisma-web/2026.10.24-lab-one-click.1",
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
       ratingEvaluation: sourceMetrics.evaluation,
@@ -246,8 +247,8 @@ export function createLabActions(ctx) {
     ctx.recommendationDiagnosticReportText = reportText;
     ctx.recommendationDiagnosticReportFormat = outputFormat;
     ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
-      ? "JSON técnico completo generado localmente. Revisa el contenido antes de compartirlo; Prisma no lo envía a ningún servidor."
-      : "Contexto resumido para la IA generado localmente. Incluye hallazgos, límites y próximos pasos; no incluye nombres individuales de señales ni datos personales.";
+      ? "JSON técnico completo generado localmente. Prisma no lo envía a ningún servidor."
+      : "Contexto resumido para la IA generado localmente. No incluye nombres individuales de señales ni datos personales.";
 
     let copied = false;
     try {
@@ -259,8 +260,8 @@ export function createLabActions(ctx) {
       await writePromise;
       copied = true;
       ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
-        ? "JSON completo copiado. Revisa el contenido de abajo antes de compartirlo."
-        : "Contexto resumido copiado. Revisa el contenido de abajo antes de pegarlo en otra conversación.";
+        ? "Informe técnico copiado. Ya puedes pegarlo en la conversación de desarrollo."
+        : "Contexto resumido copiado. Ya puedes pegarlo en la conversación de desarrollo.";
     } catch (_) {
       ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
         ? "No se pudo copiar automáticamente. El JSON completo está visible abajo para seleccionarlo y copiarlo manualmente."

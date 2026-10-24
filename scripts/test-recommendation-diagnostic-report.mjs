@@ -429,7 +429,7 @@ const automaticPhases = [
 const integrated = buildRecommendationDiagnosticReport({
   ...baseInput,
   generatedAt: "2026-10-23T14:00:00.000Z",
-  applicationVersion: "prisma-web/2026.10.24-lab-diagnostic.2",
+  applicationVersion: "prisma-web/2026.10.24-lab-one-click.1",
   diagnosticSnapshot: {
     schema: "prisma-lab-diagnostic-run/v1",
     status: "partial-error",
@@ -494,7 +494,7 @@ assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v14");
 assert.equal(integrated.evaluation.ridgeExperiment.alphaSelectionComparison.alphaGrid.length, 14,
   "La evaluación histórica debe conservar exactamente sus 14 anclajes.");
 assert.equal(integrated.generatedAt, "2026-10-23T14:00:00.000Z");
-assert.equal(integrated.applicationVersion, "prisma-web/2026.10.24-lab-diagnostic.2");
+assert.equal(integrated.applicationVersion, "prisma-web/2026.10.24-lab-one-click.1");
 assert.equal(integrated.diagnostic.status, "partial-error");
 assert.equal(integrated.diagnostic.run.phases.length, 7);
 assert.equal(integrated.diagnostic.run.completedPhases, 7);
@@ -632,24 +632,26 @@ assert.equal(unavailable.evaluation.rankingQuality.modes.length, 0);
 assert.equal(unavailable.evaluation.rankingQuality.unavailableReason, "Muestra insuficiente");
 assert.equal(unavailable.sample.ratingsWithoutFeatures, 2);
 
-const [appSource, labViewsSource, eventHandlersSource, reportSource, labActionsSource] = await Promise.all([
+const [appSource, labViewsSource, eventHandlersSource, reportSource, labActionsSource, labMetricsActionsSource] = await Promise.all([
   readFile("app.js", "utf8"),
   readFile("js/ui/lab-views.js", "utf8"),
   readFile("js/app/event-handlers.js", "utf8"),
   readFile("js/diagnostics/recommendation-report.js", "utf8"),
-  readFile("js/app/lab-actions.js", "utf8")
+  readFile("js/app/lab-actions.js", "utf8"),
+  readFile("js/app/lab-metrics-actions.js", "utf8")
 ]);
 assert.match(appSource, /buildRecommendationDiagnosticReport/);
 assert.match(labActionsSource, /ctx\.navigator\.clipboard\.writeText/);
 assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
-assert.match(labViewsSource, /Copiar contexto resumido para IA/);
-assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics-json"/);
-assert.match(labActionsSource, /buildRecommendationDeveloperBrief/);
-assert.match(labViewsSource, /nombres individuales de señales y datos personales/);
-assert.match(labViewsSource, /Experimento \(temas atenuados por soporte\)/);
-assert.match(reportSource, /themeShrinkageDeltaBaseMinusRegularized/);
-assert.match(labViewsSource, /Incluir hasta 40 nombres de señales agregadas/);
-assert.match(eventHandlersSource, /action === "copy-recommendation-diagnostics"/);
+assert.match(labViewsSource, /Copiar informe técnico para desarrollo/);
+assert.doesNotMatch(labViewsSource, /copy-recommendation-diagnostics-json|diagnosticFeatureLabels|diagnostic-advanced-options|restart-lab-diagnostic|retry-lab-diagnostic|run-ridge-experiment|run-temporal-ridge-experiment|toggle-temporal-added-date-proxy|renderTMDBHistoryPanel/);
+assert.match(labViewsSource, /sin nombres individuales de señales/);
+assert.ok(eventHandlersSource.includes('action === "copy-recommendation-diagnostics"') && eventHandlersSource.includes('copyRecommendationDiagnosticJson(false)'));
+assert.ok(labMetricsActionsSource.includes("includeExtendedAlphaGrid: true") && labMetricsActionsSource.includes("includeRelativeScale: true"));
+assert.ok(labMetricsActionsSource.includes("coordinator.retryFailures()"));
+assert.match(labMetricsActionsSource, /if \(!nextSnapshot\) \{[\s\S]*?clearExperimentResults\(\)/,
+  "Al invalidar el perfil, el informe no debe reutilizar métricas Ridge, temporales o de normalización antiguas.");
+assert.ok(labActionsSource.includes("prisma-web/2026.10.24-lab-one-click.1"));
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
   "El constructor del informe debe ser puro: sin DOM, persistencia, red ni portapapeles");
 

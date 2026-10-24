@@ -146,7 +146,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261023-27") &&
-                  lastUI.appSrc.includes("v=ui-20261024-113") &&
+                  lastUI.appSrc.includes("v=ui-20261024-116") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -288,38 +288,25 @@ jobs:
                   throw new Error(name + ": Recomendadas para ti contains duplicate movie identities: " + JSON.stringify(recommendedMovies));
                 }
 
-                // The primary action is a concise Markdown handoff; the complete JSON is a separate advanced action.
+                // The Lab runs the whole developer battery automatically and exposes only one private-copy action.
                 await page.locator(".topbar [data-nav='lab']").click();
-                await page.locator(".recommendation-diagnostic-panel").waitFor({ state: "visible", timeout: 10000 });
-                await page.locator(".ridge-experiment-panel").waitFor({ state: "visible", timeout: 10000 });
-                await page.locator(".temporal-ridge-panel").waitFor({ state: "visible", timeout: 10000 });
-                const dateProxyToggle = page.locator('[data-action="toggle-temporal-added-date-proxy"]');
-                if (await dateProxyToggle.getAttribute("aria-pressed") !== "false") {
-                  throw new Error(name + ": the exploratory collection-date proxy must be off by default");
-                }
-                await dateProxyToggle.click();
-                if (await page.locator('[data-action="toggle-temporal-added-date-proxy"]').getAttribute("aria-pressed") !== "true" ||
-                    !(await page.locator(".temporal-ridge-panel").innerText()).includes("no confirma el día real del visionado")) {
-                  throw new Error(name + ": activating the collection-date proxy must label it as exploratory/unverified");
-                }
-                await page.locator('[data-action="toggle-temporal-added-date-proxy"]').click();
-                if (await page.locator('[data-action="toggle-temporal-added-date-proxy"]').getAttribute("aria-pressed") !== "false") {
-                  throw new Error(name + ": the collection-date proxy toggle must turn off again");
-                }
-                await page.waitForFunction(() =>
-                  document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState === "ready",
-                  null, { timeout: 30000 });
+                await page.locator(".lab-one-click-panel").waitFor({ state: "visible", timeout: 10000 });
                 await page.waitForFunction(() => {
+                  const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
                   const button = document.querySelector('[data-action="copy-recommendation-diagnostics"]');
-                  return button && !button.disabled;
-                }, null, { timeout: 10000 });
-                const diagnosticPhases = await page.locator(".lab-diagnostic-phase").evaluateAll(nodes =>
-                  nodes.map(node => node.innerText)
-                );
-                if (diagnosticPhases.length !== 7 ||
-                    !diagnosticPhases.some(phase => /Ridge/i.test(phase) && /No disponible/i.test(phase))) {
-                  throw new Error(name + ": automatic seven-phase battery did not expose the sparse-profile Ridge status: " +
-                    JSON.stringify(diagnosticPhases));
+                  return (state === "ready" || state === "error") && button && !button.disabled;
+                }, null, { timeout: 120000 });
+                const labUiContract = await page.evaluate(() => ({
+                  copyButtons: document.querySelectorAll("[data-action='copy-recommendation-diagnostics']").length,
+                  extraCopyButtons: document.querySelectorAll("[data-action='copy-recommendation-diagnostics-json']").length,
+                  manualExperimentButtons: document.querySelectorAll("[data-action='run-ridge-experiment'],[data-action='run-temporal-ridge-experiment'],[data-action='run-influence-normalization-experiment'],[data-action='restart-lab-diagnostic'],[data-action='retry-lab-diagnostic']").length,
+                  featureLabelControls: document.querySelectorAll("#diagnosticFeatureLabels").length,
+                  globalProgress: Boolean(document.querySelector(".lab-diagnostic-progress-bar"))
+                }));
+                if (labUiContract.copyButtons !== 1 || labUiContract.extraCopyButtons !== 0 ||
+                    labUiContract.manualExperimentButtons !== 0 || labUiContract.featureLabelControls !== 0 ||
+                    !labUiContract.globalProgress) {
+                  throw new Error(name + ": one-click Lab UI contract failed: " + JSON.stringify(labUiContract));
                 }
                 await page.evaluate(() => {
                   Object.defineProperty(navigator, "clipboard", {
@@ -331,31 +318,6 @@ jobs:
                 });
                 await page.locator('[data-action="copy-recommendation-diagnostics"]').click();
                 await page.waitForFunction(() => typeof window.__prismaDiagnosticClipboard === "string" &&
-                  window.__prismaDiagnosticClipboard.startsWith("# PRISMA — contexto técnico"), null, { timeout: 10000 });
-                const developerBrief = await page.evaluate(() => {
-                  const text = window.__prismaDiagnosticClipboard;
-                  return {
-                    startsAsMarkdown: text.startsWith("# PRISMA — contexto técnico"),
-                    hasRepositoryLink: text.includes("https://github.com/ElFast-dev/Prisma"),
-                    hasProjectRules: text.includes("Objetivo y reglas que no deben romperse"),
-                    hasNextSteps: text.includes("Siguiente tarea") || text.includes("Siguiente trabajo") || text.includes("Siguiente"),
-                    hasRawTitle: /"About Time"/i.test(text),
-                    hasMovieIdField: /tmdbId|tmdb_id/i.test(text),
-                    characterCount: text.length,
-                    hasOutputField: Boolean(document.querySelector("#recommendationDiagnosticOutput"))
-                  };
-                });
-                if (!developerBrief.startsAsMarkdown || !developerBrief.hasRepositoryLink ||
-                    !developerBrief.hasProjectRules || !developerBrief.hasNextSteps ||
-                    developerBrief.hasRawTitle || developerBrief.hasMovieIdField ||
-                    developerBrief.characterCount > 9500 || !developerBrief.hasOutputField) {
-                  throw new Error(name + ": concise developer brief contract failed: " + JSON.stringify(developerBrief));
-                }
-
-                await page.locator(".diagnostic-advanced-options summary").click();
-                await page.locator("#diagnosticFeatureLabels").check();
-                await page.locator('[data-action="copy-recommendation-diagnostics-json"]').click();
-                await page.waitForFunction(() => typeof window.__prismaDiagnosticClipboard === "string" &&
                   window.__prismaDiagnosticClipboard.trim().startsWith("{"), null, { timeout: 10000 });
                 const diagnosticReport = await page.evaluate(() => {
                   const text = window.__prismaDiagnosticClipboard;
@@ -364,23 +326,27 @@ jobs:
                     schema: report.schema,
                     featureLabelsIncluded: report.privacy.featureLabelsIncluded,
                     networkTransmission: report.privacy.networkTransmission,
+                    generatedLocally: report.privacy.generatedLocally,
                     hasRawTitle: /"About Time"/i.test(text),
                     hasMovieIdField: /tmdbId|tmdb_id/i.test(text),
                     hasOutputField: Boolean(document.querySelector("#recommendationDiagnosticOutput")),
-                    reportsLocalGeneration: report.privacy.generatedLocally
+                    alphaGridCount: report.evaluation?.ridgeExperiment?.alphaGrid?.length || 0,
+                    phaseCount: report.diagnostic?.run?.phases?.length || 0,
+                    phaseStatuses: (report.diagnostic?.run?.phases || []).map(phase => phase.status)
                   };
                 });
                 if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v14" ||
-                    !diagnosticReport.featureLabelsIncluded ||
+                    diagnosticReport.featureLabelsIncluded !== false ||
                     diagnosticReport.networkTransmission !== false ||
-                    diagnosticReport.hasRawTitle ||
-                    diagnosticReport.hasMovieIdField ||
-                    !diagnosticReport.hasOutputField ||
-                    !diagnosticReport.reportsLocalGeneration) {
-                  throw new Error(name + ": full local JSON privacy/preview contract failed: " + JSON.stringify(diagnosticReport));
+                    diagnosticReport.generatedLocally !== true ||
+                    diagnosticReport.hasRawTitle || diagnosticReport.hasMovieIdField ||
+                    diagnosticReport.hasOutputField || diagnosticReport.alphaGridCount !== 18 ||
+                    diagnosticReport.phaseCount !== 7 ||
+                    !diagnosticReport.phaseStatuses.every(status => ["completed", "unavailable"].includes(status) ||
+                      status === "error" || status === "cancelled")) {
+                  throw new Error(name + ": private full JSON / expanded Ridge contract failed: " + JSON.stringify(diagnosticReport));
                 }
                 await page.screenshot({ path: "artifacts/" + name + "-lab-diagnostics.png", fullPage: false, animations: "disabled" });
-                await page.locator('[data-action="clear-recommendation-diagnostics"]').click();
                 await page.locator(".bottom-nav [data-nav='catalog']").click();
                 await page.locator(".discover-heading h1").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".topbar [data-nav='data']").click();

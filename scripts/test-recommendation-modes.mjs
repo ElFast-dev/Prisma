@@ -84,7 +84,8 @@ const [pageViews, catalogViews, settingsViews, labViews, eventHandlers, cacheTes
 ]);
 assert.match(catalogViews, /data-action="recommendation-mode"/);
 assert.match(settingsViews, /aria-pressed=/, "El selector de tema accesible debe mantenerse en el módulo de Ajustes.");
-assert.match(labViews, /Δ frente a Más afines:/, "Laboratorio debe mostrar la diferencia de nDCG frente al modo de afinidad.");
+assert.match(labViews, /Copiar informe técnico para desarrollo/, "Laboratorio debe ofrecer una única acción de copia técnica.");
+assert.doesNotMatch(labViews, /Δ frente a Más afines:|recommendation-mode|run-ridge-experiment|run-temporal-ridge-experiment/, "La vista compacta no debe mostrar métricas detalladas ni controles manuales de experimentación.");
 assert.match(eventHandlers, /action === "recommendation-mode"/);
 assert.match(spec, /Modos de recomendación ajustables/);
 assert.match(cacheTest, /js\/recommendations\/preferences\.js/);

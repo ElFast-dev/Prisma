@@ -181,7 +181,7 @@ assert.ok(ctx.recommendationDiagnosticReportText.startsWith("# PRISMA — contex
 assert.ok(ctx.recommendationDiagnosticReportText.includes("OpenSpec/SDD"));
 assert.equal(fixture.diagnosticInput.includeFeatureLabels, false);
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
-  "Contexto resumido copiado. Revisa el contenido de abajo antes de pegarlo en otra conversación.");
+  "Contexto resumido copiado. Ya puedes pegarlo en la conversación de desarrollo.");
 assert.equal(fixture.diagnosticInput.ratedCount, 2);
 assert.equal(fixture.diagnosticInput.catalogCount, 1);
 assert.deepEqual(fixture.diagnosticInput.collectionCounts, { watched: 1, pending: 1, hidden: 1 });
@@ -196,7 +196,7 @@ assert.equal(ctx.recommendationDiagnosticReportFormat, "json");
 assert.equal(JSON.parse(ctx.recommendationDiagnosticReportText).privacy.networkTransmission, false);
 assert.equal(fixture.diagnosticInput.includeFeatureLabels, true);
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
-  "JSON completo copiado. Revisa el contenido de abajo antes de compartirlo.");
+  "Informe técnico copiado. Ya puedes pegarlo en la conversación de desarrollo.");
 assert.ok(toasts.some(item => item.message === "JSON técnico completo copiado."));
 
 // Clipboard failure leaves the selected report available for manual copying.

@@ -42,8 +42,6 @@ const files = [
   'js/ui/catalog-views.js',
   'js/ui/collection-views.js',
   'js/ui/lab-views.js',
-  'js/ui/lab-ridge-view.js',
-  'js/ui/lab-temporal-view.js',
   'js/ui/watch-streak-view.js',
   'js/ui/theme-controller.js',
   'js/ui/modal-views.js',
@@ -154,15 +152,13 @@ assert.ok(app.includes('createModalController('));
 assert.ok(app.includes('createRecommendationRanking('));
 assert.ok(app.includes('createAppRuntime('));
 assert.ok(app.includes('createAppLifecycle('));
-const [pageViewsSource, progressViewsSource, settingsViewsSource, catalogViewsSource, collectionViewsSource, labViewsSource, labRidgeViewSource, labTemporalViewSource] = await Promise.all([
+const [pageViewsSource, progressViewsSource, settingsViewsSource, catalogViewsSource, collectionViewsSource, labViewsSource] = await Promise.all([
   readFile('js/ui/page-views.js', 'utf8'),
   readFile('js/ui/progress-views.js', 'utf8'),
   readFile('js/ui/settings-views.js', 'utf8'),
   readFile('js/ui/catalog-views.js', 'utf8'),
   readFile('js/ui/collection-views.js', 'utf8'),
-  readFile('js/ui/lab-views.js', 'utf8'),
-  readFile('js/ui/lab-ridge-view.js', 'utf8'),
-  readFile('js/ui/lab-temporal-view.js', 'utf8')
+  readFile('js/ui/lab-views.js', 'utf8')
 ]);
 assert.match(pageViewsSource, /createProgressViews\(ctx, renderConfirmedWatchStreakPanel\)/,
   'La composición general debe delegar Progreso al módulo especializado.');
@@ -259,17 +255,10 @@ assert.doesNotMatch(pageViewsSource, /function render(?:RecommendationDiagnostic
   'Los renderizadores del Laboratorio no deben volver a concentrarse en page-views.js.');
 assert.match(labViewsSource, /export function createLabViews\(ctx\)/,
   'El módulo de Laboratorio debe exponer su fábrica con dependencias inyectadas.');
-assert.match(labViewsSource, /createLabRidgeView\(ctx\)/,
-  'La composición del Laboratorio debe delegar Ridge a su submódulo.');
-assert.match(labViewsSource, /createLabTemporalView\(ctx\)/,
-  'La composición del Laboratorio debe delegar la evaluación temporal a su submódulo.');
+assert.doesNotMatch(labViewsSource, /createLabRidgeView|createLabTemporalView/,
+  'La vista de un solo paso no debe montar controles de experimentos manuales.');
 assert.doesNotMatch(labViewsSource, /function render(?:RidgeExperimentPanel|TemporalRidgePanel)\(/,
   'Los renderizadores Ridge y temporal no deben concentrarse en lab-views.js.');
-assert.match(labRidgeViewSource, /export function createLabRidgeView\(ctx\)/);
-assert.match(labRidgeViewSource, /function renderRidgeExperimentPanel\(/);
-assert.match(labTemporalViewSource, /export function createLabTemporalView\(ctx\)/);
-assert.match(labTemporalViewSource, /function renderTemporalRidgePanel\(/);
-
 assert.ok(app.includes('createPageViews('));
 assert.ok(app.includes('createPresentationUtils('));
 assert.ok(app.includes('createCollectionModel('));
