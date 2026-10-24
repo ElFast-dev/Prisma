@@ -470,33 +470,28 @@ const duplicateResult = harness(duplicated, records).evaluate();
 assert.equal(duplicateResult.count, records.length,
   "Registros repetidos con el mismo ID TMDB no deben inflar la muestra.");
 
-const [engineSource, appSource, labActionsSource, labViewsBaseSource, labRidgeViewSource, labTemporalViewSource, reportSource, eventSource] = await Promise.all([
+const [engineSource, appSource, labActionsSource, labViewsSource, labMetricsActionsSource, reportSource, eventSource] = await Promise.all([
   import("node:fs/promises").then(fs => fs.readFile("js/recommendations/engine.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("app.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/app/lab-actions.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-views.js", "utf8")),
-  import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-ridge-view.js", "utf8")),
-  import("node:fs/promises").then(fs => fs.readFile("js/ui/lab-temporal-view.js", "utf8")),
+  import("node:fs/promises").then(fs => fs.readFile("js/app/lab-metrics-actions.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/diagnostics/recommendation-report.js", "utf8")),
   import("node:fs/promises").then(fs => fs.readFile("js/app/event-handlers.js", "utf8"))
 ]);
-const labViewsSource = [labViewsBaseSource, labRidgeViewSource, labTemporalViewSource].join("\\n");
 assert.match(appSource, /createRidgeRecommendationExperiment/);
 assert.match(appSource, /ridgeEvaluationResult = null/);
-assert.doesNotMatch(labViewsSource, /data-action="run-ridge-experiment"/, "The absolute-alpha Ridge evaluation stays in the automatic battery.");
-assert.match(labViewsSource, /data-action="run-ridge-relative-experiment"/, "The extra relative-scale search must be an explicit opt-in action.");
-assert.match(labViewsSource, /lab-automatic-label/, "Ridge must be clearly identified as an automatic diagnostic phase.");
-assert.match(labViewsSource, /Validación repetida/);
-assert.match(labViewsSource, /Selección de alpha: MAE vs ranking/);
-assert.match(labViewsSource, /límite inferior sigue sin resolverse/i);
-assert.match(labViewsSource, /cinco pliegues externos, tres internos y tres repeticiones/i);
+assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
+assert.match(labViewsSource, /Copiar informe técnico para desarrollo/);
+assert.doesNotMatch(labViewsSource, /run-ridge-experiment|run-ridge-relative-experiment|run-temporal-ridge-experiment|run-influence-normalization-experiment|ridgeEvaluationProgress|lab-automatic-label|Validación repetida|Selección de alpha: MAE vs ranking|límite inferior sigue sin resolverse/i,
+  "Los controles y detalles experimentales deben quedar fuera de la vista compacta.");
 assert.match(eventSource, /action === "run-ridge-experiment"/);
 assert.match(labActionsSource, /3 repeticiones de 5 pliegues/);
 assert.ok(labActionsSource.includes('ctx.ridgeRecommendationExperiment.evaluateAsync'));
-assert.ok(labActionsSource.includes('includeRelativeScale: true'),
-  "Solo la acción explícita debe solicitar la búsqueda relativa.");
+assert.ok(labMetricsActionsSource.includes("includeExtendedAlphaGrid: true"));
+assert.ok(labMetricsActionsSource.includes("includeRelativeScale: true"),
+  "La batería automática debe ejecutar la búsqueda relativa en la fase Ridge.");
 assert.ok(labActionsSource.includes('ctx.ridgeEvaluationProgress = progress'));
-assert.match(labViewsSource, /ridgeEvaluationProgress/);
 assert.match(reportSource, /ridgeExperiment: ridgeEvaluation/);
 assert.match(reportSource, /repeatedValidation: ridgeRepeatedValidationEvaluation/);
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
