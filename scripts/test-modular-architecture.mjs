@@ -25,6 +25,7 @@ const files = [
   'js/recommendations/features.js',
   'js/recommendations/engine.js',
   'js/recommendations/ridge-evaluation.js',
+  'js/recommendations/ridge-alpha-selection.js',
   'js/recommendations/ridge-kernel.js',
   'js/recommendations/evaluation.js',
   'js/recommendations/normalization-evaluation.js',
@@ -301,9 +302,10 @@ assert.match(listsMarkup, /Ocultos/);
 assert.match(listsMarkup, /data-action="collection-open-tab"/,
   'El módulo debe conservar las acciones de las listas de Colección.');
 
-const [ridgeKernelSource, ridgeEvaluationSource] = await Promise.all([
+const [ridgeKernelSource, ridgeEvaluationSource, ridgeAlphaSelectionSource] = await Promise.all([
   readFile('js/recommendations/ridge-kernel.js', 'utf8'),
-  readFile('js/recommendations/ridge-evaluation.js', 'utf8')
+  readFile('js/recommendations/ridge-evaluation.js', 'utf8'),
+  readFile('js/recommendations/ridge-alpha-selection.js', 'utf8')
 ]);
 assert.match(ridgeKernelSource, /export function buildKernel\(/,
   'El kernel numérico debe exponer el cálculo de similitud.');
@@ -313,6 +315,12 @@ assert.match(ridgeKernelSource, /export function predictRidge\(/,
   'El kernel numérico debe exponer la predicción Ridge.');
 assert.doesNotMatch(ridgeKernelSource, /\b(?:document|window|localStorage|indexedDB|fetch|XMLHttpRequest)\b/,
   'El kernel numérico debe permanecer aislado de DOM, almacenamiento y red.');
+assert.match(ridgeAlphaSelectionSource, /export const RIDGE_ALPHA_GRID/,
+  'La rejilla debe vivir en un módulo de selección independiente.');
+assert.match(ridgeEvaluationSource, /selectAlphaByMae/);
+assert.match(ridgeEvaluationSource, /selectAlphaByRanking/);
+assert.doesNotMatch(ridgeAlphaSelectionSource, /\\b(?:document|window|localStorage|indexedDB|fetch|XMLHttpRequest)\\b/,
+  'Las reglas de selección deben ser funciones puras y no usar DOM, almacenamiento ni red.');
 assert.doesNotMatch(ridgeEvaluationSource, /function (?:buildKernel|solveCholesky|trainRidge|predictRidge)\(/,
   'El módulo de evaluación no debe volver a contener las rutinas numéricas extraídas.');
 
