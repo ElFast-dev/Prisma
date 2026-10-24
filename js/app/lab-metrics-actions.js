@@ -152,6 +152,7 @@ export function createLabMetricsActions(ctx) {
     if (!nextSnapshot) {
       snapshot = null;
       phaseResults = Object.create(null);
+      clearExperimentResults();
       metrics = null;
       error = null;
       cachedKey = "";
