@@ -3,15 +3,15 @@ import { readFile } from 'node:fs/promises';
 import { createRecommendationEngine } from '../js/recommendations/engine.js';
 import { ratingValue } from '../js/core/movie-utils.js';
 
-const [appSource, pageViewsSource, labViewsBaseSource, labRidgeViewSource, labTemporalViewSource] = await Promise.all([
+const [appSource, pageViewsSource, labViewsSource] = await Promise.all([
   readFile('app.js', 'utf8'),
   readFile('js/ui/page-views.js', 'utf8'),
-  readFile('js/ui/lab-views.js', 'utf8'),
-  readFile('js/ui/lab-ridge-view.js', 'utf8'),
-  readFile('js/ui/lab-temporal-view.js', 'utf8')
+  readFile('js/ui/lab-views.js', 'utf8')
 ]);
-const uiSource = [appSource, pageViewsSource, labViewsBaseSource, labRidgeViewSource, labTemporalViewSource].join('\\n');
+const uiSource = [appSource, pageViewsSource, labViewsSource].join('\\n');
 const engineSource = await readFile('js/recommendations/engine.js', 'utf8');
+assert.ok(uiSource.includes('Copiar informe técnico para desarrollo'),
+  'El Laboratorio simplificado debe ofrecer la copia del informe al desarrollador.');
 
 function runEvaluation(entries, movieRecords) {
   const calls = [];
@@ -148,9 +148,6 @@ assert.equal(
 );
 
 assert.ok(engineSource.includes('predictRating(candidate, profile).score'));
-assert.ok(uiSource.includes('Referencia (media de entrenamiento): '));
-assert.ok(uiSource.includes('Sin señal de década: '));
-assert.ok(uiSource.includes('Se necesitan al menos 5 valoraciones evaluadas con año válido para medir la señal de década'));
 const asyncPhases = [];
 const asyncEvaluation = await evaluated.engine.evaluateModelAsync({
   batchSize: 2,
