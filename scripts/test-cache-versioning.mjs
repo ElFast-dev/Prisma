@@ -184,7 +184,7 @@ assert.ok(cached.has("./js/ui/catalog-views.js?v=core-20261023-1"),
   "El módulo de Descubrir y catálogo debe tener URL versionada y estar precargado.");
 assert.ok(cached.has("./js/ui/collection-views.js?v=core-20261023-1"),
   "El módulo de Colección debe tener una URL versionada y estar precargado.");
-assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261024-2"),
+assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261024-3"),
   "El módulo del Laboratorio debe tener versión propia y estar en la precaché.");
 assert.ok(cached.has("./js/ui/watch-streak-view.js?v=core-20261023-1"),
   "La vista del calendario de racha debe estar versionada y precargada en la caché.");
