@@ -1222,9 +1222,9 @@ export function buildRecommendationDiagnosticReport(input) {
   const coverage = coverageSummary(source.coverage);
   const featureFamilyComparison = featureFamilySummary(source.featureFamilyEvaluation);
   const generatedAt = isoDate(source.generatedAt) || new Date().toISOString();
-  const requestedAppVersion = String(source.applicationVersion || "prisma-web/2026.10.24-lab-diagnostic.2");
+  const requestedAppVersion = String(source.applicationVersion || "prisma-web/2026.10.24-lab-one-click.1");
   const applicationVersion = /^[a-zA-Z0-9./_-]{1,100}$/.test(requestedAppVersion)
-    ? requestedAppVersion : "prisma-web/2026.10.24-lab-diagnostic.2";
+    ? requestedAppVersion : "prisma-web/2026.10.24-lab-one-click.1";
 
   return {
     schema: REPORT_SCHEMA,
