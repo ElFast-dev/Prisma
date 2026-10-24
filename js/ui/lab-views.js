@@ -54,13 +54,13 @@ export function createLabViews(ctx) {
       : "";
 
     return '<section class="page-heading"><h1>Laboratorio</h1></section>' +
-      '<section class="panel lab-one-click-panel" aria-labelledby="lab-one-click-title">' +
+      '<section class="panel lab-diagnostic-progress lab-one-click-panel" aria-labelledby="lab-one-click-title">' +
       '<div class="panel-head"><div><h2 id="lab-one-click-title">Diagnóstico automático de Prisma</h2>' +
       '<p class="metric-note" data-lab-metrics-state="' + statusState + '" role="status" aria-live="polite">' +
       ctx.escapeHTML(statusMessage) + '</p></div><span class="lab-diagnostic-percent">' + percent + '%</span></div>' +
       '<progress class="lab-diagnostic-progress-bar" value="' + percent + '" max="100" aria-label="Progreso del diagnóstico">' +
       percent + '%</progress>' +
-      '<div class="lab-one-click-summary"><span><strong>Fase:</strong> ' +
+      '<div class="lab-diagnostic-summary lab-one-click-summary"><span><strong>Fase:</strong> ' +
       ctx.escapeHTML(current ? current.label : (allFinal ? "Completada" : "Preparando")) + currentDetail + '</span>' +
       '<span><strong>Fases:</strong> ' + completed + ' de 7</span>' +
       '<span><strong>Transcurrido:</strong> ' + formatDuration(snapshot ? snapshot.elapsedMs : 0) + '</span>' +
