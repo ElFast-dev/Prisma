@@ -364,7 +364,7 @@ try {
       value: { writeText: async text => { window.__sparseDiagnosticReport = text; } }
     });
   });
-  await fewPage.locator("[data-action='copy-recommendation-diagnostics']").click({ timeout: 5000 });
+  await fewPage.locator("[data-action='copy-recommendation-diagnostics-json']").click({ timeout: 5000 });
   await fewPage.waitForFunction(() => typeof window.__sparseDiagnosticReport === "string", null, { timeout: 10000 });
   const sparseReport = await fewPage.evaluate(() => JSON.parse(window.__sparseDiagnosticReport));
   assert.equal(sparseReport.diagnostic.run.phases.length, 7);
