@@ -399,7 +399,7 @@ export function createLabRidgeView(ctx) {
               ctx.escapeHTML(alphaComparison.unavailableReason || 'muestra o pliegues válidos insuficientes') + '</p>') +
           '<h5>nDCG@5: selección absoluta por criterio y modo</h5>' + (selectionModes || '<p class="metric-note">No disponible.</p>') +
           relativeScaleActionMarkup + relativeScaleMarkup +
-          '<details><summary>Detalle de los pliegues exteriores emparejados</summary><ul>'
+          '<details><summary>Detalle de los pliegues exteriores emparejados</summary><ul>' +
           (foldDetails || '<li class="metric-note">No hay pliegues completados.</li>') +
           '</ul><p class="metric-note">Los pliegues pertenecen al mismo historial de evaluación; se presentan como diagnóstico descriptivo, no como observaciones independientes ni prueba estadística.</p></details>' +
           '</section>';
