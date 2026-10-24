@@ -10,4 +10,6 @@
 - [x] A8. Ejecutar pruebas Ridge/model evaluation/diagnóstico y validadores SDD; corregir fallos sin cerrar expedientes ajenos pendientes.
 - [x] A9. Ejecutar Playwright escritorio/móvil y medir render inicial/responsividad con perfiles sintéticos.
 - [x] A10. Revisar el diff y confirmar que SDD/calidad y Playwright están en verde; el modelo aditivo activo y sus pesos no cambian.
-- [ ] A11. Ejecutar y analizar el diagnóstico v14 con el historial personal enriquecido, en el navegador local, para obtener MAE/nDCG@5 reales. Mantener Ridge en modo diagnóstico hasta contar con evidencia externa suficiente.
+- [ ] A11. Ejecutar y analizar el diagnóstico v14 con el historial personal enriquecido, en el navegador local, para obtener MAE/nDCG@5 y escala del kernel reales. Mantener Ridge en modo diagnóstico hasta contar con evidencia externa suficiente.
+
+  **Reconciliación con v14:** el diagnóstico agregado proporcionado en esta conversación confirma que una mejora de MAE no basta para adoptar Ridge porque el ranking no mejora consistentemente frente al modelo aditivo activo. La escala de la diagonal centrada y los cocientes alpha/escala aún no están en el contrato v14 actual; se medirán mediante el expediente `2026-10-23-ridge-relative-alpha-scale`. No se copiarán métricas personales, etiquetas de preferencias ni registros al repositorio. Esta tarea permanece abierta hasta que el informe agregado se regenere localmente con el catálogo enriquecido y se revise el resultado emparejado.
