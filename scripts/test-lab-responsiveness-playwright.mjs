@@ -216,7 +216,7 @@ try {
   results.diagnosticPhaseCount = report.diagnosticPhaseCount;
   results.diagnosticDurationMs = report.diagnosticDurationMs;
   results.diagnosticPhaseStatuses = report.diagnosticPhaseStatuses;
-  assert.equal(report.schema, "prisma-recommendation-diagnostics/v13");
+  assert.equal(report.schema, "prisma-recommendation-diagnostics/v14");
   assert.equal(report.ratedEntries, 351);
   assert.equal(report.validRatingCount, 351);
   assert.equal(report.ratingsWithFeatures, 351);
