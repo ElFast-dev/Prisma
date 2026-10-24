@@ -288,7 +288,7 @@ jobs:
                   throw new Error(name + ": Recomendadas para ti contains duplicate movie identities: " + JSON.stringify(recommendedMovies));
                 }
 
-                // The local diagnostic report must be opt-in, reviewable, and omit raw movie records.
+                // The primary action is a concise Markdown handoff; the complete JSON is a separate advanced action.
                 await page.locator(".topbar [data-nav='lab']").click();
                 await page.locator(".recommendation-diagnostic-panel").waitFor({ state: "visible", timeout: 10000 });
                 await page.locator(".ridge-experiment-panel").waitFor({ state: "visible", timeout: 10000 });
@@ -329,9 +329,34 @@ jobs:
                     }
                   });
                 });
-                await page.locator("#diagnosticFeatureLabels").check();
                 await page.locator('[data-action="copy-recommendation-diagnostics"]').click();
-                await page.waitForFunction(() => typeof window.__prismaDiagnosticClipboard === "string", null, { timeout: 10000 });
+                await page.waitForFunction(() => typeof window.__prismaDiagnosticClipboard === "string" &&
+                  window.__prismaDiagnosticClipboard.startsWith("# PRISMA — contexto técnico"), null, { timeout: 10000 });
+                const developerBrief = await page.evaluate(() => {
+                  const text = window.__prismaDiagnosticClipboard;
+                  return {
+                    startsAsMarkdown: text.startsWith("# PRISMA — contexto técnico"),
+                    hasRepositoryLink: text.includes("https://github.com/ElFast-dev/Prisma"),
+                    hasProjectRules: text.includes("Objetivo y reglas que no deben romperse"),
+                    hasNextSteps: text.includes("Siguiente tarea") || text.includes("Siguiente trabajo") || text.includes("Siguiente"),
+                    hasRawTitle: /"About Time"/i.test(text),
+                    hasMovieIdField: /tmdbId|tmdb_id/i.test(text),
+                    characterCount: text.length,
+                    hasOutputField: Boolean(document.querySelector("#recommendationDiagnosticOutput"))
+                  };
+                });
+                if (!developerBrief.startsAsMarkdown || !developerBrief.hasRepositoryLink ||
+                    !developerBrief.hasProjectRules || !developerBrief.hasNextSteps ||
+                    developerBrief.hasRawTitle || developerBrief.hasMovieIdField ||
+                    developerBrief.characterCount > 9500 || !developerBrief.hasOutputField) {
+                  throw new Error(name + ": concise developer brief contract failed: " + JSON.stringify(developerBrief));
+                }
+
+                await page.locator(".diagnostic-advanced-options summary").click();
+                await page.locator("#diagnosticFeatureLabels").check();
+                await page.locator('[data-action="copy-recommendation-diagnostics-json"]').click();
+                await page.waitForFunction(() => typeof window.__prismaDiagnosticClipboard === "string" &&
+                  window.__prismaDiagnosticClipboard.trim().startsWith("{"), null, { timeout: 10000 });
                 const diagnosticReport = await page.evaluate(() => {
                   const text = window.__prismaDiagnosticClipboard;
                   const report = JSON.parse(text);
@@ -352,7 +377,7 @@ jobs:
                     diagnosticReport.hasMovieIdField ||
                     !diagnosticReport.hasOutputField ||
                     !diagnosticReport.reportsLocalGeneration) {
-                  throw new Error(name + ": local diagnostic report privacy/preview contract failed: " + JSON.stringify(diagnosticReport));
+                  throw new Error(name + ": full local JSON privacy/preview contract failed: " + JSON.stringify(diagnosticReport));
                 }
                 await page.screenshot({ path: "artifacts/" + name + "-lab-diagnostics.png", fullPage: false, animations: "disabled" });
                 await page.locator('[data-action="clear-recommendation-diagnostics"]').click();
