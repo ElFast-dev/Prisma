@@ -174,7 +174,7 @@ assert.ok(cached.has("./js/recommendations/ridge-kernel.js?v=rec-20261024-alpha-
   "El kernel numérico de Ridge debe estar incluido en la precaché versionada.");
 assert.ok(cached.has("./js/recommendations/repeated-validation-summary.js?v=core-20261021-1"),
   "El resumen de consistencia por repetición debe quedar disponible en la caché.");
-assert.ok(cached.has("./js/ui/page-views.js?v=core-20261024-2"),
+assert.ok(cached.has("./js/ui/page-views.js?v=core-20261024-3"),
   "La vista del Laboratorio debe quedar versionada en la caché.");
 assert.ok(cached.has("./js/ui/progress-views.js?v=core-20261023-1"),
   "La vista de Progreso debe tener su propia URL versionada y estar precargada.");
