@@ -235,7 +235,7 @@ assert.ok(cached.has(actionsImportUrl),
   "El service worker debe precargar la misma URL versionada de actions.js que usa app.js.");
 assert.ok(!cached.has("./js/import-export/actions.js?v=core-20261020-1"),
   "La caché PWA no debe conservar la URL antigua del módulo de importación.");
-assert.ok(cached.has("./js/app/lab-actions.js?v=core-20261023-5"),
+assert.ok(cached.has("./js/app/lab-actions.js?v=core-20261023-6"),
   "Las acciones del Laboratorio deben estar versionadas y en la precaché.");
 assert.ok(cached.has("./js/app/storage-protection-actions.js?v=core-20261023-1"),
   "Las acciones de protección del almacenamiento deben estar versionadas y en la precaché.");
