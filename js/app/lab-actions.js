@@ -231,7 +231,7 @@ export function createLabActions(ctx) {
       coverage: sourceMetrics.coverage,
       featureFamilyEvaluation: sourceMetrics.featureFamilyEvaluation,
       diagnosticSnapshot: snapshot,
-      applicationVersion: "prisma-web/2026.10.24-lab-one-click.1",
+      applicationVersion: "prisma-web/2026.10.24-ridge-alpha-deeper-lower-bound.1",
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
       ratingEvaluation: sourceMetrics.evaluation,

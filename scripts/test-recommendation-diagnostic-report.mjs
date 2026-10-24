@@ -429,7 +429,7 @@ const automaticPhases = [
 const integrated = buildRecommendationDiagnosticReport({
   ...baseInput,
   generatedAt: "2026-10-23T14:00:00.000Z",
-  applicationVersion: "prisma-web/2026.10.24-lab-one-click.1",
+  applicationVersion: "prisma-web/2026.10.24-ridge-alpha-deeper-lower-bound.1",
   diagnosticSnapshot: {
     schema: "prisma-lab-diagnostic-run/v1",
     status: "partial-error",
@@ -494,7 +494,7 @@ assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v14");
 assert.equal(integrated.evaluation.ridgeExperiment.alphaSelectionComparison.alphaGrid.length, 14,
   "La evaluación histórica debe conservar exactamente sus 14 anclajes.");
 assert.equal(integrated.generatedAt, "2026-10-23T14:00:00.000Z");
-assert.equal(integrated.applicationVersion, "prisma-web/2026.10.24-lab-one-click.1");
+assert.equal(integrated.applicationVersion, "prisma-web/2026.10.24-ridge-alpha-deeper-lower-bound.1");
 assert.equal(integrated.diagnostic.status, "partial-error");
 assert.equal(integrated.diagnostic.run.phases.length, 7);
 assert.equal(integrated.diagnostic.run.completedPhases, 7);
@@ -528,6 +528,7 @@ assert.equal(integrated.privacy.featureLabelsIncluded, false);
 
 
 const extendedAlphaGrid = [
+  1e-9, 3e-9, 1e-8, 3e-8,
   1e-7, 3e-7, 1e-6, 3e-6,
   1e-5, 3e-5, 1e-4, 3e-4,
   1e-3, 3e-3, 1e-2, 3e-2,
@@ -540,28 +541,28 @@ const extendedAlphaReport = buildRecommendationDiagnosticReport({
   ridgeEvaluation: {
     available: true, count: 60, mae: 0.9, baselineMae: 1.1,
     alphaGrid: extendedAlphaGrid,
-    selectedAlphaCounts: { "1e-7": 1, "100": 1 },
+    selectedAlphaCounts: { "1e-9": 1, "100": 1 },
     alphaSelectionComparison: {
       available: true, sampleCount: 60, alphaGrid: extendedAlphaGrid,
-      selectedAlphaCountsByMae: { "1e-7": 8, "100": 7 },
-      selectedAlphaCountsByRanking: { "1e-7": 2, "100": 13 },
+      selectedAlphaCountsByMae: { "1e-9": 8, "100": 7 },
+      selectedAlphaCountsByRanking: { "1e-9": 2, "100": 13 },
       lowerBoundary: {
-        mae: { available: true, minimumAlpha: 1e-7, selectedCount: 8, foldsEvaluated: 15,
+        mae: { available: true, minimumAlpha: 1e-9, selectedCount: 8, foldsEvaluated: 15,
           selectedFraction: 8 / 15, majoritySelected: true, unresolved: true },
-        ranking: { available: true, minimumAlpha: 1e-7, selectedCount: 2, foldsEvaluated: 15,
+        ranking: { available: true, minimumAlpha: 1e-9, selectedCount: 2, foldsEvaluated: 15,
           selectedFraction: 2 / 15, majoritySelected: false, unresolved: false },
         unresolved: true
       },
       relativeScaleComparison: {
         available: true, executionStatus: "completed", sampleCount: 60,
         relativeMae: {
-          available: true, selectedAnchorAlphaCounts: { "1e-7": 4, "100": 1 },
-          lowerBoundary: { available: true, minimumAlpha: 1e-7, selectedCount: 4, foldsEvaluated: 15,
+          available: true, selectedAnchorAlphaCounts: { "1e-9": 4, "100": 1 },
+          lowerBoundary: { available: true, minimumAlpha: 1e-9, selectedCount: 4, foldsEvaluated: 15,
             selectedFraction: 4 / 15, majoritySelected: false, unresolved: false }
         },
         relativeRanking: {
-          available: true, selectedAnchorAlphaCounts: { "1e-7": 2, "100": 3 },
-          lowerBoundary: { available: true, minimumAlpha: 1e-7, selectedCount: 2, foldsEvaluated: 15,
+          available: true, selectedAnchorAlphaCounts: { "1e-9": 2, "100": 3 },
+          lowerBoundary: { available: true, minimumAlpha: 1e-9, selectedCount: 2, foldsEvaluated: 15,
             selectedFraction: 2 / 15, majoritySelected: false, unresolved: false }
         }
       }
@@ -570,25 +571,23 @@ const extendedAlphaReport = buildRecommendationDiagnosticReport({
 });
 const serializedExtendedRidge = extendedAlphaReport.evaluation.ridgeExperiment;
 const serializedExtendedSelection = serializedExtendedRidge.alphaSelectionComparison;
-assert.equal(serializedExtendedRidge.alphaGrid.length, 18);
+assert.equal(serializedExtendedRidge.alphaGrid.length, 22);
 assert.deepEqual(serializedExtendedRidge.alphaGrid, extendedAlphaGrid);
-assert.equal(serializedExtendedSelection.alphaGrid.length, 18,
-  "El JSON de selección debe conservar los 18 valores de la rejilla extendida.");
+assert.equal(serializedExtendedSelection.alphaGrid.length, 22,
+  "El JSON de selección debe conservar los 22 valores de la rejilla extendida.");
 assert.deepEqual(serializedExtendedSelection.alphaGrid, extendedAlphaGrid);
-assert.deepEqual(serializedExtendedSelection.selectedAlphaCountsByMae, { "1e-7": 8, "100": 7 },
+assert.deepEqual(serializedExtendedSelection.selectedAlphaCountsByMae, { "1e-9": 8, "100": 7 },
   "La selección por MAE debe conservar los anclajes mínimo y máximo.");
-assert.deepEqual(serializedExtendedSelection.selectedAlphaCountsByRanking, { "1e-7": 2, "100": 13 },
+assert.deepEqual(serializedExtendedSelection.selectedAlphaCountsByRanking, { "1e-9": 2, "100": 13 },
   "La selección por ranking debe conservar los anclajes mínimo y máximo.");
-assert.equal(serializedExtendedSelection.lowerBoundary.mae.minimumAlpha, 1e-7);
-assert.equal(serializedExtendedSelection.lowerBoundary.ranking.minimumAlpha, 1e-7);
+assert.equal(serializedExtendedSelection.lowerBoundary.mae.minimumAlpha, 1e-9);
+assert.equal(serializedExtendedSelection.lowerBoundary.ranking.minimumAlpha, 1e-9);
 assert.deepEqual(serializedExtendedSelection.relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts,
-  { "1e-7": 4, "100": 1 },
+  { "1e-9": 4, "100": 1 },
   "La selección relativa por MAE debe conservar todos los anclajes declarados.");
 assert.deepEqual(serializedExtendedSelection.relativeScaleComparison.relativeRanking.selectedAnchorAlphaCounts,
-  { "1e-7": 2, "100": 3 },
+  { "1e-9": 2, "100": 3 },
   "La selección relativa por ranking debe conservar todos los anclajes declarados.");
-
-
 const oversizedAlphaGrid = Array.from({ length: 40 }, (_, index) => index + 1);
 const boundedAlphaReport = buildRecommendationDiagnosticReport({
   ratedCount: 1, ratingValues: [7],
@@ -651,7 +650,7 @@ assert.ok(labMetricsActionsSource.includes("includeExtendedAlphaGrid: true") && 
 assert.ok(labMetricsActionsSource.includes("coordinator.retryFailures()"));
 assert.match(labMetricsActionsSource, /if \(!nextSnapshot\) \{[\s\S]*?clearExperimentResults\(\)/,
   "Al invalidar el perfil, el informe no debe reutilizar métricas Ridge, temporales o de normalización antiguas.");
-assert.ok(labActionsSource.includes("prisma-web/2026.10.24-lab-one-click.1"));
+assert.ok(labActionsSource.includes("prisma-web/2026.10.24-ridge-alpha-deeper-lower-bound.1"));
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
   "El constructor del informe debe ser puro: sin DOM, persistencia, red ni portapapeles");
 
