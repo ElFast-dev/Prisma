@@ -559,10 +559,8 @@ assert.equal(balancedWithMissing.repeatsEvaluated, 1,
 assert.equal(balancedWithMissing.minDelta, 0.02,
   "Una métrica ausente no debe introducir un cero ficticio en el rango.");
 
-assert.match(labViewsSource, /Consistencia por repetición/);
-assert.match(labViewsSource, /intervalo de confianza/);
-assert.match(labViewsSource, /baselineFavorableRepeats/);
-assert.match(labViewsSource, /summary\.ties/);
+assert.doesNotMatch(labViewsSource, /Consistencia por repetición|intervalo de confianza|baselineFavorableRepeats|summary\.ties/,
+  "Los detalles estadísticos completos pertenecen al informe técnico, no a la vista compacta.");
 
 
 const temporalAudit = { violations: 0, predictions: 0 };
