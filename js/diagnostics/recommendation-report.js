@@ -378,7 +378,7 @@ function ridgeRelativeScaleComparisonEvaluation(source, alphaGridSource) {
   const diagonal = scales.centeredDiagonal || {};
   const lambdaGrid = scales.relativeLambdaGrid || {};
   return {
-    executionStatus: evaluation ? (evaluation.available ? "completed" : "unavailable") : "not-run",
+    executionStatus: evaluation ? (evaluation.executionStatus === "not-run" ? "not-run" : (evaluation.available ? "completed" : "unavailable")) : "not-run",
     available: Boolean(evaluation && evaluation.available),
     sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
     selectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.selectionFoldsEvaluated),
