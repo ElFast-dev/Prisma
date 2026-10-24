@@ -646,10 +646,10 @@ assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
 assert.match(labViewsSource, /Copiar informe técnico para desarrollo/);
 assert.doesNotMatch(labViewsSource, /copy-recommendation-diagnostics-json|diagnosticFeatureLabels|diagnostic-advanced-options|restart-lab-diagnostic|retry-lab-diagnostic|run-ridge-experiment|run-temporal-ridge-experiment|toggle-temporal-added-date-proxy|renderTMDBHistoryPanel/);
 assert.match(labViewsSource, /sin nombres individuales de señales/);
-assert.match(eventHandlersSource, /action === "copy-recommendation-diagnostics"[\\s\\S]*?copyRecommendationDiagnosticJson\\(false\\)/);
-assert.match(labMetricsActionsSource, /includeExtendedAlphaGrid: true,[\\s\\S]*?includeRelativeScale: true/);
-assert.match(labMetricsActionsSource, /coordinator.retryFailures\\(\\)/);
-assert.match(labActionsSource, /prisma-web\\/2026\\.10\\.24-lab-one-click\\.1/);
+assert.ok(eventHandlersSource.includes('action === "copy-recommendation-diagnostics"') && eventHandlersSource.includes('copyRecommendationDiagnosticJson(false)'));
+assert.ok(labMetricsActionsSource.includes("includeExtendedAlphaGrid: true") && labMetricsActionsSource.includes("includeRelativeScale: true"));
+assert.ok(labMetricsActionsSource.includes("coordinator.retryFailures()"));
+assert.ok(labActionsSource.includes("prisma-web/2026.10.24-lab-one-click.1"));
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
   "El constructor del informe debe ser puro: sin DOM, persistencia, red ni portapapeles");
 
