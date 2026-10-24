@@ -1090,6 +1090,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
             const relativeRankingCounts = deltaCounts(relativeRankingDelta);
             const relativeSelectorCounts = deltaCounts(relativeSelectorDelta);
             foldRankingComparisons[mode] = Object.assign({}, foldRankingComparisons[mode], {
+              baselineNdcgAt5: baselineDcg / idealDcg,
               relativeMaeAvailable: relativeMaeAvailable,
               relativeRankingAvailable: relativeRankingAvailable,
               relativeMaeSelectedNdcgAt5: relativeMaeAvailable ? relativeMaeSelectedDcg / idealDcg : null,
@@ -1440,16 +1441,19 @@ export function createRidgeRecommendationExperiment(dependencies) {
           return (fold.rankingModes || []).find(function (row) { return row.mode === mode; });
         }).filter(Boolean);
         const maeRows = modeRows.filter(function (row) {
-          return row.relativeMaeAvailable && Number.isFinite(row.relativeMaeSelectedNdcgAt5) &&
+          return row.relativeMaeAvailable && Number.isFinite(row.baselineNdcgAt5) &&
+            Number.isFinite(row.relativeMaeSelectedNdcgAt5) &&
             Number.isFinite(row.idealDcgWeight) && row.idealDcgWeight > 0;
         });
         const rankingRows = modeRows.filter(function (row) {
-          return row.relativeRankingAvailable && Number.isFinite(row.relativeRankingSelectedNdcgAt5) &&
+          return row.relativeRankingAvailable && Number.isFinite(row.baselineNdcgAt5) &&
+            Number.isFinite(row.relativeRankingSelectedNdcgAt5) &&
             Number.isFinite(row.idealDcgWeight) && row.idealDcgWeight > 0;
         });
         const commonRows = modeRows.filter(function (row) {
           return row.relativeMaeAvailable && row.relativeRankingAvailable &&
-            Number.isFinite(row.relativeMaeSelectedNdcgAt5) && Number.isFinite(row.relativeRankingSelectedNdcgAt5) &&
+            Number.isFinite(row.baselineNdcgAt5) && Number.isFinite(row.relativeMaeSelectedNdcgAt5) &&
+            Number.isFinite(row.relativeRankingSelectedNdcgAt5) &&
             Number.isFinite(row.idealDcgWeight) && row.idealDcgWeight > 0;
         });
         const maeWins = winsLosses(maeRows.map(function (row) {
@@ -1566,10 +1570,6 @@ export function createRidgeRecommendationExperiment(dependencies) {
       };
     });
 
-    const minimumScale = scaleSummary([].concat(
-      folds.map(function (fold) { return fold.outerKernelScale && fold.outerKernelScale.meanDiagonal; }),
-      folds.map(function (fold) { return fold.innerScaleReference && fold.innerScaleReference.median; })
-    ));
     return {
       available: relativeMae.available,
       executionStatus: relativeMae.available ? "completed" : "unavailable",
