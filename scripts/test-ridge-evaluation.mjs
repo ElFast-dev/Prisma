@@ -728,12 +728,7 @@ assert.doesNotMatch(JSON.stringify(temporalResult.windowSummaries), /2020-|watch
 
 assert.match(appSource, /runTemporalRidgeExperiment/);
 assert.match(labActionsSource, /evaluateTemporalAsync/);
-assert.match(labViewsSource, /data-action="run-temporal-ridge-experiment"/);
-assert.match(labViewsSource, /data-action="toggle-temporal-added-date-proxy"/);
-assert.match(labViewsSource, /el reto de 280 días permanece limitado del 15 de enero al 21 de octubre de 2026/i);
-assert.match(labViewsSource, /Ventana por incorporación/);
-assert.match(labViewsSource, /Orden temporal exploratorio por fecha de incorporación/);
-assert.match(labViewsSource, /Calidad del orden por fecha de incorporación/);
+assert.doesNotMatch(labViewsSource, /run-temporal-ridge-experiment|toggle-temporal-added-date-proxy|Ventana por incorporación|Orden temporal exploratorio por fecha de incorporación|Calidad del orden por fecha de incorporación/i);
 assert.match(eventSource, /action === "run-temporal-ridge-experiment"/);
 assert.match(eventSource, /action === "toggle-temporal-added-date-proxy"/);
 assert.match(appSource, /getUseCollectionAddedAtProxy/);
