@@ -262,7 +262,7 @@ export function buildRecommendationDeveloperBrief(report) {
 
   lines.push("", "## Familias de características y regularización");
   if (families.available) {
-    lines.push("- Familias de características:  + countText(families.sampleCount) + " registros; " + countText(families.repeats) +
+    lines.push("- Familias de características: " + countText(families.sampleCount) + " registros; " + countText(families.repeats) +
       " repeticiones/" + countText(families.foldsEvaluated) + " pliegues; particiones compartidas=" +
       Boolean(families.sharedPartition) + "; revisión de fuga de entrenamiento=" + Boolean(families.trainingLeakageChecked) + ".");
     lines.push.apply(lines, familyLines(families));
