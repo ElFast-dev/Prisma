@@ -535,14 +535,66 @@ function ridgeAlphaSelectionEvaluation(source) {
           maeVsBaselineLosses: nonNegativeInteger(value.maeVsBaselineLosses),
           rankingVsBaselineWins: nonNegativeInteger(value.rankingVsBaselineWins),
           rankingVsBaselineTies: nonNegativeInteger(value.rankingVsBaselineTies),
-          rankingVsBaselineLosses: nonNegativeInteger(value.rankingVsBaselineLosses)
+          rankingVsBaselineLosses: nonNegativeInteger(value.rankingVsBaselineLosses),
+          relativeMaeAvailable: Boolean(value.relativeMaeAvailable),
+          relativeRankingAvailable: Boolean(value.relativeRankingAvailable),
+          relativeMaeSelectedNdcgAt5: value.relativeMaeAvailable ? rounded(value.relativeMaeSelectedNdcgAt5, 4) : null,
+          relativeRankingSelectedNdcgAt5: value.relativeRankingAvailable ? rounded(value.relativeRankingSelectedNdcgAt5, 4) : null,
+          deltaRelativeMaeSelectionMinusBaseline: value.relativeMaeAvailable
+            ? rounded(value.deltaRelativeMaeSelectionMinusBaseline, 4) : null,
+          deltaRelativeRankingSelectionMinusBaseline: value.relativeRankingAvailable
+            ? rounded(value.deltaRelativeRankingSelectionMinusBaseline, 4) : null,
+          deltaRelativeRankingSelectionMinusRelativeMae: value.relativeMaeAvailable && value.relativeRankingAvailable
+            ? rounded(value.deltaRelativeRankingSelectionMinusRelativeMae, 4) : null,
+          relativeMaeVsBaselineWins: nonNegativeInteger(value.relativeMaeVsBaselineWins),
+          relativeMaeVsBaselineTies: nonNegativeInteger(value.relativeMaeVsBaselineTies),
+          relativeMaeVsBaselineLosses: nonNegativeInteger(value.relativeMaeVsBaselineLosses),
+          relativeRankingVsBaselineWins: nonNegativeInteger(value.relativeRankingVsBaselineWins),
+          relativeRankingVsBaselineTies: nonNegativeInteger(value.relativeRankingVsBaselineTies),
+          relativeRankingVsBaselineLosses: nonNegativeInteger(value.relativeRankingVsBaselineLosses),
+          relativeRankingVsRelativeMaeWins: nonNegativeInteger(value.relativeRankingVsRelativeMaeWins),
+          relativeRankingVsRelativeMaeTies: nonNegativeInteger(value.relativeRankingVsRelativeMaeTies),
+          relativeRankingVsRelativeMaeLosses: nonNegativeInteger(value.relativeRankingVsRelativeMaeLosses)
         };
       });
+      const outerScale = item.outerKernelScale && typeof item.outerKernelScale === "object" ? item.outerKernelScale : {};
+      const referenceScale = item.innerScaleReference && typeof item.innerScaleReference === "object" ? item.innerScaleReference : {};
       return {
         repeat: nonNegativeInteger(item.repeat),
         outerFold: nonNegativeInteger(item.outerFold),
+        outerTestCount: nonNegativeInteger(item.outerTestCount),
         selectedAlphaByMae: numeric(item.selectedAlphaByMae),
         selectedAlphaByRanking: numeric(item.selectedAlphaByRanking),
+        selectedLambdaByMae: numeric(item.selectedLambdaByMae),
+        selectedLambdaByRanking: numeric(item.selectedLambdaByRanking),
+        relativeLambdaAnchorAlphaByMae: numeric(item.relativeLambdaAnchorAlphaByMae),
+        relativeLambdaAnchorAlphaByRanking: numeric(item.relativeLambdaAnchorAlphaByRanking),
+        effectiveAlphaByRelativeMae: numeric(item.effectiveAlphaByRelativeMae),
+        effectiveAlphaByRelativeRanking: numeric(item.effectiveAlphaByRelativeRanking),
+        outerKernelScale: {
+          available: Boolean(outerScale.available),
+          count: nonNegativeInteger(outerScale.count),
+          meanDiagonal: numeric(outerScale.meanDiagonal) == null ? null : rounded(outerScale.meanDiagonal, 8),
+          medianDiagonal: numeric(outerScale.medianDiagonal) == null ? null : rounded(outerScale.medianDiagonal, 8),
+          minDiagonal: numeric(outerScale.minDiagonal) == null ? null : rounded(outerScale.minDiagonal, 8),
+          maxDiagonal: numeric(outerScale.maxDiagonal) == null ? null : rounded(outerScale.maxDiagonal, 8),
+          reason: outerScale.reason ? String(outerScale.reason).slice(0, 160) : null
+        },
+        innerScaleReference: {
+          available: Boolean(referenceScale.available),
+          count: nonNegativeInteger(referenceScale.count),
+          mean: numeric(referenceScale.mean) == null ? null : rounded(referenceScale.mean, 8),
+          median: numeric(referenceScale.median) == null ? null : rounded(referenceScale.median, 8),
+          min: numeric(referenceScale.min) == null ? null : rounded(referenceScale.min, 8),
+          max: numeric(referenceScale.max) == null ? null : rounded(referenceScale.max, 8)
+        },
+        relativeMaeAvailable: Boolean(item.relativeMaeAvailable),
+        relativeRankingAvailable: Boolean(item.relativeRankingAvailable),
+        relativeMaeSelectedMae: item.relativeMaeAvailable ? rounded(item.relativeMaeSelectedMae, 4) : null,
+        relativeRankingSelectedMae: item.relativeRankingAvailable ? rounded(item.relativeRankingSelectedMae, 4) : null,
+        relativeNumericErrors: nonNegativeInteger(item.relativeNumericErrors),
+        relativeLambdaGridMin: numeric(item.relativeLambdaGridMin) == null ? null : rounded(item.relativeLambdaGridMin, 8),
+        relativeLambdaGridMax: numeric(item.relativeLambdaGridMax) == null ? null : rounded(item.relativeLambdaGridMax, 8),
         maeSelectedMae: rounded(item.maeSelectedMae, 4),
         baselineMae: rounded(item.baselineMae, 4),
         rankingSelectedMae: rounded(item.rankingSelectedMae, 4),
