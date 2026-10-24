@@ -370,6 +370,17 @@ const cancelled = await experiment.evaluateAsync(progress =>
 assert.equal(cancelled.available, false,
   "La evaluación repetida debe detenerse si el usuario invalida sus datos durante el cálculo.");
 assert.match(cancelled.reason, /canceló/);
+const relativeCancelProgress = [];
+const relativeCancelled = await experiment.evaluateAsync(progress => {
+  relativeCancelProgress.push(progress);
+  return !(progress.phase === "fold" && /lambda/.test(String(progress.detail || "")));
+}, { includeRelativeScale: true });
+assert.equal(relativeCancelled.available, false,
+  "La variante relativa también debe respetar la cancelación durante los ajustes internos.");
+assert.match(relativeCancelled.reason, /canceló/);
+assert.ok(relativeCancelProgress.some(progress =>
+  progress.phase === "fold" && /lambda/.test(String(progress.detail || ""))),
+  "La búsqueda relativa debe publicar progreso asíncrono identificable.");
 
 const rankingRecords = fixtures(60);
 const rankingResult = harness(rankingRecords, rankingRecords).evaluate();
@@ -464,6 +475,8 @@ assert.match(labViewsSource, /cinco pliegues externos, tres internos y tres repe
 assert.match(eventSource, /action === "run-ridge-experiment"/);
 assert.match(labActionsSource, /3 repeticiones de 5 pliegues/);
 assert.ok(labActionsSource.includes('ctx.ridgeRecommendationExperiment.evaluateAsync'));
+assert.ok(labActionsSource.includes('includeRelativeScale: true'),
+  "Solo la acción explícita debe solicitar la búsqueda relativa.");
 assert.ok(labActionsSource.includes('ctx.ridgeEvaluationProgress = progress'));
 assert.match(labViewsSource, /ridgeEvaluationProgress/);
 assert.match(reportSource, /ridgeExperiment: ridgeEvaluation/);
