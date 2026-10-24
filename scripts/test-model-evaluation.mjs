@@ -10,7 +10,7 @@ const [appSource, pageViewsSource, labViewsSource] = await Promise.all([
 ]);
 const uiSource = [appSource, pageViewsSource, labViewsSource].join('\\n');
 const engineSource = await readFile('js/recommendations/engine.js', 'utf8');
-assert.ok(uiSource.includes('Copiar informe técnico para desarrollo'),
+assert.ok(uiSource.includes('Copiar resumen técnico para ChatGPT'),
   'El Laboratorio simplificado debe ofrecer la copia del informe al desarrollador.');
 
 function runEvaluation(entries, movieRecords) {
