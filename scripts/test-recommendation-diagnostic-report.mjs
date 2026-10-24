@@ -588,6 +588,28 @@ assert.deepEqual(serializedExtendedSelection.relativeScaleComparison.relativeRan
   { "1e-7": 2, "100": 3 },
   "La selección relativa por ranking debe conservar todos los anclajes declarados.");
 
+
+const oversizedAlphaGrid = Array.from({ length: 40 }, (_, index) => index + 1);
+const boundedAlphaReport = buildRecommendationDiagnosticReport({
+  ratedCount: 1, ratingValues: [7],
+  profile: { average: 7, withMetadata: 1, features: new Map() },
+  ridgeEvaluation: {
+    available: true, count: 1, alphaGrid: oversizedAlphaGrid,
+    alphaSelectionComparison: {
+      available: true, alphaGrid: oversizedAlphaGrid,
+      selectedAlphaCountsByMae: { "1": 1, "32": 2, "33": 3, "40": 4 }
+    }
+  }
+});
+assert.deepEqual(boundedAlphaReport.evaluation.ridgeExperiment.alphaGrid, oversizedAlphaGrid.slice(0, 32),
+  "La rejilla raíz debe respetar el máximo defensivo de 32.");
+assert.deepEqual(boundedAlphaReport.evaluation.ridgeExperiment.alphaSelectionComparison.alphaGrid,
+  oversizedAlphaGrid.slice(0, 32),
+  "La rejilla anidada debe respetar el mismo máximo defensivo.");
+assert.deepEqual(boundedAlphaReport.evaluation.ridgeExperiment.alphaSelectionComparison.selectedAlphaCountsByMae,
+  { "1": 1, "32": 2 },
+  "No se deben aceptar conteos de anclajes excluidos por el máximo defensivo.");
+
 const unavailable = buildRecommendationDiagnosticReport({
   ratedCount: 2,
   ratingValues: [7, 4],
