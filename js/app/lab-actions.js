@@ -1,3 +1,5 @@
+import { buildRecommendationDeveloperBrief } from "../diagnostics/recommendation-handoff.js?v=diag-20261023-1";
+
 function performanceNow(windowRef) {
   return windowRef && windowRef.performance && typeof windowRef.performance.now === "function"
     ? windowRef.performance.now()
@@ -189,12 +191,14 @@ export function createLabActions(ctx) {
 
   function clearRecommendationDiagnosticReport() {
     ctx.recommendationDiagnosticReportText = "";
+    ctx.recommendationDiagnosticReportFormat = "brief";
     ctx.recommendationDiagnosticCopyMessage = "";
     if (ctx.currentPage === "lab") ctx.renderApp();
   }
 
-  async function copyRecommendationDiagnosticReport(includeFeatureLabels) {
-    ctx.recommendationDiagnosticFeatureLabelsIncluded = Boolean(includeFeatureLabels);
+  async function copyRecommendationDiagnosticReport(includeFeatureLabels, format) {
+    const outputFormat = format === "brief" ? "brief" : "json";
+    ctx.recommendationDiagnosticFeatureLabelsIncluded = outputFormat === "json" && Boolean(includeFeatureLabels);
     const snapshotBefore = ctx.labDiagnosticSnapshot;
     const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
     if (!snapshotBefore || !Array.isArray(snapshotBefore.phases) ||
@@ -236,9 +240,14 @@ export function createLabActions(ctx) {
       recommendationQuality: sourceMetrics.recommendationQuality,
       includeFeatureLabels: ctx.recommendationDiagnosticFeatureLabelsIncluded
     });
-    const reportText = JSON.stringify(report, null, 2);
+    const reportText = outputFormat === "json"
+      ? JSON.stringify(report, null, 2)
+      : buildRecommendationDeveloperBrief(report);
     ctx.recommendationDiagnosticReportText = reportText;
-    ctx.recommendationDiagnosticCopyMessage = "Informe generado localmente. Revisa su contenido antes de compartirlo; Prisma no lo envía a ningún servidor.";
+    ctx.recommendationDiagnosticReportFormat = outputFormat;
+    ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
+      ? "JSON técnico completo generado localmente. Revisa el contenido antes de compartirlo; Prisma no lo envía a ningún servidor."
+      : "Contexto resumido para la IA generado localmente. Incluye hallazgos, límites y próximos pasos; no incluye nombres individuales de señales ni datos personales.";
 
     let copied = false;
     try {
@@ -249,14 +258,26 @@ export function createLabActions(ctx) {
       const writePromise = ctx.navigator.clipboard.writeText(reportText);
       await writePromise;
       copied = true;
-      ctx.recommendationDiagnosticCopyMessage = "Copiado al portapapeles. Revisa el contenido de abajo antes de pegarlo en otra conversación.";
+      ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
+        ? "JSON completo copiado. Revisa el contenido de abajo antes de compartirlo."
+        : "Contexto resumido copiado. Revisa el contenido de abajo antes de pegarlo en otra conversación.";
     } catch (_) {
-      ctx.recommendationDiagnosticCopyMessage = "No se pudo copiar automáticamente. El informe completo está visible abajo para seleccionarlo y copiarlo manualmente.";
+      ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
+        ? "No se pudo copiar automáticamente. El JSON completo está visible abajo para seleccionarlo y copiarlo manualmente."
+        : "No se pudo copiar automáticamente. El contexto resumido está visible abajo para seleccionarlo y copiarlo manualmente.";
     }
 
     if (ctx.currentPage === "lab") ctx.renderApp();
-    if (copied) ctx.toast("Diagnóstico copiado. Revísalo antes de compartirlo.");
-    else ctx.toast("Informe preparado para revisión y copia manual.");
+    if (copied) ctx.toast(outputFormat === "json" ? "JSON técnico completo copiado." : "Contexto resumido para IA copiado.");
+    else ctx.toast(outputFormat === "json" ? "JSON completo preparado para copia manual." : "Contexto resumido preparado para copia manual.");
+  }
+
+  async function copyRecommendationDeveloperBrief() {
+    return copyRecommendationDiagnosticReport(false, "brief");
+  }
+
+  async function copyRecommendationDiagnosticJson(includeFeatureLabels) {
+    return copyRecommendationDiagnosticReport(includeFeatureLabels, "json");
   }
 
   return {
@@ -265,6 +286,8 @@ export function createLabActions(ctx) {
     toggleTemporalAddedAtProxy,
     runTemporalRidgeExperiment,
     clearRecommendationDiagnosticReport,
-    copyRecommendationDiagnosticReport
+    copyRecommendationDiagnosticReport,
+    copyRecommendationDeveloperBrief,
+    copyRecommendationDiagnosticJson
   };
 }

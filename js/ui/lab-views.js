@@ -78,29 +78,34 @@ export function createLabViews(ctx) {
 
   function renderRecommendationDiagnosticPanel() {
     const reportText = ctx.recommendationDiagnosticReportText || "";
+    const reportFormat = ctx.recommendationDiagnosticReportFormat === "json" ? "json" : "brief";
     const metricsBusy = Boolean(ctx.labMetricsBusy);
     const snapshot = ctx.labDiagnosticSnapshot || null;
     const finalStatuses = ["completed", "unavailable", "cancelled", "error"];
     const allFinal = Boolean(snapshot && Array.isArray(snapshot.phases) &&
       snapshot.phases.length === 7 && snapshot.phases.every(function (phase) { return finalStatuses.includes(phase.status); }));
-    const diagnosticButtonLabel = "Copiar diagnóstico completo para la IA desarrolladora";
-    const disclosure = '<p class="metric-note">Informe JSON único con estado y duración de cada una de las siete fases, cobertura, MAE y referencias, nDCG@5, diversidad, normalización, Ridge, evaluación temporal y comparación emparejada de familias de características.</p>' +
-      '<p class="metric-note">Se genera en este dispositivo y no se transmite automáticamente. Excluye títulos, identificadores de películas, notas por película, fechas personales, comentarios, emociones, credenciales y copias de seguridad.</p>';
-    const detailsToggle = '<label class="diagnostic-feature-option"><input id="diagnosticFeatureLabels" type="checkbox"' +
+    const disabled = metricsBusy || !allFinal ? ' disabled aria-disabled="true"' : '';
+    const detailsToggle = '<details class="diagnostic-advanced-options"><summary>Opciones avanzadas del JSON completo</summary>' +
+      '<label class="diagnostic-feature-option"><input id="diagnosticFeatureLabels" type="checkbox"' +
       (ctx.recommendationDiagnosticFeatureLabelsIncluded ? ' checked' : '') +
-      '> Incluir hasta 40 nombres de señales agregadas (géneros, temas y décadas) para facilitar el análisis</label>';
+      '> Incluir hasta 40 nombres de señales agregadas en el JSON (puede revelar parte de tus gustos)</label></details>';
+    const outputLabel = reportFormat === "json" ? "JSON técnico completo" : "Contexto resumido para IA";
     const output = reportText
       ? '<div class="diagnostic-report-result"><p class="metric-note">' + ctx.escapeHTML(ctx.recommendationDiagnosticCopyMessage || "") + '</p>' +
-        '<textarea class="field diagnostic-report-output" id="recommendationDiagnosticOutput" rows="12" readonly aria-label="Informe técnico para revisar">' + ctx.escapeHTML(reportText) + '</textarea>' +
-        '<div class="hero-actions"><button class="btn btn-quiet btn-small" type="button" data-action="clear-recommendation-diagnostics">Limpiar informe</button></div></div>'
+        '<p class="metric-note"><strong>Formato preparado:</strong> ' + outputLabel + ' · ' + reportText.length.toLocaleString() + ' caracteres.</p>' +
+        '<textarea class="field diagnostic-report-output" id="recommendationDiagnosticOutput" rows="14" readonly aria-label="' + outputLabel + '">' + ctx.escapeHTML(reportText) + '</textarea>' +
+        '<div class="hero-actions"><button class="btn btn-quiet btn-small" type="button" data-action="clear-recommendation-diagnostics">Limpiar contenido</button></div></div>'
       : "";
     return '<section class="panel recommendation-diagnostic-panel" aria-labelledby="recommendation-diagnostic-heading">' +
-      '<div class="panel-head"><div><h3 id="recommendation-diagnostic-heading">Informe integral para la IA desarrolladora</h3><p class="metric-note">Un único JSON preparado localmente cuando todas las fases hayan terminado.</p></div>' +
-      '<button class="btn btn-primary" type="button" data-action="copy-recommendation-diagnostics"' +
-      (metricsBusy || !allFinal ? ' disabled aria-disabled="true"' : '') + '>' + diagnosticButtonLabel + '</button></div>' +
-      disclosure + detailsToggle +
-      '<p class="metric-note">Copiar no envía datos. Solo tú decides si pegas el informe en otra conversación. Las etiquetas de señales concretas permanecen excluidas salvo que actives expresamente la opción anterior.</p>' +
-      output + '</section>';
+      '<div class="panel-head"><div><h3 id="recommendation-diagnostic-heading">Contexto técnico para la IA desarrolladora</h3>' +
+      '<p class="metric-note">La copia principal es un resumen accionable, no un volcado interminable de JSON.</p></div>' +
+      '<div class="hero-actions"><button class="btn btn-primary" type="button" data-action="copy-recommendation-diagnostics"' + disabled +
+      '>Copiar contexto resumido para IA</button>' +
+      '<button class="btn btn-quiet btn-small" type="button" data-action="copy-recommendation-diagnostics-json"' + disabled +
+      '>Copiar JSON técnico completo</button></div></div>' +
+      '<p class="metric-note">El contexto resumido incluye reglas del proyecto, estado, cifras decisivas, interpretación, límites y siguiente tarea recomendada. Omite tablas repetidas, nombres individuales de señales y datos personales.</p>' +
+      '<p class="metric-note">Se genera en este dispositivo. Copiar no envía nada a ningún servidor; solo tú decides qué compartir.</p>' +
+      detailsToggle + output + '</section>';
   }
 
   const { renderRidgeExperimentPanel } = createLabRidgeView(ctx);

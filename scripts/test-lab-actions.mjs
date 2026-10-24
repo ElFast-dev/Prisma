@@ -22,6 +22,7 @@ function createFixture() {
     recommendationDiagnosticReportText: "informe anterior",
     recommendationDiagnosticCopyMessage: "mensaje anterior",
     recommendationDiagnosticFeatureLabelsIncluded: false,
+    recommendationDiagnosticReportFormat: "brief",
     labDiagnosticSnapshot: {
       schema: "prisma-lab-diagnostic-run/v1",
       status: "completed",
@@ -166,30 +167,41 @@ assert.equal(fixture.normalizationCalls, 1);
 assert.deepEqual(ctx.influenceNormalizationEvaluationResult, { available: true, sampleCount: 8 });
 assert.equal(ctx.influenceNormalizationEvaluationBusy, false);
 
-// The report awaits the current cached metrics snapshot, then copies the aggregate report.
-const copyPromise = actions.copyRecommendationDiagnosticReport(true);
-await copyPromise;
+// The primary action creates a concise developer brief without exposing concrete feature labels.
+await actions.copyRecommendationDeveloperBrief();
 assert.equal(clipboardWrites.length, 1);
-assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, true);
-assert.equal(JSON.parse(ctx.recommendationDiagnosticReportText).privacy.networkTransmission, false);
+assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, false);
+assert.equal(ctx.recommendationDiagnosticReportFormat, "brief");
+assert.ok(ctx.recommendationDiagnosticReportText.startsWith("# PRISMA — contexto técnico"));
+assert.ok(ctx.recommendationDiagnosticReportText.includes("OpenSpec/SDD"));
+assert.equal(fixture.diagnosticInput.includeFeatureLabels, false);
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
-  "Copiado al portapapeles. Revisa el contenido de abajo antes de pegarlo en otra conversación.");
+  "Contexto resumido copiado. Revisa el contenido de abajo antes de pegarlo en otra conversación.");
 assert.equal(fixture.diagnosticInput.ratedCount, 2);
 assert.equal(fixture.diagnosticInput.catalogCount, 1);
 assert.deepEqual(fixture.diagnosticInput.collectionCounts, { watched: 1, pending: 1, hidden: 1 });
 assert.deepEqual(fixture.diagnosticInput.ratingValues, [8, 4]);
-assert.equal(ctx.recommendationDiagnosticCopyMessage,
-  "Copiado al portapapeles. Revisa el contenido de abajo antes de pegarlo en otra conversación.");
-assert.ok(toasts.some(item => item.message === "Diagnóstico copiado. Revísalo antes de compartirlo."));
+assert.ok(toasts.some(item => item.message === "Contexto resumido para IA copiado."));
 
-// Clipboard failure leaves the complete report available for manual selection and copying.
+// The optional advanced action preserves the complete aggregate JSON for deeper debugging.
+await actions.copyRecommendationDiagnosticJson(true);
+assert.equal(clipboardWrites.length, 2);
+assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, true);
+assert.equal(ctx.recommendationDiagnosticReportFormat, "json");
+assert.equal(JSON.parse(ctx.recommendationDiagnosticReportText).privacy.networkTransmission, false);
+assert.equal(fixture.diagnosticInput.includeFeatureLabels, true);
+assert.equal(ctx.recommendationDiagnosticCopyMessage,
+  "JSON completo copiado. Revisa el contenido de abajo antes de compartirlo.");
+assert.ok(toasts.some(item => item.message === "JSON técnico completo copiado."));
+
+// Clipboard failure leaves the selected report available for manual copying.
 ctx.navigator.clipboard.writeText = () => Promise.reject(new Error("clipboard unavailable"));
-await actions.copyRecommendationDiagnosticReport(false);
-assert.equal(clipboardWrites.length, 1);
+await actions.copyRecommendationDiagnosticJson(false);
+assert.equal(clipboardWrites.length, 2);
 assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, false);
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
-  "No se pudo copiar automáticamente. El informe completo está visible abajo para seleccionarlo y copiarlo manualmente.");
-assert.ok(toasts.some(item => item.message === "Informe preparado para revisión y copia manual."));
+  "No se pudo copiar automáticamente. El JSON completo está visible abajo para seleccionarlo y copiarlo manualmente.");
+assert.ok(toasts.some(item => item.message === "JSON completo preparado para copia manual."));
 
 actions.clearRecommendationDiagnosticReport();
 assert.equal(ctx.recommendationDiagnosticReportText, "");

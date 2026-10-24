@@ -126,6 +126,7 @@ try {
   // The coordinator's final publication follows the ready marker; wait for a frame after
   // the copy action is enabled so the label control is no longer being replaced.
   await page.waitForTimeout(150);
+  await page.locator(".diagnostic-advanced-options summary").click();
   const labelsControl = page.locator("#diagnosticFeatureLabels");
   await labelsControl.check({ timeout: 5000 });
   await labelsControl.uncheck({ timeout: 5000 });
@@ -162,7 +163,27 @@ try {
     });
   });
   await page.locator('[data-action="copy-recommendation-diagnostics"]').click({ timeout: 5000 });
-  await page.waitForFunction(() => typeof window.__syntheticDiagnosticReport === "string", null, { timeout: 10000 });
+  await page.waitForFunction(() => typeof window.__syntheticDiagnosticReport === "string" &&
+    window.__syntheticDiagnosticReport.startsWith("# PRISMA — contexto técnico"), null, { timeout: 10000 });
+  const brief = await page.evaluate(() => ({
+    text: window.__syntheticDiagnosticReport,
+    hasRepository: window.__syntheticDiagnosticReport.includes("https://github.com/ElFast-dev/Prisma"),
+    hasProjectRules: window.__syntheticDiagnosticReport.includes("Objetivo y reglas que no deben romperse"),
+    hasNextSteps: window.__syntheticDiagnosticReport.includes("Siguiente tarea"),
+    containsSyntheticTitle: window.__syntheticDiagnosticReport.includes("Synthetic Film 000"),
+    containsRawMovieIdentity: /"tmdbId"|"tmId"|"tmdb_id"/i.test(window.__syntheticDiagnosticReport)
+  }));
+  assert.ok(brief.hasRepository && brief.hasProjectRules && brief.hasNextSteps,
+    "Primary clipboard output must be a useful developer handoff with project context and next steps");
+  assert.ok(brief.text.length > 500 && brief.text.length <= 9500,
+    "Developer handoff must be concise but sufficiently detailed; length=" + brief.text.length);
+  assert.equal(brief.containsSyntheticTitle, false);
+  assert.equal(brief.containsRawMovieIdentity, false);
+
+  // The full aggregate JSON remains available separately for deep debugging.
+  await page.locator('[data-action="copy-recommendation-diagnostics-json"]').click({ timeout: 5000 });
+  await page.waitForFunction(() => typeof window.__syntheticDiagnosticReport === "string" &&
+    window.__syntheticDiagnosticReport.trim().startsWith("{"), null, { timeout: 10000 });
   const report = await page.evaluate(() => {
     const text = window.__syntheticDiagnosticReport;
     const value = JSON.parse(text);
@@ -343,7 +364,7 @@ try {
       value: { writeText: async text => { window.__sparseDiagnosticReport = text; } }
     });
   });
-  await fewPage.locator("[data-action='copy-recommendation-diagnostics']").click({ timeout: 5000 });
+  await fewPage.locator("[data-action='copy-recommendation-diagnostics-json']").click({ timeout: 5000 });
   await fewPage.waitForFunction(() => typeof window.__sparseDiagnosticReport === "string", null, { timeout: 10000 });
   const sparseReport = await fewPage.evaluate(() => JSON.parse(window.__sparseDiagnosticReport));
   assert.equal(sparseReport.diagnostic.run.phases.length, 7);
