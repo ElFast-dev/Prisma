@@ -1282,6 +1282,310 @@ ing: bestRankingAlpha,
     };
   }
 
+  function summarizeRelativeScaleComparison(foldSets, sampleCount, relevantCount) {
+    const sets = Array.isArray(foldSets) ? foldSets : [];
+    const folds = [];
+    const relativeMaeErrors = [];
+    const relativeMaeBaselineErrors = [];
+    const relativeRankingErrors = [];
+    const relativeRankingBaselineErrors = [];
+    const lambdaMaeCounts = Object.create(null);
+    const lambdaRankingCounts = Object.create(null);
+    ALPHAS.forEach(function (alpha) {
+      lambdaMaeCounts[String(alpha)] = 0;
+      lambdaRankingCounts[String(alpha)] = 0;
+    });
+    let relativeNumericErrors = 0;
+
+    sets.forEach(function (result) {
+      (result.relativeMaeSelectorErrors || []).forEach(function (value) { relativeMaeErrors.push(value); });
+      (result.relativeMaeBaselineErrors || []).forEach(function (value) { relativeMaeBaselineErrors.push(value); });
+      (result.relativeRankingSelectorErrors || []).forEach(function (value) { relativeRankingErrors.push(value); });
+      (result.relativeRankingBaselineErrors || []).forEach(function (value) { relativeRankingBaselineErrors.push(value); });
+      Object.keys(result.selectedRelativeLambdaCountsByMae || {}).forEach(function (alpha) {
+        lambdaMaeCounts[alpha] = (lambdaMaeCounts[alpha] || 0) +
+          (Number(result.selectedRelativeLambdaCountsByMae[alpha]) || 0);
+      });
+      Object.keys(result.selectedRelativeLambdaCountsByRanking || {}).forEach(function (alpha) {
+        lambdaRankingCounts[alpha] = (lambdaRankingCounts[alpha] || 0) +
+          (Number(result.selectedRelativeLambdaCountsByRanking[alpha]) || 0);
+      });
+      relativeNumericErrors += Number(result.relativeNumericErrors) || 0;
+      (result.alphaComparisonFoldSummaries || []).forEach(function (fold) { folds.push(fold); });
+    });
+
+    const withOuterScale = folds.filter(function (fold) {
+      return fold.outerKernelScale && fold.outerKernelScale.available &&
+        Number.isFinite(fold.outerKernelScale.meanDiagonal) && fold.outerKernelScale.meanDiagonal > 0;
+    });
+    const withReferenceScale = folds.filter(function (fold) {
+      return fold.innerScaleReference && fold.innerScaleReference.available &&
+        Number.isFinite(fold.innerScaleReference.median) && fold.innerScaleReference.median > 0;
+    });
+    const scaleSummary = function (values) { return summarizeNumericScale(values); };
+    const scaleStats = {
+      outerTrainingScales: scaleSummary(withOuterScale.map(function (fold) {
+        return fold.outerKernelScale.meanDiagonal;
+      })),
+      innerReferenceScales: scaleSummary(withReferenceScale.map(function (fold) {
+        return fold.innerScaleReference.median;
+      })),
+      centeredDiagonal: {
+        foldsEvaluated: withOuterScale.length,
+        minimumObserved: withOuterScale.length
+          ? Math.min.apply(null, withOuterScale.map(function (fold) { return fold.outerKernelScale.minDiagonal; })) : null,
+        medianOfFoldMedians: scaleSummary(withOuterScale.map(function (fold) {
+          return fold.outerKernelScale.medianDiagonal;
+        })).median,
+        maximumObserved: withOuterScale.length
+          ? Math.max.apply(null, withOuterScale.map(function (fold) { return fold.outerKernelScale.maxDiagonal; })) : null
+      },
+      relativeLambdaGrid: {
+        foldsEvaluated: withReferenceScale.length,
+        minimumObserved: scaleSummary(withReferenceScale.map(function (fold) { return fold.relativeLambdaGridMin; })).min,
+        maximumObserved: scaleSummary(withReferenceScale.map(function (fold) { return fold.relativeLambdaGridMax; })).max
+      }
+    };
+    const outerScaleFor = function (fold) {
+      return fold.outerKernelScale && fold.outerKernelScale.available
+        ? fold.outerKernelScale.meanDiagonal : null;
+    };
+    const absoluteAlphaToScaleRatio = {
+      mae: scaleSummary(folds.map(function (fold) {
+        const scale = outerScaleFor(fold);
+        return scale && Number.isFinite(fold.selectedAlphaByMae) ? fold.selectedAlphaByMae / scale : null;
+      })),
+      ranking: scaleSummary(folds.map(function (fold) {
+        const scale = outerScaleFor(fold);
+        return scale && Number.isFinite(fold.selectedAlphaByRanking) ? fold.selectedAlphaByRanking / scale : null;
+      }))
+    };
+    const positiveSelectedValues = function (key) {
+      return folds.map(function (fold) { return fold[key]; }).filter(function (value) {
+        return Number.isFinite(value) && value > 0;
+      });
+    };
+    const countSelected = function (key) {
+      return folds.filter(function (fold) { return Number.isFinite(fold[key]) && fold[key] > 0; }).length;
+    };
+    const lowerBoundaryMae = summarizeAlphaBoundary(lambdaMaeCounts,
+      folds.filter(function (fold) { return Number.isFinite(fold.selectedLambdaByMae); }).length, ALPHAS);
+    const lowerBoundaryRanking = summarizeAlphaBoundary(lambdaRankingCounts,
+      folds.filter(function (fold) { return Number.isFinite(fold.selectedLambdaByRanking); }).length, ALPHAS);
+
+    const summarizeSelectedMetric = function (errors, pairedBaseline, selectionKey, effectiveKey, counts, boundary) {
+      const selectionFolds = countSelected(selectionKey);
+      const evaluatedFolds = folds.filter(function (fold) {
+        const availabilityKey = selectionKey === "selectedLambdaByMae" ? "relativeMaeAvailable" : "relativeRankingAvailable";
+        return fold[availabilityKey] === true;
+      }).length;
+      const selectedLambdas = positiveSelectedValues(selectionKey);
+      const effectiveAlphas = positiveSelectedValues(effectiveKey);
+      const available = errors.length > 0 && pairedBaseline.length === errors.length;
+      return {
+        available: available,
+        sampleCount: errors.length,
+        selectionFolds: selectionFolds,
+        foldsEvaluated: evaluatedFolds,
+        mae: available ? meanAbsoluteError(errors) : null,
+        baselineMaeSameFolds: available ? meanAbsoluteError(pairedBaseline) : null,
+        deltaBaselineMinusSelected: available ? meanAbsoluteError(pairedBaseline) - meanAbsoluteError(errors) : null,
+        selectedLambda: scaleSummary(selectedLambdas),
+        selectedEffectiveAlpha: scaleSummary(effectiveAlphas),
+        selectedAnchorAlphaCounts: counts,
+        lowerBoundary: boundary
+      };
+    };
+    const relativeMae = summarizeSelectedMetric(
+      relativeMaeErrors, relativeMaeBaselineErrors, "selectedLambdaByMae",
+      "effectiveAlphaByRelativeMae", lambdaMaeCounts, lowerBoundaryMae
+    );
+    const relativeRanking = summarizeSelectedMetric(
+      relativeRankingErrors, relativeRankingBaselineErrors, "selectedLambdaByRanking",
+      "effectiveAlphaByRelativeRanking", lambdaRankingCounts, lowerBoundaryRanking
+    );
+
+    const weightedNdcg = function (items, key) {
+      let weighted = 0;
+      let totalWeight = 0;
+      items.forEach(function (item) {
+        const weight = Number(item.idealDcgWeight);
+        const value = item[key];
+        if (!Number.isFinite(weight) || weight <= 0 || !Number.isFinite(value)) return;
+        weighted += value * weight;
+        totalWeight += weight;
+      });
+      return totalWeight > 0 ? weighted / totalWeight : null;
+    };
+    const winsLosses = function (items, key) {
+      return items.reduce(function (all, item) {
+        const value = item[key];
+        if (value === 1) all.wins += 1;
+        else if (value === -1) all.losses += 1;
+        else if (value === 0) all.ties += 1;
+        return all;
+      }, { wins: 0, ties: 0, losses: 0 });
+    };
+    const rankingModeSummary = function (sourceFolds, minimumFolds, requireBoth) {
+      return RANKING_MODES.map(function (mode) {
+        const modeRows = sourceFolds.map(function (fold) {
+          return (fold.rankingModes || []).find(function (row) { return row.mode === mode; });
+        }).filter(Boolean);
+        const maeRows = modeRows.filter(function (row) {
+          return row.relativeMaeAvailable && Number.isFinite(row.relativeMaeSelectedNdcgAt5) &&
+            Number.isFinite(row.idealDcgWeight) && row.idealDcgWeight > 0;
+        });
+        const rankingRows = modeRows.filter(function (row) {
+          return row.relativeRankingAvailable && Number.isFinite(row.relativeRankingSelectedNdcgAt5) &&
+            Number.isFinite(row.idealDcgWeight) && row.idealDcgWeight > 0;
+        });
+        const commonRows = modeRows.filter(function (row) {
+          return row.relativeMaeAvailable && row.relativeRankingAvailable &&
+            Number.isFinite(row.relativeMaeSelectedNdcgAt5) && Number.isFinite(row.relativeRankingSelectedNdcgAt5) &&
+            Number.isFinite(row.idealDcgWeight) && row.idealDcgWeight > 0;
+        });
+        const maeWins = winsLosses(maeRows.map(function (row) {
+          return { idealDcgWeight: row.idealDcgWeight,
+            win: row.deltaRelativeMaeSelectionMinusBaseline > 1e-10 ? 1 :
+              (row.deltaRelativeMaeSelectionMinusBaseline < -1e-10 ? -1 : 0) };
+        }), "win");
+        const rankingWins = winsLosses(rankingRows.map(function (row) {
+          return { idealDcgWeight: row.idealDcgWeight,
+            win: row.deltaRelativeRankingSelectionMinusBaseline > 1e-10 ? 1 :
+              (row.deltaRelativeRankingSelectionMinusBaseline < -1e-10 ? -1 : 0) };
+        }), "win");
+        const selectorWins = winsLosses(commonRows.map(function (row) {
+          return { idealDcgWeight: row.idealDcgWeight,
+            win: row.deltaRelativeRankingSelectionMinusRelativeMae > 1e-10 ? 1 :
+              (row.deltaRelativeRankingSelectionMinusRelativeMae < -1e-10 ? -1 : 0) };
+        }), "win");
+        const maeAvailable = maeRows.length >= minimumFolds;
+        const rankingAvailable = rankingRows.length >= minimumFolds;
+        const pairedAvailable = commonRows.length >= minimumFolds;
+        const baselineForMae = weightedNdcg(maeRows, "baselineNdcgAt5");
+        const baselineForRanking = weightedNdcg(rankingRows, "baselineNdcgAt5");
+        const baselineForPair = weightedNdcg(commonRows, "baselineNdcgAt5");
+        const maeNdcg = weightedNdcg(maeRows, "relativeMaeSelectedNdcgAt5");
+        const rankingNdcg = weightedNdcg(rankingRows, "relativeRankingSelectedNdcgAt5");
+        const pairedMaeNdcg = weightedNdcg(commonRows, "relativeMaeSelectedNdcgAt5");
+        const pairedRankingNdcg = weightedNdcg(commonRows, "relativeRankingSelectedNdcgAt5");
+        return {
+          mode: mode,
+          relativeMae: {
+            available: maeAvailable,
+            baselineNdcgAt5: maeAvailable ? baselineForMae : null,
+            relativeMaeSelectedNdcgAt5: maeAvailable ? maeNdcg : null,
+            deltaRelativeMaeSelectionMinusBaseline: maeAvailable ? maeNdcg - baselineForMae : null,
+            foldsEvaluated: maeRows.length,
+            wins: maeWins.wins,
+            ties: maeWins.ties,
+            losses: maeWins.losses
+          },
+          relativeRanking: {
+            available: rankingAvailable,
+            baselineNdcgAt5: rankingAvailable ? baselineForRanking : null,
+            relativeRankingSelectedNdcgAt5: rankingAvailable ? rankingNdcg : null,
+            deltaRelativeRankingSelectionMinusBaseline: rankingAvailable ? rankingNdcg - baselineForRanking : null,
+            foldsEvaluated: rankingRows.length,
+            wins: rankingWins.wins,
+            ties: rankingWins.ties,
+            losses: rankingWins.losses
+          },
+          pairedRelativeSelectors: {
+            available: pairedAvailable,
+            baselineNdcgAt5: pairedAvailable ? baselineForPair : null,
+            relativeMaeSelectedNdcgAt5: pairedAvailable ? pairedMaeNdcg : null,
+            relativeRankingSelectedNdcgAt5: pairedAvailable ? pairedRankingNdcg : null,
+            deltaRelativeRankingSelectionMinusRelativeMae: pairedAvailable ? pairedRankingNdcg - pairedMaeNdcg : null,
+            foldsEvaluated: commonRows.length,
+            wins: selectorWins.wins,
+            ties: selectorWins.ties,
+            losses: selectorWins.losses
+          }
+        };
+      });
+    };
+    const minimumRankingCoverage = Math.ceil(REPEATED_VALIDATION_RUNS * OUTER_FOLDS * 0.6);
+    const enoughRankingData = sampleCount >= MIN_RANKING_RECORDS && relevantCount >= MIN_RELEVANT_RECORDS;
+    const relativeRankingModes = rankingModeSummary(folds,
+      enoughRankingData ? minimumRankingCoverage : minimumRankingCoverage + 1, true);
+    const repeatSummaries = sets.map(function (result) {
+      const repeatFolds = result.alphaComparisonFoldSummaries || [];
+      const repeatMaes = result.relativeMaeSelectorErrors || [];
+      const repeatMaeBaseline = result.relativeMaeBaselineErrors || [];
+      const repeatRankings = result.relativeRankingSelectorErrors || [];
+      const repeatRankingBaseline = result.relativeRankingBaselineErrors || [];
+      const repeatMaeLambdaCounts = result.selectedRelativeLambdaCountsByMae || {};
+      const repeatRankingLambdaCounts = result.selectedRelativeLambdaCountsByRanking || {};
+      const repeatScales = repeatFolds.filter(function (fold) {
+        return fold.outerKernelScale && fold.outerKernelScale.available;
+      }).map(function (fold) { return fold.outerKernelScale.meanDiagonal; });
+      const foldMaeAvailable = repeatFolds.filter(function (fold) { return fold.relativeMaeAvailable; }).length;
+      const foldRankingAvailable = repeatFolds.filter(function (fold) { return fold.relativeRankingAvailable; }).length;
+      const repeatMaeSelectionFolds = repeatFolds.filter(function (fold) { return fold.selectedLambdaByMae != null; }).length;
+      const repeatRankingSelectionFolds = repeatFolds.filter(function (fold) { return fold.selectedLambdaByRanking != null; }).length;
+      return {
+        repeat: nonNegativeInteger(result.repetitionIndex) + 1,
+        foldsPlanned: repeatFolds.length,
+        kernelScale: scaleSummary(repeatScales),
+        relativeMae: {
+          available: repeatMaes.length > 0 && repeatMaeBaseline.length === repeatMaes.length,
+          sampleCount: repeatMaes.length,
+          selectionFolds: repeatMaeSelectionFolds,
+          foldsEvaluated: foldMaeAvailable,
+          mae: repeatMaes.length ? meanAbsoluteError(repeatMaes) : null,
+          baselineMaeSameFolds: repeatMaeBaseline.length ? meanAbsoluteError(repeatMaeBaseline) : null,
+          deltaBaselineMinusSelected: repeatMaes.length && repeatMaeBaseline.length === repeatMaes.length
+            ? meanAbsoluteError(repeatMaeBaseline) - meanAbsoluteError(repeatMaes) : null,
+          selectedLambda: scaleSummary(repeatFolds.map(function (fold) { return fold.selectedLambdaByMae; })),
+          selectedEffectiveAlpha: scaleSummary(repeatFolds.map(function (fold) { return fold.effectiveAlphaByRelativeMae; })),
+          selectedAnchorAlphaCounts: repeatMaeLambdaCounts
+        },
+        relativeRanking: {
+          available: repeatRankings.length > 0 && repeatRankingBaseline.length === repeatRankings.length,
+          sampleCount: repeatRankings.length,
+          selectionFolds: repeatRankingSelectionFolds,
+          foldsEvaluated: foldRankingAvailable,
+          mae: repeatRankings.length ? meanAbsoluteError(repeatRankings) : null,
+          baselineMaeSameFolds: repeatRankingBaseline.length ? meanAbsoluteError(repeatRankingBaseline) : null,
+          deltaBaselineMinusSelected: repeatRankings.length && repeatRankingBaseline.length === repeatRankings.length
+            ? meanAbsoluteError(repeatRankingBaseline) - meanAbsoluteError(repeatRankings) : null,
+          selectedLambda: scaleSummary(repeatFolds.map(function (fold) { return fold.selectedLambdaByRanking; })),
+          selectedEffectiveAlpha: scaleSummary(repeatFolds.map(function (fold) { return fold.effectiveAlphaByRelativeRanking; })),
+          selectedAnchorAlphaCounts: repeatRankingLambdaCounts
+        },
+        rankingModes: rankingModeSummary(repeatFolds, 1, false)
+      };
+    });
+
+    const minimumScale = scaleSummary([].concat(
+      folds.map(function (fold) { return fold.outerKernelScale && fold.outerKernelScale.meanDiagonal; }),
+      folds.map(function (fold) { return fold.innerScaleReference && fold.innerScaleReference.median; })
+    ));
+    return {
+      available: relativeMae.available,
+      executionStatus: relativeMae.available ? "completed" : "unavailable",
+      sampleCount: sampleCount,
+      selectionFoldsEvaluated: folds.length,
+      relativeMaeFoldsEvaluated: folds.filter(function (fold) { return fold.relativeMaeAvailable; }).length,
+      relativeRankingFoldsEvaluated: folds.filter(function (fold) { return fold.relativeRankingAvailable; }).length,
+      scaleUnavailableFolds: folds.filter(function (fold) {
+        return !fold.outerKernelScale || !fold.outerKernelScale.available ||
+          !fold.innerScaleReference || !fold.innerScaleReference.available;
+      }).length,
+      relativeNumericErrors: relativeNumericErrors,
+      kernelScale: scaleStats,
+      absoluteAlphaToScaleRatio: absoluteAlphaToScaleRatio,
+      relativeMae: relativeMae,
+      relativeRanking: relativeRanking,
+      rankingModes: relativeRankingModes,
+      repeatSummaries: repeatSummaries,
+      unavailableReason: relativeMae.available ? null :
+        (relativeNumericErrors ? "La variante relativa no produjo predicciones numéricamente válidas." :
+          "La escala del kernel fue degenerada o no hubo pliegues relativos evaluables.")
+    };
+  }
+
   function summarizeAlphaSelectionComparison(foldSets, sampleCount, relevantCount) {
     const maeCounts = Object.create(null);
     const rankingCounts = Object.create(null);
@@ -1467,6 +1771,7 @@ ing: bestRankingAlpha,
       },
       rankingModes: rankingModes,
       repeatSummaries: byRepeat,
+      relativeScaleComparison: summarizeRelativeScaleComparison(foldSets, sampleCount, relevantCount),
       unavailableReason: comparisonAvailable ? null :
         "La selección interna por ranking requiere al menos 50 películas únicas, 10 relevantes y suficientes pliegues con nDCG disponible; se conserva la evaluación por MAE."
     };
