@@ -20,7 +20,7 @@ El diagnóstico de recomendaciones v13 indica que el criterio MAE seleccionó `a
 - Las tres repeticiones son particiones correlacionadas del mismo historial sintético/personal, no muestras independientes.
 - No leer, alterar ni exportar registros personales desde CI. No usar exportaciones de listas sin calificaciones/features como sustituto del perfil enriquecido.
 
-## Criterios de aceptación
+## Contrato del diagnóstico\nEl informe compacto pasa a `prisma-recommendation-diagnostics/v14` para incluir los 14 valores de la rejilla, la cobertura separada de pliegues MAE y pliegues emparejados con ranking, los deltas de ambos alphas frente al modelo aditivo y la tabla de resultados por repetición/pliegue. Los nuevos campos se limitan a métricas agregadas y números de pliegue; no incorporan notas individuales, títulos ni IDs.\n\n## Criterios de aceptación
 1. Los resultados registran rejilla, conteos por criterio para todos los pliegues completados, métricas exteriores emparejadas y resultados separados por modo.
 2. Se informa explícitamente si el menor alpha sigue seleccionado en la mayoría de pliegues.
 3. El test sintético demuestra selección independiente, ausencia de fuga en la selección interna y particiones emparejadas.
