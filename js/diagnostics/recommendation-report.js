@@ -1,5 +1,6 @@
 const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v14";
 const MAX_FEATURE_DETAILS = 40;
+const MAX_RIDGE_ALPHA_GRID_VALUES = 32;
 
 function numeric(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -277,7 +278,7 @@ function ridgeRepeatedValidationEvaluation(source) {
 function ridgeRelativeScaleComparisonEvaluation(source, alphaGridSource) {
   const evaluation = source && typeof source === "object" ? source : null;
   const alphaGrid = (Array.isArray(alphaGridSource) ? alphaGridSource : [])
-    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 14);
+    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, MAX_RIDGE_ALPHA_GRID_VALUES);
   const allowedAnchors = alphaGrid;
   const numericSummary = function (input) {
     const item = input && typeof input === "object" ? input : {};
@@ -420,7 +421,7 @@ function ridgeAlphaSelectionEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
   const alphaGrid = evaluation && Array.isArray(evaluation.alphaGrid) ? evaluation.alphaGrid
-    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 14) : [];
+    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, MAX_RIDGE_ALPHA_GRID_VALUES) : [];
   const summarizeCounts = function (counts) {
     const input = counts && typeof counts === "object" ? counts : {};
     return Object.keys(input).sort(function (left, right) { return Number(left) - Number(right); }).reduce(function (all, alpha) {
@@ -671,7 +672,8 @@ function ridgeEvaluation(source) {
     outerFolds: nonNegativeInteger(evaluation && evaluation.outerFolds),
     foldsEvaluated: nonNegativeInteger(evaluation && evaluation.foldsEvaluated),
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
-    alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; }),
+    alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; })
+      .slice(0, MAX_RIDGE_ALPHA_GRID_VALUES),
     selectedAlphaCounts: alphaCounts,
     foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
     hybridFoldStability: hybridFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
@@ -1220,9 +1222,9 @@ export function buildRecommendationDiagnosticReport(input) {
   const coverage = coverageSummary(source.coverage);
   const featureFamilyComparison = featureFamilySummary(source.featureFamilyEvaluation);
   const generatedAt = isoDate(source.generatedAt) || new Date().toISOString();
-  const requestedAppVersion = String(source.applicationVersion || "prisma-web/2026.10.23-lab-diagnostic.1");
+  const requestedAppVersion = String(source.applicationVersion || "prisma-web/2026.10.24-lab-diagnostic.2");
   const applicationVersion = /^[a-zA-Z0-9./_-]{1,100}$/.test(requestedAppVersion)
-    ? requestedAppVersion : "prisma-web/2026.10.23-lab-diagnostic.1";
+    ? requestedAppVersion : "prisma-web/2026.10.24-lab-diagnostic.2";
 
   return {
     schema: REPORT_SCHEMA,
