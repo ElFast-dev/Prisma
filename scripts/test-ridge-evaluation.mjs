@@ -246,7 +246,7 @@ const alphaSelectionRecords = fixtures(100);
 const alphaSelectionAudit = [];
 const alphaSelectionResult = await harness(
   alphaSelectionRecords, alphaSelectionRecords, null, null, false, event => alphaSelectionAudit.push(event)
-).evaluateAsync(() => true);
+).evaluateAsync(() => true, { includeRelativeScale: true });
 const alphaComparison = alphaSelectionResult.alphaSelectionComparison;
 assert.equal(alphaSelectionResult.available, true);
 assert.equal(alphaComparison.available, true,
@@ -342,7 +342,7 @@ assert.ok(relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts &&
   "La frecuencia de selección relativa se debe agregar por posición de la rejilla, no mezclar lambdas de distinta escala.");
 const alphaSelectionReplay = await harness(
   alphaSelectionRecords, alphaSelectionRecords
-).evaluateAsync(() => true);
+).evaluateAsync(() => true, { includeRelativeScale: true });
 assert.deepEqual(alphaSelectionReplay.alphaSelectionComparison.relativeScaleComparison, relativeScaleComparison,
   "La evaluación relativa debe ser determinista en las mismas particiones emparejadas.");
 assert.ok(alphaComparison.foldSummaries.every(fold =>
