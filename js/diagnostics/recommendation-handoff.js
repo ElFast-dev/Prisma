@@ -98,8 +98,9 @@ function familyLines(comparison) {
       "; ≥9=" + ["balanced","affinity","variety"].map(m=>score(rankings(9),m)).join("/") + ".";
   });
 }
-function alphaLine(repeated) {
-  const grid = Array.isArray(repeated && repeated.alphaGrid) ? repeated.alphaGrid.filter(v=>number(v)!=null && v>0).sort((a,b)=>a-b) : [];
+function alphaLine(repeated, fallbackGrid) {
+  const sourceGrid = Array.isArray(repeated && repeated.alphaGrid) ? repeated.alphaGrid : fallbackGrid;
+  const grid = Array.isArray(sourceGrid) ? sourceGrid.filter(v=>number(v)!=null && v>0).sort((a,b)=>a-b) : [];
   const counts = repeated && repeated.selectedAlphaCounts || {};
   const folds = count(repeated && repeated.foldsEvaluated) || 0;
   if (!grid.length || !folds) return "";
@@ -133,7 +134,7 @@ function nextActions(report) {
   if (improvedMae && ((balanced && number(balanced.deltaRidgeMinusBaseline)<0) || (affinity && number(affinity.deltaRidgeMinusBaseline)<0))) {
     actions.push("Mantener el modelo aditivo en producción: Ridge mejora MAE, pero empeora el orden en al menos un modo principal.");
   }
-  const alpha = alphaLine(repeated || ridge);
+  const alpha = alphaLine(repeated || ridge, ridge.alphaGrid);
   if (alpha.includes("menor valor disponible")) actions.push("Ampliar la búsqueda de alpha por debajo del límite inferior y seleccionar parámetros solo con validación interna.");
   const candidates = Array.isArray(evaluation.candidateAvailability) ? evaluation.candidateAvailability : [];
   if (candidates.some(c => c && count(c.requestedResultLimit)>count(c.returnedResultCount) &&
@@ -259,8 +260,9 @@ export function buildRecommendationDeveloperBrief(report) {
     lines.push.apply(lines, normalizationLines(normalization));
   } else lines.push("- Normalización de influencia: " + clean(normalization.unavailableReason || "no disponible/no ejecutada",150) + ".");
 
+  lines.push("", "## Familias de características y regularización");
   if (families.available) {
-    lines.push("- Familias de características: " + countText(families.sampleCount) + " registros; " + countText(families.repeats) +
+    lines.push("- Familias de características:  + countText(families.sampleCount) + " registros; " + countText(families.repeats) +
       " repeticiones/" + countText(families.foldsEvaluated) + " pliegues; particiones compartidas=" +
       Boolean(families.sharedPartition) + "; revisión de fuga de entrenamiento=" + Boolean(families.trainingLeakageChecked) + ".");
     lines.push.apply(lines, familyLines(families));
@@ -286,8 +288,11 @@ export function buildRecommendationDeveloperBrief(report) {
 
   let output = lines.join("\n").replace(/\n{3,}/g,"\n\n").trim();
   if (output.length > MAX_BRIEF_CHARS) {
-    const start = output.indexOf("\n## Familias de características:");
-    if (start >= 0) output = output.slice(0,start) + output.slice(output.indexOf("\n## Candidatas y listas cortas",start));
+    const start = output.indexOf("\n## Familias de características y regularización");
+    if (start >= 0) {
+      const candidateStart = output.indexOf("\n## Candidatas y listas cortas", start);
+      output = candidateStart >= 0 ? output.slice(0,start) + output.slice(candidateStart) : output.slice(0,start);
+    }
   }
   return output.length > MAX_BRIEF_CHARS ? output.slice(0,MAX_BRIEF_CHARS-30) + "\n\n[Resumen abreviado por límite de longitud.]" : output;
 }
