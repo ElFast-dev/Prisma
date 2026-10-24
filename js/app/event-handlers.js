@@ -61,7 +61,7 @@ export function registerAppEvents(ctx) {
         return;
       }
       if (action === "copy-recommendation-diagnostics") {
-        await ctx.copyRecommendationDiagnosticJson(false);
+        await ctx.copyRecommendationDeveloperBrief();
         return;
       }
       if (action === "copy-recommendation-diagnostics-json") {

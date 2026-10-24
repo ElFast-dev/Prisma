@@ -45,8 +45,8 @@ export function createLabViews(ctx) {
     const copyMessage = ctx.recommendationDiagnosticCopyMessage || "";
     const clipboardFailed = copyMessage.indexOf("No se pudo copiar automáticamente") === 0;
     const fallback = clipboardFailed && reportText
-      ? '<label class="lab-copy-fallback-label" for="recommendationDiagnosticOutput">Copia manual del informe</label>' +
-        '<textarea class="field diagnostic-report-output" id="recommendationDiagnosticOutput" rows="12" readonly aria-label="Informe técnico para desarrollo">' +
+      ? '<label class="lab-copy-fallback-label" for="recommendationDiagnosticOutput">Copia manual del resumen técnico</label>' +
+        '<textarea class="field diagnostic-report-output" id="recommendationDiagnosticOutput" rows="12" readonly aria-label="Resumen técnico para ChatGPT">' +
         ctx.escapeHTML(reportText) + '</textarea>'
       : "";
     const copyStatus = copyMessage
@@ -67,8 +67,8 @@ export function createLabViews(ctx) {
       '<span><strong>Restante estimado:</strong> ' + eta + '</span></div>' +
       '<p class="metric-note">La batería compara el modelo activo con alternativas experimentales, incluida la búsqueda Ridge ampliada. No modifica las recomendaciones de producción.</p>' +
       '<button class="btn btn-primary lab-copy-report-button" type="button" data-action="copy-recommendation-diagnostics"' +
-      disabled + '>Copiar informe técnico para desarrollo</button>' +
-      '<p class="metric-note">El informe se genera en este dispositivo e incluye métricas agregadas, sin nombres individuales de señales, títulos ni IDs de películas. Copiar no envía datos.</p>' +
+      disabled + '>Copiar resumen técnico para ChatGPT</button>' +
+      '<p class="metric-note">El resumen compacto se genera en este dispositivo con resultados clave y siguientes pasos. No incluye títulos, IDs ni nombres individuales de señales. Copiar no envía datos.</p>' +
       copyStatus + fallback +
       '</section>';
   }

@@ -178,6 +178,9 @@ assert.equal(clipboardWrites.length, 1);
 assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, false);
 assert.equal(ctx.recommendationDiagnosticReportFormat, "brief");
 assert.ok(ctx.recommendationDiagnosticReportText.startsWith("# PRISMA — contexto técnico"));
+assert.ok(ctx.recommendationDiagnosticReportText.length < 9500,
+  "La acción principal debe generar un resumen suficientemente corto para pegar en ChatGPT");
+assert.equal(ctx.recommendationDiagnosticReportText.includes("PRIVATE-FEATURE-LABEL-MUST-NOT-APPEAR"), false);
 assert.ok(ctx.recommendationDiagnosticReportText.includes("OpenSpec/SDD"));
 assert.equal(fixture.diagnosticInput.includeFeatureLabels, false);
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
