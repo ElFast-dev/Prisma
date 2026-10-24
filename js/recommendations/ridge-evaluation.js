@@ -1850,7 +1850,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       outerFolds: OUTER_FOLDS,
       foldsEvaluated: primary.outerFoldsEvaluated,
       innerFolds: INNER_FOLDS,
-      alphaGrid: selectedAlphaGrid.slice()
+      alphaGrid: selectedAlphaGrid.slice(),
       selectedAlphaCounts: primary.selectedAlphaCounts,
       predictionMin: primary.predictionMin,
       predictionMax: primary.predictionMax,
