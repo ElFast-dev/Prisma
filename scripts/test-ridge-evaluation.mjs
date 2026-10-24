@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
-import { RIDGE_ALPHA_GRID, selectAlphaByMae, selectAlphaByRanking, createAlphaSelectionCounts, summarizeAlphaBoundary, buildRelativeLambdaGrid, effectiveRidgeAlpha, summarizeNumericScale } from "../js/recommendations/ridge-alpha-selection.js";
+import { RIDGE_ALPHA_GRID, RIDGE_ALPHA_EXTENDED_GRID, selectAlphaByMae, selectAlphaByRanking, createAlphaSelectionCounts, summarizeAlphaBoundary, buildRelativeLambdaGrid, effectiveRidgeAlpha, summarizeNumericScale } from "../js/recommendations/ridge-alpha-selection.js";
 import { buildKernel, clampRating, predictRidge, trainRidge, vectorize, summarizeCenteredKernelScale } from "../js/recommendations/ridge-kernel.js";
 import { summarizeRepeatedRidgeStability } from "../js/recommendations/repeated-validation-summary.js";
 import { createRecommendationEngine } from "../js/recommendations/engine.js";
@@ -13,6 +13,12 @@ import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../js/core/date-utils.js";
 assert.deepEqual(RIDGE_ALPHA_GRID, [
   0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100
 ]);
+assert.deepEqual(RIDGE_ALPHA_EXTENDED_GRID, [
+  0.0000001, 0.0000003, 0.000001, 0.000003, ...RIDGE_ALPHA_GRID
+]);
+assert.equal(RIDGE_ALPHA_EXTENDED_GRID.length, 18);
+assert.ok(RIDGE_ALPHA_EXTENDED_GRID[0] > 1e-12,
+  "El alpha inferior sigue por encima del umbral de pivote Cholesky.");
 assert.ok(RIDGE_ALPHA_GRID.every(alpha => Number.isFinite(alpha) && alpha > 0),
   "Todos los alphas deben ser positivos y finitos para respetar la tolerancia de Cholesky.");
 assert.equal(selectAlphaByMae([
@@ -69,6 +75,10 @@ assert.equal(summarizeAlphaBoundary({ "0.00001": 2 }, 5).unresolved, false,
   "Elegir el mínimo en una minoría no basta para declarar que el límite sigue sin resolverse.");
 assert.equal(summarizeAlphaBoundary({ "0.00001": 15 }, 0).unresolved, false,
   "No se declara tendencia sin pliegues completados.");
+const expandedBoundary = summarizeAlphaBoundary({ "1e-7": 3 }, 5, RIDGE_ALPHA_EXTENDED_GRID);
+assert.equal(expandedBoundary.minimumAlpha, 0.0000001);
+assert.equal(expandedBoundary.unresolved, true,
+  "La alerta del límite debe inspeccionar el mínimo de la rejilla realmente utilizada.");
 
 // Regression of the isolated numeric kernel: feature scales and predictions must stay stable.
 const scaled = vectorize(["género: Drama", "tema: misterio", "década: 1990"]);
@@ -238,6 +248,8 @@ assert.equal(Object.values(result.selectedAlphaCounts).reduce((sum, value) => su
 
 const defaultAsyncResult = await experiment.evaluateAsync(() => true);
 assert.equal(defaultAsyncResult.available, true);
+assert.deepEqual(defaultAsyncResult.alphaGrid, RIDGE_ALPHA_GRID,
+  "La batería automática conserva la rejilla histórica si no se solicita la ampliada.");
 assert.equal(defaultAsyncResult.alphaSelectionComparison.relativeScaleComparison.executionStatus, "not-run",
   "El evaluador asíncrono también debe reservar la variante relativa para una petición explícita.");
 const repeated = experiment.evaluate();
@@ -252,18 +264,24 @@ const alphaSelectionRecords = fixtures(100);
 const alphaSelectionAudit = [];
 const alphaSelectionResult = await harness(
   alphaSelectionRecords, alphaSelectionRecords, null, null, false, event => alphaSelectionAudit.push(event)
-).evaluateAsync(() => true, { includeRelativeScale: true });
+).evaluateAsync(() => true, { includeRelativeScale: true, includeExtendedAlphaGrid: true });
 const alphaComparison = alphaSelectionResult.alphaSelectionComparison;
 assert.equal(alphaSelectionResult.available, true);
+assert.deepEqual(alphaSelectionResult.alphaGrid, RIDGE_ALPHA_EXTENDED_GRID);
+assert.equal(Object.keys(alphaSelectionResult.selectedAlphaCounts).length, RIDGE_ALPHA_EXTENDED_GRID.length);
 assert.equal(alphaComparison.available, true,
   "Con 100 películas sintéticas y suficientes notas relevantes, ambas estrategias de selección de alpha deben ser comparables.");
-assert.deepEqual(alphaComparison.alphaGrid, RIDGE_ALPHA_GRID);
+assert.deepEqual(alphaComparison.alphaGrid, RIDGE_ALPHA_EXTENDED_GRID);
 assert.equal(alphaComparison.selectionFoldsEvaluated, 15);
 assert.equal(alphaComparison.pairedSelectionFoldsEvaluated, 15);
 assert.equal(alphaComparison.foldSummaries.length, 15,
   "El informe debe conservar métricas exteriores emparejadas por repetición y pliegue.");
 assert.equal(alphaSelectionAudit.length, 15,
   "El test debe inspeccionar cada selección anidada completada.");
+assert.ok(alphaSelectionAudit.every(audit =>
+  RIDGE_ALPHA_EXTENDED_GRID.includes(audit.selectedAlphaByMae) &&
+  RIDGE_ALPHA_EXTENDED_GRID.includes(audit.selectedAlphaByRanking)),
+  "La selección interior debe usar solo valores de la rejilla ampliada solicitada.");
 assert.deepEqual(alphaComparison.foldSummaries.map(item => [item.repeat, item.outerFold])
   .sort((left, right) => left[0] - right[0] || left[1] - right[1]),
   Array.from({ length: 3 }, (_, repeat) => Array.from({ length: 5 }, (_, fold) => [repeat + 1, fold + 1])).flat(),
@@ -348,7 +366,7 @@ assert.ok(relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts &&
   "La frecuencia de selección relativa se debe agregar por posición de la rejilla, no mezclar lambdas de distinta escala.");
 const alphaSelectionReplay = await harness(
   alphaSelectionRecords, alphaSelectionRecords
-).evaluateAsync(() => true, { includeRelativeScale: true });
+).evaluateAsync(() => true, { includeRelativeScale: true, includeExtendedAlphaGrid: true });
 assert.deepEqual(alphaSelectionReplay.alphaSelectionComparison.relativeScaleComparison, relativeScaleComparison,
   "La evaluación relativa debe ser determinista en las mismas particiones emparejadas.");
 assert.ok(alphaComparison.foldSummaries.every(fold =>

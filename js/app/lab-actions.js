@@ -96,7 +96,7 @@ export function createLabActions(ctx) {
           if (ctx.currentPage === "lab") ctx.renderApp();
         }
         return true;
-      }, { includeRelativeScale: true });
+      }, { includeRelativeScale: true, includeExtendedAlphaGrid: true });
       if (runId !== ctx.ridgeEvaluationRunId || ctx.currentPage !== "lab") {
         timingStatus = "cancelled";
         return;
