@@ -289,18 +289,20 @@ try {
     return state === "ready" || state === "error";
   }, null, { timeout: 20000 });
   assert.equal(await emptyPage.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state"), "ready");
-  assert.match(await emptyPage.locator(".lab-ranking-diagnostics").innerText(), /Datos insuficientes|se necesitan al menos/i);
+  assert.equal(await emptyPage.locator("[data-action='copy-recommendation-diagnostics']").isEnabled(), true,
+    "The report becomes copyable after an empty-profile battery reaches a final state");
+  assert.equal(await emptyPage.locator(".lab-charts").count(), 0);
   const mobileLayout = await emptyPage.evaluate(() => ({
     width: window.innerWidth,
     bodyScrollWidth: document.body.scrollWidth,
     viewport: document.documentElement.clientWidth,
     progressVisible: Boolean(document.querySelector(".lab-diagnostic-progress-bar")),
-    phaseColumns: getComputedStyle(document.querySelector(".lab-diagnostic-phase-list")).gridTemplateColumns
+    copyActions: document.querySelectorAll(".lab-one-click-panel [data-action]").length
   }));
   assert.equal(mobileLayout.width, 390);
   assert.ok(mobileLayout.bodyScrollWidth <= mobileLayout.viewport + 1, "The mobile Lab must not create horizontal overflow");
   assert.ok(mobileLayout.progressVisible, "The global diagnostic progress bar must remain visible on mobile");
-  assert.ok(mobileLayout.phaseColumns.split(" ").length <= 2, "The diagnostic phase list must collapse for mobile");
+  assert.equal(mobileLayout.copyActions, 1, "The mobile Lab must expose just one action");
   results.mobileLayoutPassed = true;
   results.emptyProfilePassed = true;
   if (errors.length) throw new Error("Browser exceptions in empty-profile scenario: " + errors.join(" | "));
@@ -326,25 +328,23 @@ try {
   }, null, { timeout: 30000 });
   assert.equal(await fewPage.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state"), "ready",
     "A sparse profile must finish the battery rather than remain pending");
-  const sparseStates = await fewPage.locator(".lab-diagnostic-phase").evaluateAll(nodes =>
-    nodes.map(node => ({ label: node.querySelector("strong")?.innerText || "", text: node.innerText }))
-  );
-  assert.equal(sparseStates.length, 7);
-  assert.ok(sparseStates.some(phase => /Ridge/i.test(phase.label) && /No disponible/.test(phase.text)));
-  assert.ok(sparseStates.some(phase => /temporal/i.test(phase.label) && /No disponible/.test(phase.text)));
   assert.equal(await fewPage.locator("[data-action='copy-recommendation-diagnostics']").isEnabled(), true,
-    "The single copy button must become available after all phases reach final states, even when unavailable");
+    "The one copy button must become available after all phases reach final states, even when some are unavailable");
   await fewPage.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: async text => { window.__sparseDiagnosticReport = text; } }
     });
   });
-  await fewPage.locator("[data-action='copy-recommendation-diagnostics-json']").click({ timeout: 5000 });
-  await fewPage.waitForFunction(() => typeof window.__sparseDiagnosticReport === "string", null, { timeout: 10000 });
+  await fewPage.locator("[data-action='copy-recommendation-diagnostics']").click({ timeout: 5000 });
+  await fewPage.waitForFunction(() => typeof window.__sparseDiagnosticReport === "string" &&
+    window.__sparseDiagnosticReport.trim().startsWith("{"), null, { timeout: 10000 });
   const sparseReport = await fewPage.evaluate(() => JSON.parse(window.__sparseDiagnosticReport));
   assert.equal(sparseReport.diagnostic.run.phases.length, 7);
   assert.ok(sparseReport.diagnostic.run.phases.some(phase => phase.status === "unavailable"));
+  assert.equal(sparseReport.privacy.featureLabelsIncluded, false);
+  assert.equal(sparseReport.privacy.networkTransmission, false);
+  assert.equal(sparseReport.evaluation.ridgeExperiment.alphaGrid.length, 18);
   assert.equal(sparseReport.diagnostic.status, "completed-with-unavailable");
   results.fewRatingProfilePassed = true;
   if (errors.length) throw new Error("Browser exceptions in few-rating scenario: " + errors.join(" | "));
