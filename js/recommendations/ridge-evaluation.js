@@ -1864,7 +1864,7 @@ ing: bestRankingAlpha,
       return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
     }
     if (!shouldContinue()) return null;
-    const fitWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 2);
+    const fitWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS * 2 + 4);
     const kernelWork = Math.max(1, rows.length);
     const totalWork = kernelWork + fitWork;
     let completedWork = 0;
@@ -1873,7 +1873,7 @@ ing: bestRankingAlpha,
       emitProgress({
         completedWork: completedWork,
         totalWork: totalWork,
-        completedRepeats: Math.min(REPEATED_VALIDATION_RUNS, Math.floor(Math.max(0, completedWork - kernelWork) / (OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS + 1)))),
+        completedRepeats: Math.min(REPEATED_VALIDATION_RUNS, Math.floor(Math.max(0, completedWork - kernelWork) / (OUTER_FOLDS * (ALPHAS.length * INNER_FOLDS * 2 + 4)))),
         totalRepeats: REPEATED_VALIDATION_RUNS,
         foldsPerRepeat: OUTER_FOLDS,
         phase: "fold",
@@ -1889,7 +1889,7 @@ ing: bestRankingAlpha,
       completedWork: function () { return completedWork; },
       onModelFit: function (detail) {
         completedWork = Math.min(totalWork, completedWork + 1);
-        reportWork(detail && detail.stage === "inner" ? "Selección interna de alpha · " + detail.alpha : "Ajuste Ridge externo");
+        reportWork(detail && detail.stage.indexOf("inner") === 0 ? "Selección interna Ridge · " + (detail.lambda == null ? "alpha " + detail.alpha : "lambda " + detail.lambda) : "Ajuste Ridge externo");
       },
       onOuterFoldCompleted: function (detail) {
         reportWork("Pliegue externo " + (detail.outerFold + 1) + " de " + OUTER_FOLDS +
