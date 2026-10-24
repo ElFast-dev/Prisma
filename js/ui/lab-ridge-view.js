@@ -226,6 +226,14 @@ export function createLabRidgeView(ctx) {
             ' · pliegues válidos ' + Number(mode.foldsEvaluated || 0) + '.</p>';
         }).join('');
         const relativeScaleComparison = alphaComparison.relativeScaleComparison || null;
+        const formatRelativeAnchorCounts = function (counts) {
+          const source = counts && typeof counts === "object" ? counts : {};
+          return Object.keys(source).filter(function (alpha) {
+            return Number(source[alpha]) > 0;
+          }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+            return alpha + ": " + Number(source[alpha]);
+          }).join(" · ") || "ninguna selección disponible";
+        };
         const formatRelativeValue = function (value, digits) {
           return value == null || !Number.isFinite(Number(value))
             ? 'no disponible' : Number(value).toFixed(digits == null ? 4 : digits).replace('.', ',');
@@ -269,13 +277,25 @@ export function createLabRidgeView(ctx) {
         const relativeRanking = relativeScaleComparison && relativeScaleComparison.relativeRanking || {};
         const relativeRepeatMarkup = relativeScaleComparison && Array.isArray(relativeScaleComparison.repeatSummaries)
           ? relativeScaleComparison.repeatSummaries.map(function (repeat) {
+              const rankingByMode = (repeat.rankingModes || []).map(function (mode) {
+                const maeMode = mode.relativeMae || {};
+                const rankingMode = mode.relativeRanking || {};
+                return (rankingModeNames[mode.mode] || mode.mode) + ' nDCG@5 MAE ' +
+                  formatRelativeValue(maeMode.relativeMaeSelectedNdcgAt5) + ' (Δ ' +
+                  formatRelativeValue(maeMode.deltaRelativeMaeSelectionMinusBaseline) + ') V/E/D ' +
+                  Number(maeMode.wins || 0) + '/' + Number(maeMode.ties || 0) + '/' + Number(maeMode.losses || 0) +
+                  ' · ranking ' + formatRelativeValue(rankingMode.relativeRankingSelectedNdcgAt5) +
+                  ' (Δ ' + formatRelativeValue(rankingMode.deltaRelativeRankingSelectionMinusBaseline) + ') V/E/D ' +
+                  Number(rankingMode.wins || 0) + '/' + Number(rankingMode.ties || 0) + '/' + Number(rankingMode.losses || 0);
+              }).join(' · ');
               return '<li class="metric-note">Repetición ' + Number(repeat.repeat) +
                 ': escala exterior mediana ' + formatRelativeValue(repeat.kernelScale && repeat.kernelScale.median, 6) +
                 ' · MAE relativo ' + formatRelativeValue(repeat.relativeMae && repeat.relativeMae.mae) +
                 ' vs. aditivo ' + formatRelativeValue(repeat.relativeMae && repeat.relativeMae.baselineMaeSameFolds) +
                 ' (' + Number(repeat.relativeMae && repeat.relativeMae.foldsEvaluated || 0) + '/5 pliegues)' +
                 ' · MAE relativo por ranking ' + formatRelativeValue(repeat.relativeRanking && repeat.relativeRanking.mae) +
-                ' (' + Number(repeat.relativeRanking && repeat.relativeRanking.foldsEvaluated || 0) + '/5 pliegues)</li>';
+                ' (' + Number(repeat.relativeRanking && repeat.relativeRanking.foldsEvaluated || 0) + '/5 pliegues)' +
+                (rankingByMode ? ' · ' + rankingByMode : '') + '</li>';
             }).join('')
           : '';
         const relativeScaleMarkup = relativeScaleComparison
@@ -300,7 +320,7 @@ export function createLabRidgeView(ctx) {
             ' · lambda mediano ' + formatRelativeValue(relativeMae.selectedLambda && relativeMae.selectedLambda.median, 8) +
             ' · alpha efectivo mediano ' + formatRelativeValue(relativeMae.selectedEffectiveAlpha && relativeMae.selectedEffectiveAlpha.median, 8) +
             ' · pliegues válidos ' + Number(relativeMae.foldsEvaluated || 0) + '/15 · selecciones por tramo ' +
-            ctx.escapeHTML(formatAlphaCounts(relativeMae.selectedAnchorAlphaCounts)) + '.</p>' +
+            ctx.escapeHTML(formatRelativeAnchorCounts(relativeMae.selectedAnchorAlphaCounts)) + '.</p>' +
             '<p class="metric-note"><strong>Selección lambda por ranking:</strong> MAE relativo ' +
             formatRelativeValue(relativeRanking.mae) + ' vs. aditivo ' + formatRelativeValue(relativeRanking.baselineMaeSameFolds) +
             ' · delta base − relativo ' + (Number(relativeRanking.deltaBaselineMinusSelected) > 0 ? '+' : '') +
@@ -308,7 +328,7 @@ export function createLabRidgeView(ctx) {
             ' · lambda mediano ' + formatRelativeValue(relativeRanking.selectedLambda && relativeRanking.selectedLambda.median, 8) +
             ' · alpha efectivo mediano ' + formatRelativeValue(relativeRanking.selectedEffectiveAlpha && relativeRanking.selectedEffectiveAlpha.median, 8) +
             ' · pliegues válidos ' + Number(relativeRanking.foldsEvaluated || 0) + '/15 · selecciones por tramo ' +
-            ctx.escapeHTML(formatAlphaCounts(relativeRanking.selectedAnchorAlphaCounts)) + '.</p>' +
+            ctx.escapeHTML(formatRelativeAnchorCounts(relativeRanking.selectedAnchorAlphaCounts)) + '.</p>' +
             '<p class="metric-note">Errores numéricos: ' + Number(relativeScaleComparison.relativeNumericErrors || 0) +
             ' · pliegues con escala no disponible: ' + Number(relativeScaleComparison.scaleUnavailableFolds || 0) +
             ' · la variante relativa no participa en el recomendador activo.</p>' +
