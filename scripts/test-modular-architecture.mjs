@@ -42,8 +42,6 @@ const files = [
   'js/ui/catalog-views.js',
   'js/ui/collection-views.js',
   'js/ui/lab-views.js',
-  'js/ui/lab-ridge-view.js',
-  'js/ui/lab-temporal-view.js',
   'js/ui/watch-streak-view.js',
   'js/ui/theme-controller.js',
   'js/ui/modal-views.js',
