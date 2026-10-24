@@ -216,8 +216,9 @@ const alphaComparison = alphaSelectionResult.alphaSelectionComparison;
 assert.equal(alphaSelectionResult.available, true);
 assert.equal(alphaComparison.available, true,
   "Con 100 películas sintéticas y suficientes notas relevantes, ambas estrategias de selección de alpha deben ser comparables.");
-assert.deepEqual(alphaComparison.alphaGrid, [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100]);
+assert.deepEqual(alphaComparison.alphaGrid, RIDGE_ALPHA_GRID);
 assert.equal(alphaComparison.selectionFoldsEvaluated, 15);
+assert.equal(alphaComparison.pairedSelectionFoldsEvaluated, 15);
 assert.equal(alphaComparison.foldSummaries.length, 15,
   "El informe debe conservar métricas exteriores emparejadas por repetición y pliegue.");
 assert.equal(alphaSelectionAudit.length, 15,
