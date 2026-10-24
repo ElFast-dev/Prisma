@@ -9,7 +9,7 @@ No se debe asumir que un alpha menor es mejor, ampliar otra vez la rejilla sin e
 ## Objetivo
 
 1. Medir en cada partición exclusivamente de entrenamiento la escala de la diagonal de su kernel centrado y la relación `alpha / escala`.
-2. Comparar, sobre las mismas particiones interiores y exteriores, la selección por MAE y por ranking con alpha absoluto frente a lambda relativo a la escala del kernel.
+2. Comparar, sobre las mismas particiones interiores y exteriores, la selección por MAE y por ranking con alpha absoluto frente a lambda relativo a la escala del kernel. La rejilla lambda se deriva de la mediana de las escalas medidas en los entrenamientos interiores de cada pliegue exterior.
 3. Reportar escala, regularización efectiva, resultados emparejados, cobertura, estabilidad numérica, límites seleccionados y métricas no disponibles en el informe diagnóstico.
 4. Mantener la investigación aislada y reproducible, con datos sintéticos en CI y datos personales solo en el navegador local.
 
@@ -24,8 +24,9 @@ No se debe asumir que un alpha menor es mejor, ampliar otra vez la rejilla sin e
 ## Límites no negociables
 
 - `additive-content-baseline` y sus pesos siguen siendo el único modelo activo.
-- Ninguna nota del pliegue exterior participa en selección, normalización de escala ni definición de la rejilla del pliegue exterior.
-- Cada ajuste usa únicamente su propio conjunto de entrenamiento para estimar la escala del kernel.
+- Ninguna nota del pliegue exterior participa en selección, normalización de escala ni definición de la rejilla lambda.
+- Cada ajuste multiplica lambda por la escala estimada únicamente sobre su propio conjunto de entrenamiento.
+- La escala de referencia se obtiene exclusivamente de escalas de los entrenamientos interiores pertenecientes al entrenamiento exterior; nunca usa el pliegue exterior retenido.
 - Los candidatos absolutos mantienen alpha positivo; no se introduce alpha cero como atajo.
 - Las tres repeticiones reutilizan el mismo historial y se interpretan descriptivamente, no como muestras independientes.
 - El informe no contiene títulos, IDs de películas, notas individuales, vectores, predicciones por película ni etiquetas concretas de características.
@@ -39,4 +40,3 @@ No se debe asumir que un alpha menor es mejor, ampliar otra vez la rejilla sin e
 4. Las pruebas demuestran que la escala no observa los pliegues de validación/test correspondientes, el resultado es determinista y se mantienen cancelación y progreso asíncrono.
 5. Si la escala es degenerada, la factorización es inestable o no hay evidencia consistente de mejor ranking, el resultado queda no disponible o solo documentado; no se cambia producción.
 6. Se ejecutan los gates de calidad/SDD y Playwright en escritorio y móvil. La falta de un gate se documenta como bloqueo, nunca como éxito.
-
