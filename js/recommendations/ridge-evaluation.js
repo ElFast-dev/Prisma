@@ -767,6 +767,7 @@ ing: bestRankingAlpha,
       const testIndices = outer[outerFold];
       const testSet = new Set(testIndices);
       const trainingIndices = indices.filter(function (index) { return !testSet.has(index); });
+      const relativeNumericErrorsBeforeFold = relativeNumericErrors;
       const alphaSelection = await selectAlphaAsync(rows, kernel, trainingIndices, outerFold, repetitionIndex, control);
       if (alphaSelection == null || alphaSelection.mae == null || !control.shouldContinue()) return null;
       const alpha = alphaSelection.mae;
@@ -1137,8 +1138,9 @@ ing: bestRankingAlpha,
         relativeRankingAvailable: relativeRankingFoldAvailable,
         relativeMaeSelectedMae: relativeMaeFoldAvailable ? meanAbsoluteError(relativeMaeFoldErrors) : null,
         relativeRankingSelectedMae: relativeRankingFoldAvailable ? meanAbsoluteError(relativeRankingFoldErrors) : null,
-        relativeNumericErrors: Number(alphaSelection.relativeNumericErrors) + (relativeNumericErrors -
-          (Number(alphaSelection.relativeNumericErrors) || 0)),
+        relativeNumericErrors: relativeNumericErrors - relativeNumericErrorsBeforeFold,
+        relativeLambdaGridMin: alphaSelection.lambdaGrid ? alphaSelection.lambdaGrid[0] : null,
+        relativeLambdaGridMax: alphaSelection.lambdaGrid ? alphaSelection.lambdaGrid[alphaSelection.lambdaGrid.length - 1] : null,
         maeSelectedMae: meanAbsoluteError(ridgeFoldErrors),
         baselineMae: meanAbsoluteError(baselineFoldErrors),
         rankingSelectedMae: rankingAlpha == null ? null : meanAbsoluteError(rankingSelectedFoldErrors),
