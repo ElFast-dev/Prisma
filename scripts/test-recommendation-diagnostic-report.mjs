@@ -33,6 +33,29 @@ const baseInput = {
     selectedAlphaCounts: { "0.1": 1, "1": 2, "10": 2 },
     foldStability: { available: true, foldsEvaluated: 5, ridgeMaeWins: 4, ties: 0, baselineMaeWins: 1 },
     hybridFoldStability: { available: true, foldsEvaluated: 5, hybridMaeWins: 4, ties: 0, baselineMaeWins: 1 },
+    alphaSelectionComparison: {
+      available: true, sampleCount: 60, selectionFoldsEvaluated: 15, outerFoldsPlanned: 15, innerFolds: 3,
+      alphaGrid: [0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100],
+      selectedAlphaCountsByMae: { "0.00001": 8, "0.001": 7 },
+      selectedAlphaCountsByRanking: { "0.00001": 3, "0.001": 12 },
+      lowerBoundary: {
+        mae: { available: true, minimumAlpha: 0.00001, selectedCount: 8, foldsEvaluated: 15, selectedFraction: 8 / 15, majoritySelected: true, unresolved: true },
+        ranking: { available: true, minimumAlpha: 0.00001, selectedCount: 3, foldsEvaluated: 15, selectedFraction: 0.2, majoritySelected: false, unresolved: false },
+        unresolved: true
+      },
+      maeSelected: { available: true, mae: 1.02, baselineMaeSameFolds: 1.2, deltaBaselineMinusMaeSelected: 0.18 },
+      rankingSelected: { available: true, mae: 1.04, baselineMaeSameFolds: 1.2, deltaBaselineMinusRankingSelected: 0.16 },
+      pairedMaeDifference: { available: true, deltaRankingSelectionMinusMaeSelection: 0.02, rankingSelectionMaeWins: 4, ties: 3, maeSelectionMaeWins: 8, foldsEvaluated: 15 },
+      rankingModes: [{ mode: "balanced", available: true, baselineNdcgAt5: 0.61, maeSelectedNdcgAt5: 0.7, rankingSelectedNdcgAt5: 0.72, deltaRankingSelectionMinusMaeSelection: 0.02, foldsEvaluated: 15, rankingSelectorWins: 7, ties: 2, rankingSelectorLosses: 6 }],
+      repeatSummaries: [],
+      foldSummaries: [{
+        repeat: 1, outerFold: 1, selectedAlphaByMae: 0.00001, selectedAlphaByRanking: 0.001,
+        maeSelectedMae: 1.0, baselineMae: 1.2, rankingSelectedMae: 1.1, deltaRankingSelectionMinusMaeSelection: 0.1,
+        rankingModes: [{ mode: "balanced", available: true, baselineNdcgAt5: 0.61, maeSelectedNdcgAt5: 0.7,
+          rankingSelectedNdcgAt5: 0.72, deltaRankingSelectionMinusMaeSelection: 0.02, wins: 1, ties: 0, losses: 0 }]
+      }],
+      unavailableReason: null
+    },
     rankingQuality: {
       available: true, count: 60, relevantCount: 31, folds: 5, foldsEvaluated: 5,
       cutoff: 5, relevantThreshold: 7, reason: null,
@@ -169,7 +192,7 @@ const baseInput = {
 };
 
 const compact = buildRecommendationDiagnosticReport(baseInput);
-assert.equal(compact.schema, "prisma-recommendation-diagnostics/v13");
+assert.equal(compact.schema, "prisma-recommendation-diagnostics/v14");
 assert.equal(compact.sample.ratedEntries, 4);
 assert.equal(compact.sample.ratingDistribution["9"], 1);
 assert.equal(compact.sample.ratingDistribution["1"], 0);
@@ -197,6 +220,15 @@ assert.deepEqual(compact.evaluation.ridgeExperiment.hybridFoldStability, {
   available: true, foldsEvaluated: 5, hybridMaeWins: 4, ties: 0, baselineMaeWins: 1
 });
 assert.deepEqual(compact.evaluation.ridgeExperiment.selectedAlphaCounts, { "0.1": 1, "1": 2, "10": 2 });
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.alphaGrid.length, 14);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.alphaGrid[0], 0.00001);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.lowerBoundary.unresolved, true);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.lowerBoundary.mae.selectedCount, 8);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries.length, 1);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries[0].selectedAlphaByMae, 0.00001);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries[0].rankingModes[0].wins, 1);
+assert.doesNotMatch(JSON.stringify(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries), /title|tmdbId|rating/i,
+  "Los resúmenes de alpha solo pueden exponer métricas y números de pliegue, nunca títulos, IDs ni notas.");
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.available, true);
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[0].ridgeNdcgAt5, 0.72);
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.modes[0].hybridNdcgAt5, 0.7);
