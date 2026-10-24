@@ -12,6 +12,7 @@ No se debe asumir que un alpha menor es mejor, ampliar otra vez la rejilla sin e
 2. Comparar, sobre las mismas particiones interiores y exteriores, la selección por MAE y por ranking con alpha absoluto frente a lambda relativo a la escala del kernel. La rejilla lambda se deriva de la mediana de las escalas medidas en los entrenamientos interiores de cada pliegue exterior.
 3. Reportar escala, regularización efectiva, resultados emparejados, cobertura, estabilidad numérica, límites seleccionados y métricas no disponibles en el informe diagnóstico.
 4. Mantener la investigación aislada y reproducible, con datos sintéticos en CI y datos personales solo en el navegador local.
+5. Mantener la escala relativa fuera de la batería automática por su coste medido; exponerla solo en la acción manual de evaluación Ridge y marcarla como `not-run` cuando no se haya solicitado.
 
 ## Alcance
 
