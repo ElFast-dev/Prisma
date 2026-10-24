@@ -500,7 +500,12 @@ export function createRidgeRecommendationExperiment(dependencies) {
       outerFoldsEvaluated: outer.length,
       rankingTotals: rankingTotals,
       rankingQuality: canCompareRanking
-        ? completeRankingQuality(rows.length, rel  async function selectAlphaAsync(rows, kernel, outerTraining, outerFold, repetitionIndex, control) {
+        ? completeRankingQuality(rows.length, relevantCount, rankingTotals, OUTER_FOLDS)
+        : unavailableRankingQuality(rows.length, relevantCount)
+    };
+  }
+
+  async function selectAlphaAsync(rows, kernel, outerTraining, outerFold, repetitionIndex, control) {
     const innerSalt = repetitionIndex === 0
       ? "ridge-inner-" + outerFold
       : "ridge-inner-repeat-" + repetitionIndex + "-" + outerFold;
@@ -714,10 +719,6 @@ export function createRidgeRecommendationExperiment(dependencies) {
     };
   }
 
-ing: bestRankingAlpha,
-      innerValidationIndices: folds.map(function (fold) { return fold.slice(); })
-    };
-  }
 
   async function evaluateFoldSetAsync(rows, kernel, indices, repetitionIndex, relevantCount, control) {
     const repeatSalt = repetitionIndex === 0 ? "" : "-repeat-" + repetitionIndex;
