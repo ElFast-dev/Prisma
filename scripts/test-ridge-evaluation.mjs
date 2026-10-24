@@ -98,7 +98,7 @@ const lowAlphaPrediction = predictRidge(numericRows, lowRegularizationModel, dra
 const highAlphaPrediction = predictRidge(numericRows, highRegularizationModel, dramaVector);
 assert.ok(Math.abs(lowAlphaPrediction - highAlphaPrediction) > 0.1,
   "Los alphas positivos extremos existentes deben producir diferencias reales de predicción en un caso sintético.");
-assert.throws(() => trainRidge(numericRows, numericKernel, [0, 1], 1e-13), /Cholesky|pivote|estable/i,
+assert.throws(() => trainRidge(numericRows, numericKernel, [0, 1], 1e-13), /Cholesky|pivote|estable|positiva/i,
   "El pivote inferior a la tolerancia Cholesky debe fallar explícitamente, no generar un alpha cero.");
 
 function fixtures(count) {
