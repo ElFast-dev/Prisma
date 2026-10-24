@@ -1,6 +1,6 @@
 import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../core/date-utils.js";
-import { RIDGE_ALPHA_GRID, RIDGE_ALPHA_EXTENDED_GRID, MIN_RANKING_INNER_FOLDS, selectAlphaByMae, selectAlphaByRanking, summarizeAlphaBoundary, buildRelativeLambdaGrid, effectiveRidgeAlpha, summarizeNumericScale } from "./ridge-alpha-selection.js?v=rec-20261024-alpha-floor-1";
-import { buildKernel, buildKernelAsync, clampRating, predictRidge, trainRidge, trainRidgeAsync, vectorize, summarizeCenteredKernelScale } from "./ridge-kernel.js?v=rec-20261024-alpha-floor-1";
+import { RIDGE_ALPHA_GRID, RIDGE_ALPHA_EXTENDED_GRID, MIN_RANKING_INNER_FOLDS, selectAlphaByMae, selectAlphaByRanking, summarizeAlphaBoundary, buildRelativeLambdaGrid, effectiveRidgeAlpha, summarizeNumericScale } from "./ridge-alpha-selection.js?v=rec-20261024-alpha-floor-2";
+import { buildKernel, buildKernelAsync, clampRating, predictRidge, trainRidge, trainRidgeAsync, vectorize, summarizeCenteredKernelScale } from "./ridge-kernel.js?v=rec-20261024-alpha-floor-2";
 
 const OUTER_FOLDS = 5;
 const INNER_FOLDS = 3;

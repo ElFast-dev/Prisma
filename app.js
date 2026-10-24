@@ -5,7 +5,7 @@ import { createStorageProtectionActions } from "./js/app/storage-protection-acti
 import { emptyState, ensureState } from "./js/core/state-model.js?v=core-20261022-2";
 import { movieFeatures } from "./js/recommendations/features.js?v=rec-20261022-1";
 import { createRecommendationEngine, RECOMMENDATION_SIGNAL_WEIGHTS } from "./js/recommendations/engine.js?v=rec-20261023-3";
-import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261024-alpha-floor-1";
+import { createRidgeRecommendationExperiment } from "./js/recommendations/ridge-evaluation.js?v=rec-20261024-alpha-floor-2";
 import { createRecommendationNormalizationEvaluation } from "./js/recommendations/normalization-evaluation.js?v=rec-20261023-3";
 import { createPairedRankingEvaluation } from "./js/recommendations/paired-ranking-evaluation.js?v=rec-20261023-1";
 import { buildRecommendationDiagnosticReport } from "./js/diagnostics/recommendation-report.js?v=core-20261024-2";

@@ -14,11 +14,17 @@ assert.deepEqual(RIDGE_ALPHA_GRID, [
   0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100
 ]);
 assert.deepEqual(RIDGE_ALPHA_EXTENDED_GRID, [
-  0.0000001, 0.0000003, 0.000001, 0.000003, ...RIDGE_ALPHA_GRID
+  1e-9, 3e-9, 1e-8, 3e-8,
+  1e-7, 3e-7, 1e-6, 3e-6,
+  ...RIDGE_ALPHA_GRID
 ]);
-assert.equal(RIDGE_ALPHA_EXTENDED_GRID.length, 18);
-assert.ok(RIDGE_ALPHA_EXTENDED_GRID[0] > 1e-12,
-  "El alpha inferior sigue por encima del umbral de pivote Cholesky.");
+assert.equal(RIDGE_ALPHA_EXTENDED_GRID.length, 22);
+assert.equal(RIDGE_ALPHA_EXTENDED_GRID[0], 1e-9);
+assert.ok(RIDGE_ALPHA_EXTENDED_GRID.every((alpha, index, grid) =>
+  Number.isFinite(alpha) && alpha > 0 && (index === 0 || alpha > grid[index - 1])),
+  "La rejilla extendida debe ser finita, positiva, ordenada y sin duplicados.");
+assert.ok(RIDGE_ALPHA_EXTENDED_GRID[0] / 1e-12 >= 1000,
+  "El alpha mínimo conserva un margen de al menos mil veces sobre el umbral de pivote Cholesky.");
 assert.ok(RIDGE_ALPHA_GRID.every(alpha => Number.isFinite(alpha) && alpha > 0),
   "Todos los alphas deben ser positivos y finitos para respetar la tolerancia de Cholesky.");
 assert.equal(selectAlphaByMae([
@@ -75,8 +81,8 @@ assert.equal(summarizeAlphaBoundary({ "0.00001": 2 }, 5).unresolved, false,
   "Elegir el mínimo en una minoría no basta para declarar que el límite sigue sin resolverse.");
 assert.equal(summarizeAlphaBoundary({ "0.00001": 15 }, 0).unresolved, false,
   "No se declara tendencia sin pliegues completados.");
-const expandedBoundary = summarizeAlphaBoundary({ "1e-7": 3 }, 5, RIDGE_ALPHA_EXTENDED_GRID);
-assert.equal(expandedBoundary.minimumAlpha, 0.0000001);
+const expandedBoundary = summarizeAlphaBoundary({ "1e-9": 3 }, 5, RIDGE_ALPHA_EXTENDED_GRID);
+assert.equal(expandedBoundary.minimumAlpha, 1e-9);
 assert.equal(expandedBoundary.unresolved, true,
   "La alerta del límite debe inspeccionar el mínimo de la rejilla realmente utilizada.");
 
