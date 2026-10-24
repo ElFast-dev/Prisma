@@ -250,7 +250,11 @@ try {
   captureLogs(cancelPage);
   await cancelPage.goto(baseUrl + (baseUrl.includes("?") ? "&" : "?") + "lab-cancel=" + Date.now(), { waitUntil: "networkidle", timeout: 60000 });
   await cancelPage.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
-  await seedLabSyntheticProfile(cancelPage, fixture);
+  // Re-entry tests exercise coordinator reuse, not the cost of Ridge. Use a sparse profile so the 351-rating battery above remains the only expensive run.
+  const cancelFixture = makeLabSyntheticFixture();
+  cancelFixture.state.rated = cancelFixture.state.rated.slice(0, 3);
+  cancelFixture.catalog = cancelFixture.catalog.slice(0, 43);
+  await seedLabSyntheticProfile(cancelPage, cancelFixture);
   await cancelPage.reload({ waitUntil: "networkidle", timeout: 60000 });
   await cancelPage.locator("main h1").waitFor({ state: "visible", timeout: 20000 });
   await cancelPage.locator(".topbar [data-nav='lab']").click({ timeout: 5000 });
