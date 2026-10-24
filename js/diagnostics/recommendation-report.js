@@ -306,10 +306,18 @@ function ridgeAlphaSelectionEvaluation(source) {
       maeSelectedNdcgAt5: modeAvailable ? rounded(item.maeSelectedNdcgAt5, 4) : null,
       rankingSelectedNdcgAt5: modeAvailable ? rounded(item.rankingSelectedNdcgAt5, 4) : null,
       deltaRankingSelectionMinusMaeSelection: modeAvailable ? rounded(item.deltaRankingSelectionMinusMaeSelection, 4) : null,
+      deltaMaeSelectionMinusBaseline: modeAvailable ? rounded(item.deltaMaeSelectionMinusBaseline, 4) : null,
+      deltaRankingSelectionMinusBaseline: modeAvailable ? rounded(item.deltaRankingSelectionMinusBaseline, 4) : null,
       foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
       rankingSelectorWins: nonNegativeInteger(item.rankingSelectorWins),
       ties: nonNegativeInteger(item.ties),
-      rankingSelectorLosses: nonNegativeInteger(item.rankingSelectorLosses)
+      rankingSelectorLosses: nonNegativeInteger(item.rankingSelectorLosses),
+      maeVsBaselineWins: nonNegativeInteger(item.maeVsBaselineWins),
+      maeVsBaselineTies: nonNegativeInteger(item.maeVsBaselineTies),
+      maeVsBaselineLosses: nonNegativeInteger(item.maeVsBaselineLosses),
+      rankingVsBaselineWins: nonNegativeInteger(item.rankingVsBaselineWins),
+      rankingVsBaselineTies: nonNegativeInteger(item.rankingVsBaselineTies),
+      rankingVsBaselineLosses: nonNegativeInteger(item.rankingVsBaselineLosses)
     };
   });
   const repeats = (Array.isArray(evaluation && evaluation.repeatSummaries) ? evaluation.repeatSummaries : []).slice(0, 3).map(function (repeat) {
@@ -321,10 +329,18 @@ function ridgeAlphaSelectionEvaluation(source) {
         maeSelectedNdcgAt5: mode.available ? rounded(mode.maeSelectedNdcgAt5, 4) : null,
         rankingSelectedNdcgAt5: mode.available ? rounded(mode.rankingSelectedNdcgAt5, 4) : null,
         deltaRankingSelectionMinusMaeSelection: mode.available ? rounded(mode.deltaRankingSelectionMinusMaeSelection, 4) : null,
+        deltaMaeSelectionMinusBaseline: mode.available ? rounded(mode.deltaMaeSelectionMinusBaseline, 4) : null,
+        deltaRankingSelectionMinusBaseline: mode.available ? rounded(mode.deltaRankingSelectionMinusBaseline, 4) : null,
         foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated),
         rankingSelectorWins: nonNegativeInteger(mode.rankingSelectorWins),
         ties: nonNegativeInteger(mode.ties),
-        rankingSelectorLosses: nonNegativeInteger(mode.rankingSelectorLosses)
+        rankingSelectorLosses: nonNegativeInteger(mode.rankingSelectorLosses),
+        maeVsBaselineWins: nonNegativeInteger(mode.maeVsBaselineWins),
+        maeVsBaselineTies: nonNegativeInteger(mode.maeVsBaselineTies),
+        maeVsBaselineLosses: nonNegativeInteger(mode.maeVsBaselineLosses),
+        rankingVsBaselineWins: nonNegativeInteger(mode.rankingVsBaselineWins),
+        rankingVsBaselineTies: nonNegativeInteger(mode.rankingVsBaselineTies),
+        rankingVsBaselineLosses: nonNegativeInteger(mode.rankingVsBaselineLosses)
       };
     });
     return {
@@ -365,9 +381,19 @@ function ridgeAlphaSelectionEvaluation(source) {
           rankingSelectedNdcgAt5: modeAvailable ? rounded(value.rankingSelectedNdcgAt5, 4) : null,
           deltaRankingSelectionMinusMaeSelection: modeAvailable
             ? rounded(value.deltaRankingSelectionMinusMaeSelection, 4) : null,
+          deltaMaeSelectionMinusBaseline: modeAvailable
+            ? rounded(value.deltaMaeSelectionMinusBaseline, 4) : null,
+          deltaRankingSelectionMinusBaseline: modeAvailable
+            ? rounded(value.deltaRankingSelectionMinusBaseline, 4) : null,
           wins: nonNegativeInteger(value.wins),
           ties: nonNegativeInteger(value.ties),
-          losses: nonNegativeInteger(value.losses)
+          losses: nonNegativeInteger(value.losses),
+          maeVsBaselineWins: nonNegativeInteger(value.maeVsBaselineWins),
+          maeVsBaselineTies: nonNegativeInteger(value.maeVsBaselineTies),
+          maeVsBaselineLosses: nonNegativeInteger(value.maeVsBaselineLosses),
+          rankingVsBaselineWins: nonNegativeInteger(value.rankingVsBaselineWins),
+          rankingVsBaselineTies: nonNegativeInteger(value.rankingVsBaselineTies),
+          rankingVsBaselineLosses: nonNegativeInteger(value.rankingVsBaselineLosses)
         };
       });
       return {
@@ -388,6 +414,7 @@ function ridgeAlphaSelectionEvaluation(source) {
     available: available,
     sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
     selectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.selectionFoldsEvaluated),
+    pairedSelectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.pairedSelectionFoldsEvaluated),
     outerFoldsPlanned: nonNegativeInteger(evaluation && evaluation.outerFoldsPlanned),
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
     alphaGrid: alphaGrid,
