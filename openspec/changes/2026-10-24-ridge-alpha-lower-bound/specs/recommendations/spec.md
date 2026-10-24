@@ -4,19 +4,20 @@
 
 ### Requirement: Explorar regularización Ridge sin ampliar el coste de la evaluación predeterminada
 
-El Laboratorio DEBE conservar la rejilla histórica en su evaluación automática y solo DEBE usar la rejilla extendida cuando se solicite explícitamente el experimento manual. La rejilla extendida DEBE incluir los valores históricos, añadir valores positivos por debajo del mínimo histórico y mantener orden determinista.
+El evaluador Ridge DEBE conservar la rejilla histórica cuando no se solicite la opción extendida. La batería diagnóstica de un solo paso del Laboratorio DEBE solicitar explícitamente la rejilla extendida para analizar el límite inferior. Los resultados experimentales NO DEBEN modificar por sí solos el modelo, los pesos ni el ranking de producción. La rejilla extendida DEBE incluir los valores históricos, añadir valores positivos por debajo del mínimo histórico y mantener un orden determinista.
 
-#### Scenario: Evaluación automática
+#### Scenario: API de evaluación sin opción extendida
 
-- **WHEN** el Laboratorio ejecuta su batería predeterminada sin solicitar el experimento extendido
-- **THEN** Ridge usa la rejilla histórica y conserva el coste/flujo de ejecución actual
-- **AND** los resultados no afirman que se exploraron valores de la rejilla extendida.
+- **WHEN** se ejecuta el evaluador Ridge sin `includeExtendedAlphaGrid: true`
+- **THEN** utiliza la rejilla histórica de 14 valores
+- **AND** el resultado declara esa rejilla sin fingir que probó valores inferiores.
 
-#### Scenario: Experimento extendido solicitado
+#### Scenario: Batería diagnóstica del Laboratorio
 
-- **WHEN** el usuario inicia explícitamente el experimento de escala relativa Ridge
-- **THEN** ambos criterios de selección usan la rejilla extendida en la validación interior
-- **AND** el resultado declara exactamente la rejilla utilizada y la estadística del límite inferior se refiere a su valor mínimo.
+- **WHEN** se abre el Laboratorio y su coordinador solicita la comparación Ridge extendida
+- **THEN** MAE y ranking usan la misma rejilla extendida en la validación interior
+- **AND** el informe declara exactamente la rejilla usada y sus estadísticas de límite
+- **AND** el modelo de producción permanece aditivo.
 
 ### Requirement: Selección anidada sin fuga de parámetros
 

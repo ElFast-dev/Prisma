@@ -4,7 +4,8 @@ export const RIDGE_ALPHA_GRID = Object.freeze([
 ]);
 
 export const RIDGE_ALPHA_EXTENDED_GRID = Object.freeze([
-  0.0000001, 0.0000003, 0.000001, 0.000003,
+  1e-9, 3e-9, 1e-8, 3e-8,
+  1e-7, 3e-7, 1e-6, 3e-6,
   ...RIDGE_ALPHA_GRID
 ]);
 

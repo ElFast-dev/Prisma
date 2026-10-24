@@ -2,11 +2,11 @@
 
 ## Motivación
 
-El diagnóstico agregado v14 de 351 valoraciones muestra que la selección interna por MAE eligió `alpha=0.00001` en los 15 pliegues exteriores repetidos. Esto deja sin resolver el límite inferior de la rejilla actual. La selección por ranking eligió valores mayores con más frecuencia; por ello no se puede concluir que reducir alpha mejore el ranking ni elegir parámetros con el pliegue exterior.
+Un diagnóstico agregado v14 reciente indica que la selección interna por MAE sigue favoreciendo el límite inferior de la rejilla extendida, mientras que la selección por ranking prefiere otro rango. El límite, por tanto, sigue sin resolverse; no se debe concluir que reducir alpha mejora el ranking ni seleccionar parámetros con los pliegues exteriores. Las cifras específicas del historial personal permanecen locales y no se registran en este expediente.
 
 ## Objetivo
 
-Añadir una rejilla experimental que extienda el límite inferior dos órdenes de magnitud, manteniendo todas las opciones positivas y suficientemente alejadas de la tolerancia numérica Cholesky. La variante extendida solo se ejecutará desde la acción manual explícita del Laboratorio. La batería automática conservará la rejilla actual para no aumentar su coste normal.
+Añadir una rejilla diagnóstica experimental que extienda el límite inferior, manteniendo todas las opciones positivas y suficientemente alejadas de la tolerancia numérica Cholesky. El Laboratorio solicitará explícitamente esta variante dentro de su batería automática de diagnóstico; la API Ridge conservará la rejilla histórica cuando no se solicite la opción extendida. El modelo y el ranking de producción no consumirán ni activarán estos resultados.
 
 ## Alcance
 
@@ -28,7 +28,7 @@ Añadir una rejilla experimental que extienda el límite inferior dos órdenes d
 ## Criterios de aceptación
 
 1. La rejilla extendida es ordenada, determinista, contiene la rejilla histórica y explora por debajo de `0.00001` sin incluir cero.
-2. Solo la acción manual activa la rejilla extendida; la batería predeterminada usa la rejilla histórica.
+2. El evaluador Ridge usa la rejilla histórica cuando no se solicita la opción extendida; la batería diagnóstica del Laboratorio solicita explícitamente la rejilla ampliada.
 3. MAE y nDCG@5 seleccionan sus parámetros usando exclusivamente pliegues internos y se miden después en los pliegues exteriores emparejados.
 4. Se conserva el contrato v14 con campos agregados y privacidad; las pruebas prueban límites, escala, cancelación y regresiones.
 5. SDD/calidad y Playwright escritorio/móvil pasan antes de integrar. No se cambia el modelo activo.

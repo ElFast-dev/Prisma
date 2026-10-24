@@ -2,13 +2,13 @@
 
 ## Rejillas
 
-La rejilla histórica permanece como la ruta predeterminada: `[1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2, 1e-1, 0.3, 1, 3, 10, 100]`. La rejilla de experimento añade `1e-7, 3e-7, 1e-6, 3e-6` delante de los 14 valores existentes (18 en total). Mantiene el patrón logarítmico aproximado y extiende dos órdenes de magnitud por debajo del mínimo actual.
+La rejilla histórica permanece como valor predeterminado de la API del evaluador: `[1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2, 1e-1, 0.3, 1, 3, 10, 100]`. La rejilla extendida añade `1e-7, 3e-7, 1e-6, 3e-6` delante de esos 14 valores (18 en total en esta primera iteración). La batería diagnóstica de un solo paso solicita explícitamente esa variante; las recomendaciones de producción siguen usando `additive-content-baseline`.
 
 Los valores nuevos siguen siendo cinco órdenes de magnitud superiores al umbral Cholesky de `1e-12`. No se altera esa tolerancia ni se añade `alpha=0`; la factorización debe continuar rechazando sistemas numéricamente inestables.
 
 ## Aislamiento y coste
 
-El evaluador asíncrono acepta una opción explícita `includeExtendedAlphaGrid: true`. Por defecto, y cuando la opción se omite, se conserva la rejilla histórica. La acción manual del experimento Ridge solicita tanto la escala relativa como la rejilla extendida. La evaluación normal y el análisis temporal no cambian de coste ni de parámetros.
+El evaluador asíncrono acepta una opción explícita `includeExtendedAlphaGrid: true`. Por defecto, y cuando la opción se omite, se conserva la rejilla histórica. La batería automática del Laboratorio solicita la variante diagnóstica extendida y la escala relativa. La predicción y el ranking de producción no consumen ni activan estos resultados experimentales.
 
 La rejilla efectiva se propaga por toda la ejecución asíncrona: ajuste interior, conteos de selección, resumen de límites, evaluación exterior, cálculo de progreso y serialización del resultado. El informe declara la rejilla realmente utilizada; un fallo/cancelación no debe anunciar una ejecución completa ni cambiar sus métricas de la rejilla predeterminada.
 
