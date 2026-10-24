@@ -230,7 +230,7 @@ export function createLabActions(ctx) {
       coverage: sourceMetrics.coverage,
       featureFamilyEvaluation: sourceMetrics.featureFamilyEvaluation,
       diagnosticSnapshot: snapshot,
-      applicationVersion: "prisma-web/2026.10.23-lab-diagnostic.1",
+      applicationVersion: "prisma-web/2026.10.24-lab-diagnostic.2",
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
       ratingEvaluation: sourceMetrics.evaluation,
