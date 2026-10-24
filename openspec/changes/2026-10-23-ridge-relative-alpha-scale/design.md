@@ -20,6 +20,8 @@ Cada modelo interior emplea `alpha_effective = lambda * s_inner` de su propio en
 
 Este diseño permite comprobar si adaptar alpha a la escala de cada entrenamiento cambia la selección y el resultado exterior. No garantiza que mejore ranking. La comparación se empareja con el alpha absoluto en los mismos pliegues y con el mismo baseline aditivo.
 
+**Límite de rendimiento y ejecución:** las pruebas Playwright mostraron que ejecutar también la búsqueda relativa dentro de cada pasada automática del Laboratorio duplicaba el coste y no terminaba en el límite de 120 s para el perfil sintético grande. Por ello la escala relativa es una opción explícita del método asíncrono (`includeRelativeScale: true`) usada únicamente por la acción manual de experimento Ridge; la batería automática conserva la evaluación absoluta histórica. Cuando la variante no se solicita, el informe debe marcar `executionStatus: "not-run"`, no `unavailable` ni una escala degenerada. La ejecución opt-in mantiene el mismo progreso cooperativo, cancelación y pliegues emparejados.
+
 ## Protocolo de evaluación
 
 - Conservar tres repeticiones, cinco pliegues exteriores y tres pliegues interiores, los salts deterministas existentes y las mismas identidades canónicas.
