@@ -978,7 +978,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
     RANKING_MODES.forEach(function (mode) {
       rankingTotals[mode] = {
         baselineDcg: 0, maeSelectedDcg: 0, rankingSelectedDcg: 0, idealDcg: 0, foldsEvaluated: 0,
-        rankingSelectorWins: 0, rankingSelectorTies: 0, rankingSelectorLosses: 0
+        rankingSelectorWins: 0, rankingSelectorTies: 0, rankingSelectorLosses: 0,
+        maeVsBaselineWins: 0, maeVsBaselineTies: 0, maeVsBaselineLosses: 0,
+        rankingVsBaselineWins: 0, rankingVsBaselineTies: 0, rankingVsBaselineLosses: 0
       };
     });
     (foldSets || []).forEach(function (result) {
@@ -1141,7 +1143,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         rankingSelectionMaeWins: comparisonAvailable ? rankingSelectorMaeWins : 0,
         ties: comparisonAvailable ? ties : 0,
         maeSelectionMaeWins: comparisonAvailable ? maeSelectorMaeWins : 0,
-        foldsEvaluated: selectedFolds
+        foldsEvaluated: pairedSelectionFoldsEvaluated
       },
       rankingModes: rankingModes,
       repeatSummaries: byRepeat,
