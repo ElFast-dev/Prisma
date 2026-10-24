@@ -571,6 +571,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
         if (lambdaGrid && info.scale.available) {
           const effectiveAlpha = effectiveRidgeAlpha(lambda, info.scale.scale);
           if (effectiveAlpha != null) {
+            const numericErrorsBeforeFit = relativeNumericErrors;
             try {
               relativeModel = await trainRidgeAsync(rows, kernel, trainingIndices, effectiveAlpha, {
                 shouldContinue: control.shouldContinue,
@@ -582,6 +583,10 @@ export function createRidgeRecommendationExperiment(dependencies) {
               relativeCandidateValid = false;
             }
             if (!control.shouldContinue()) return null;
+            if (!relativeModel && relativeNumericErrors === numericErrorsBeforeFit) {
+              relativeNumericErrors += 1;
+              relativeCandidateValid = false;
+            }
           } else {
             relativeNumericErrors += 1;
             relativeCandidateValid = false;
@@ -835,6 +840,7 @@ ing: bestRankingAlpha,
           relativeNumericErrors += 1;
         }
         if (!control.shouldContinue()) return null;
+        if (!relativeMaeSelectedModel) relativeNumericErrors += 1;
       }
       if (relativeAlphaRanking != null) {
         if (relativeAlphaRanking === relativeAlphaMae) {
@@ -850,6 +856,7 @@ ing: bestRankingAlpha,
             relativeNumericErrors += 1;
           }
           if (!control.shouldContinue()) return null;
+          if (!relativeRankingSelectedModel) relativeNumericErrors += 1;
         }
       }
       if (relativeMaeSelectedModel) control.onModelFit({
