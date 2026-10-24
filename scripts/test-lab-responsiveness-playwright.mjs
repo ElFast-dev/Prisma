@@ -98,22 +98,21 @@ try {
     heading: document.querySelector("main h1")?.innerText || "",
     status: document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState || "",
     controls: {
-      diagnosticCopy: Boolean(document.querySelector("[data-action='copy-recommendation-diagnostics']")),
-      ridgeAutomatic: [...document.querySelectorAll(".lab-automatic-label")].some(node => node.closest(".panel")?.innerText.includes("Ridge")),
-      normalizationAutomatic: [...document.querySelectorAll(".lab-automatic-label")].some(node => node.closest(".panel")?.innerText.includes("normalización")),
-      featureLabels: Boolean(document.querySelector("#diagnosticFeatureLabels")),
+      oneCopyAction: document.querySelectorAll(".lab-one-click-panel [data-action='copy-recommendation-diagnostics']").length === 1,
+      noSecondaryCopy: document.querySelectorAll("[data-action='copy-recommendation-diagnostics-json']").length === 0,
+      noManualExperimentButtons: document.querySelectorAll("[data-action='run-ridge-experiment'],[data-action='run-temporal-ridge-experiment'],[data-action='run-influence-normalization-experiment'],[data-action='restart-lab-diagnostic'],[data-action='retry-lab-diagnostic']").length === 0,
+      noFeatureLabelControls: document.querySelectorAll("#diagnosticFeatureLabels").length === 0,
       globalProgress: Boolean(document.querySelector(".lab-diagnostic-progress-bar")),
-      sevenPhases: document.querySelectorAll(".lab-diagnostic-phase").length === 7,
-      copyDisabledUntilFinal: Boolean(document.querySelector("[data-action='copy-recommendation-diagnostics']")?.disabled)
+      copyDisabledUntilFinal: Boolean(document.querySelector("[data-action='copy-recommendation-diagnostics']")?.disabled),
+      noTasteCharts: !document.querySelector(".lab-charts") && !document.querySelector(".lab-ranking-diagnostics")
     }
   }));
   assert.equal(immediateDom.heading, "Laboratorio");
   assert.equal(immediateDom.status, "loading");
-  assert.ok(Object.values(immediateDom.controls).every(Boolean), "Global progress and all automatic-phase controls must be present on first render");
+  assert.ok(Object.values(immediateDom.controls).every(Boolean), "The Lab must expose only progress and one disabled copy action while computing");
   results.firstLabRenderMs = performanceEvents.find(item => item.operation === "renderLab")?.durationMs ?? null;
 
-  // Progress updates intentionally repaint the phase list. Keep the first-render responsiveness
-  // checks during calculation, then interact with the report controls once the battery is stable.
+  // The only interaction is report copying; the detailed experiments start automatically.
   await page.waitForFunction(() => {
     const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
     return state === "ready" || state === "error";
@@ -123,13 +122,6 @@ try {
     const copyButton = document.querySelector('[data-action="copy-recommendation-diagnostics"]');
     return state === "ready" && copyButton && !copyButton.disabled;
   }, null, { timeout: 10000 });
-  // The coordinator's final publication follows the ready marker; wait for a frame after
-  // the copy action is enabled so the label control is no longer being replaced.
-  await page.waitForTimeout(150);
-  await page.locator(".diagnostic-advanced-options summary").click();
-  const labelsControl = page.locator("#diagnosticFeatureLabels");
-  await labelsControl.check({ timeout: 5000 });
-  await labelsControl.uncheck({ timeout: 5000 });
   results.metricsStatus = await page.locator("[data-lab-metrics-state]").getAttribute("data-lab-metrics-state");
   results.responsiveTicks = await page.evaluate(() => {
     window.clearInterval(window.__labResponsivenessTimer);
@@ -164,25 +156,6 @@ try {
   });
   await page.locator('[data-action="copy-recommendation-diagnostics"]').click({ timeout: 5000 });
   await page.waitForFunction(() => typeof window.__syntheticDiagnosticReport === "string" &&
-    window.__syntheticDiagnosticReport.startsWith("# PRISMA — contexto técnico"), null, { timeout: 10000 });
-  const brief = await page.evaluate(() => ({
-    text: window.__syntheticDiagnosticReport,
-    hasRepository: window.__syntheticDiagnosticReport.includes("https://github.com/ElFast-dev/Prisma"),
-    hasProjectRules: window.__syntheticDiagnosticReport.includes("Objetivo y reglas que no deben romperse"),
-    hasNextSteps: window.__syntheticDiagnosticReport.includes("Siguiente tarea"),
-    containsSyntheticTitle: window.__syntheticDiagnosticReport.includes("Synthetic Film 000"),
-    containsRawMovieIdentity: /"tmdbId"|"tmId"|"tmdb_id"/i.test(window.__syntheticDiagnosticReport)
-  }));
-  assert.ok(brief.hasRepository && brief.hasProjectRules && brief.hasNextSteps,
-    "Primary clipboard output must be a useful developer handoff with project context and next steps");
-  assert.ok(brief.text.length > 500 && brief.text.length <= 9500,
-    "Developer handoff must be concise but sufficiently detailed; length=" + brief.text.length);
-  assert.equal(brief.containsSyntheticTitle, false);
-  assert.equal(brief.containsRawMovieIdentity, false);
-
-  // The full aggregate JSON remains available separately for deep debugging.
-  await page.locator('[data-action="copy-recommendation-diagnostics-json"]').click({ timeout: 5000 });
-  await page.waitForFunction(() => typeof window.__syntheticDiagnosticReport === "string" &&
     window.__syntheticDiagnosticReport.trim().startsWith("{"), null, { timeout: 10000 });
   const report = await page.evaluate(() => {
     const text = window.__syntheticDiagnosticReport;
@@ -205,7 +178,9 @@ try {
       diagnosticPhaseStatuses: (value.diagnostic?.run?.phases || []).map(phase => phase.status),
       featureFamilySampleCount: value.diagnostic?.featureFamilyComparison?.sampleCount ?? 0,
       featureFamilyCount: value.diagnostic?.featureFamilyComparison?.families?.length || 0,
-      featureFamiliesAvailable: value.diagnostic?.featureFamilyComparison?.families?.every(family => family.available) || false
+      featureFamiliesAvailable: value.diagnostic?.featureFamilyComparison?.families?.every(family => family.available) || false,
+      alphaGridCount: value.evaluation?.ridgeExperiment?.alphaGrid?.length || 0,
+      relativeScaleStatus: value.evaluation?.ridgeExperiment?.alphaSelectionComparison?.relativeScaleComparison?.executionStatus || ""
     };
   });
   results.reportSchema = report.schema;
@@ -227,16 +202,17 @@ try {
   assert.equal(report.networkTransmission, false);
   assert.equal(report.containsSyntheticTitle, false);
   assert.equal(report.containsRawMovieIdentity, false);
-  assert.equal(report.diagnosticStatus, "completed-with-unavailable");
   assert.equal(report.diagnosticPhaseCount, 7);
   assert.equal(report.diagnosticPhaseStatuses.length, 7);
-  assert.ok(report.diagnosticPhaseStatuses.every(status => ["completed", "unavailable"].includes(status)),
-    "Each diagnostic phase must have a terminal status even when sample data are unavailable");
+  assert.ok(report.diagnosticPhaseStatuses.every(status => ["completed", "unavailable", "cancelled", "error"].includes(status)),
+    "Each diagnostic phase must have a terminal status, including failures after their automatic retry");
   assert.ok(Number.isFinite(report.diagnosticDurationMs) && report.diagnosticDurationMs >= 0,
     "The report must include the measured total battery duration");
   assert.equal(report.featureFamilySampleCount, 351);
   assert.equal(report.featureFamilyCount, 4);
   assert.equal(report.featureFamiliesAvailable, true);
+  assert.equal(report.alphaGridCount, 18, "The automatic report must include the expanded Ridge grid");
+  assert.equal(report.relativeScaleStatus, "completed", "The automatic report must include the relative scale experiment");
   results.metricRunCountsAfterReport = {
     ratingEvaluation: countBefore("rating-evaluation"),
     rankingEvaluation: countBefore("ranking-cross-validation"),
