@@ -7,6 +7,7 @@
 - [x] A5. Añadir contadores completos por criterio, métricas nDCG@5 por modo, empates/victorias/derrotas y alerta del límite inferior.
 - [x] A6. Añadir pruebas sintéticas de selección independiente, desempate, fuga, particiones emparejadas y contadores completos.
 - [x] A7. Actualizar tests de rejilla exacta, contrato del informe, cancelación, progreso y comportamiento del Laboratorio.
-- [ ] A8. Ejecutar pruebas Ridge/model evaluation/diagnóstico y validadores SDD; corregir fallos sin cerrar expedientes ajenos pendientes.
-- [ ] A9. Ejecutar Playwright escritorio/móvil y medir render inicial/responsividad con perfiles sintéticos.
-- [ ] A10. Revisar diff, status checks y publicación. Crear/integrar PR solo tras superar los gates obligatorios; mantener aditivo activo independientemente del resultado.
+- [x] A8. Ejecutar pruebas Ridge/model evaluation/diagnóstico y validadores SDD; corregir fallos sin cerrar expedientes ajenos pendientes.
+- [x] A9. Ejecutar Playwright escritorio/móvil y medir render inicial/responsividad con perfiles sintéticos.
+- [x] A10. Revisar el diff y confirmar que SDD/calidad y Playwright están en verde; el modelo aditivo activo y sus pesos no cambian.
+- [ ] A11. Ejecutar y analizar el diagnóstico v14 con el historial personal enriquecido, en el navegador local, para obtener MAE/nDCG@5 reales. Mantener Ridge en modo diagnóstico hasta contar con evidencia externa suficiente.
