@@ -225,6 +225,99 @@ export function createLabRidgeView(ctx) {
             Number(mode.ties || 0) + '/' + Number(mode.rankingSelectorLosses || 0) +
             ' · pliegues válidos ' + Number(mode.foldsEvaluated || 0) + '.</p>';
         }).join('');
+        const relativeScaleComparison = alphaComparison.relativeScaleComparison || null;
+        const formatRelativeValue = function (value, digits) {
+          return value == null || !Number.isFinite(Number(value))
+            ? 'no disponible' : Number(value).toFixed(digits == null ? 4 : digits).replace('.', ',');
+        };
+        const relativeNdcgMarkup = relativeScaleComparison
+          ? (relativeScaleComparison.rankingModes || []).map(function (mode) {
+              const name = rankingModeNames[mode.mode] || mode.mode;
+              const mae = mode.relativeMae || {};
+              const ranking = mode.relativeRanking || {};
+              const paired = mode.pairedRelativeSelectors || {};
+              const selectorText = function (metric, selector) {
+                if (!metric.available) return selector + ': nDCG no disponible (' +
+                  Number(metric.foldsEvaluated || 0) + '/15 pliegues)';
+                const score = selector === 'relativo por MAE'
+                  ? metric.relativeMaeSelectedNdcgAt5 : metric.relativeRankingSelectedNdcgAt5;
+                const delta = selector === 'relativo por MAE'
+                  ? metric.deltaRelativeMaeSelectionMinusBaseline : metric.deltaRelativeRankingSelectionMinusBaseline;
+                return selector + ': aditivo ' + formatRelativeValue(metric.baselineNdcgAt5) +
+                  ' · relativo ' + formatRelativeValue(score) + ' · Δ vs. aditivo ' +
+                  (Number(delta) > 0 ? '+' : '') + formatRelativeValue(delta) + ' · V/E/D ' +
+                  Number(metric.wins || 0) + '/' + Number(metric.ties || 0) + '/' + Number(metric.losses || 0) +
+                  ' · pliegues ' + Number(metric.foldsEvaluated || 0);
+              };
+              const pairedText = paired.available
+                ? 'Comparación relativa ranking − MAE ' +
+                  (Number(paired.deltaRelativeRankingSelectionMinusRelativeMae) > 0 ? '+' : '') +
+                  formatRelativeValue(paired.deltaRelativeRankingSelectionMinusRelativeMae) +
+                  ' · V/E/D ' + Number(paired.wins || 0) + '/' + Number(paired.ties || 0) + '/' +
+                  Number(paired.losses || 0) + ' · pliegues comunes ' + Number(paired.foldsEvaluated || 0)
+                : 'Comparación emparejada de ambas selecciones relativas no disponible (' +
+                  Number(paired.foldsEvaluated || 0) + ' pliegues comunes)';
+              return '<p class="metric-note"><strong>' + ctx.escapeHTML(name) + ':</strong> ' +
+                selectorText(mae, 'relativo por MAE') + ' · ' +
+                selectorText(ranking, 'relativo por ranking') + ' · ' + pairedText + '.</p>';
+            }).join('')
+          : '<p class="metric-note">Comparación relativa no disponible.</p>';
+        const relativeScaleStats = relativeScaleComparison && relativeScaleComparison.kernelScale || {};
+        const outerScaleStats = relativeScaleStats.outerTrainingScales || {};
+        const innerScaleStats = relativeScaleStats.innerReferenceScales || {};
+        const relativeMae = relativeScaleComparison && relativeScaleComparison.relativeMae || {};
+        const relativeRanking = relativeScaleComparison && relativeScaleComparison.relativeRanking || {};
+        const relativeRepeatMarkup = relativeScaleComparison && Array.isArray(relativeScaleComparison.repeatSummaries)
+          ? relativeScaleComparison.repeatSummaries.map(function (repeat) {
+              return '<li class="metric-note">Repetición ' + Number(repeat.repeat) +
+                ': escala exterior mediana ' + formatRelativeValue(repeat.kernelScale && repeat.kernelScale.median, 6) +
+                ' · MAE relativo ' + formatRelativeValue(repeat.relativeMae && repeat.relativeMae.mae) +
+                ' vs. aditivo ' + formatRelativeValue(repeat.relativeMae && repeat.relativeMae.baselineMaeSameFolds) +
+                ' (' + Number(repeat.relativeMae && repeat.relativeMae.foldsEvaluated || 0) + '/5 pliegues)' +
+                ' · MAE relativo por ranking ' + formatRelativeValue(repeat.relativeRanking && repeat.relativeRanking.mae) +
+                ' (' + Number(repeat.relativeRanking && repeat.relativeRanking.foldsEvaluated || 0) + '/5 pliegues)</li>';
+            }).join('')
+          : '';
+        const relativeScaleMarkup = relativeScaleComparison
+          ? '<section class="ridge-relative-scale" aria-label="Experimento de regularización relativa">' +
+            '<h5>Experimento aislado: regularización relativa a la escala del kernel</h5>' +
+            '<p class="metric-note">Escala media de la diagonal centrada en los entrenamientos exteriores: media ' +
+            formatRelativeValue(outerScaleStats.mean, 6) + ', mediana ' + formatRelativeValue(outerScaleStats.median, 6) +
+            ', mínimo ' + formatRelativeValue(outerScaleStats.min, 6) + ' y máximo ' + formatRelativeValue(outerScaleStats.max, 6) +
+            ' (' + Number(outerScaleStats.count || 0) + '/15 pliegues). Mediana de referencia interior: ' +
+            formatRelativeValue(innerScaleStats.median, 6) + '.</p>' +
+            '<p class="metric-note"><strong>alpha absoluto / escala:</strong> mediana por selección MAE ' +
+            formatRelativeValue(relativeScaleComparison.absoluteAlphaToScaleRatio &&
+              relativeScaleComparison.absoluteAlphaToScaleRatio.mae &&
+              relativeScaleComparison.absoluteAlphaToScaleRatio.mae.median, 6) +
+            ' · por ranking ' + formatRelativeValue(relativeScaleComparison.absoluteAlphaToScaleRatio &&
+              relativeScaleComparison.absoluteAlphaToScaleRatio.ranking &&
+              relativeScaleComparison.absoluteAlphaToScaleRatio.ranking.median, 6) + '.</p>' +
+            '<p class="metric-note"><strong>Selección lambda por MAE:</strong> MAE relativo ' +
+            formatRelativeValue(relativeMae.mae) + ' vs. aditivo ' + formatRelativeValue(relativeMae.baselineMaeSameFolds) +
+            ' · delta base − relativo ' + (Number(relativeMae.deltaBaselineMinusSelected) > 0 ? '+' : '') +
+            formatRelativeValue(relativeMae.deltaBaselineMinusSelected) +
+            ' · lambda mediano ' + formatRelativeValue(relativeMae.selectedLambda && relativeMae.selectedLambda.median, 8) +
+            ' · alpha efectivo mediano ' + formatRelativeValue(relativeMae.selectedEffectiveAlpha && relativeMae.selectedEffectiveAlpha.median, 8) +
+            ' · pliegues válidos ' + Number(relativeMae.foldsEvaluated || 0) + '/15 · selecciones por tramo ' +
+            ctx.escapeHTML(formatAlphaCounts(relativeMae.selectedAnchorAlphaCounts)) + '.</p>' +
+            '<p class="metric-note"><strong>Selección lambda por ranking:</strong> MAE relativo ' +
+            formatRelativeValue(relativeRanking.mae) + ' vs. aditivo ' + formatRelativeValue(relativeRanking.baselineMaeSameFolds) +
+            ' · delta base − relativo ' + (Number(relativeRanking.deltaBaselineMinusSelected) > 0 ? '+' : '') +
+            formatRelativeValue(relativeRanking.deltaBaselineMinusSelected) +
+            ' · lambda mediano ' + formatRelativeValue(relativeRanking.selectedLambda && relativeRanking.selectedLambda.median, 8) +
+            ' · alpha efectivo mediano ' + formatRelativeValue(relativeRanking.selectedEffectiveAlpha && relativeRanking.selectedEffectiveAlpha.median, 8) +
+            ' · pliegues válidos ' + Number(relativeRanking.foldsEvaluated || 0) + '/15 · selecciones por tramo ' +
+            ctx.escapeHTML(formatAlphaCounts(relativeRanking.selectedAnchorAlphaCounts)) + '.</p>' +
+            '<p class="metric-note">Errores numéricos: ' + Number(relativeScaleComparison.relativeNumericErrors || 0) +
+            ' · pliegues con escala no disponible: ' + Number(relativeScaleComparison.scaleUnavailableFolds || 0) +
+            ' · la variante relativa no participa en el recomendador activo.</p>' +
+            '<h5>nDCG@5 de las selecciones relativas</h5>' + relativeNdcgMarkup +
+            '<details><summary>Resultados por repetición</summary><ul>' +
+            (relativeRepeatMarkup || '<li class="metric-note">No hay repeticiones disponibles.</li>') +
+            '</ul><p class="metric-note">Las repeticiones comparten el mismo historial personal: resultados descriptivos dependientes, no muestras independientes.</p></details>' +
+            '</section>'
+          : '';
         const foldDetails = (alphaComparison.foldSummaries || []).map(function (fold) {
           const maeDelta = fold.deltaRankingSelectionMinusMaeSelection;
           const modes = (fold.rankingModes || []).map(function (mode) {
@@ -276,8 +369,9 @@ export function createLabRidgeView(ctx) {
               '.</p>'
             : '<p class="metric-note">Comparación externa por ranking no disponible: ' +
               ctx.escapeHTML(alphaComparison.unavailableReason || 'muestra o pliegues válidos insuficientes') + '</p>') +
-          '<h5>nDCG@5: selección por criterio y modo</h5>' + (selectionModes || '<p class="metric-note">No disponible.</p>') +
-          '<details><summary>Detalle de los pliegues exteriores emparejados</summary><ul>' +
+          '<h5>nDCG@5: selección absoluta por criterio y modo</h5>' + (selectionModes || '<p class="metric-note">No disponible.</p>') +
+          relativeScaleMarkup +
+          '<details><summary>Detalle de los pliegues exteriores emparejados</summary><ul>'
           (foldDetails || '<li class="metric-note">No hay pliegues completados.</li>') +
           '</ul><p class="metric-note">Los pliegues pertenecen al mismo historial de evaluación; se presentan como diagnóstico descriptivo, no como observaciones independientes ni prueba estadística.</p></details>' +
           '</section>';
