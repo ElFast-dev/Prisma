@@ -910,10 +910,16 @@ ing: bestRankingAlpha,
           ? additiveResult.score : additiveProfile.average);
         const hybridPrediction = clampRating((ridgePrediction + additivePrediction) / 2);
         const rankingSelectedPrediction = rankingAlpha == null ? null : predictRidge(rows, rankingSelectedModel, row.trainingVector);
+        const relativeMaePrediction = relativeMaeSelectedModel
+          ? predictRidge(rows, relativeMaeSelectedModel, row.trainingVector) : null;
+        const relativeRankingPrediction = relativeRankingSelectedModel
+          ? predictRidge(rows, relativeRankingSelectedModel, row.trainingVector) : null;
         const ridgeError = Math.abs(ridgePrediction - row.rating);
         const baselineError = Math.abs(additivePrediction - row.rating);
         const hybridError = Math.abs(hybridPrediction - row.rating);
         const rankingSelectedError = rankingAlpha == null ? null : Math.abs(rankingSelectedPrediction - row.rating);
+        const relativeMaeError = relativeMaePrediction == null ? null : Math.abs(relativeMaePrediction - row.rating);
+        const relativeRankingError = relativeRankingPrediction == null ? null : Math.abs(relativeRankingPrediction - row.rating);
         ridgeErrors.push(ridgeError);
         baselineErrors.push(baselineError);
         hybridErrors.push(hybridError);
@@ -925,6 +931,16 @@ ing: bestRankingAlpha,
           alphaComparisonBaselineErrors.push(baselineError);
           alphaComparisonRankingErrors.push(rankingSelectedError);
           rankingSelectedFoldErrors.push(rankingSelectedError);
+        }
+        if (relativeMaeSelectedModel && Number.isFinite(relativeMaeError)) {
+          relativeMaeSelectorErrors.push(relativeMaeError);
+          relativeMaeBaselineErrors.push(baselineError);
+          relativeMaeFoldErrors.push(relativeMaeError);
+        }
+        if (relativeRankingSelectedModel && Number.isFinite(relativeRankingError)) {
+          relativeRankingSelectorErrors.push(relativeRankingError);
+          relativeRankingBaselineErrors.push(baselineError);
+          relativeRankingFoldErrors.push(relativeRankingError);
         }
         predictionMin = Math.min(predictionMin, ridgePrediction);
         predictionMax = Math.max(predictionMax, ridgePrediction);
@@ -938,6 +954,12 @@ ing: bestRankingAlpha,
           hybridCandidates.push(rankingCandidate(row, hybridExplained, hybridPrediction, token));
           if (rankingAlpha != null) {
             rankingSelectedCandidates.push(rankingCandidate(row, { score: rankingSelectedPrediction }, rankingSelectedPrediction, token));
+          }
+          if (relativeMaeSelectedModel) {
+            relativeMaeCandidates.push(rankingCandidate(row, { score: relativeMaePrediction }, relativeMaePrediction, token));
+          }
+          if (relativeRankingSelectedModel) {
+            relativeRankingCandidates.push(rankingCandidate(row, { score: relativeRankingPrediction }, relativeRankingPrediction, token));
           }
           gains.set(token, relevanceGain(row.rating));
         }
