@@ -36,3 +36,8 @@ El resultado DEBE registrar alpha seleccionado por criterio, MAE exterior, nDCG@
 
 ### Requirement: Ejecución asíncrona y aislamiento de producción
 El experimento DEBE conservar progreso monotónico, cancelación cooperativa, división modular de ES modules y pruebas de capacidad de respuesta. La rejilla y los parámetros del experimento NO DEBEN modificar pesos, parámetros ni ranking del recomendador activo.
+
+#### Scenario: Cancelación y producción inalterada
+- DADO que la evaluación asíncrona explora la rejilla ampliada
+- CUANDO se cancela el trabajo o se completa el análisis
+- ENTONCES la evaluación debe detenerse cooperativamente, informar progreso monotónico y dejar intactos el modelo aditivo, sus pesos y el ranking de producción.
