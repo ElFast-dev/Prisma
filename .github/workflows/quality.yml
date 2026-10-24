@@ -42,6 +42,7 @@ jobs:
           node --check js/recommendations/features.js
           node --check js/recommendations/engine.js
           node --check js/recommendations/ridge-evaluation.js
+          node --check js/recommendations/ridge-alpha-selection.js
           node --check js/recommendations/evaluation.js
           node --check js/recommendations/normalization-evaluation.js
           node --check js/recommendations/feature-family-evaluation.js
