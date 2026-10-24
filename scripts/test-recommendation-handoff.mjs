@@ -108,7 +108,7 @@ assert.ok(brief.includes("MAE 0.9148"));
 assert.ok(brief.includes("nDCG@5"));
 assert.ok(brief.includes("Mantener el modelo aditivo en producción"));
 assert.ok(brief.includes("alpha"));
-assert.ok(brief.includes("OpenSpec/SDD"));
+assert.ok(brief.includes("SDD/OpenSpec"));
 assert.ok(brief.length < 9500, "El resumen debe ser corto comparado con el JSON integral.");
 assert.equal(brief.includes("PRIVATE-FEATURE-LABEL-MUST-NOT-APPEAR"), false,
   "No debe incluir los nombres concretos de las señales aunque existan en el objeto de diagnóstico.");
