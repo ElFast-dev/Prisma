@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v125"
+const CACHE_NAME = "prisma-shell-v126"
 const APP_ASSETS = [
   "./",
   "./index.html",
