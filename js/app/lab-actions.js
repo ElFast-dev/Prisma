@@ -191,7 +191,7 @@ export function createLabActions(ctx) {
 
   function clearRecommendationDiagnosticReport() {
     ctx.recommendationDiagnosticReportText = "";
-    ctx.recommendationDiagnosticReportFormat = "brief";
+    ctx.recommendationDiagnosticReportFormat = "json";
     ctx.recommendationDiagnosticCopyMessage = "";
     if (ctx.currentPage === "lab") ctx.renderApp();
   }
@@ -206,7 +206,8 @@ export function createLabActions(ctx) {
       ctx.toast("El diagnóstico aún tiene fases pendientes o en ejecución.", true);
       return;
     }
-    const metrics = await ctx.ensureLabMetrics();
+    let metrics = ctx.labMetrics || null;
+    if (!metrics && typeof ctx.ensureLabMetrics === "function") metrics = await ctx.ensureLabMetrics();
     const snapshot = ctx.labDiagnosticSnapshot;
     if (!snapshot || !Array.isArray(snapshot.phases) ||
         !snapshot.phases.every(function (phase) { return finalStatuses.indexOf(phase.status) !== -1; })) {
@@ -230,7 +231,7 @@ export function createLabActions(ctx) {
       coverage: sourceMetrics.coverage,
       featureFamilyEvaluation: sourceMetrics.featureFamilyEvaluation,
       diagnosticSnapshot: snapshot,
-      applicationVersion: "prisma-web/2026.10.24-lab-diagnostic.2",
+      applicationVersion: "prisma-web/2026.10.24-lab-one-click.1",
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
       ratingEvaluation: sourceMetrics.evaluation,
