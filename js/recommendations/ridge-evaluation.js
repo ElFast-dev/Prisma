@@ -932,15 +932,13 @@ ing: bestRankingAlpha,
           alphaComparisonRankingErrors.push(rankingSelectedError);
           rankingSelectedFoldErrors.push(rankingSelectedError);
         }
-        if (relativeMaeSelectedModel && Number.isFinite(relativeMaeError)) {
-          relativeMaeSelectorErrors.push(relativeMaeError);
-          relativeMaeBaselineErrors.push(baselineError);
-          relativeMaeFoldErrors.push(relativeMaeError);
+        if (relativeMaeSelectedModel) {
+          if (Number.isFinite(relativeMaeError)) relativeMaeFoldErrors.push(relativeMaeError);
+          else relativeNumericErrors += 1;
         }
-        if (relativeRankingSelectedModel && Number.isFinite(relativeRankingError)) {
-          relativeRankingSelectorErrors.push(relativeRankingError);
-          relativeRankingBaselineErrors.push(baselineError);
-          relativeRankingFoldErrors.push(relativeRankingError);
+        if (relativeRankingSelectedModel) {
+          if (Number.isFinite(relativeRankingError)) relativeRankingFoldErrors.push(relativeRankingError);
+          else relativeNumericErrors += 1;
         }
         predictionMin = Math.min(predictionMin, ridgePrediction);
         predictionMax = Math.max(predictionMax, ridgePrediction);
@@ -965,6 +963,14 @@ ing: bestRankingAlpha,
         }
       });
 
+      if (relativeMaeSelectedModel && relativeMaeFoldErrors.length === testIndices.length) {
+        relativeMaeSelectorErrors.push.apply(relativeMaeSelectorErrors, relativeMaeFoldErrors);
+        relativeMaeBaselineErrors.push.apply(relativeMaeBaselineErrors, baselineFoldErrors);
+      }
+      if (relativeRankingSelectedModel && relativeRankingFoldErrors.length === testIndices.length) {
+        relativeRankingSelectorErrors.push.apply(relativeRankingSelectorErrors, relativeRankingFoldErrors);
+        relativeRankingBaselineErrors.push.apply(relativeRankingBaselineErrors, baselineFoldErrors);
+      }
       foldMaeDeltas.push(meanAbsoluteError(baselineFoldErrors) - meanAbsoluteError(ridgeFoldErrors));
       hybridFoldMaeDeltas.push(meanAbsoluteError(baselineFoldErrors) - meanAbsoluteError(hybridFoldErrors));
       if (rankingAlpha != null) {
@@ -998,12 +1004,14 @@ ing: bestRankingAlpha,
             }));
             const relativeMaeTop = relativeMaeSelectedModel ? rankRows(relativeMaeCandidates, mode) : [];
             const relativeRankingTop = relativeRankingSelectedModel ? rankRows(relativeRankingCandidates, mode) : [];
-            const relativeMaeSelectedDcg = relativeMaeSelectedModel ? dcgAt5(relativeMaeTop.map(function (candidate) {
-              return { gain: gains.get(candidate.evaluationToken) || 0 };
-            })) : null;
-            const relativeRankingSelectedDcg = relativeRankingSelectedModel ? dcgAt5(relativeRankingTop.map(function (candidate) {
-              return { gain: gains.get(candidate.evaluationToken) || 0 };
-            })) : null;
+            const relativeMaeSelectedDcg = relativeMaeSelectedModel && relativeMaeFoldErrors.length === testIndices.length
+              ? dcgAt5(relativeMaeTop.map(function (candidate) {
+                return { gain: gains.get(candidate.evaluationToken) || 0 };
+              })) : null;
+            const relativeRankingSelectedDcg = relativeRankingSelectedModel && relativeRankingFoldErrors.length === testIndices.length
+              ? dcgAt5(relativeRankingTop.map(function (candidate) {
+                return { gain: gains.get(candidate.evaluationToken) || 0 };
+              })) : null;
             const foldDelta = (ridgeDcg - baselineDcg) / idealDcg;
             const hybridFoldDelta = (hybridDcg - baselineDcg) / idealDcg;
             if (foldDelta > 1e-10) rankingTotals[mode].foldsRidgeWins += 1;
