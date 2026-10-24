@@ -31,7 +31,7 @@ import { createAppRuntime } from "./js/app/runtime.js?v=core-20261020-1";
 import { createAppLifecycle } from "./js/app/lifecycle.js?v=core-20261021-2";
 import { movieMetadataFromJSON, extractPersonalCollections, hasImportedCollection, mergeMovieEntries, mergeMovieListByTitle, extractPersonalRatings } from "./js/import-export/personal-data.js?v=core-20261022-8";
 import { createTMDBClient, normalizeCredential } from "./js/tmdb/client.js?v=core-20261022-3";
-import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-5";
+import { createLabActions } from "./js/app/lab-actions.js?v=core-20261023-6";
 import { createLabMetricsActions } from "./js/app/lab-metrics-actions.js?v=core-20261023-4";
 import { createThemeController } from "./js/ui/theme-controller.js?v=theme-20261020-1";
 
