@@ -1,4 +1,4 @@
-import { createLabRidgeView } from "./lab-ridge-view.js?v=core-20261023-6";
+import { createLabRidgeView } from "./lab-ridge-view.js?v=core-20261023-7";
 import { createLabTemporalView } from "./lab-temporal-view.js?v=core-20261023-3";
 
 export function createLabViews(ctx) {
