@@ -420,7 +420,7 @@ function ridgeAlphaSelectionEvaluation(source) {
     alphaGrid: alphaGrid,
     selectionCriteria: {
       mae: "Menor MAE medio en validación interna del entrenamiento exterior.",
-      ranking: "Mayor nDCG@5 medio en validación interna entre los modos disponibles con relevancia ≥ 7."
+      ranking: "Mayor nDCG@5 medio en validación interna con relevancia ≥ 7 y mínimo de 50 películas, 10 relevantes y dos pliegues internos válidos."
     },
     selectedAlphaCountsByMae: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByMae),
     selectedAlphaCountsByRanking: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByRanking),
