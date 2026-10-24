@@ -232,7 +232,7 @@ export function createLabRidgeView(ctx) {
           alphaComparison.relativeScaleComparison.executionStatus === "not-run"
           ? '<div class="ridge-relative-scale-action"><button class="btn btn-secondary btn-small" type="button" data-action="run-ridge-relative-experiment"' +
             (busy || metricsBusy || temporalBusy ? ' disabled aria-disabled="true"' : '') +
-            '>Medir escala relativa del kernel</button><p class="metric-note">Experimento adicional y local: compara la rejilla absoluta con lambda relativo en las mismas particiones. Requiere más cálculo; la batería automática no lo ejecuta para conservar su rendimiento.</p></div>'
+            '>Medir escala y alpha ampliado</button><p class="metric-note">Experimento adicional y local: prueba cuatro valores de alpha por debajo de 0,00001 y compara la rejilla ampliada con lambda relativo en las mismas particiones. Requiere más cálculo; la batería automática conserva la rejilla histórica y su rendimiento.</p></div>'
           : '';
         const formatRelativeAnchorCounts = function (counts) {
           const source = counts && typeof counts === "object" ? counts : {};

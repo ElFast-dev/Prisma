@@ -1,6 +1,6 @@
 import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../core/date-utils.js";
-import { RIDGE_ALPHA_GRID, MIN_RANKING_INNER_FOLDS, selectAlphaByMae, selectAlphaByRanking, summarizeAlphaBoundary, buildRelativeLambdaGrid, effectiveRidgeAlpha, summarizeNumericScale } from "./ridge-alpha-selection.js?v=rec-20261023-relative-1";
-import { buildKernel, buildKernelAsync, clampRating, predictRidge, trainRidge, trainRidgeAsync, vectorize, summarizeCenteredKernelScale } from "./ridge-kernel.js?v=rec-20261023-relative-1";
+import { RIDGE_ALPHA_GRID, RIDGE_ALPHA_EXTENDED_GRID, MIN_RANKING_INNER_FOLDS, selectAlphaByMae, selectAlphaByRanking, summarizeAlphaBoundary, buildRelativeLambdaGrid, effectiveRidgeAlpha, summarizeNumericScale } from "./ridge-alpha-selection.js?v=rec-20261024-alpha-floor-1";
+import { buildKernel, buildKernelAsync, clampRating, predictRidge, trainRidge, trainRidgeAsync, vectorize, summarizeCenteredKernelScale } from "./ridge-kernel.js?v=rec-20261024-alpha-floor-1";
 
 const OUTER_FOLDS = 5;
 const INNER_FOLDS = 3;
@@ -281,7 +281,8 @@ function unavailableRepeatedValidation(count, relevantCount, reason) {
   };
 }
 
-function unavailableResult(count, reason, rankingQuality, relevantCount) {
+function unavailableResult(count, reason, rankingQuality, relevantCount, alphaGrid) {
+  const resultAlphaGrid = Array.isArray(alphaGrid) && alphaGrid.length ? alphaGrid : ALPHAS;
   return {
     available: false,
     count: Number.isInteger(count) && count >= 0 ? count : 0,
@@ -293,7 +294,7 @@ function unavailableResult(count, reason, rankingQuality, relevantCount) {
     outerFolds: OUTER_FOLDS,
     foldsEvaluated: 0,
     innerFolds: INNER_FOLDS,
-    alphaGrid: ALPHAS.slice(),
+    alphaGrid: resultAlphaGrid.slice(),
     selectedAlphaCounts: {},
     predictionMin: null,
     predictionMax: null,
@@ -506,6 +507,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
   }
 
   async function selectAlphaAsync(rows, kernel, outerTraining, outerFold, repetitionIndex, control) {
+    const alphas = Array.isArray(control.alphaGrid) && control.alphaGrid.length
+      ? control.alphaGrid : ALPHAS;
     const includeRelativeScale = control.includeRelativeScale === true;
     const innerSalt = repetitionIndex === 0
       ? "ridge-inner-" + outerFold
@@ -537,7 +540,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       : { available: false, count: 0, mean: null, median: null, min: null, max: null };
     const lambdaGrid = includeRelativeScale && outerKernelScale.available &&
       innerScalesAvailable && innerScaleReference.available
-      ? buildRelativeLambdaGrid(ALPHAS, innerScaleReference.median) : null;
+      ? buildRelativeLambdaGrid(alphas, innerScaleReference.median) : null;
     const maeCandidates = [];
     const rankingCandidates = [];
     const relativeMaeCandidates = [];
@@ -546,9 +549,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
       outerTraining.filter(function (index) { return rows[index].rating >= RELEVANT_RATING_THRESHOLD; }).length >= MIN_RELEVANT_RECORDS;
     let relativeNumericErrors = 0;
 
-    for (let alphaIndex = 0; alphaIndex < ALPHAS.length; alphaIndex += 1) {
+    for (let alphaIndex = 0; alphaIndex < alphas.length; alphaIndex += 1) {
       if (!control.shouldContinue()) return null;
-      const alpha = ALPHAS[alphaIndex];
+      const alpha = alphas[alphaIndex];
       const lambda = lambdaGrid ? lambdaGrid[alphaIndex] : null;
       const errors = [];
       const rankingScores = [];
@@ -730,6 +733,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
 
 
   async function evaluateFoldSetAsync(rows, kernel, indices, repetitionIndex, relevantCount, control) {
+    const alphas = Array.isArray(control.alphaGrid) && control.alphaGrid.length
+      ? control.alphaGrid : ALPHAS;
     const repeatSalt = repetitionIndex === 0 ? "" : "-repeat-" + repetitionIndex;
     const outerSalt = repetitionIndex === 0 ? "ridge-outer" : "ridge-outer" + repeatSalt;
     const outer = foldIndices(indices, rows, OUTER_FOLDS, outerSalt);
@@ -739,11 +744,11 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const foldMaeDeltas = [];
     const hybridFoldMaeDeltas = [];
     const selectedAlphaCounts = Object.create(null);
-    ALPHAS.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
+    alphas.forEach(function (alpha) { selectedAlphaCounts[String(alpha)] = 0; });
     const rankingTotals = Object.create(null);
     const rankingSelectionTotals = Object.create(null);
     const rankingSelectedAlphaCounts = Object.create(null);
-    ALPHAS.forEach(function (alpha) { rankingSelectedAlphaCounts[String(alpha)] = 0; });
+    alphas.forEach(function (alpha) { rankingSelectedAlphaCounts[String(alpha)] = 0; });
     const alphaComparisonMaeSelectorErrors = [];
     const alphaComparisonBaselineErrors = [];
     const alphaComparisonRankingErrors = [];
@@ -755,7 +760,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const relativeRankingBaselineErrors = [];
     const selectedRelativeLambdaCountsByMae = Object.create(null);
     const selectedRelativeLambdaCountsByRanking = Object.create(null);
-    ALPHAS.forEach(function (alpha) {
+    alphas.forEach(function (alpha) {
       selectedRelativeLambdaCountsByMae[String(alpha)] = 0;
       selectedRelativeLambdaCountsByRanking[String(alpha)] = 0;
     });
@@ -795,8 +800,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
       const relativeMaeIndex = alphaSelection.lambdaGrid ? alphaSelection.lambdaGrid.indexOf(relativeLambdaMae) : -1;
       const relativeRankingIndex = alphaSelection.lambdaGrid ? alphaSelection.lambdaGrid.indexOf(relativeLambdaRanking) : -1;
       relativeNumericErrors += Number(alphaSelection.relativeNumericErrors) || 0;
-      if (relativeMaeIndex >= 0) selectedRelativeLambdaCountsByMae[String(ALPHAS[relativeMaeIndex])] += 1;
-      if (relativeRankingIndex >= 0) selectedRelativeLambdaCountsByRanking[String(ALPHAS[relativeRankingIndex])] += 1;
+      if (relativeMaeIndex >= 0) selectedRelativeLambdaCountsByMae[String(alphas[relativeMaeIndex])] += 1;
+      if (relativeRankingIndex >= 0) selectedRelativeLambdaCountsByRanking[String(alphas[relativeRankingIndex])] += 1;
       if (typeof onAlphaSelectionAudit === "function") onAlphaSelectionAudit({
         repeat: repetitionIndex + 1,
         outerFold: outerFold + 1,
@@ -1131,8 +1136,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
         selectedAlphaByRanking: rankingAlpha,
         selectedLambdaByMae: relativeLambdaMae,
         selectedLambdaByRanking: relativeLambdaRanking,
-        relativeLambdaAnchorAlphaByMae: relativeMaeIndex >= 0 ? ALPHAS[relativeMaeIndex] : null,
-        relativeLambdaAnchorAlphaByRanking: relativeRankingIndex >= 0 ? ALPHAS[relativeRankingIndex] : null,
+        relativeLambdaAnchorAlphaByMae: relativeMaeIndex >= 0 ? alphas[relativeMaeIndex] : null,
+        relativeLambdaAnchorAlphaByRanking: relativeRankingIndex >= 0 ? alphas[relativeRankingIndex] : null,
         effectiveAlphaByRelativeMae: relativeAlphaMae,
         effectiveAlphaByRelativeRanking: relativeAlphaRanking,
         outerKernelScale: {
@@ -1300,7 +1305,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
     };
   }
 
-  function summarizeRelativeScaleComparison(foldSets, sampleCount, relevantCount, requested) {
+  function summarizeRelativeScaleComparison(foldSets, sampleCount, relevantCount, requested, alphaGrid) {
+    const alphas = Array.isArray(alphaGrid) && alphaGrid.length ? alphaGrid : ALPHAS;
     if (requested !== true) {
       const missingMetric = function () {
         return { available: false, sampleCount: 0, selectionFolds: 0, foldsEvaluated: 0,
@@ -1341,7 +1347,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const relativeRankingBaselineErrors = [];
     const lambdaMaeCounts = Object.create(null);
     const lambdaRankingCounts = Object.create(null);
-    ALPHAS.forEach(function (alpha) {
+    alphas.forEach(function (alpha) {
       lambdaMaeCounts[String(alpha)] = 0;
       lambdaRankingCounts[String(alpha)] = 0;
     });
@@ -1419,9 +1425,9 @@ export function createRidgeRecommendationExperiment(dependencies) {
       return folds.filter(function (fold) { return Number.isFinite(fold[key]) && fold[key] > 0; }).length;
     };
     const lowerBoundaryMae = summarizeAlphaBoundary(lambdaMaeCounts,
-      folds.filter(function (fold) { return Number.isFinite(fold.selectedLambdaByMae); }).length, ALPHAS);
+      folds.filter(function (fold) { return Number.isFinite(fold.selectedLambdaByMae); }).length, alphas);
     const lowerBoundaryRanking = summarizeAlphaBoundary(lambdaRankingCounts,
-      folds.filter(function (fold) { return Number.isFinite(fold.selectedLambdaByRanking); }).length, ALPHAS);
+      folds.filter(function (fold) { return Number.isFinite(fold.selectedLambdaByRanking); }).length, alphas);
 
     const summarizeSelectedMetric = function (errors, pairedBaseline, selectionKey, effectiveKey, counts, boundary) {
       const selectionFolds = countSelected(selectionKey);
@@ -1635,10 +1641,11 @@ export function createRidgeRecommendationExperiment(dependencies) {
     };
   }
 
-  function summarizeAlphaSelectionComparison(foldSets, sampleCount, relevantCount, includeRelativeScale) {
+  function summarizeAlphaSelectionComparison(foldSets, sampleCount, relevantCount, includeRelativeScale, alphaGrid) {
+    const alphas = Array.isArray(alphaGrid) && alphaGrid.length ? alphaGrid : ALPHAS;
     const maeCounts = Object.create(null);
     const rankingCounts = Object.create(null);
-    ALPHAS.forEach(function (alpha) {
+    alphas.forEach(function (alpha) {
       maeCounts[String(alpha)] = 0;
       rankingCounts[String(alpha)] = 0;
     });
@@ -1693,8 +1700,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const rankingSelectedFolds = foldSummaries.filter(function (summary) {
       return summary.selectedAlphaByRanking != null;
     }).length;
-    const lowerBoundaryByMae = summarizeAlphaBoundary(maeCounts, selectionFoldsEvaluated, ALPHAS);
-    const lowerBoundaryByRanking = summarizeAlphaBoundary(rankingCounts, rankingSelectedFolds, ALPHAS);
+    const lowerBoundaryByMae = summarizeAlphaBoundary(maeCounts, selectionFoldsEvaluated, alphas);
+    const lowerBoundaryByRanking = summarizeAlphaBoundary(rankingCounts, rankingSelectedFolds, alphas);
     let rankingSelectorMaeWins = 0;
     let ties = 0;
     let maeSelectorMaeWins = 0;
@@ -1784,7 +1791,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       pairedSelectionFoldsEvaluated: pairedSelectionFoldsEvaluated,
       outerFoldsPlanned: REPEATED_VALIDATION_RUNS * OUTER_FOLDS,
       innerFolds: INNER_FOLDS,
-      alphaGrid: ALPHAS.slice(),
+      alphaGrid: alphas.slice(),
       selectionCriteria: {
         mae: "Menor MAE medio en validación interna del entrenamiento exterior.",
         ranking: "Mayor nDCG@5 medio en validación interna entre modos disponibles con relevancia >= 7; mínimo de 50 películas, 10 relevantes y dos pliegues internos válidos; sin acceso a notas exteriores."
@@ -1820,13 +1827,14 @@ export function createRidgeRecommendationExperiment(dependencies) {
       },
       rankingModes: rankingModes,
       repeatSummaries: byRepeat,
-      relativeScaleComparison: summarizeRelativeScaleComparison(foldSets, sampleCount, relevantCount, includeRelativeScale),
+      relativeScaleComparison: summarizeRelativeScaleComparison(foldSets, sampleCount, relevantCount, includeRelativeScale, alphas),
       unavailableReason: comparisonAvailable ? null :
         "La selección interna por ranking requiere al menos 50 películas únicas, 10 relevantes y suficientes pliegues con nDCG disponible; se conserva la evaluación por MAE."
     };
   }
 
-  function completedEvaluation(rows, repeatedRuns, relevantCount, includeRelativeScale) {
+  function completedEvaluation(rows, repeatedRuns, relevantCount, includeRelativeScale, alphaGrid) {
+    const selectedAlphaGrid = Array.isArray(alphaGrid) && alphaGrid.length ? alphaGrid : ALPHAS;
     const primary = repeatedRuns[0];
     const mae = meanAbsoluteError(primary.ridgeErrors);
     const baselineMae = meanAbsoluteError(primary.baselineErrors);
@@ -1842,7 +1850,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       outerFolds: OUTER_FOLDS,
       foldsEvaluated: primary.outerFoldsEvaluated,
       innerFolds: INNER_FOLDS,
-      alphaGrid: ALPHAS.slice(),
+      alphaGrid: selectedAlphaGrid.slice(),
       selectedAlphaCounts: primary.selectedAlphaCounts,
       predictionMin: primary.predictionMin,
       predictionMax: primary.predictionMax,
@@ -1850,17 +1858,17 @@ export function createRidgeRecommendationExperiment(dependencies) {
       hybridFoldStability: summarizeHybridMaeFoldStability(primary.hybridFoldMaeDeltas),
       rankingQuality: primary.rankingQuality,
       repeatedValidation: summarizeRepeatedValidation(repeatedRuns, rows.length, relevantCount),
-      alphaSelectionComparison: summarizeAlphaSelectionComparison(repeatedRuns, rows.length, relevantCount, includeRelativeScale),
+      alphaSelectionComparison: summarizeAlphaSelectionComparison(repeatedRuns, rows.length, relevantCount, includeRelativeScale, selectedAlphaGrid),
       reason: null
     };
   }
 
-  function unavailableEvaluation(rows, relevantCount) {
+  function unavailableEvaluation(rows, relevantCount, alphaGrid) {
     const reason = "No se pudo resolver la evaluación Ridge de forma estable con esta muestra.";
     return unavailableResult(rows.length, reason,
       unavailableRankingQuality(rows.length, relevantCount,
         "La comparación Ridge de ranking no se completó porque el ajuste no terminó."),
-      relevantCount);
+      relevantCount, alphaGrid);
   }
 
   function evaluate() {
@@ -1887,6 +1895,8 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const callback = typeof onProgress === "function" ? onProgress :
       (onProgress && typeof onProgress.onProgress === "function" ? onProgress.onProgress : function () {});
     const settings = options || (onProgress && typeof onProgress === "object" ? onProgress : {});
+    const selectedAlphaGrid = settings.includeExtendedAlphaGrid === true
+      ? RIDGE_ALPHA_EXTENDED_GRID : ALPHAS;
     const externalShouldContinue = typeof settings.shouldContinue === "function" ? settings.shouldContinue : function () { return true; };
     let callbackCancelled = false;
     const emitProgress = function (update) {
@@ -1900,7 +1910,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       if (!callbackCancelled) return null;
       const reason = "La evaluación Ridge se canceló porque se invalidó la ejecución solicitada.";
       return unavailableResult(rows.length, reason,
-        unavailableRankingQuality(rows.length, relevantCount, reason), relevantCount);
+        unavailableRankingQuality(rows.length, relevantCount, reason), relevantCount, selectedAlphaGrid);
     };
     const yieldToBrowser = typeof settings.yieldToBrowser === "function"
       ? settings.yieldToBrowser
@@ -1910,11 +1920,11 @@ export function createRidgeRecommendationExperiment(dependencies) {
     const relevantCount = rows.filter(function (row) { return row.rating >= RELEVANT_RATING_THRESHOLD; }).length;
     if (rows.length < MIN_RECORDS) {
       const reason = "Se necesitan al menos " + MIN_RECORDS + " películas únicas valoradas con características.";
-      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount);
+      return unavailableResult(rows.length, reason, unavailableRankingQuality(rows.length, relevantCount), relevantCount, selectedAlphaGrid);
     }
     if (!shouldContinue()) return null;
     const includeRelativeScale = settings.includeRelativeScale === true;
-    const fitsPerOuterFold = ALPHAS.length * INNER_FOLDS * (includeRelativeScale ? 2 : 1) +
+    const fitsPerOuterFold = selectedAlphaGrid.length * INNER_FOLDS * (includeRelativeScale ? 2 : 1) +
       (includeRelativeScale ? 4 : 2);
     const fitWork = REPEATED_VALIDATION_RUNS * OUTER_FOLDS * fitsPerOuterFold;
     const kernelWork = Math.max(1, rows.length);
@@ -1938,6 +1948,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       yieldToBrowser: yieldToBrowser,
       batchSize: batchSize,
       includeRelativeScale: includeRelativeScale,
+      alphaGrid: selectedAlphaGrid,
       totalWork: totalWork,
       completedWork: function () { return completedWork; },
       onModelFit: function (detail) {
@@ -1984,10 +1995,10 @@ export function createRidgeRecommendationExperiment(dependencies) {
         });
         await yieldToBrowser();
       }
-      return completedEvaluation(rows, repeatedRuns, relevantCount, includeRelativeScale);
+      return completedEvaluation(rows, repeatedRuns, relevantCount, includeRelativeScale, selectedAlphaGrid);
     } catch (error) {
       if (!canContinue()) return abortedResult();
-      return unavailableEvaluation(rows, relevantCount);
+      return unavailableEvaluation(rows, relevantCount, selectedAlphaGrid);
     }
   }
 

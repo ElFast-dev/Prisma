@@ -3,6 +3,11 @@ export const RIDGE_ALPHA_GRID = Object.freeze([
   0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100
 ]);
 
+export const RIDGE_ALPHA_EXTENDED_GRID = Object.freeze([
+  0.0000001, 0.0000003, 0.000001, 0.000003,
+  ...RIDGE_ALPHA_GRID
+]);
+
 export const ALPHA_TIE_TOLERANCE = 1e-10;
 export const MIN_RANKING_INNER_FOLDS = 2;
 

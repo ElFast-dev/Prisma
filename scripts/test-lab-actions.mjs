@@ -7,6 +7,7 @@ function createFixture() {
   let diagnosticInput = null;
   let normalizationCalls = 0;
   let ridgeCalls = 0;
+  let ridgeOptions = null;
   let temporalCalls = 0;
   const ctx = {
     currentPage: "lab",
@@ -89,8 +90,9 @@ function createFixture() {
       }
     },
     ridgeRecommendationExperiment: {
-      async evaluateAsync(onProgress) {
+      async evaluateAsync(onProgress, options) {
         ridgeCalls += 1;
+        ridgeOptions = options || null;
         onProgress({ phase: "starting" });
         onProgress({ phase: "repeat", completedRepeats: 1, totalRepeats: 3 });
         return { available: true, mae: 0.9 };
@@ -114,6 +116,7 @@ function createFixture() {
     get diagnosticInput() { return diagnosticInput; },
     get normalizationCalls() { return normalizationCalls; },
     get ridgeCalls() { return ridgeCalls; },
+    get ridgeOptions() { return ridgeOptions; },
     get temporalCalls() { return temporalCalls; }
   };
 }
@@ -133,6 +136,8 @@ ctx.temporalRidgeEvaluationBusy = false;
 
 await actions.runRidgeExperiment();
 assert.equal(fixture.ridgeCalls, 1);
+assert.deepEqual(fixture.ridgeOptions, { includeRelativeScale: true, includeExtendedAlphaGrid: true },
+  "La acción manual solicita escala relativa y la rejilla alpha extendida; la ejecución normal permanece sin ella.");
 assert.deepEqual(ctx.ridgeEvaluationResult, { available: true, mae: 0.9 });
 assert.equal(ctx.ridgeEvaluationBusy, false);
 assert.equal(ctx.ridgeEvaluationProgress, null);
