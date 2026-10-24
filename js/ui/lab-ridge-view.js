@@ -208,13 +208,21 @@ export function createLabRidgeView(ctx) {
             ctx.escapeHTML(rankingModeNames[mode.mode] || mode.mode) +
             ':</strong> nDCG@5 comparativo no disponible.</p>';
           const delta = Number(mode.deltaRankingSelectionMinusMaeSelection);
+          const maeBaseDelta = Number(mode.deltaMaeSelectionMinusBaseline);
+          const rankingBaseDelta = Number(mode.deltaRankingSelectionMinusBaseline);
           return '<p class="metric-note"><strong>' + ctx.escapeHTML(rankingModeNames[mode.mode] || mode.mode) +
-            ':</strong> Ridge-MAE ' + Number(mode.maeSelectedNdcgAt5).toFixed(4).replace('.', ',') +
+            ':</strong> aditivo ' + Number(mode.baselineNdcgAt5).toFixed(4).replace('.', ',') +
+            ' · Ridge-MAE ' + Number(mode.maeSelectedNdcgAt5).toFixed(4).replace('.', ',') +
+            ' (vs. aditivo ' + (maeBaseDelta > 0 ? '+' : '') + maeBaseDelta.toFixed(4).replace('.', ',') + ')' +
             ' · Ridge-ranking ' + Number(mode.rankingSelectedNdcgAt5).toFixed(4).replace('.', ',') +
-            ' · cambio ranking − MAE ' + (delta > 0 ? '+' : '') + delta.toFixed(4).replace('.', ',') +
-            ' · victorias ' + Number(mode.rankingSelectorWins || 0) +
-            ' · empates ' + Number(mode.ties || 0) +
-            ' · derrotas ' + Number(mode.rankingSelectorLosses || 0) +
+            ' (vs. aditivo ' + (rankingBaseDelta > 0 ? '+' : '') + rankingBaseDelta.toFixed(4).replace('.', ',') + ')' +
+            ' · ranking − MAE ' + (delta > 0 ? '+' : '') + delta.toFixed(4).replace('.', ',') +
+            ' · Ridge-MAE vs. aditivo V/E/D ' + Number(mode.maeVsBaselineWins || 0) + '/' +
+            Number(mode.maeVsBaselineTies || 0) + '/' + Number(mode.maeVsBaselineLosses || 0) +
+            ' · Ridge-ranking vs. aditivo V/E/D ' + Number(mode.rankingVsBaselineWins || 0) + '/' +
+            Number(mode.rankingVsBaselineTies || 0) + '/' + Number(mode.rankingVsBaselineLosses || 0) +
+            ' · ranking vs. MAE V/E/D ' + Number(mode.rankingSelectorWins || 0) + '/' +
+            Number(mode.ties || 0) + '/' + Number(mode.rankingSelectorLosses || 0) +
             ' · pliegues válidos ' + Number(mode.foldsEvaluated || 0) + '.</p>';
         }).join('');
         const foldDetails = (alphaComparison.foldSummaries || []).map(function (fold) {
@@ -223,9 +231,14 @@ export function createLabRidgeView(ctx) {
             const name = rankingModeNames[mode.mode] || mode.mode;
             if (!mode.available) return name + ': no disponible';
             const delta = Number(mode.deltaRankingSelectionMinusMaeSelection);
-            return name + ' ' + Number(mode.maeSelectedNdcgAt5).toFixed(3).replace('.', ',') +
-              ' → ' + Number(mode.rankingSelectedNdcgAt5).toFixed(3).replace('.', ',') +
-              ' (' + (delta > 0 ? '+' : '') + delta.toFixed(3).replace('.', ',') + ')';
+            const maeBaseDelta = Number(mode.deltaMaeSelectionMinusBaseline);
+            const rankingBaseDelta = Number(mode.deltaRankingSelectionMinusBaseline);
+            return name + ' aditivo ' + Number(mode.baselineNdcgAt5).toFixed(3).replace('.', ',') +
+              ', Ridge-MAE ' + Number(mode.maeSelectedNdcgAt5).toFixed(3).replace('.', ',') +
+              ' (base ' + (maeBaseDelta > 0 ? '+' : '') + maeBaseDelta.toFixed(3).replace('.', ',') + ')' +
+              ', Ridge-ranking ' + Number(mode.rankingSelectedNdcgAt5).toFixed(3).replace('.', ',') +
+              ' (base ' + (rankingBaseDelta > 0 ? '+' : '') + rankingBaseDelta.toFixed(3).replace('.', ',') + ')' +
+              ' (ranking − MAE ' + (delta > 0 ? '+' : '') + delta.toFixed(3).replace('.', ',') + ')';
           }).join(' · ');
           return '<li class="metric-note">Repetición ' + Number(fold.repeat) + ', pliegue ' + Number(fold.outerFold) +
             ': alpha MAE ' + Number(fold.selectedAlphaByMae) +
@@ -239,7 +252,9 @@ export function createLabRidgeView(ctx) {
         alphaSelectionMarkup = '<section class="ridge-alpha-selection" aria-label="Comparación de selección Ridge alpha">' +
           '<h4>Selección de alpha: MAE vs ranking</h4>' +
           '<p class="metric-note">Rejilla ampliada: ' + (alphaComparison.alphaGrid || []).map(String).join(', ') +
-          '. Selección anidada: tres pliegues internos por cada pliegue exterior; las notas exteriores solo miden el resultado.</p>' +
+          '. Selección MAE completada en ' + Number(alphaComparison.selectionFoldsEvaluated || 0) + '/' +
+          Number(alphaComparison.outerFoldsPlanned || 0) + ' pliegues; comparación emparejada entre ambos criterios en ' +
+          Number(alphaComparison.pairedSelectionFoldsEvaluated || 0) + ' pliegues. Las notas exteriores solo miden el resultado.</p>' +
           '<p class="metric-note"><strong>Conteo por MAE:</strong> ' +
           ctx.escapeHTML(formatAlphaCounts(alphaComparison.selectedAlphaCountsByMae)) + '.</p>' +
           '<p class="metric-note"><strong>Conteo por ranking:</strong> ' +
