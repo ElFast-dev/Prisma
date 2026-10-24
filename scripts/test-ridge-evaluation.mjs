@@ -92,6 +92,14 @@ assert.ok(Math.abs(numericModel.coefficients[0] - 1) < 1e-10);
 assert.ok(Math.abs(numericModel.coefficients[1] + 1) < 1e-10);
 assert.ok(Math.abs(predictRidge(numericRows, numericModel, dramaVector) - 7) < 1e-10);
 assert.ok(Math.abs(predictRidge(numericRows, numericModel, comedyVector) - 5) < 1e-10);
+const lowRegularizationModel = trainRidge(numericRows, numericKernel, [0, 1], 0.00001);
+const highRegularizationModel = trainRidge(numericRows, numericKernel, [0, 1], 100);
+const lowAlphaPrediction = predictRidge(numericRows, lowRegularizationModel, dramaVector);
+const highAlphaPrediction = predictRidge(numericRows, highRegularizationModel, dramaVector);
+assert.ok(Math.abs(lowAlphaPrediction - highAlphaPrediction) > 0.1,
+  "Los alphas positivos extremos existentes deben producir diferencias reales de predicción en un caso sintético.");
+assert.throws(() => trainRidge(numericRows, numericKernel, [0, 1], 1e-13), /Cholesky|pivote|estable/i,
+  "El pivote inferior a la tolerancia Cholesky debe fallar explícitamente, no generar un alpha cero.");
 
 function fixtures(count) {
   return Array.from({ length: count }, function (_, index) {
@@ -329,6 +337,14 @@ assert.deepEqual(relativeScaleComparison.rankingModes.map(item => item.mode),
 assert.ok(relativeScaleComparison.rankingModes.every(item =>
   item.relativeMae.foldsEvaluated >= 9 && item.relativeRanking.foldsEvaluated >= 9),
   "Las comparaciones nDCG relativas deben indicar cobertura por modo.");
+assert.ok(relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts &&
+  Object.values(relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts).reduce((sum, value) => sum + value, 0) === 15,
+  "La frecuencia de selección relativa se debe agregar por posición de la rejilla, no mezclar lambdas de distinta escala.");
+const alphaSelectionReplay = await harness(
+  alphaSelectionRecords, alphaSelectionRecords
+).evaluateAsync(() => true);
+assert.deepEqual(alphaSelectionReplay.alphaSelectionComparison.relativeScaleComparison, relativeScaleComparison,
+  "La evaluación relativa debe ser determinista en las mismas particiones emparejadas.");
 assert.ok(alphaComparison.foldSummaries.every(fold =>
   Number.isFinite(fold.outerKernelScale.meanDiagonal) &&
   Number.isFinite(fold.selectedLambdaByMae) &&
