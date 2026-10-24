@@ -185,6 +185,8 @@ assert.equal(result.available, true, "Una muestra sintética de 36 películas de
 assert.equal(result.count, 36);
 assert.equal(result.rankingQuality.available, false,
   "nDCG requiere 50 películas aunque Ridge permita medir MAE con 30.");
+assert.equal(result.alphaSelectionComparison.relativeScaleComparison.executionStatus, "not-run",
+  "La evaluación Ridge predeterminada no debe añadir el coste de la escala relativa.");
 assert.match(result.rankingQuality.reason, /al menos 50/);
 assert.equal(result.outerFolds, 5);
 assert.equal(result.foldsEvaluated, 5);
@@ -234,6 +236,10 @@ assert.equal(
 assert.equal(Object.values(result.selectedAlphaCounts).reduce((sum, value) => sum + value, 0), 5,
   "Debe elegirse exactamente un alpha por pliegue externo.");
 
+const defaultAsyncResult = await experiment.evaluateAsync(() => true);
+assert.equal(defaultAsyncResult.available, true);
+assert.equal(defaultAsyncResult.alphaSelectionComparison.relativeScaleComparison.executionStatus, "not-run",
+  "El evaluador asíncrono también debe reservar la variante relativa para una petición explícita.");
 const repeated = experiment.evaluate();
 assert.equal(repeated.mae, result.mae, "La evaluación debe ser determinista.");
 assert.equal(repeated.baselineMae, result.baselineMae, "La referencia emparejada debe ser determinista.");
