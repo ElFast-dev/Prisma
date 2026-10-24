@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v13";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v14";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -278,7 +278,7 @@ function ridgeAlphaSelectionEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
   const alphaGrid = evaluation && Array.isArray(evaluation.alphaGrid) ? evaluation.alphaGrid
-    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 12) : [];
+    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 14) : [];
   const summarizeCounts = function (counts) {
     const input = counts && typeof counts === "object" ? counts : {};
     return Object.keys(input).sort(function (left, right) { return Number(left) - Number(right); }).reduce(function (all, alpha) {
@@ -306,10 +306,18 @@ function ridgeAlphaSelectionEvaluation(source) {
       maeSelectedNdcgAt5: modeAvailable ? rounded(item.maeSelectedNdcgAt5, 4) : null,
       rankingSelectedNdcgAt5: modeAvailable ? rounded(item.rankingSelectedNdcgAt5, 4) : null,
       deltaRankingSelectionMinusMaeSelection: modeAvailable ? rounded(item.deltaRankingSelectionMinusMaeSelection, 4) : null,
+      deltaMaeSelectionMinusBaseline: modeAvailable ? rounded(item.deltaMaeSelectionMinusBaseline, 4) : null,
+      deltaRankingSelectionMinusBaseline: modeAvailable ? rounded(item.deltaRankingSelectionMinusBaseline, 4) : null,
       foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
       rankingSelectorWins: nonNegativeInteger(item.rankingSelectorWins),
       ties: nonNegativeInteger(item.ties),
-      rankingSelectorLosses: nonNegativeInteger(item.rankingSelectorLosses)
+      rankingSelectorLosses: nonNegativeInteger(item.rankingSelectorLosses),
+      maeVsBaselineWins: nonNegativeInteger(item.maeVsBaselineWins),
+      maeVsBaselineTies: nonNegativeInteger(item.maeVsBaselineTies),
+      maeVsBaselineLosses: nonNegativeInteger(item.maeVsBaselineLosses),
+      rankingVsBaselineWins: nonNegativeInteger(item.rankingVsBaselineWins),
+      rankingVsBaselineTies: nonNegativeInteger(item.rankingVsBaselineTies),
+      rankingVsBaselineLosses: nonNegativeInteger(item.rankingVsBaselineLosses)
     };
   });
   const repeats = (Array.isArray(evaluation && evaluation.repeatSummaries) ? evaluation.repeatSummaries : []).slice(0, 3).map(function (repeat) {
@@ -321,10 +329,18 @@ function ridgeAlphaSelectionEvaluation(source) {
         maeSelectedNdcgAt5: mode.available ? rounded(mode.maeSelectedNdcgAt5, 4) : null,
         rankingSelectedNdcgAt5: mode.available ? rounded(mode.rankingSelectedNdcgAt5, 4) : null,
         deltaRankingSelectionMinusMaeSelection: mode.available ? rounded(mode.deltaRankingSelectionMinusMaeSelection, 4) : null,
+        deltaMaeSelectionMinusBaseline: mode.available ? rounded(mode.deltaMaeSelectionMinusBaseline, 4) : null,
+        deltaRankingSelectionMinusBaseline: mode.available ? rounded(mode.deltaRankingSelectionMinusBaseline, 4) : null,
         foldsEvaluated: nonNegativeInteger(mode.foldsEvaluated),
         rankingSelectorWins: nonNegativeInteger(mode.rankingSelectorWins),
         ties: nonNegativeInteger(mode.ties),
-        rankingSelectorLosses: nonNegativeInteger(mode.rankingSelectorLosses)
+        rankingSelectorLosses: nonNegativeInteger(mode.rankingSelectorLosses),
+        maeVsBaselineWins: nonNegativeInteger(mode.maeVsBaselineWins),
+        maeVsBaselineTies: nonNegativeInteger(mode.maeVsBaselineTies),
+        maeVsBaselineLosses: nonNegativeInteger(mode.maeVsBaselineLosses),
+        rankingVsBaselineWins: nonNegativeInteger(mode.rankingVsBaselineWins),
+        rankingVsBaselineTies: nonNegativeInteger(mode.rankingVsBaselineTies),
+        rankingVsBaselineLosses: nonNegativeInteger(mode.rankingVsBaselineLosses)
       };
     });
     return {
@@ -338,21 +354,83 @@ function ridgeAlphaSelectionEvaluation(source) {
       rankingModes: modes
     };
   });
+  const boundarySummary = function (source) {
+    const item = source && typeof source === "object" ? source : {};
+    return {
+      available: Boolean(item.available),
+      minimumAlpha: numeric(item.minimumAlpha),
+      selectedCount: nonNegativeInteger(item.selectedCount),
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      selectedFraction: rounded(item.selectedFraction, 4),
+      majoritySelected: Boolean(item.majoritySelected),
+      unresolved: Boolean(item.unresolved)
+    };
+  };
+  const boundary = evaluation && evaluation.lowerBoundary || {};
+  const foldSummaries = (Array.isArray(evaluation && evaluation.foldSummaries) ? evaluation.foldSummaries : [])
+    .slice(0, 15).map(function (fold) {
+      const item = fold || {};
+      const modes = (Array.isArray(item.rankingModes) ? item.rankingModes : []).slice(0, 3).map(function (mode) {
+        const value = mode || {};
+        const modeAvailable = Boolean(value.available);
+        return {
+          mode: ["balanced", "affinity", "variety"].includes(value.mode) ? value.mode : "",
+          available: modeAvailable,
+          baselineNdcgAt5: modeAvailable ? rounded(value.baselineNdcgAt5, 4) : null,
+          maeSelectedNdcgAt5: modeAvailable ? rounded(value.maeSelectedNdcgAt5, 4) : null,
+          rankingSelectedNdcgAt5: modeAvailable ? rounded(value.rankingSelectedNdcgAt5, 4) : null,
+          deltaRankingSelectionMinusMaeSelection: modeAvailable
+            ? rounded(value.deltaRankingSelectionMinusMaeSelection, 4) : null,
+          deltaMaeSelectionMinusBaseline: modeAvailable
+            ? rounded(value.deltaMaeSelectionMinusBaseline, 4) : null,
+          deltaRankingSelectionMinusBaseline: modeAvailable
+            ? rounded(value.deltaRankingSelectionMinusBaseline, 4) : null,
+          wins: nonNegativeInteger(value.wins),
+          ties: nonNegativeInteger(value.ties),
+          losses: nonNegativeInteger(value.losses),
+          maeVsBaselineWins: nonNegativeInteger(value.maeVsBaselineWins),
+          maeVsBaselineTies: nonNegativeInteger(value.maeVsBaselineTies),
+          maeVsBaselineLosses: nonNegativeInteger(value.maeVsBaselineLosses),
+          rankingVsBaselineWins: nonNegativeInteger(value.rankingVsBaselineWins),
+          rankingVsBaselineTies: nonNegativeInteger(value.rankingVsBaselineTies),
+          rankingVsBaselineLosses: nonNegativeInteger(value.rankingVsBaselineLosses)
+        };
+      });
+      return {
+        repeat: nonNegativeInteger(item.repeat),
+        outerFold: nonNegativeInteger(item.outerFold),
+        selectedAlphaByMae: numeric(item.selectedAlphaByMae),
+        selectedAlphaByRanking: numeric(item.selectedAlphaByRanking),
+        maeSelectedMae: rounded(item.maeSelectedMae, 4),
+        baselineMae: rounded(item.baselineMae, 4),
+        rankingSelectedMae: rounded(item.rankingSelectedMae, 4),
+        deltaRankingSelectionMinusMaeSelection: rounded(item.deltaRankingSelectionMinusMaeSelection, 4),
+        rankingModes: modes
+      };
+    });
   const paired = evaluation && evaluation.pairedMaeDifference || {};
   return {
     executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
     available: available,
     sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
     selectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.selectionFoldsEvaluated),
+    pairedSelectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.pairedSelectionFoldsEvaluated),
     outerFoldsPlanned: nonNegativeInteger(evaluation && evaluation.outerFoldsPlanned),
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
     alphaGrid: alphaGrid,
     selectionCriteria: {
       mae: "Menor MAE medio en validación interna del entrenamiento exterior.",
-      ranking: "Mayor nDCG@5 medio en validación interna entre los modos disponibles con relevancia ≥ 7."
+      ranking: "Mayor nDCG@5 medio en validación interna con relevancia ≥ 7 y mínimo de 50 películas, 10 relevantes y dos pliegues internos válidos."
     },
     selectedAlphaCountsByMae: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByMae),
     selectedAlphaCountsByRanking: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByRanking),
+    lowerBoundary: {
+      mae: boundarySummary(boundary.mae),
+      ranking: boundarySummary(boundary.ranking),
+      unresolved: Boolean(boundary.unresolved || (boundary.mae && boundary.mae.unresolved) ||
+        (boundary.ranking && boundary.ranking.unresolved))
+    },
+    foldSummaries: foldSummaries,
     maeSelected: summary(evaluation && evaluation.maeSelected, "deltaBaselineMinusMaeSelected"),
     rankingSelected: summary(evaluation && evaluation.rankingSelected, "deltaBaselineMinusRankingSelected"),
     pairedMaeDifference: {

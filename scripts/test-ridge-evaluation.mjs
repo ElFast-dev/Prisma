@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
+import { RIDGE_ALPHA_GRID, selectAlphaByMae, selectAlphaByRanking, createAlphaSelectionCounts, summarizeAlphaBoundary } from "../js/recommendations/ridge-alpha-selection.js";
 import { buildKernel, clampRating, predictRidge, trainRidge, vectorize } from "../js/recommendations/ridge-kernel.js";
 import { summarizeRepeatedRidgeStability } from "../js/recommendations/repeated-validation-summary.js";
 import { createRecommendationEngine } from "../js/recommendations/engine.js";
@@ -8,6 +9,39 @@ import { movieFeatures } from "../js/recommendations/features.js";
 import { ratingValue, movieTmdbId, titleKey } from "../js/core/movie-utils.js";
 import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../js/core/date-utils.js";
 
+
+assert.deepEqual(RIDGE_ALPHA_GRID, [
+  0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100
+]);
+assert.ok(RIDGE_ALPHA_GRID.every(alpha => Number.isFinite(alpha) && alpha > 0),
+  "Todos los alphas deben ser positivos y finitos para respetar la tolerancia de Cholesky.");
+assert.equal(selectAlphaByMae([
+  { alpha: 0.00001, score: 1.2 }, { alpha: 0.001, score: 0.8 }, { alpha: 0.1, score: 0.9 }
+]), 0.001, "La selección MAE minimiza su métrica independientemente del ranking.");
+assert.equal(selectAlphaByRanking([
+  { alpha: 0.00001, score: 0.95, foldsEvaluated: 3 },
+  { alpha: 0.001, score: 0.71, foldsEvaluated: 3 }
+]), 0.00001, "La selección de ranking maximiza nDCG y puede preferir otro alpha.");
+assert.equal(selectAlphaByMae([
+  { alpha: 0.001, score: 1.0 }, { alpha: 0.03, score: 1.0 + 5e-11 }
+]), 0.03, "El desempate MAE dentro de la tolerancia debe preferir alpha mayor.");
+assert.equal(selectAlphaByRanking([
+  { alpha: 0.001, score: 0.8, foldsEvaluated: 3 },
+  { alpha: 0.03, score: 0.8 + 5e-11, foldsEvaluated: 3 }
+]), 0.03, "El desempate nDCG dentro de la tolerancia debe preferir alpha mayor.");
+assert.equal(selectAlphaByRanking([
+  { alpha: 0.001, score: 0.95, foldsEvaluated: 1 }
+]), null, "El selector de ranking respeta los mínimos de pliegues válidos.");
+assert.equal(selectAlphaByMae([{ alpha: 0, score: 0.1 }, { alpha: -1, score: 0.2 }]), null,
+  "No se permite alpha cero ni negativo.");
+const emptyAlphaCounts = createAlphaSelectionCounts();
+assert.deepEqual(Object.values(emptyAlphaCounts), Array(RIDGE_ALPHA_GRID.length).fill(0));
+const alphaBoundary = summarizeAlphaBoundary({ "0.00001": 3 }, 5);
+assert.equal(alphaBoundary.unresolved, true, "La elección del mínimo en mayoría indica límite inferior no resuelto.");
+assert.equal(summarizeAlphaBoundary({ "0.00001": 2 }, 5).unresolved, false,
+  "Elegir el mínimo en una minoría no basta para declarar que el límite sigue sin resolverse.");
+assert.equal(summarizeAlphaBoundary({ "0.00001": 15 }, 0).unresolved, false,
+  "No se declara tendencia sin pliegues completados.");
 
 // Regression of the isolated numeric kernel: feature scales and predictions must stay stable.
 const scaled = vectorize(["género: Drama", "tema: misterio", "década: 1990"]);
@@ -51,7 +85,7 @@ function fixtures(count) {
   });
 }
 
-function harness(records, allMovies, watchedRecords, temporalAudit, useCollectionAddedAtProxy) {
+function harness(records, allMovies, watchedRecords, temporalAudit, useCollectionAddedAtProxy, alphaSelectionAudit) {
   const movieById = new Map(allMovies.map(movie => [String(movie.tmdbId), movie]));
   const latestDayByProfile = new WeakMap();
   const watchedSource = watchedRecords || records;
@@ -73,6 +107,7 @@ function harness(records, allMovies, watchedRecords, temporalAudit, useCollectio
     getRatings: () => records,
     getWatched: () => watched,
     getUseCollectionAddedAtProxy: () => Boolean(useCollectionAddedAtProxy),
+    onAlphaSelectionAudit: typeof alphaSelectionAudit === "function" ? alphaSelectionAudit : null,
     findMovie: (title, id) => id != null ? (movieById.get(String(id)) || null) :
       (allMovies.find(movie => movie.title === title) || null),
     movieFeatures,
@@ -119,7 +154,7 @@ assert.match(result.rankingQuality.reason, /al menos 50/);
 assert.equal(result.outerFolds, 5);
 assert.equal(result.foldsEvaluated, 5);
 assert.equal(result.innerFolds, 3);
-assert.deepEqual(result.alphaGrid, [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100]);
+assert.deepEqual(result.alphaGrid, [0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100]);
 assert.ok(Number.isFinite(result.mae));
 assert.ok(Number.isFinite(result.baselineMae));
 assert.ok(Number.isFinite(result.deltaBaseMinusRidge));
@@ -173,13 +208,58 @@ assert.deepEqual(repeated.repeatedValidation, result.repeatedValidation,
 assert.deepEqual(repeated.rankingQuality, result.rankingQuality,
   "Disponibilidad y motivo de nDCG deben ser deterministas.");
 const alphaSelectionRecords = fixtures(100);
-const alphaSelectionResult = await harness(alphaSelectionRecords, alphaSelectionRecords).evaluateAsync(() => true);
+const alphaSelectionAudit = [];
+const alphaSelectionResult = await harness(
+  alphaSelectionRecords, alphaSelectionRecords, null, null, false, event => alphaSelectionAudit.push(event)
+).evaluateAsync(() => true);
 const alphaComparison = alphaSelectionResult.alphaSelectionComparison;
 assert.equal(alphaSelectionResult.available, true);
 assert.equal(alphaComparison.available, true,
   "Con 100 películas sintéticas y suficientes notas relevantes, ambas estrategias de selección de alpha deben ser comparables.");
-assert.deepEqual(alphaComparison.alphaGrid, [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 100]);
+assert.deepEqual(alphaComparison.alphaGrid, RIDGE_ALPHA_GRID);
 assert.equal(alphaComparison.selectionFoldsEvaluated, 15);
+assert.equal(alphaComparison.pairedSelectionFoldsEvaluated, 15);
+assert.equal(alphaComparison.foldSummaries.length, 15,
+  "El informe debe conservar métricas exteriores emparejadas por repetición y pliegue.");
+assert.equal(alphaSelectionAudit.length, 15,
+  "El test debe inspeccionar cada selección anidada completada.");
+assert.deepEqual(alphaComparison.foldSummaries.map(item => [item.repeat, item.outerFold])
+  .sort((left, right) => left[0] - right[0] || left[1] - right[1]),
+  Array.from({ length: 3 }, (_, repeat) => Array.from({ length: 5 }, (_, fold) => [repeat + 1, fold + 1])).flat(),
+  "Las particiones exteriores deben cubrir una vez cada pliegue de las tres repeticiones.");
+assert.ok(alphaSelectionAudit.every(audit => {
+  const outerTraining = new Set(audit.outerTrainingIndices);
+  const outerTest = new Set(audit.outerTestIndices);
+  const innerValidation = audit.innerValidationIndices.flat();
+  return audit.innerValidationIndices.length === 3 &&
+    innerValidation.every(index => outerTraining.has(index) && !outerTest.has(index)) &&
+    audit.outerTestIndices.every(index => !outerTraining.has(index));
+}), "Ninguna nota del pliegue exterior puede entrar en un pliegue interno de selección.");
+assert.ok(alphaComparison.foldSummaries.every(fold =>
+  fold.rankingModes.length === 3 &&
+  Number.isFinite(fold.maeSelectedMae) && Number.isFinite(fold.baselineMae) &&
+  (fold.selectedAlphaByRanking == null || Number.isFinite(fold.rankingSelectedMae)) &&
+  fold.rankingModes.every(mode => !mode.available ||
+    (Number.isFinite(mode.baselineNdcgAt5) && Number.isFinite(mode.maeSelectedNdcgAt5) &&
+     Number.isFinite(mode.rankingSelectedNdcgAt5) && mode.wins + mode.ties + mode.losses === 1))
+), "Cada resumen exterior empareja ambas selecciones y los modos nDCG disponibles.");
+const recomputedMaeCounts = createAlphaSelectionCounts(RIDGE_ALPHA_GRID);
+const recomputedRankingCounts = createAlphaSelectionCounts(RIDGE_ALPHA_GRID);
+alphaComparison.foldSummaries.forEach(fold => {
+  recomputedMaeCounts[String(fold.selectedAlphaByMae)] += 1;
+  if (fold.selectedAlphaByRanking != null) recomputedRankingCounts[String(fold.selectedAlphaByRanking)] += 1;
+});
+assert.deepEqual(alphaComparison.selectedAlphaCountsByMae, recomputedMaeCounts,
+  "El recuento MAE debe cubrir exactamente todos los pliegues exteriores completados.");
+assert.deepEqual(alphaComparison.selectedAlphaCountsByRanking, recomputedRankingCounts,
+  "El recuento de ranking debe coincidir con las selecciones disponibles de cada pliegue.");
+assert.equal(Object.values(alphaComparison.selectedAlphaCountsByMae).reduce((sum, value) => sum + value, 0),
+  alphaComparison.selectionFoldsEvaluated);
+assert.equal(Object.values(alphaComparison.selectedAlphaCountsByRanking).reduce((sum, value) => sum + value, 0),
+  alphaComparison.foldSummaries.filter(fold => fold.selectedAlphaByRanking != null).length);
+assert.equal(alphaComparison.lowerBoundary.mae.foldsEvaluated, alphaComparison.selectionFoldsEvaluated);
+assert.equal(alphaComparison.lowerBoundary.ranking.foldsEvaluated,
+  alphaComparison.foldSummaries.filter(fold => fold.selectedAlphaByRanking != null).length);
 assert.equal(Object.values(alphaComparison.selectedAlphaCountsByMae).reduce((sum, value) => sum + value, 0), 15);
 assert.equal(Object.values(alphaComparison.selectedAlphaCountsByRanking).reduce((sum, value) => sum + value, 0), 15);
 assert.equal(alphaComparison.rankingModes.length, 3);
@@ -292,6 +372,8 @@ assert.match(appSource, /ridgeEvaluationResult = null/);
 assert.doesNotMatch(labViewsSource, /data-action="run-ridge-experiment"/, "Ridge must run as part of the automatic battery, not from a separate button.");
 assert.match(labViewsSource, /lab-automatic-label/, "Ridge must be clearly identified as an automatic diagnostic phase.");
 assert.match(labViewsSource, /Validación repetida/);
+assert.match(labViewsSource, /Selección de alpha: MAE vs ranking/);
+assert.match(labViewsSource, /límite inferior sigue sin resolverse/i);
 assert.match(labViewsSource, /cinco pliegues externos, tres internos y tres repeticiones/i);
 assert.match(eventSource, /action === "run-ridge-experiment"/);
 assert.match(labActionsSource, /3 repeticiones de 5 pliegues/);
