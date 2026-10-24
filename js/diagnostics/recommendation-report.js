@@ -274,6 +274,148 @@ function ridgeRepeatedValidationEvaluation(source) {
   };
 }
 
+function ridgeRelativeScaleComparisonEvaluation(source, alphaGridSource) {
+  const evaluation = source && typeof source === "object" ? source : null;
+  const alphaGrid = (Array.isArray(alphaGridSource) ? alphaGridSource : [])
+    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 14);
+  const allowedAnchors = alphaGrid;
+  const numericSummary = function (input) {
+    const item = input && typeof input === "object" ? input : {};
+    return {
+      available: Boolean(item.available),
+      count: nonNegativeInteger(item.count),
+      mean: item.available ? rounded(item.mean, 8) : null,
+      median: item.available ? rounded(item.median, 8) : null,
+      min: item.available ? rounded(item.min, 8) : null,
+      max: item.available ? rounded(item.max, 8) : null
+    };
+  };
+  const countSummary = function (input) {
+    const counts = input && typeof input === "object" ? input : {};
+    return Object.keys(counts).sort(function (left, right) { return Number(left) - Number(right); })
+      .reduce(function (result, key) {
+        const value = Number(key);
+        if (Number.isFinite(value) && value > 0 && allowedAnchors.includes(value)) {
+          result[String(value)] = nonNegativeInteger(counts[key]);
+        }
+        return result;
+      }, {});
+  };
+  const boundary = function (input) {
+    const item = input && typeof input === "object" ? input : {};
+    return {
+      available: Boolean(item.available),
+      minimumAnchorAlpha: numeric(item.minimumAlpha),
+      selectedCount: nonNegativeInteger(item.selectedCount),
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      selectedFraction: rounded(item.selectedFraction, 4),
+      majoritySelected: Boolean(item.majoritySelected),
+      unresolved: Boolean(item.unresolved)
+    };
+  };
+  const selector = function (input) {
+    const item = input && typeof input === "object" ? input : {};
+    return {
+      available: Boolean(item.available),
+      sampleCount: nonNegativeInteger(item.sampleCount),
+      selectionFolds: nonNegativeInteger(item.selectionFolds),
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      mae: item.available ? rounded(item.mae, 4) : null,
+      baselineMaeSameFolds: item.available ? rounded(item.baselineMaeSameFolds, 4) : null,
+      deltaBaselineMinusSelected: item.available ? rounded(item.deltaBaselineMinusSelected, 4) : null,
+      selectedLambda: numericSummary(item.selectedLambda),
+      selectedEffectiveAlpha: numericSummary(item.selectedEffectiveAlpha),
+      selectedAnchorAlphaCounts: countSummary(item.selectedAnchorAlphaCounts),
+      lowerBoundary: boundary(item.lowerBoundary)
+    };
+  };
+  const rankingMetric = function (input, type) {
+    const item = input && typeof input === "object" ? input : {};
+    const paired = type === "paired";
+    return {
+      available: Boolean(item.available),
+      baselineNdcgAt5: item.available ? rounded(item.baselineNdcgAt5, 4) : null,
+      relativeMaeSelectedNdcgAt5: item.available && (paired || type === "mae")
+        ? rounded(item.relativeMaeSelectedNdcgAt5, 4) : null,
+      relativeRankingSelectedNdcgAt5: item.available && (paired || type === "ranking")
+        ? rounded(item.relativeRankingSelectedNdcgAt5, 4) : null,
+      deltaRelativeMaeSelectionMinusBaseline: item.available && (paired || type === "mae")
+        ? rounded(item.deltaRelativeMaeSelectionMinusBaseline, 4) : null,
+      deltaRelativeRankingSelectionMinusBaseline: item.available && (paired || type === "ranking")
+        ? rounded(item.deltaRelativeRankingSelectionMinusBaseline, 4) : null,
+      deltaRelativeRankingSelectionMinusRelativeMae: item.available && paired
+        ? rounded(item.deltaRelativeRankingSelectionMinusRelativeMae, 4) : null,
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      wins: nonNegativeInteger(item.wins),
+      ties: nonNegativeInteger(item.ties),
+      losses: nonNegativeInteger(item.losses)
+    };
+  };
+  const rankingModes = function (input) {
+    return (Array.isArray(input) ? input : []).slice(0, 3).map(function (mode) {
+      const item = mode || {};
+      return {
+        mode: ["balanced", "affinity", "variety"].includes(item.mode) ? item.mode : "",
+        relativeMae: rankingMetric(item.relativeMae, "mae"),
+        relativeRanking: rankingMetric(item.relativeRanking, "ranking"),
+        pairedRelativeSelectors: rankingMetric(item.pairedRelativeSelectors, "paired")
+      };
+    });
+  };
+  const repeatSummaries = (Array.isArray(evaluation && evaluation.repeatSummaries) ?
+    evaluation.repeatSummaries : []).slice(0, 3).map(function (repeat) {
+    const item = repeat || {};
+    return {
+      repeat: nonNegativeInteger(item.repeat),
+      foldsPlanned: nonNegativeInteger(item.foldsPlanned),
+      kernelScale: numericSummary(item.kernelScale),
+      relativeMae: selector(item.relativeMae),
+      relativeRanking: selector(item.relativeRanking),
+      rankingModes: rankingModes(item.rankingModes)
+    };
+  });
+  const scales = evaluation && evaluation.kernelScale || {};
+  const diagonal = scales.centeredDiagonal || {};
+  const lambdaGrid = scales.relativeLambdaGrid || {};
+  return {
+    executionStatus: evaluation ? (evaluation.available ? "completed" : "unavailable") : "not-run",
+    available: Boolean(evaluation && evaluation.available),
+    sampleCount: nonNegativeInteger(evaluation && evaluation.sampleCount),
+    selectionFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.selectionFoldsEvaluated),
+    relativeMaeFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.relativeMaeFoldsEvaluated),
+    relativeRankingFoldsEvaluated: nonNegativeInteger(evaluation && evaluation.relativeRankingFoldsEvaluated),
+    scaleUnavailableFolds: nonNegativeInteger(evaluation && evaluation.scaleUnavailableFolds),
+    relativeNumericErrors: nonNegativeInteger(evaluation && evaluation.relativeNumericErrors),
+    kernelScale: {
+      outerTrainingScales: numericSummary(scales.outerTrainingScales),
+      innerReferenceScales: numericSummary(scales.innerReferenceScales),
+      centeredDiagonal: {
+        foldsEvaluated: nonNegativeInteger(diagonal.foldsEvaluated),
+        minimumObserved: numeric(diagonal.minimumObserved) == null ? null : rounded(diagonal.minimumObserved, 8),
+        medianOfFoldMedians: numeric(diagonal.medianOfFoldMedians) == null ? null : rounded(diagonal.medianOfFoldMedians, 8),
+        maximumObserved: numeric(diagonal.maximumObserved) == null ? null : rounded(diagonal.maximumObserved, 8)
+      },
+      relativeLambdaGrid: {
+        foldsEvaluated: nonNegativeInteger(lambdaGrid.foldsEvaluated),
+        minimumObserved: numeric(lambdaGrid.minimumObserved) == null ? null : rounded(lambdaGrid.minimumObserved, 8),
+        maximumObserved: numeric(lambdaGrid.maximumObserved) == null ? null : rounded(lambdaGrid.maximumObserved, 8)
+      }
+    },
+    absoluteAlphaToScaleRatio: {
+      mae: numericSummary(evaluation && evaluation.absoluteAlphaToScaleRatio &&
+        evaluation.absoluteAlphaToScaleRatio.mae),
+      ranking: numericSummary(evaluation && evaluation.absoluteAlphaToScaleRatio &&
+        evaluation.absoluteAlphaToScaleRatio.ranking)
+    },
+    relativeMae: selector(evaluation && evaluation.relativeMae),
+    relativeRanking: selector(evaluation && evaluation.relativeRanking),
+    rankingModes: rankingModes(evaluation && evaluation.rankingModes),
+    repeatSummaries: repeatSummaries,
+    unavailableReason: evaluation && evaluation.available ? null : String(evaluation && evaluation.unavailableReason ||
+      "La comparación de regularización relativa no está disponible.").slice(0, 220)
+  };
+}
+
 function ridgeAlphaSelectionEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
@@ -443,6 +585,9 @@ function ridgeAlphaSelectionEvaluation(source) {
     },
     rankingModes: rankingModes,
     repeatSummaries: repeats,
+    relativeScaleComparison: ridgeRelativeScaleComparisonEvaluation(
+      evaluation && evaluation.relativeScaleComparison, evaluation && evaluation.alphaGrid
+    ),
     unavailableReason: available ? null : String(evaluation && evaluation.unavailableReason ||
       "La selección interna de alpha por ranking no alcanza los mínimos de muestra.").slice(0, 220)
   };
