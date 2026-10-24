@@ -5,7 +5,7 @@
 2. La fase Ridge usa `includeExtendedAlphaGrid: true` e `includeRelativeScale: true`. El resto de fases continúa en el mismo coordinador.
 3. Tras completar la batería, `ensureLabMetrics()` consulta el snapshot y llama a `retryFailures()` como máximo una vez por invocación automática si hay estados `error` o `cancelled`. La promesa de orquestación debe compartirse entre renders concurrentes. Estados `unavailable` son finales esperados y no provocan reintento.
 4. La vista muestra estado global, fase actual, barra de progreso, fase completada/total, tiempo estimado y una sola acción de copia. No presenta resultados de gustos ni acciones de ejecutar pruebas concretas.
-5. La copia solicita JSON completo con `includeFeatureLabels=false`. Se genera en memoria local; no se usa red ni persistencia adicional. Si falla el portapapeles, se muestra un textarea de respaldo.
+5. La acción principal llama a `copyRecommendationDeveloperBrief()` y transforma el JSON v14 agregado mediante `buildRecommendationDeveloperBrief(report)`. Solo el resumen Markdown, con límite de 9500 caracteres, se copia al portapapeles. La generación es local; no usa red ni persistencia adicional. Si falla el portapapeles, el textarea de respaldo muestra ese mismo resumen compacto.
 6. Si cambia el perfil/datos de entrada, se invalida la generación anterior y se limpia el mensaje/informe preparado para no atribuirlo a otra muestra.
 
 ## Cambios de arquitectura
@@ -18,5 +18,5 @@
 - La evaluación Ridge ampliada tarda más: el progreso sigue siendo cooperativo, la fase refleja el nuevo trabajo y la estimación usa mediciones observadas.
 - Fallos parciales: se reintentan únicamente fases error/canceladas una vez; luego se puede copiar el informe con estados finales claramente registrados.
 - Clipboard sin permiso: fallback de texto seleccionable.
-- Privacidad: el único informe visible/copiado es JSON con etiquetas de señales desactivadas; la generación no hace peticiones de red.
+- Privacidad: el único texto expuesto por el botón visible es el resumen agregado; no incluye títulos/IDs personales ni nombres individuales de señales, y no se transmite a ningún servidor.
 - Activación del portapapeles: cuando el diagnóstico ya está completo se usa el objeto de métricas cacheado, evitando un await innecesario antes de invocar `clipboard.writeText`.
