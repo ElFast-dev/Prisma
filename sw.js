@@ -34,7 +34,7 @@ const APP_ASSETS = [
   "./js/diagnostics/lab-diagnostic-coordinator.js?v=diag-20261024-1",
   "./js/recommendations/feature-family-evaluation.js?v=rec-20261023-1",
   "./js/recommendations/paired-ranking-evaluation.js?v=rec-20261023-1",
-  "./js/diagnostics/recommendation-report.js?v=core-20261024-1",
+  "./js/diagnostics/recommendation-report.js?v=core-20261024-2",
   "./js/diagnostics/recommendation-handoff.js?v=diag-20261023-1",
   "./js/catalog/csv-parser.js",
   "./js/catalog/catalog-model.js?v=core-20261022-4",
