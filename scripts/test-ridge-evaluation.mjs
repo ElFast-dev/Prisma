@@ -482,7 +482,7 @@ const [engineSource, appSource, labActionsSource, labViewsSource, labMetricsActi
 assert.match(appSource, /createRidgeRecommendationExperiment/);
 assert.match(appSource, /ridgeEvaluationResult = null/);
 assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
-assert.match(labViewsSource, /Copiar informe técnico para desarrollo/);
+assert.match(labViewsSource, /Copiar resumen técnico para ChatGPT/);
 assert.doesNotMatch(labViewsSource, /run-ridge-experiment|run-ridge-relative-experiment|run-temporal-ridge-experiment|run-influence-normalization-experiment|ridgeEvaluationProgress|lab-automatic-label|Validación repetida|Selección de alpha: MAE vs ranking|límite inferior sigue sin resolverse/i,
   "Los controles y detalles experimentales deben quedar fuera de la vista compacta.");
 assert.match(eventSource, /action === "run-ridge-experiment"/);

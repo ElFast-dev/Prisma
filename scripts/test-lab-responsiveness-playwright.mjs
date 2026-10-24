@@ -18,17 +18,11 @@ const results = {
   metricsStatus: null,
   metricRunCountsBeforeReport: {},
   metricRunCountsAfterReport: {},
-  reportSchema: null,
-  reportCoverage: null,
-  reportRatedEntries: null,
+  copiedReportFormat: null,
+  copiedReportLength: null,
   cancellationAndReentryPassed: false,
   mobileLayoutPassed: false,
-  emptyProfilePassed: false,
-  featureFamilySampleCount: null,
-  featureFamilyCount: null,
-  diagnosticPhaseCount: null,
-  diagnosticDurationMs: null,
-  diagnosticPhaseStatuses: []
+  emptyProfilePassed: false
 };
 
 function captureLogs(page) {
@@ -156,63 +150,32 @@ try {
   });
   await page.locator('[data-action="copy-recommendation-diagnostics"]').click({ timeout: 5000 });
   await page.waitForFunction(() => typeof window.__syntheticDiagnosticReport === "string" &&
-    window.__syntheticDiagnosticReport.trim().startsWith("{"), null, { timeout: 10000 });
+    window.__syntheticDiagnosticReport.trim().startsWith("# PRISMA — contexto técnico"), null, { timeout: 10000 });
   const report = await page.evaluate(() => {
     const text = window.__syntheticDiagnosticReport;
-    const value = JSON.parse(text);
     return {
-      schema: value.schema,
-      ratedEntries: value.sample.ratedEntries,
-      validRatingCount: value.sample.validRatingCount,
-      ratingsWithFeatures: value.sample.ratingsWithFeatures,
-      metadataCoverage: value.sample.metadataCoverage,
-      rankingCount: value.evaluation.rankingQuality.sampleCount,
-      rankingAvailable: value.evaluation.rankingQuality.available,
-      featureNamesIncluded: value.privacy.featureLabelsIncluded,
-      networkTransmission: value.privacy.networkTransmission,
+      length: text.length,
+      startsWithBrief: text.startsWith("# PRISMA — contexto técnico"),
+      containsRepository: text.includes("https://github.com/ElFast-dev/Prisma"),
+      containsSample: text.includes("351 valoraciones válidas"),
+      containsRankingMetric: text.includes("nDCG@5"),
       containsSyntheticTitle: text.includes("Synthetic Film 000"),
-      containsRawMovieIdentity: /"tmdbId"|"tmId"|"tmdb_id"/i.test(text),
-      diagnosticStatus: value.diagnostic?.status || "",
-      diagnosticPhaseCount: value.diagnostic?.run?.phases?.length || 0,
-      diagnosticDurationMs: value.diagnostic?.run?.durationMs ?? null,
-      diagnosticPhaseStatuses: (value.diagnostic?.run?.phases || []).map(phase => phase.status),
-      featureFamilySampleCount: value.diagnostic?.featureFamilyComparison?.sampleCount ?? 0,
-      featureFamilyCount: value.diagnostic?.featureFamilyComparison?.families?.length || 0,
-      featureFamiliesAvailable: value.diagnostic?.featureFamilyComparison?.families?.every(family => family.available) || false,
-      alphaGridCount: value.evaluation?.ridgeExperiment?.alphaGrid?.length || 0,
-      relativeScaleStatus: value.evaluation?.ridgeExperiment?.alphaSelectionComparison?.relativeScaleComparison?.executionStatus || ""
+      containsRawMovieIdentity: /"tmdbId"|"tmId"|"tmdb_id"|ratingDistribution/i.test(text),
+      containsJsonEnvelope: text.includes('"schema":'),
+      containsNextSteps: text.includes("Siguiente tarea recomendada")
     };
   });
-  results.reportSchema = report.schema;
-  results.reportRatedEntries = report.ratedEntries;
-  results.reportCoverage = report.metadataCoverage;
-  results.featureFamilySampleCount = report.featureFamilySampleCount;
-  results.featureFamilyCount = report.featureFamilyCount;
-  results.diagnosticPhaseCount = report.diagnosticPhaseCount;
-  results.diagnosticDurationMs = report.diagnosticDurationMs;
-  results.diagnosticPhaseStatuses = report.diagnosticPhaseStatuses;
-  assert.equal(report.schema, "prisma-recommendation-diagnostics/v14");
-  assert.equal(report.ratedEntries, 351);
-  assert.equal(report.validRatingCount, 351);
-  assert.equal(report.ratingsWithFeatures, 351);
-  assert.equal(report.metadataCoverage, 1);
-  assert.equal(report.rankingCount, 351);
-  assert.equal(report.rankingAvailable, true);
-  assert.equal(report.featureNamesIncluded, false);
-  assert.equal(report.networkTransmission, false);
+  results.copiedReportFormat = "markdown-brief";
+  results.copiedReportLength = report.length;
+  assert.equal(report.startsWithBrief, true, "El botón principal debe copiar Markdown, no el JSON completo");
+  assert.ok(report.length > 0 && report.length < 9500, "El resumen debe caber en un mensaje de desarrollo");
+  assert.equal(report.containsRepository, true);
+  assert.equal(report.containsSample, true, "El resumen debe conservar el tamaño de la muestra");
+  assert.equal(report.containsRankingMetric, true, "El resumen debe conservar el contexto de MAE/nDCG");
   assert.equal(report.containsSyntheticTitle, false);
   assert.equal(report.containsRawMovieIdentity, false);
-  assert.equal(report.diagnosticPhaseCount, 7);
-  assert.equal(report.diagnosticPhaseStatuses.length, 7);
-  assert.ok(report.diagnosticPhaseStatuses.every(status => ["completed", "unavailable", "cancelled", "error"].includes(status)),
-    "Each diagnostic phase must have a terminal status, including failures after their automatic retry");
-  assert.ok(Number.isFinite(report.diagnosticDurationMs) && report.diagnosticDurationMs >= 0,
-    "The report must include the measured total battery duration");
-  assert.equal(report.featureFamilySampleCount, 351);
-  assert.equal(report.featureFamilyCount, 4);
-  assert.equal(report.featureFamiliesAvailable, true);
-  assert.equal(report.alphaGridCount, 18, "The automatic report must include the expanded Ridge grid");
-  assert.equal(report.relativeScaleStatus, "completed", "The automatic report must include the relative scale experiment");
+  assert.equal(report.containsJsonEnvelope, false);
+  assert.equal(report.containsNextSteps, true, "El resumen debe incluir una siguiente tarea accionable");
   results.metricRunCountsAfterReport = {
     ratingEvaluation: countBefore("rating-evaluation"),
     rankingEvaluation: countBefore("ranking-cross-validation"),
@@ -342,14 +305,16 @@ try {
   });
   await fewPage.locator("[data-action='copy-recommendation-diagnostics']").click({ timeout: 5000 });
   await fewPage.waitForFunction(() => typeof window.__sparseDiagnosticReport === "string" &&
-    window.__sparseDiagnosticReport.trim().startsWith("{"), null, { timeout: 10000 });
-  const sparseReport = await fewPage.evaluate(() => JSON.parse(window.__sparseDiagnosticReport));
-  assert.equal(sparseReport.diagnostic.run.phases.length, 7);
-  assert.ok(sparseReport.diagnostic.run.phases.some(phase => phase.status === "unavailable"));
-  assert.equal(sparseReport.privacy.featureLabelsIncluded, false);
-  assert.equal(sparseReport.privacy.networkTransmission, false);
-  assert.equal(sparseReport.evaluation.ridgeExperiment.alphaGrid.length, 18);
-  assert.equal(sparseReport.diagnostic.status, "completed-with-unavailable");
+    window.__sparseDiagnosticReport.trim().startsWith("# PRISMA — contexto técnico"), null, { timeout: 10000 });
+  const sparseReport = await fewPage.evaluate(() => window.__sparseDiagnosticReport);
+  assert.ok(sparseReport.length > 0 && sparseReport.length < 9500);
+  assert.ok(sparseReport.includes("https://github.com/ElFast-dev/Prisma"));
+  assert.ok(sparseReport.includes("valoraciones válidas"));
+  assert.ok(sparseReport.includes("completed-with-unavailable") ||
+    sparseReport.includes("Revisar fases y causas") ||
+    sparseReport.includes("Fases a revisar"),
+    "El resumen debe distinguir fases no disponibles de un resultado completo");
+  assert.doesNotMatch(sparseReport, /"tmdbId"|"tmId"|"tmdb_id"|ratingDistribution/i);
   results.fewRatingProfilePassed = true;
   if (errors.length) throw new Error("Browser exceptions in few-rating scenario: " + errors.join(" | "));
   await fewContext.close();

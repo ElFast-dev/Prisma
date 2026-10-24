@@ -146,7 +146,7 @@ jobs:
                 if (
                   lastUI.cssHref &&
                   lastUI.cssHref.includes("v=ui-20261023-27") &&
-                  lastUI.appSrc.includes("v=ui-20261024-116") &&
+                  lastUI.appSrc.includes("v=ui-20261024-117") &&
                   lastUI.rootBg === "#050505" &&
                   lastUI.rootAccent === "#8197b2" &&
                   lastUI.themeMode === "dark" &&
@@ -318,33 +318,26 @@ jobs:
                 });
                 await page.locator('[data-action="copy-recommendation-diagnostics"]').click();
                 await page.waitForFunction(() => typeof window.__prismaDiagnosticClipboard === "string" &&
-                  window.__prismaDiagnosticClipboard.trim().startsWith("{"), null, { timeout: 10000 });
-                const diagnosticReport = await page.evaluate(() => {
+                  window.__prismaDiagnosticClipboard.trim().startsWith("# PRISMA — contexto técnico"), null, { timeout: 10000 });
+                const diagnosticSummary = await page.evaluate(() => {
                   const text = window.__prismaDiagnosticClipboard;
-                  const report = JSON.parse(text);
                   return {
-                    schema: report.schema,
-                    featureLabelsIncluded: report.privacy.featureLabelsIncluded,
-                    networkTransmission: report.privacy.networkTransmission,
-                    generatedLocally: report.privacy.generatedLocally,
-                    hasRawTitle: /"About Time"/i.test(text),
-                    hasMovieIdField: /tmdbId|tmdb_id/i.test(text),
-                    hasOutputField: Boolean(document.querySelector("#recommendationDiagnosticOutput")),
-                    alphaGridCount: report.evaluation?.ridgeExperiment?.alphaGrid?.length || 0,
-                    phaseCount: report.diagnostic?.run?.phases?.length || 0,
-                    phaseStatuses: (report.diagnostic?.run?.phases || []).map(phase => phase.status)
+                    length: text.length,
+                    startsWithBrief: text.startsWith("# PRISMA — contexto técnico"),
+                    includesRepository: text.includes("https://github.com/ElFast-dev/Prisma"),
+                    includesNextSteps: text.includes("Siguiente tarea recomendada"),
+                    containsRawTitle: /"About Time"/i.test(text),
+                    containsMovieIdField: /"tmdbId"|"tmId"|"tmdb_id"|ratingDistribution/i.test(text),
+                    containsJsonEnvelope: text.includes('"schema":'),
+                    hasOutputField: Boolean(document.querySelector("#recommendationDiagnosticOutput"))
                   };
                 });
-                if (diagnosticReport.schema !== "prisma-recommendation-diagnostics/v14" ||
-                    diagnosticReport.featureLabelsIncluded !== false ||
-                    diagnosticReport.networkTransmission !== false ||
-                    diagnosticReport.generatedLocally !== true ||
-                    diagnosticReport.hasRawTitle || diagnosticReport.hasMovieIdField ||
-                    diagnosticReport.hasOutputField || diagnosticReport.alphaGridCount !== 18 ||
-                    diagnosticReport.phaseCount !== 7 ||
-                    !diagnosticReport.phaseStatuses.every(status => ["completed", "unavailable"].includes(status) ||
-                      status === "error" || status === "cancelled")) {
-                  throw new Error(name + ": private full JSON / expanded Ridge contract failed: " + JSON.stringify(diagnosticReport));
+                if (!diagnosticSummary.startsWithBrief ||
+                    diagnosticSummary.length <= 0 || diagnosticSummary.length >= 9500 ||
+                    !diagnosticSummary.includesRepository || !diagnosticSummary.includesNextSteps ||
+                    diagnosticSummary.containsRawTitle || diagnosticSummary.containsMovieIdField ||
+                    diagnosticSummary.containsJsonEnvelope || diagnosticSummary.hasOutputField) {
+                  throw new Error(name + ": compact private handoff contract failed: " + JSON.stringify(diagnosticSummary));
                 }
                 await page.screenshot({ path: "artifacts/" + name + "-lab-diagnostics.png", fullPage: false, animations: "disabled" });
                 await page.locator(".bottom-nav [data-nav='catalog']").click();

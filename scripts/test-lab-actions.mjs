@@ -178,6 +178,9 @@ assert.equal(clipboardWrites.length, 1);
 assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, false);
 assert.equal(ctx.recommendationDiagnosticReportFormat, "brief");
 assert.ok(ctx.recommendationDiagnosticReportText.startsWith("# PRISMA — contexto técnico"));
+assert.ok(ctx.recommendationDiagnosticReportText.length < 9500,
+  "La acción principal debe generar un resumen suficientemente corto para pegar en ChatGPT");
+assert.equal(ctx.recommendationDiagnosticReportText.includes("PRIVATE-FEATURE-LABEL-MUST-NOT-APPEAR"), false);
 assert.ok(ctx.recommendationDiagnosticReportText.includes("OpenSpec/SDD"));
 assert.equal(fixture.diagnosticInput.includeFeatureLabels, false);
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
@@ -201,12 +204,14 @@ assert.ok(toasts.some(item => item.message === "JSON técnico completo copiado."
 
 // Clipboard failure leaves the selected report available for manual copying.
 ctx.navigator.clipboard.writeText = () => Promise.reject(new Error("clipboard unavailable"));
-await actions.copyRecommendationDiagnosticJson(false);
+await actions.copyRecommendationDeveloperBrief();
 assert.equal(clipboardWrites.length, 2);
 assert.equal(ctx.recommendationDiagnosticFeatureLabelsIncluded, false);
+assert.equal(ctx.recommendationDiagnosticReportFormat, "brief");
+assert.ok(ctx.recommendationDiagnosticReportText.startsWith("# PRISMA — contexto técnico"));
 assert.equal(ctx.recommendationDiagnosticCopyMessage,
-  "No se pudo copiar automáticamente. El JSON completo está visible abajo para seleccionarlo y copiarlo manualmente.");
-assert.ok(toasts.some(item => item.message === "JSON completo preparado para copia manual."));
+  "No se pudo copiar automáticamente. El contexto resumido está visible abajo para seleccionarlo y copiarlo manualmente.");
+assert.ok(toasts.some(item => item.message === "Contexto resumido preparado para copia manual."));
 
 actions.clearRecommendationDiagnosticReport();
 assert.equal(ctx.recommendationDiagnosticReportText, "");
