@@ -205,7 +205,7 @@ assert.ok(cached.has("./js/core/watch-streak.js"),
 assert.ok(cached.has("./js/diagnostics/recommendation-handoff.js?v=diag-20261023-1"),
   "El resumen técnico para la IA debe estar precargado en la caché PWA.");
 assert.ok(cached.has("./js/diagnostics/recommendation-report.js?v=core-20261023-3"),
-  "El informe de diagnóstico v13 debe quedar versionado y disponible en la caché de la aplicación.");
+  "El informe de diagnóstico v14 debe quedar versionado y disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/normalization-evaluation.js?v=rec-20261023-3"),
   "El evaluador experimental de normalización debe quedar disponible en la caché de la aplicación.");
 assert.ok(cached.has("./js/recommendations/evaluation.js?v=rec-20261023-3"),
