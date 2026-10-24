@@ -186,6 +186,87 @@ export function createLabRidgeView(ctx) {
         repeatedMarkup = '<p class="metric-note">Validación repetida no disponible: ' +
           ctx.escapeHTML(repeated.unavailableReason || 'no hay suficientes datos.') + '</p>';
       }
+      const alphaComparison = result.alphaSelectionComparison || null;
+      const formatAlphaCounts = function (counts) {
+        return Object.keys(counts || {}).filter(function (alpha) {
+          return Number(counts[alpha]) > 0;
+        }).sort(function (left, right) { return Number(left) - Number(right); }).map(function (alpha) {
+          return alpha + ': ' + Number(counts[alpha]);
+        }).join(' · ') || 'sin selecciones disponibles';
+      };
+      let alphaSelectionMarkup = '';
+      if (alphaComparison) {
+        const lowerBoundary = alphaComparison.lowerBoundary || {};
+        const lowerBoundaryUnresolved = Boolean(lowerBoundary.unresolved ||
+          (lowerBoundary.mae && lowerBoundary.mae.unresolved) ||
+          (lowerBoundary.ranking && lowerBoundary.ranking.unresolved));
+        const boundaryMessage = lowerBoundaryUnresolved
+          ? 'El límite inferior sigue sin resolverse: el alpha mínimo se eligió en la mayoría de los pliegues válidos de al menos un criterio. Esto no demuestra que reducirlo mejore el ranking.'
+          : 'El alpha mínimo no fue elegido en la mayoría de los pliegues completados; esta rejilla no aporta evidencia para seguir reduciendo el límite solo por frecuencia.';
+        const selectionModes = (alphaComparison.rankingModes || []).map(function (mode) {
+          if (!mode.available) return '<p class="metric-note"><strong>' +
+            ctx.escapeHTML(rankingModeNames[mode.mode] || mode.mode) +
+            ':</strong> nDCG@5 comparativo no disponible.</p>';
+          const delta = Number(mode.deltaRankingSelectionMinusMaeSelection);
+          return '<p class="metric-note"><strong>' + ctx.escapeHTML(rankingModeNames[mode.mode] || mode.mode) +
+            ':</strong> Ridge-MAE ' + Number(mode.maeSelectedNdcgAt5).toFixed(4).replace('.', ',') +
+            ' · Ridge-ranking ' + Number(mode.rankingSelectedNdcgAt5).toFixed(4).replace('.', ',') +
+            ' · cambio ranking − MAE ' + (delta > 0 ? '+' : '') + delta.toFixed(4).replace('.', ',') +
+            ' · victorias ' + Number(mode.rankingSelectorWins || 0) +
+            ' · empates ' + Number(mode.ties || 0) +
+            ' · derrotas ' + Number(mode.rankingSelectorLosses || 0) +
+            ' · pliegues válidos ' + Number(mode.foldsEvaluated || 0) + '.</p>';
+        }).join('');
+        const foldDetails = (alphaComparison.foldSummaries || []).map(function (fold) {
+          const maeDelta = fold.deltaRankingSelectionMinusMaeSelection;
+          const modes = (fold.rankingModes || []).map(function (mode) {
+            const name = rankingModeNames[mode.mode] || mode.mode;
+            if (!mode.available) return name + ': no disponible';
+            const delta = Number(mode.deltaRankingSelectionMinusMaeSelection);
+            return name + ' ' + Number(mode.maeSelectedNdcgAt5).toFixed(3).replace('.', ',') +
+              ' → ' + Number(mode.rankingSelectedNdcgAt5).toFixed(3).replace('.', ',') +
+              ' (' + (delta > 0 ? '+' : '') + delta.toFixed(3).replace('.', ',') + ')';
+          }).join(' · ');
+          return '<li class="metric-note">Repetición ' + Number(fold.repeat) + ', pliegue ' + Number(fold.outerFold) +
+            ': alpha MAE ' + Number(fold.selectedAlphaByMae) +
+            ' · alpha ranking ' + (fold.selectedAlphaByRanking == null ? 'no disponible' : Number(fold.selectedAlphaByRanking)) +
+            ' · MAE referencia ' + Number(fold.baselineMae).toFixed(3).replace('.', ',') +
+            ' · MAE Ridge-MAE ' + Number(fold.maeSelectedMae).toFixed(3).replace('.', ',') +
+            ' · MAE Ridge-ranking ' + (fold.rankingSelectedMae == null ? 'no disponible' : Number(fold.rankingSelectedMae).toFixed(3).replace('.', ',')) +
+            ' · delta MAE ranking − MAE ' + (maeDelta == null ? 'no disponible' : (Number(maeDelta) > 0 ? '+' : '') + Number(maeDelta).toFixed(3).replace('.', ',')) +
+            ' · ' + ctx.escapeHTML(modes) + '.</li>';
+        }).join('');
+        alphaSelectionMarkup = '<section class="ridge-alpha-selection" aria-label="Comparación de selección Ridge alpha">' +
+          '<h4>Selección de alpha: MAE vs ranking</h4>' +
+          '<p class="metric-note">Rejilla ampliada: ' + (alphaComparison.alphaGrid || []).map(String).join(', ') +
+          '. Selección anidada: tres pliegues internos por cada pliegue exterior; las notas exteriores solo miden el resultado.</p>' +
+          '<p class="metric-note"><strong>Conteo por MAE:</strong> ' +
+          ctx.escapeHTML(formatAlphaCounts(alphaComparison.selectedAlphaCountsByMae)) + '.</p>' +
+          '<p class="metric-note"><strong>Conteo por ranking:</strong> ' +
+          ctx.escapeHTML(formatAlphaCounts(alphaComparison.selectedAlphaCountsByRanking)) + '.</p>' +
+          '<p class="metric-note">' + ctx.escapeHTML(boundaryMessage) + '</p>' +
+          (alphaComparison.available
+            ? '<p class="metric-note"><strong>MAE exterior emparejado:</strong> referencia aditiva ' +
+              Number(alphaComparison.maeSelected.baselineMaeSameFolds).toFixed(4).replace('.', ',') +
+              ' · Ridge con alpha MAE ' + Number(alphaComparison.maeSelected.mae).toFixed(4).replace('.', ',') +
+              ' · delta base − Ridge ' + (Number(alphaComparison.maeSelected.deltaBaselineMinusMaeSelected) > 0 ? '+' : '') +
+              Number(alphaComparison.maeSelected.deltaBaselineMinusMaeSelected).toFixed(4).replace('.', ',') +
+              '.</p><p class="metric-note"><strong>Ridge con alpha por ranking:</strong> MAE ' +
+              Number(alphaComparison.rankingSelected.mae).toFixed(4).replace('.', ',') +
+              ' · delta base − Ridge ' + (Number(alphaComparison.rankingSelected.deltaBaselineMinusRankingSelected) > 0 ? '+' : '') +
+              Number(alphaComparison.rankingSelected.deltaBaselineMinusRankingSelected).toFixed(4).replace('.', ',') +
+              ' · comparativa MAE entre selecciones: ' +
+              (Number(alphaComparison.pairedMaeDifference.deltaRankingSelectionMinusMaeSelection) > 0 ? '+' : '') +
+              Number(alphaComparison.pairedMaeDifference.deltaRankingSelectionMinusMaeSelection).toFixed(4).replace('.', ',') +
+              '.</p>'
+            : '<p class="metric-note">Comparación externa por ranking no disponible: ' +
+              ctx.escapeHTML(alphaComparison.unavailableReason || 'muestra o pliegues válidos insuficientes') + '</p>') +
+          '<h5>nDCG@5: selección por criterio y modo</h5>' + (selectionModes || '<p class="metric-note">No disponible.</p>') +
+          '<details><summary>Detalle de los pliegues exteriores emparejados</summary><ul>' +
+          (foldDetails || '<li class="metric-note">No hay pliegues completados.</li>') +
+          '</ul><p class="metric-note">Los pliegues pertenecen al mismo historial de evaluación; se presentan como diagnóstico descriptivo, no como observaciones independientes ni prueba estadística.</p></details>' +
+          '</section>';
+      }
       const hybridMae = Number(result.hybridMae);
       const deltaHybrid = Number(result.deltaBaseMinusHybrid);
       const hybridComparison = Math.abs(deltaHybrid) < 0.005
@@ -206,6 +287,7 @@ export function createLabRidgeView(ctx) {
         foldStabilityMarkup +
         hybridFoldStabilityMarkup +
         rankingMarkup +
+        alphaSelectionMarkup +
         repeatedMarkup +
         '<p class="metric-note">Solo diagnóstico: las recomendaciones activas siguen usando el modelo aditivo. nDCG@5 mide el orden de películas valoradas retenidas y no garantiza satisfacción futura ni significación estadística.</p>';
     }
