@@ -1,4 +1,4 @@
-const CACHE_NAME = "prisma-shell-v119"
+const CACHE_NAME = "prisma-shell-v120"
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,7 @@ const APP_ASSETS = [
   "./styles/watch-streak.css?v=ui-20261023-27",
   "./styles/prisma-design-system.css?v=ui-20261023-27",
 
-  "./app.js?v=ui-20261023-108",
+  "./app.js?v=ui-20261023-109",
   "./js/tmdb/client.js?v=core-20261022-3",
   "./js/core/movie-utils.js",
   "./js/core/date-utils.js",
@@ -57,7 +57,7 @@ const APP_ASSETS = [
   "./js/ui/rating-sheet-view.js?v=ui-20261023-1",
   "./js/ui/person-filmography.js?v=core-20261022-1",
   "./js/app/movie-actions.js?v=core-20261022-5",
-  "./js/app/lab-actions.js?v=core-20261023-5",
+  "./js/app/lab-actions.js?v=core-20261023-6",
   "./js/app/lab-metrics-actions.js?v=core-20261023-4",
   "./js/app/storage-protection-actions.js?v=core-20261023-1",
   "./js/import-export/actions.js?v=core-20261022-4",
