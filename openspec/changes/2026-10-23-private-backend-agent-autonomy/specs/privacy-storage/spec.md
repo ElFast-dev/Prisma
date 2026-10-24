@@ -55,3 +55,26 @@ Prisma DEBE distinguir la copia manual del informe y el envío automático autor
 - DADO que la persona revoca la sincronización o el diagnóstico automático
 - CUANDO Prisma procesa la revocación
 - ENTONCES detiene nuevos envíos y conserva localmente los cambios pendientes, comunicando el estado real del servidor
+
+
+### Requirement: Persistencia local de la racha confirmada
+
+Prisma DEBE conservar localmente la racha confirmada y sus metadatos. La sincronización remota de esta categoría SOLO puede ocurrir después de que la vista previa de migración la identifique como parte del perfil que se va a copiar y la persona autorice esa sincronización. La sincronización NO DEBE crear filas de películas ni registros de visionado para rellenar días ausentes.
+
+#### Scenario: Perfil sin sincronización autorizada
+
+- DADO que existe una racha confirmada y la sincronización no está autorizada
+- CUANDO Prisma guarda o abre el perfil
+- ENTONCES la racha permanece local y no se envía al backend
+
+#### Scenario: Racha incluida en una sincronización autorizada
+
+- DADO que la vista previa indica que se copiarán los metadatos de la racha y la persona autoriza esa migración
+- CUANDO Prisma sincroniza el perfil
+- ENTONCES copia solo los metadatos confirmados necesarios y conserva el intervalo, objetivo y procedencia sin generar películas ni visionados
+
+#### Scenario: Días ausentes
+
+- DADO que la racha incluye días sin películas registradas
+- CUANDO se sincroniza o restaura la racha
+- ENTONCES Prisma conserva su declaración sin inventar registros de películas para completar el calendario
