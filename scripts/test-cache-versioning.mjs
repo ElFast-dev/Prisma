@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 
-const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, storageProtectionActions, diagnosticReport, handoffReport, labDiagnosticCoordinator, stateModel, features, engine, evaluation, normalizationEvaluation, featureFamilyEvaluation, pairedRankingEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, labRidgeView, labTemporalView, watchStreakView, modalViews, utilitySheetView, movieDetailView, personDetailView, ratingSheetView, movieActions, labActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
+const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, storageProtectionActions, diagnosticReport, handoffReport, labDiagnosticCoordinator, stateModel, features, engine, evaluation, normalizationEvaluation, featureFamilyEvaluation, pairedRankingEvaluation, ridgeEvaluation, ridgeKernel, repeatedValidationSummary, csvParser, catalogModel, collectionModel, presentationUtils, pageViews, progressViews, settingsViews, catalogViews, collectionViews, labViews, watchStreakView, modalViews, utilitySheetView, movieDetailView, personDetailView, ratingSheetView, movieActions, labActions, importExportActions, eventHandlers, tmdbSettings, tmdbViews, tmdbHistorySync, tmdbBrowserActions, tmdbMovieDetails, modalController, ranking, runtime, lifecycle, personalData, tmdbClient, themeController, recommendationPreferences, pwaUpdate, dateUtils, watchStreak, personFilmography] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('sw.js', 'utf8'),
   readFile('.github/workflows/ui-screenshots.yml', 'utf8'),
@@ -34,8 +34,6 @@ const [html, serviceWorker, uiWorkflow, app, utils, storage, storageProtection, 
   readFile('js/ui/catalog-views.js', 'utf8'),
   readFile('js/ui/collection-views.js', 'utf8'),
   readFile('js/ui/lab-views.js', 'utf8'),
-  readFile('js/ui/lab-ridge-view.js', 'utf8'),
-  readFile('js/ui/lab-temporal-view.js', 'utf8'),
   readFile('js/ui/watch-streak-view.js', 'utf8'),
   readFile('js/ui/modal-views.js', 'utf8'),
   readFile('js/ui/utility-sheet-view.js', 'utf8'),
@@ -113,8 +111,6 @@ const modules = [
   ['js/ui/catalog-views.js', catalogViews],
   ['js/ui/collection-views.js', collectionViews],
   ['js/ui/lab-views.js', labViews],
-  ['js/ui/lab-ridge-view.js', labRidgeView],
-  ['js/ui/lab-temporal-view.js', labTemporalView],
   ['js/ui/watch-streak-view.js', watchStreakView],
   ['js/ui/modal-views.js', modalViews],
   ['js/ui/utility-sheet-view.js', utilitySheetView],
@@ -188,10 +184,6 @@ assert.ok(cached.has("./js/ui/catalog-views.js?v=core-20261023-1"),
   "El módulo de Descubrir y catálogo debe tener URL versionada y estar precargado.");
 assert.ok(cached.has("./js/ui/collection-views.js?v=core-20261023-1"),
   "El módulo de Colección debe tener una URL versionada y estar precargado.");
-assert.ok(cached.has("./js/ui/lab-ridge-view.js?v=core-20261024-1"),
-  "El submódulo del experimento Ridge debe estar versionado y precargado.");
-assert.ok(cached.has("./js/ui/lab-temporal-view.js?v=core-20261023-3"),
-  "El submódulo temporal de Ridge debe estar versionado y precargado.");
 assert.ok(cached.has("./js/ui/lab-views.js?v=core-20261024-2"),
   "El módulo del Laboratorio debe tener versión propia y estar en la precaché.");
 assert.ok(cached.has("./js/ui/watch-streak-view.js?v=core-20261023-1"),
