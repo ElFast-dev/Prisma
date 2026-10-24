@@ -302,7 +302,7 @@ assert.ok(alphaSelectionAudit.every(audit => {
     audit.innerTrainingScales.every((scale, index) =>
       scale.available && scale.count + audit.innerValidationIndices[index].length === outerTrainingCount) &&
     audit.innerScaleReference.available && Number.isFinite(audit.innerScaleReference.median) &&
-    audit.lambdaGrid.length === RIDGE_ALPHA_GRID.length &&
+    audit.lambdaGrid.length === RIDGE_ALPHA_EXTENDED_GRID.length &&
     Math.abs(audit.effectiveAlphaByRelativeMae -
       audit.selectedLambdaByMae * audit.outerKernelScale.scale) < 1e-12 &&
     (audit.selectedLambdaByRanking == null ||
@@ -317,8 +317,8 @@ assert.ok(alphaComparison.foldSummaries.every(fold =>
     (Number.isFinite(mode.baselineNdcgAt5) && Number.isFinite(mode.maeSelectedNdcgAt5) &&
      Number.isFinite(mode.rankingSelectedNdcgAt5) && mode.wins + mode.ties + mode.losses === 1))
 ), "Cada resumen exterior empareja ambas selecciones y los modos nDCG disponibles.");
-const recomputedMaeCounts = createAlphaSelectionCounts(RIDGE_ALPHA_GRID);
-const recomputedRankingCounts = createAlphaSelectionCounts(RIDGE_ALPHA_GRID);
+const recomputedMaeCounts = createAlphaSelectionCounts(RIDGE_ALPHA_EXTENDED_GRID);
+const recomputedRankingCounts = createAlphaSelectionCounts(RIDGE_ALPHA_EXTENDED_GRID);
 alphaComparison.foldSummaries.forEach(fold => {
   recomputedMaeCounts[String(fold.selectedAlphaByMae)] += 1;
   if (fold.selectedAlphaByRanking != null) recomputedRankingCounts[String(fold.selectedAlphaByRanking)] += 1;
