@@ -1102,11 +1102,43 @@ ing: bestRankingAlpha,
           });
         }
       }
+      const relativeMaeFoldAvailable = Boolean(relativeMaeSelectedModel && relativeMaeFoldErrors.length === testIndices.length);
+      const relativeRankingFoldAvailable = Boolean(relativeRankingSelectedModel && relativeRankingFoldErrors.length === testIndices.length);
       alphaComparisonFoldSummaries.push({
         repeat: repetitionIndex + 1,
         outerFold: outerFold + 1,
+        outerTestCount: testIndices.length,
         selectedAlphaByMae: alpha,
         selectedAlphaByRanking: rankingAlpha,
+        selectedLambdaByMae: relativeLambdaMae,
+        selectedLambdaByRanking: relativeLambdaRanking,
+        relativeLambdaAnchorAlphaByMae: relativeMaeIndex >= 0 ? ALPHAS[relativeMaeIndex] : null,
+        relativeLambdaAnchorAlphaByRanking: relativeRankingIndex >= 0 ? ALPHAS[relativeRankingIndex] : null,
+        effectiveAlphaByRelativeMae: relativeAlphaMae,
+        effectiveAlphaByRelativeRanking: relativeAlphaRanking,
+        outerKernelScale: {
+          available: Boolean(outerKernelScale && outerKernelScale.available),
+          count: Number(outerKernelScale && outerKernelScale.count) || 0,
+          meanDiagonal: outerKernelScale ? outerKernelScale.meanDiagonal : null,
+          medianDiagonal: outerKernelScale ? outerKernelScale.medianDiagonal : null,
+          minDiagonal: outerKernelScale ? outerKernelScale.minDiagonal : null,
+          maxDiagonal: outerKernelScale ? outerKernelScale.maxDiagonal : null,
+          reason: outerKernelScale && outerKernelScale.reason ? outerKernelScale.reason : null
+        },
+        innerScaleReference: {
+          available: Boolean(alphaSelection.innerScaleReference && alphaSelection.innerScaleReference.available),
+          count: Number(alphaSelection.innerScaleReference && alphaSelection.innerScaleReference.count) || 0,
+          mean: alphaSelection.innerScaleReference ? alphaSelection.innerScaleReference.mean : null,
+          median: alphaSelection.innerScaleReference ? alphaSelection.innerScaleReference.median : null,
+          min: alphaSelection.innerScaleReference ? alphaSelection.innerScaleReference.min : null,
+          max: alphaSelection.innerScaleReference ? alphaSelection.innerScaleReference.max : null
+        },
+        relativeMaeAvailable: relativeMaeFoldAvailable,
+        relativeRankingAvailable: relativeRankingFoldAvailable,
+        relativeMaeSelectedMae: relativeMaeFoldAvailable ? meanAbsoluteError(relativeMaeFoldErrors) : null,
+        relativeRankingSelectedMae: relativeRankingFoldAvailable ? meanAbsoluteError(relativeRankingFoldErrors) : null,
+        relativeNumericErrors: Number(alphaSelection.relativeNumericErrors) + (relativeNumericErrors -
+          (Number(alphaSelection.relativeNumericErrors) || 0)),
         maeSelectedMae: meanAbsoluteError(ridgeFoldErrors),
         baselineMae: meanAbsoluteError(baselineFoldErrors),
         rankingSelectedMae: rankingAlpha == null ? null : meanAbsoluteError(rankingSelectedFoldErrors),
@@ -1138,6 +1170,13 @@ ing: bestRankingAlpha,
       alphaComparisonRankingErrors: alphaComparisonRankingErrors,
       alphaComparisonFoldMaeDeltas: alphaComparisonFoldMaeDeltas,
       alphaComparisonFoldSummaries: alphaComparisonFoldSummaries,
+      relativeMaeSelectorErrors: relativeMaeSelectorErrors,
+      relativeMaeBaselineErrors: relativeMaeBaselineErrors,
+      relativeRankingSelectorErrors: relativeRankingSelectorErrors,
+      relativeRankingBaselineErrors: relativeRankingBaselineErrors,
+      selectedRelativeLambdaCountsByMae: selectedRelativeLambdaCountsByMae,
+      selectedRelativeLambdaCountsByRanking: selectedRelativeLambdaCountsByRanking,
+      relativeNumericErrors: relativeNumericErrors,
       predictionMin: predictionMin,
       predictionMax: predictionMax,
       outerFoldsEvaluated: outer.length,
