@@ -259,10 +259,8 @@ assert.doesNotMatch(pageViewsSource, /function render(?:RecommendationDiagnostic
   'Los renderizadores del Laboratorio no deben volver a concentrarse en page-views.js.');
 assert.match(labViewsSource, /export function createLabViews\(ctx\)/,
   'El módulo de Laboratorio debe exponer su fábrica con dependencias inyectadas.');
-assert.match(labViewsSource, /createLabRidgeView\(ctx\)/,
-  'La composición del Laboratorio debe delegar Ridge a su submódulo.');
-assert.match(labViewsSource, /createLabTemporalView\(ctx\)/,
-  'La composición del Laboratorio debe delegar la evaluación temporal a su submódulo.');
+assert.doesNotMatch(labViewsSource, /createLabRidgeView|createLabTemporalView/,
+  'La vista de un solo paso no debe montar controles de experimentos manuales.');
 assert.doesNotMatch(labViewsSource, /function render(?:RidgeExperimentPanel|TemporalRidgePanel)\(/,
   'Los renderizadores Ridge y temporal no deben concentrarse en lab-views.js.');
 assert.match(labRidgeViewSource, /export function createLabRidgeView\(ctx\)/);
