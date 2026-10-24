@@ -18,17 +18,11 @@ const results = {
   metricsStatus: null,
   metricRunCountsBeforeReport: {},
   metricRunCountsAfterReport: {},
-  reportSchema: null,
-  reportCoverage: null,
-  reportRatedEntries: null,
+  copiedReportFormat: null,
+  copiedReportLength: null,
   cancellationAndReentryPassed: false,
   mobileLayoutPassed: false,
-  emptyProfilePassed: false,
-  featureFamilySampleCount: null,
-  featureFamilyCount: null,
-  diagnosticPhaseCount: null,
-  diagnosticDurationMs: null,
-  diagnosticPhaseStatuses: []
+  emptyProfilePassed: false
 };
 
 function captureLogs(page) {

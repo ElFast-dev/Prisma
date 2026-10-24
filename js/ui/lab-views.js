@@ -32,10 +32,10 @@ export function createLabViews(ctx) {
     const statusState = allFinal ? (errors ? "error" : "ready") : (busy ? "loading" : "pending");
     const statusMessage = allFinal
       ? (errors
-        ? "Diagnóstico parcial tras un reintento automático. El informe incluye los estados y errores agregados."
+        ? "Diagnóstico parcial tras un reintento automático. El resumen señala el estado y las fases que requieren revisión."
         : (unavailable
-          ? "Diagnóstico finalizado. Algunas pruebas no aplican a este perfil; el informe está listo."
-          : "Diagnóstico finalizado. El informe técnico está listo para copiar."))
+          ? "Diagnóstico finalizado. Algunas pruebas no aplican a este perfil; el resumen está listo."
+          : "Diagnóstico finalizado. El resumen técnico está listo para copiar."))
       : (busy
         ? "Prisma está ejecutando el diagnóstico local automáticamente."
         : "Preparando el diagnóstico local…");
