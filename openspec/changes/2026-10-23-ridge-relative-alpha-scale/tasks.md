@@ -1,7 +1,7 @@
 # Tareas: escala relativa Ridge
 
 - [x] R1. Inspeccionar kernel, evaluador, selector de alpha, tests, contrato diagnóstico v14 y expediente anterior de OpenSpec.
-- [x] R2. Definir la escala primaria como media de la diagonal del kernel centrado y especificar la transformación relativa y sus límites de fuga en el diseño OpenSpec.
+- [x] R2. Definir la escala primaria como media de la diagonal del kernel centrado y especificar una rejilla lambda anclada en la mediana de las escalas interiores de entrenamiento, con límites de fuga en OpenSpec.
 - [ ] R3. Añadir funciones puras para medir la escala y convertir alpha/lambda, con manejo explícito de escala degenerada.
 - [ ] R4. Ampliar el evaluador anidado para comparar selección absoluta y relativa por MAE y ranking sobre las mismas particiones.
 - [ ] R5. Medir escalas, cocientes efectivos, selección de límites, errores numéricos, cobertura y deltas exteriores en las tres repeticiones.
