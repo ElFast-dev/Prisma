@@ -672,7 +672,8 @@ function ridgeEvaluation(source) {
     outerFolds: nonNegativeInteger(evaluation && evaluation.outerFolds),
     foldsEvaluated: nonNegativeInteger(evaluation && evaluation.foldsEvaluated),
     innerFolds: nonNegativeInteger(evaluation && evaluation.innerFolds),
-    alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; }),
+    alphaGrid: rawGrid.map(numeric).filter(function (value) { return value != null && value > 0; })
+      .slice(0, MAX_RIDGE_ALPHA_GRID_VALUES),
     selectedAlphaCounts: alphaCounts,
     foldStability: ridgeFoldStabilityEvaluation(evaluation && evaluation.foldStability),
     hybridFoldStability: hybridFoldStabilityEvaluation(evaluation && evaluation.hybridFoldStability),
