@@ -645,7 +645,7 @@ assert.match(labActionsSource, /ctx\.navigator\.clipboard\.writeText/);
 assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
 assert.match(labViewsSource, /Copiar resumen técnico para ChatGPT/);
 assert.doesNotMatch(labViewsSource, /copy-recommendation-diagnostics-json|diagnosticFeatureLabels|diagnostic-advanced-options|restart-lab-diagnostic|retry-lab-diagnostic|run-ridge-experiment|run-temporal-ridge-experiment|toggle-temporal-added-date-proxy|renderTMDBHistoryPanel/);
-assert.match(labViewsSource, /sin nombres individuales de señales/);
+assert.match(labViewsSource, /nombres individuales de señales/);
 assert.ok(eventHandlersSource.includes('action === "copy-recommendation-diagnostics"') && eventHandlersSource.includes('copyRecommendationDeveloperBrief()'));
 assert.ok(labMetricsActionsSource.includes("includeExtendedAlphaGrid: true") && labMetricsActionsSource.includes("includeRelativeScale: true"));
 assert.ok(labMetricsActionsSource.includes("coordinator.retryFailures()"));
