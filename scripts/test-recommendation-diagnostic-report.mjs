@@ -649,7 +649,7 @@ assert.match(labViewsSource, /sin nombres individuales de señales/);
 assert.ok(eventHandlersSource.includes('action === "copy-recommendation-diagnostics"') && eventHandlersSource.includes('copyRecommendationDiagnosticJson(false)'));
 assert.ok(labMetricsActionsSource.includes("includeExtendedAlphaGrid: true") && labMetricsActionsSource.includes("includeRelativeScale: true"));
 assert.ok(labMetricsActionsSource.includes("coordinator.retryFailures()"));
-assert.match(labMetricsActionsSource, /if \(!nextSnapshot\) \{[\\s\\S]*?clearExperimentResults\(\)/,
+assert.match(labMetricsActionsSource, /if \(!nextSnapshot\) \{[\s\S]*?clearExperimentResults\(\)/,
   "Al invalidar el perfil, el informe no debe reutilizar métricas Ridge, temporales o de normalización antiguas.");
 assert.ok(labActionsSource.includes("prisma-web/2026.10.24-lab-one-click.1"));
 assert.doesNotMatch(reportSource, /localStorage|indexedDB|fetch\s*\(|XMLHttpRequest|navigator\.clipboard|dbSet\s*\(/,
