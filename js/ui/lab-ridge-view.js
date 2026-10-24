@@ -225,7 +225,9 @@ export function createLabRidgeView(ctx) {
             Number(mode.ties || 0) + '/' + Number(mode.rankingSelectorLosses || 0) +
             ' · pliegues válidos ' + Number(mode.foldsEvaluated || 0) + '.</p>';
         }).join('');
-        const relativeScaleComparison = alphaComparison.relativeScaleComparison || null;
+        const relativeScaleComparison = alphaComparison.relativeScaleComparison &&
+          alphaComparison.relativeScaleComparison.executionStatus !== "not-run"
+          ? alphaComparison.relativeScaleComparison : null;
         const formatRelativeAnchorCounts = function (counts) {
           const source = counts && typeof counts === "object" ? counts : {};
           return Object.keys(source).filter(function (alpha) {
