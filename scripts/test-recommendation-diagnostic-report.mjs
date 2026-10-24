@@ -436,7 +436,7 @@ assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics"/);
 assert.match(labViewsSource, /Copiar contexto resumido para IA/);
 assert.match(labViewsSource, /data-action="copy-recommendation-diagnostics-json"/);
 assert.match(labActionsSource, /buildRecommendationDeveloperBrief/);
-assert.match(labViewsSource, /Excluye títulos, identificadores de películas/);
+assert.match(labViewsSource, /nombres individuales de señales y datos personales/);
 assert.match(labViewsSource, /Experimento \(temas atenuados por soporte\)/);
 assert.match(reportSource, /themeShrinkageDeltaBaseMinusRegularized/);
 assert.match(labViewsSource, /Incluir hasta 40 nombres de señales agregadas/);
