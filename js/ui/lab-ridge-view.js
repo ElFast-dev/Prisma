@@ -228,6 +228,12 @@ export function createLabRidgeView(ctx) {
         const relativeScaleComparison = alphaComparison.relativeScaleComparison &&
           alphaComparison.relativeScaleComparison.executionStatus !== "not-run"
           ? alphaComparison.relativeScaleComparison : null;
+        const relativeScaleActionMarkup = alphaComparison.relativeScaleComparison &&
+          alphaComparison.relativeScaleComparison.executionStatus === "not-run"
+          ? '<div class="ridge-relative-scale-action"><button class="btn btn-secondary btn-small" type="button" data-action="run-ridge-relative-experiment"' +
+            (busy || metricsBusy || temporalBusy ? ' disabled aria-disabled="true"' : '') +
+            '>Medir escala relativa del kernel</button><p class="metric-note">Experimento adicional y local: compara la rejilla absoluta con lambda relativo en las mismas particiones. Requiere más cálculo; la batería automática no lo ejecuta para conservar su rendimiento.</p></div>'
+          : '';
         const formatRelativeAnchorCounts = function (counts) {
           const source = counts && typeof counts === "object" ? counts : {};
           return Object.keys(source).filter(function (alpha) {
@@ -392,7 +398,7 @@ export function createLabRidgeView(ctx) {
             : '<p class="metric-note">Comparación externa por ranking no disponible: ' +
               ctx.escapeHTML(alphaComparison.unavailableReason || 'muestra o pliegues válidos insuficientes') + '</p>') +
           '<h5>nDCG@5: selección absoluta por criterio y modo</h5>' + (selectionModes || '<p class="metric-note">No disponible.</p>') +
-          relativeScaleMarkup +
+          relativeScaleActionMarkup + relativeScaleMarkup +
           '<details><summary>Detalle de los pliegues exteriores emparejados</summary><ul>'
           (foldDetails || '<li class="metric-note">No hay pliegues completados.</li>') +
           '</ul><p class="metric-note">Los pliegues pertenecen al mismo historial de evaluación; se presentan como diagnóstico descriptivo, no como observaciones independientes ni prueba estadística.</p></details>' +
