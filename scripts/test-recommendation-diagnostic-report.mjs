@@ -404,7 +404,7 @@ const integrated = buildRecommendationDiagnosticReport({
     unavailableReason: null
   }
 });
-assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v13");
+assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v14");
 assert.equal(integrated.generatedAt, "2026-10-23T14:00:00.000Z");
 assert.equal(integrated.applicationVersion, "prisma-web/2026.10.23-lab-diagnostic.1");
 assert.equal(integrated.diagnostic.status, "partial-error");
