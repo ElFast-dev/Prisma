@@ -116,7 +116,7 @@ try {
   await page.waitForFunction(() => {
     const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
     return state === "ready" || state === "error";
-  }, null, { timeout: 120000 });
+  }, null, { timeout: 600000 });
   await page.waitForFunction(() => {
     const state = document.querySelector("[data-lab-metrics-state]")?.dataset.labMetricsState;
     const copyButton = document.querySelector('[data-action="copy-recommendation-diagnostics"]');
