@@ -96,7 +96,7 @@ export function createLabActions(ctx) {
           if (ctx.currentPage === "lab") ctx.renderApp();
         }
         return true;
-      });
+      }, { includeRelativeScale: true });
       if (runId !== ctx.ridgeEvaluationRunId || ctx.currentPage !== "lab") {
         timingStatus = "cancelled";
         return;
@@ -234,7 +234,7 @@ export function createLabActions(ctx) {
       signalWeights: ctx.RECOMMENDATION_SIGNAL_WEIGHTS,
       recommendationMode: ctx.recommendationMode,
       ratingEvaluation: sourceMetrics.evaluation,
-      ridgeEvaluation: sourceMetrics.ridgeEvaluation || ctx.ridgeEvaluationResult,
+      ridgeEvaluation: ctx.ridgeEvaluationResult || sourceMetrics.ridgeEvaluation,
       temporalRidgeEvaluation: sourceMetrics.temporalEvaluation || ctx.temporalRidgeEvaluationResult,
       influenceNormalizationEvaluation: sourceMetrics.normalizationEvaluation || ctx.influenceNormalizationEvaluationResult,
       recommendationQuality: sourceMetrics.recommendationQuality,

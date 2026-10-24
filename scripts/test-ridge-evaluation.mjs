@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createRidgeRecommendationExperiment } from "../js/recommendations/ridge-evaluation.js";
-import { RIDGE_ALPHA_GRID, selectAlphaByMae, selectAlphaByRanking, createAlphaSelectionCounts, summarizeAlphaBoundary } from "../js/recommendations/ridge-alpha-selection.js";
-import { buildKernel, clampRating, predictRidge, trainRidge, vectorize } from "../js/recommendations/ridge-kernel.js";
+import { RIDGE_ALPHA_GRID, selectAlphaByMae, selectAlphaByRanking, createAlphaSelectionCounts, summarizeAlphaBoundary, buildRelativeLambdaGrid, effectiveRidgeAlpha, summarizeNumericScale } from "../js/recommendations/ridge-alpha-selection.js";
+import { buildKernel, clampRating, predictRidge, trainRidge, vectorize, summarizeCenteredKernelScale } from "../js/recommendations/ridge-kernel.js";
 import { summarizeRepeatedRidgeStability } from "../js/recommendations/repeated-validation-summary.js";
 import { createRecommendationEngine } from "../js/recommendations/engine.js";
 import { createRecommendationRanking } from "../js/recommendations/ranking.js";
@@ -36,6 +36,33 @@ assert.equal(selectAlphaByMae([{ alpha: 0, score: 0.1 }, { alpha: -1, score: 0.2
   "No se permite alpha cero ni negativo.");
 const emptyAlphaCounts = createAlphaSelectionCounts();
 assert.deepEqual(Object.values(emptyAlphaCounts), Array(RIDGE_ALPHA_GRID.length).fill(0));
+const centeredScaleMatrix = [
+  [2, 1, 900],
+  [1, 2, -900],
+  [900, -900, 3]
+];
+const centeredTrainingScale = summarizeCenteredKernelScale(centeredScaleMatrix, [0, 1]);
+assert.equal(centeredTrainingScale.available, true);
+assert.equal(centeredTrainingScale.count, 2);
+assert.equal(centeredTrainingScale.meanDiagonal, 0.5);
+assert.equal(centeredTrainingScale.medianDiagonal, 0.5);
+assert.equal(centeredTrainingScale.minDiagonal, 0.5);
+assert.equal(centeredTrainingScale.maxDiagonal, 0.5,
+  "La escala centrada se calcula exclusivamente sobre el subkernel de entrenamiento.");
+assert.equal(summarizeCenteredKernelScale([[1, 0], [0, 1]], [0]).available, false,
+  "Una escala degenerada no debe fabricar un divisor.");
+assert.equal(summarizeCenteredKernelScale([[1, NaN], [NaN, 1]], [0, 1]).available, false,
+  "Un kernel no finito debe quedar no disponible.");
+const relativeGridFixture = buildRelativeLambdaGrid([0.001, 1], 0.5);
+assert.deepEqual(relativeGridFixture, [0.002, 2]);
+assert.equal(effectiveRidgeAlpha(relativeGridFixture[0], 0.5), 0.001);
+assert.equal(effectiveRidgeAlpha(relativeGridFixture[1], 2), 4,
+  "El alpha efectivo se adapta a la escala del conjunto de entrenamiento.");
+assert.equal(buildRelativeLambdaGrid([1], 1e-13), null);
+assert.equal(effectiveRidgeAlpha(1, 0), null);
+assert.deepEqual(summarizeNumericScale([0.5, 1, 2]), {
+  available: true, count: 3, mean: 7 / 6, median: 1, min: 0.5, max: 2
+});
 const alphaBoundary = summarizeAlphaBoundary({ "0.00001": 3 }, 5);
 assert.equal(alphaBoundary.unresolved, true, "La elección del mínimo en mayoría indica límite inferior no resuelto.");
 assert.equal(summarizeAlphaBoundary({ "0.00001": 2 }, 5).unresolved, false,
@@ -65,6 +92,14 @@ assert.ok(Math.abs(numericModel.coefficients[0] - 1) < 1e-10);
 assert.ok(Math.abs(numericModel.coefficients[1] + 1) < 1e-10);
 assert.ok(Math.abs(predictRidge(numericRows, numericModel, dramaVector) - 7) < 1e-10);
 assert.ok(Math.abs(predictRidge(numericRows, numericModel, comedyVector) - 5) < 1e-10);
+const lowRegularizationModel = trainRidge(numericRows, numericKernel, [0, 1], 0.00001);
+const highRegularizationModel = trainRidge(numericRows, numericKernel, [0, 1], 100);
+const lowAlphaPrediction = predictRidge(numericRows, lowRegularizationModel, dramaVector);
+const highAlphaPrediction = predictRidge(numericRows, highRegularizationModel, dramaVector);
+assert.ok(Math.abs(lowAlphaPrediction - highAlphaPrediction) > 0.1,
+  "Los alphas positivos extremos existentes deben producir diferencias reales de predicción en un caso sintético.");
+assert.throws(() => trainRidge(numericRows, numericKernel, [0, 1], 1e-13), /Cholesky|pivote|estable|positiva/i,
+  "El pivote inferior a la tolerancia Cholesky debe fallar explícitamente, no generar un alpha cero.");
 
 function fixtures(count) {
   return Array.from({ length: count }, function (_, index) {
@@ -150,6 +185,8 @@ assert.equal(result.available, true, "Una muestra sintética de 36 películas de
 assert.equal(result.count, 36);
 assert.equal(result.rankingQuality.available, false,
   "nDCG requiere 50 películas aunque Ridge permita medir MAE con 30.");
+assert.equal(result.alphaSelectionComparison.relativeScaleComparison.executionStatus, "not-run",
+  "La evaluación Ridge predeterminada no debe añadir el coste de la escala relativa.");
 assert.match(result.rankingQuality.reason, /al menos 50/);
 assert.equal(result.outerFolds, 5);
 assert.equal(result.foldsEvaluated, 5);
@@ -199,6 +236,10 @@ assert.equal(
 assert.equal(Object.values(result.selectedAlphaCounts).reduce((sum, value) => sum + value, 0), 5,
   "Debe elegirse exactamente un alpha por pliegue externo.");
 
+const defaultAsyncResult = await experiment.evaluateAsync(() => true);
+assert.equal(defaultAsyncResult.available, true);
+assert.equal(defaultAsyncResult.alphaSelectionComparison.relativeScaleComparison.executionStatus, "not-run",
+  "El evaluador asíncrono también debe reservar la variante relativa para una petición explícita.");
 const repeated = experiment.evaluate();
 assert.equal(repeated.mae, result.mae, "La evaluación debe ser determinista.");
 assert.equal(repeated.baselineMae, result.baselineMae, "La referencia emparejada debe ser determinista.");
@@ -211,7 +252,7 @@ const alphaSelectionRecords = fixtures(100);
 const alphaSelectionAudit = [];
 const alphaSelectionResult = await harness(
   alphaSelectionRecords, alphaSelectionRecords, null, null, false, event => alphaSelectionAudit.push(event)
-).evaluateAsync(() => true);
+).evaluateAsync(() => true, { includeRelativeScale: true });
 const alphaComparison = alphaSelectionResult.alphaSelectionComparison;
 assert.equal(alphaSelectionResult.available, true);
 assert.equal(alphaComparison.available, true,
@@ -235,6 +276,21 @@ assert.ok(alphaSelectionAudit.every(audit => {
     innerValidation.every(index => outerTraining.has(index) && !outerTest.has(index)) &&
     audit.outerTestIndices.every(index => !outerTraining.has(index));
 }), "Ninguna nota del pliegue exterior puede entrar en un pliegue interno de selección.");
+assert.ok(alphaSelectionAudit.every(audit => {
+  const outerTrainingCount = audit.outerTrainingIndices.length;
+  return audit.outerKernelScale.available &&
+    audit.outerKernelScale.count === outerTrainingCount &&
+    audit.innerTrainingScales.length === 3 &&
+    audit.innerTrainingScales.every((scale, index) =>
+      scale.available && scale.count + audit.innerValidationIndices[index].length === outerTrainingCount) &&
+    audit.innerScaleReference.available && Number.isFinite(audit.innerScaleReference.median) &&
+    audit.lambdaGrid.length === RIDGE_ALPHA_GRID.length &&
+    Math.abs(audit.effectiveAlphaByRelativeMae -
+      audit.selectedLambdaByMae * audit.outerKernelScale.scale) < 1e-12 &&
+    (audit.selectedLambdaByRanking == null ||
+      Math.abs(audit.effectiveAlphaByRelativeRanking -
+        audit.selectedLambdaByRanking * audit.outerKernelScale.scale) < 1e-12);
+}), "La rejilla relativa y cada alpha efectivo deben usar escalas derivadas únicamente de los entrenamientos.");
 assert.ok(alphaComparison.foldSummaries.every(fold =>
   fold.rankingModes.length === 3 &&
   Number.isFinite(fold.maeSelectedMae) && Number.isFinite(fold.baselineMae) &&
@@ -271,6 +327,35 @@ assert.ok(Number.isFinite(alphaComparison.pairedMaeDifference.deltaRankingSelect
 assert.equal(alphaComparison.repeatSummaries.length, 3);
 assert.ok(alphaComparison.repeatSummaries.every(item => item.foldsEvaluated === 5));
 assert.equal(alphaSelectionResult.alphaSelectionComparison.sampleCount, 100);
+const relativeScaleComparison = alphaSelectionResult.alphaSelectionComparison.relativeScaleComparison;
+assert.equal(relativeScaleComparison.available, true);
+assert.equal(relativeScaleComparison.selectionFoldsEvaluated, 15);
+assert.equal(relativeScaleComparison.kernelScale.outerTrainingScales.count, 15);
+assert.equal(relativeScaleComparison.kernelScale.innerReferenceScales.count, 15);
+assert.equal(relativeScaleComparison.relativeMae.selectionFolds, 15);
+assert.equal(relativeScaleComparison.relativeMae.foldsEvaluated, 15);
+assert.ok(relativeScaleComparison.relativeMae.selectedLambda.available);
+assert.ok(relativeScaleComparison.relativeMae.selectedEffectiveAlpha.available);
+assert.ok(relativeScaleComparison.relativeNumericErrors >= 0);
+assert.equal(relativeScaleComparison.repeatSummaries.length, 3);
+assert.deepEqual(relativeScaleComparison.rankingModes.map(item => item.mode),
+  ["balanced", "affinity", "variety"]);
+assert.ok(relativeScaleComparison.rankingModes.every(item =>
+  item.relativeMae.foldsEvaluated >= 9 && item.relativeRanking.foldsEvaluated >= 9),
+  "Las comparaciones nDCG relativas deben indicar cobertura por modo.");
+assert.ok(relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts &&
+  Object.values(relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts).reduce((sum, value) => sum + value, 0) === 15,
+  "La frecuencia de selección relativa se debe agregar por posición de la rejilla, no mezclar lambdas de distinta escala.");
+const alphaSelectionReplay = await harness(
+  alphaSelectionRecords, alphaSelectionRecords
+).evaluateAsync(() => true, { includeRelativeScale: true });
+assert.deepEqual(alphaSelectionReplay.alphaSelectionComparison.relativeScaleComparison, relativeScaleComparison,
+  "La evaluación relativa debe ser determinista en las mismas particiones emparejadas.");
+assert.ok(alphaComparison.foldSummaries.every(fold =>
+  Number.isFinite(fold.outerKernelScale.meanDiagonal) &&
+  Number.isFinite(fold.selectedLambdaByMae) &&
+  Number.isFinite(fold.effectiveAlphaByRelativeMae)),
+  "Cada pliegue exterior informa su escala, lambda y alpha efectivo.");
 
 const asyncProgress = [];
 const asyncResult = await experiment.evaluateAsync(progress => asyncProgress.push(progress));
@@ -285,6 +370,17 @@ const cancelled = await experiment.evaluateAsync(progress =>
 assert.equal(cancelled.available, false,
   "La evaluación repetida debe detenerse si el usuario invalida sus datos durante el cálculo.");
 assert.match(cancelled.reason, /canceló/);
+const relativeCancelProgress = [];
+const relativeCancelled = await experiment.evaluateAsync(progress => {
+  relativeCancelProgress.push(progress);
+  return !(progress.phase === "fold" && /lambda/.test(String(progress.detail || "")));
+}, { includeRelativeScale: true });
+assert.equal(relativeCancelled.available, false,
+  "La variante relativa también debe respetar la cancelación durante los ajustes internos.");
+assert.match(relativeCancelled.reason, /canceló/);
+assert.ok(relativeCancelProgress.some(progress =>
+  progress.phase === "fold" && /lambda/.test(String(progress.detail || ""))),
+  "La búsqueda relativa debe publicar progreso asíncrono identificable.");
 
 const rankingRecords = fixtures(60);
 const rankingResult = harness(rankingRecords, rankingRecords).evaluate();
@@ -369,7 +465,8 @@ const [engineSource, appSource, labActionsSource, labViewsBaseSource, labRidgeVi
 const labViewsSource = [labViewsBaseSource, labRidgeViewSource, labTemporalViewSource].join("\\n");
 assert.match(appSource, /createRidgeRecommendationExperiment/);
 assert.match(appSource, /ridgeEvaluationResult = null/);
-assert.doesNotMatch(labViewsSource, /data-action="run-ridge-experiment"/, "Ridge must run as part of the automatic battery, not from a separate button.");
+assert.doesNotMatch(labViewsSource, /data-action="run-ridge-experiment"/, "The absolute-alpha Ridge evaluation stays in the automatic battery.");
+assert.match(labViewsSource, /data-action="run-ridge-relative-experiment"/, "The extra relative-scale search must be an explicit opt-in action.");
 assert.match(labViewsSource, /lab-automatic-label/, "Ridge must be clearly identified as an automatic diagnostic phase.");
 assert.match(labViewsSource, /Validación repetida/);
 assert.match(labViewsSource, /Selección de alpha: MAE vs ranking/);
@@ -378,6 +475,8 @@ assert.match(labViewsSource, /cinco pliegues externos, tres internos y tres repe
 assert.match(eventSource, /action === "run-ridge-experiment"/);
 assert.match(labActionsSource, /3 repeticiones de 5 pliegues/);
 assert.ok(labActionsSource.includes('ctx.ridgeRecommendationExperiment.evaluateAsync'));
+assert.ok(labActionsSource.includes('includeRelativeScale: true'),
+  "Solo la acción explícita debe solicitar la búsqueda relativa.");
 assert.ok(labActionsSource.includes('ctx.ridgeEvaluationProgress = progress'));
 assert.match(labViewsSource, /ridgeEvaluationProgress/);
 assert.match(reportSource, /ridgeExperiment: ridgeEvaluation/);

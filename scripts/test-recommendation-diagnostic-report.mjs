@@ -48,11 +48,88 @@ const baseInput = {
       pairedMaeDifference: { available: true, deltaRankingSelectionMinusMaeSelection: 0.02, rankingSelectionMaeWins: 4, ties: 3, maeSelectionMaeWins: 8, foldsEvaluated: 15 },
       rankingModes: [{ mode: "balanced", available: true, baselineNdcgAt5: 0.61, maeSelectedNdcgAt5: 0.7, rankingSelectedNdcgAt5: 0.72, deltaRankingSelectionMinusMaeSelection: 0.02, deltaMaeSelectionMinusBaseline: 0.09, deltaRankingSelectionMinusBaseline: 0.11, foldsEvaluated: 15, rankingSelectorWins: 7, ties: 2, rankingSelectorLosses: 6, maeVsBaselineWins: 8, maeVsBaselineTies: 2, maeVsBaselineLosses: 5, rankingVsBaselineWins: 9, rankingVsBaselineTies: 1, rankingVsBaselineLosses: 5 }],
       repeatSummaries: [],
+      relativeScaleComparison: {
+        available: true, executionStatus: "completed", sampleCount: 60,
+        selectionFoldsEvaluated: 15, relativeMaeFoldsEvaluated: 15, relativeRankingFoldsEvaluated: 15,
+        scaleUnavailableFolds: 0, relativeNumericErrors: 1,
+        kernelScale: {
+          outerTrainingScales: { available: true, count: 15, mean: 1.5, median: 1.45, min: 1.2, max: 1.8 },
+          innerReferenceScales: { available: true, count: 15, mean: 1.48, median: 1.4, min: 1.1, max: 1.75 },
+          centeredDiagonal: { foldsEvaluated: 15, minimumObserved: 0.5, medianOfFoldMedians: 1.2, maximumObserved: 3.4 },
+          relativeLambdaGrid: { foldsEvaluated: 15, minimumObserved: 0.00001 / 1.75, maximumObserved: 100 / 1.1 }
+        },
+        absoluteAlphaToScaleRatio: {
+          mae: { available: true, count: 15, mean: 0.02, median: 0.01, min: 0.00001, max: 0.1 },
+          ranking: { available: true, count: 15, mean: 0.2, median: 0.1, min: 0.001, max: 1 }
+        },
+        relativeMae: {
+          available: true, sampleCount: 60, selectionFolds: 15, foldsEvaluated: 15,
+          mae: 1.03, baselineMaeSameFolds: 1.2, deltaBaselineMinusSelected: 0.17,
+          selectedLambda: { available: true, count: 15, mean: 0.1, median: 0.01, min: 0.00001, max: 1 },
+          selectedEffectiveAlpha: { available: true, count: 15, mean: 0.12, median: 0.01, min: 0.00001, max: 1.2 },
+          selectedAnchorAlphaCounts: { "0.00001": 8, "0.001": 7 },
+          lowerBoundary: { available: true, minimumAlpha: 0.00001, selectedCount: 8, foldsEvaluated: 15, selectedFraction: 8 / 15, majoritySelected: true, unresolved: true }
+        },
+        relativeRanking: {
+          available: true, sampleCount: 60, selectionFolds: 15, foldsEvaluated: 15,
+          mae: 1.07, baselineMaeSameFolds: 1.2, deltaBaselineMinusSelected: 0.13,
+          selectedLambda: { available: true, count: 15, mean: 0.15, median: 0.1, min: 0.001, max: 1 },
+          selectedEffectiveAlpha: { available: true, count: 15, mean: 0.2, median: 0.15, min: 0.001, max: 1.5 },
+          selectedAnchorAlphaCounts: { "0.001": 6, "0.1": 9 },
+          lowerBoundary: { available: true, minimumAlpha: 0.00001, selectedCount: 0, foldsEvaluated: 15, selectedFraction: 0, majoritySelected: false, unresolved: false }
+        },
+        rankingModes: ["balanced", "affinity", "variety"].map(mode => ({
+          mode,
+          relativeMae: {
+            available: true, baselineNdcgAt5: 0.61, relativeMaeSelectedNdcgAt5: 0.68,
+            deltaRelativeMaeSelectionMinusBaseline: 0.07, foldsEvaluated: 15, wins: 9, ties: 2, losses: 4
+          },
+          relativeRanking: {
+            available: true, baselineNdcgAt5: 0.61, relativeRankingSelectedNdcgAt5: 0.69,
+            deltaRelativeRankingSelectionMinusBaseline: 0.08, foldsEvaluated: 15, wins: 10, ties: 1, losses: 4
+          },
+          pairedRelativeSelectors: {
+            available: true, baselineNdcgAt5: 0.61, relativeMaeSelectedNdcgAt5: 0.68,
+            relativeRankingSelectedNdcgAt5: 0.69, deltaRelativeRankingSelectionMinusRelativeMae: 0.01,
+            foldsEvaluated: 15, wins: 8, ties: 2, losses: 5
+          }
+        })),
+        repeatSummaries: [
+          { repeat: 1, foldsPlanned: 5, kernelScale: { available: true, count: 5, mean: 1.5, median: 1.5, min: 1.2, max: 1.8 },
+            relativeMae: { available: true, sampleCount: 20, selectionFolds: 5, foldsEvaluated: 5, mae: 1.0, baselineMaeSameFolds: 1.2, deltaBaselineMinusSelected: 0.2,
+              selectedLambda: { available: true, count: 5, mean: 0.1, median: 0.01, min: 0.00001, max: 1 },
+              selectedEffectiveAlpha: { available: true, count: 5, mean: 0.12, median: 0.01, min: 0.00001, max: 1.2 },
+              selectedAnchorAlphaCounts: { "0.00001": 3, "0.001": 2 } },
+            relativeRanking: { available: true, sampleCount: 20, selectionFolds: 5, foldsEvaluated: 5, mae: 1.1, baselineMaeSameFolds: 1.2, deltaBaselineMinusSelected: 0.1,
+              selectedLambda: { available: true, count: 5, mean: 0.15, median: 0.1, min: 0.001, max: 1 },
+              selectedEffectiveAlpha: { available: true, count: 5, mean: 0.2, median: 0.15, min: 0.001, max: 1.5 },
+              selectedAnchorAlphaCounts: { "0.1": 5 } },
+            rankingModes: [] }
+        ],
+        unavailableReason: null
+      },
       foldSummaries: [{
-        repeat: 1, outerFold: 1, selectedAlphaByMae: 0.00001, selectedAlphaByRanking: 0.001,
+        repeat: 1, outerFold: 1, outerTestCount: 4,
+        selectedAlphaByMae: 0.00001, selectedAlphaByRanking: 0.001,
+        selectedLambdaByMae: 0.0001, selectedLambdaByRanking: 0.01,
+        relativeLambdaAnchorAlphaByMae: 0.00001, relativeLambdaAnchorAlphaByRanking: 0.001,
+        effectiveAlphaByRelativeMae: 0.0002, effectiveAlphaByRelativeRanking: 0.02,
+        outerKernelScale: { available: true, count: 48, meanDiagonal: 1.5, medianDiagonal: 1.2, minDiagonal: 0.5, maxDiagonal: 3.4, reason: null },
+        innerScaleReference: { available: true, count: 3, mean: 1.48, median: 1.4, min: 1.1, max: 1.75 },
+        relativeMaeAvailable: true, relativeRankingAvailable: true,
+        relativeMaeSelectedMae: 1.03, relativeRankingSelectedMae: 1.07, relativeNumericErrors: 0,
+        relativeLambdaGridMin: 0.00001 / 1.75, relativeLambdaGridMax: 100 / 1.1,
         maeSelectedMae: 1.0, baselineMae: 1.2, rankingSelectedMae: 1.1, deltaRankingSelectionMinusMaeSelection: 0.1,
         rankingModes: [{ mode: "balanced", available: true, baselineNdcgAt5: 0.61, maeSelectedNdcgAt5: 0.7,
-          rankingSelectedNdcgAt5: 0.72, deltaRankingSelectionMinusMaeSelection: 0.02, deltaMaeSelectionMinusBaseline: 0.09, deltaRankingSelectionMinusBaseline: 0.11, wins: 1, ties: 0, losses: 0, maeVsBaselineWins: 1, maeVsBaselineTies: 0, maeVsBaselineLosses: 0, rankingVsBaselineWins: 1, rankingVsBaselineTies: 0, rankingVsBaselineLosses: 0 }]
+          rankingSelectedNdcgAt5: 0.72, deltaRankingSelectionMinusMaeSelection: 0.02, deltaMaeSelectionMinusBaseline: 0.09, deltaRankingSelectionMinusBaseline: 0.11,
+          wins: 1, ties: 0, losses: 0, maeVsBaselineWins: 1, maeVsBaselineTies: 0, maeVsBaselineLosses: 0,
+          rankingVsBaselineWins: 1, rankingVsBaselineTies: 0, rankingVsBaselineLosses: 0,
+          relativeMaeAvailable: true, relativeRankingAvailable: true, relativeMaeSelectedNdcgAt5: 0.68, relativeRankingSelectedNdcgAt5: 0.69,
+          deltaRelativeMaeSelectionMinusBaseline: 0.07, deltaRelativeRankingSelectionMinusBaseline: 0.08,
+          deltaRelativeRankingSelectionMinusRelativeMae: 0.01, relativeMaeVsBaselineWins: 1, relativeMaeVsBaselineTies: 0,
+          relativeMaeVsBaselineLosses: 0, relativeRankingVsBaselineWins: 1, relativeRankingVsBaselineTies: 0,
+          relativeRankingVsBaselineLosses: 0, relativeRankingVsRelativeMaeWins: 1, relativeRankingVsRelativeMaeTies: 0,
+          relativeRankingVsRelativeMaeLosses: 0 }]
       }],
       unavailableReason: null
     },
@@ -232,6 +309,15 @@ assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.ranking
 assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries.length, 1);
 assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries[0].selectedAlphaByMae, 0.00001);
 assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries[0].rankingModes[0].wins, 1);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.relativeScaleComparison.available, true);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.relativeScaleComparison.kernelScale.outerTrainingScales.median, 1.45);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.relativeScaleComparison.relativeMae.mae, 1.03);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.relativeScaleComparison.relativeRanking.lowerBoundary.minimumAnchorAlpha, 0.00001);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.relativeScaleComparison.rankingModes[0].relativeRanking.foldsEvaluated, 15);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.relativeScaleComparison.repeatSummaries.length, 1);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries[0].outerKernelScale.meanDiagonal, 1.5);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries[0].selectedLambdaByMae, 0.0001);
+assert.equal(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries[0].rankingModes[0].relativeMaeSelectedNdcgAt5, 0.68);
 assert.doesNotMatch(JSON.stringify(compact.evaluation.ridgeExperiment.alphaSelectionComparison.foldSummaries), /title|tmdbId|rating/i,
   "Los resúmenes de alpha solo pueden exponer métricas y números de pliegue, nunca títulos, IDs ni notas.");
 assert.equal(compact.evaluation.ridgeExperiment.rankingQuality.available, true);

@@ -1,0 +1,41 @@
+# Diseño: regularización relativa a la escala del kernel
+
+## Diagnóstico matemático
+
+Las características Ridge se vectorizan con escalas por familia: género = 1, tema = 0,35 y década = 0,2. Para vectores (x_i), el kernel crudo es (K_{ij}=x_i^T x_j). En un conjunto de entrenamiento de tamaño (n), se centra como:
+
+`Kc[i,j] = K[i,j] - rowMean[i] - rowMean[j] + grandMean`.
+
+La implementación añade alpha a la diagonal de esa matriz centrada: `Kc + alpha I`. Por tanto, alpha se expresa en las unidades del kernel y no es comparable entre escalas de kernel distintas sin normalizar.
+
+La escala diagnóstica principal será `s = trace(Kc) / n = mean(diag(Kc))`. La diagonal centrada representa la distancia cuadrática en el espacio de características respecto al centro del conjunto de entrenamiento. Se registrarán además mínimo, mediana, máximo y número de observaciones de entrenamiento. El cociente de regularización absoluto será `alpha / s`. Si `s` no es finito o no supera el umbral numérico definido por las pruebas, la escala relativa se declarará no disponible; no se fabricará un divisor ni se sustituirá por cero.
+
+La factorización Cholesky actual rechaza pivotes no finitos o menores/iguales a `1e-12`. Este cambio medirá los fallos y comprobará el efecto de la rejilla inferior antes de proponer modificar esa tolerancia.
+
+## Parametrización relativa experimental
+
+Para cada pliegue exterior se construyen primero las tres particiones interiores. En cada una, se mide `s_inner` usando únicamente los índices de entrenamiento interior. La escala de referencia `s_reference` es la mediana de esas escalas interiores disponibles (la variante relativa se declara no disponible si alguna escala necesaria no es válida). Se mapea la rejilla absoluta existente a una rejilla relativa adimensional `lambda_j = alpha_j / s_reference`. De este modo, la mediana de los alphas efectivos de entrenamiento interior coincide con la rejilla original y los lambdas proceden de escalas observadas, no de constantes elegidas arbitrariamente.
+
+Cada modelo interior emplea `alpha_effective = lambda * s_inner` de su propio entrenamiento interior. La validación interior selecciona lambda por MAE o ranking, pero no participa en el cálculo de su escala. Después, el modelo exterior usa `alpha_effective = selectedLambda * s_outer`, con `s_outer` medido solo en el entrenamiento exterior completo. Como `s_outer` puede diferir de `s_reference`, el alpha efectivo exterior puede adaptarse a la escala observada. El pliegue exterior retenido no interviene en la escala de referencia, en los lambdas, ni en el ajuste exterior.
+
+Este diseño permite comprobar si adaptar alpha a la escala de cada entrenamiento cambia la selección y el resultado exterior. No garantiza que mejore ranking. La comparación se empareja con el alpha absoluto en los mismos pliegues y con el mismo baseline aditivo.
+
+**Límite de rendimiento y ejecución:** las pruebas Playwright mostraron que ejecutar también la búsqueda relativa dentro de cada pasada automática del Laboratorio duplicaba el coste y no terminaba en el límite de 120 s para el perfil sintético grande. Por ello la escala relativa es una opción explícita del método asíncrono (`includeRelativeScale: true`) usada únicamente por la acción manual de experimento Ridge; la batería automática conserva la evaluación absoluta histórica. Cuando la variante no se solicita, el informe debe marcar `executionStatus: "not-run"`, no `unavailable` ni una escala degenerada. La ejecución opt-in mantiene el mismo progreso cooperativo, cancelación y pliegues emparejados.
+
+## Protocolo de evaluación
+
+- Conservar tres repeticiones, cinco pliegues exteriores y tres pliegues interiores, los salts deterministas existentes y las mismas identidades canónicas.
+- Para cada pliegue exterior seleccionar por separado alpha absoluto por MAE, alpha absoluto por ranking, lambda relativo por MAE y lambda relativo por ranking.
+- Ranking interior y exterior: nDCG@5 para `balanced`, `affinity` y `variety`, relevancia >= 7 y los mínimos de disponibilidad existentes.
+- Comparar las cuatro variantes con el baseline en el mismo conjunto exterior; informar MAE además de nDCG@5, deltas, victorias/empates/derrotas, folds realmente evaluados y motivos no disponibles.
+- Informar por repetición y agregado sin presentar los 15 pliegues como 15 historiales independientes.
+- Registrar selección de límite inferior para alpha y para lambda, así como errores de Cholesky, escalas degeneradas, predicciones no finitas y cancelaciones.
+- Medir el coste adicional de la doble búsqueda y preservar la cesión al navegador y el progreso.
+
+## Contrato y privacidad
+
+Los campos nuevos se agregan al informe diagnóstico v14 y a sus pruebas de contrato, manteniendo exclusivamente estadísticas numéricas agregadas y metadatos de pliegue. No se guardan ni exportan valores de películas o características individuales. Los informes con perfil personal solo se generan localmente con los datos enriquecidos disponibles en el navegador; CI usa fixtures sintéticas.
+
+## Decisión
+
+La variante relativa sigue siendo un experimento. Solo podrá recomendarse un cambio posterior si las métricas exteriores emparejadas muestran mejora consistente del ranking sin regresiones obligatorias de calidad, estabilidad, privacidad o rendimiento. Nunca se activa Ridge en producción como resultado automático de este estudio.

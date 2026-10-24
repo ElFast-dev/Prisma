@@ -73,3 +73,40 @@ export function summarizeAlphaBoundary(counts, foldsEvaluated, grid) {
     unresolved: majoritySelected
   };
 }
+
+
+export function buildRelativeLambdaGrid(alphaGrid, referenceScale) {
+  if (!Number.isFinite(referenceScale) || referenceScale <= 1e-12 ||
+    !Array.isArray(alphaGrid) || !alphaGrid.length) return null;
+  const grid = alphaGrid.map(function (alpha) {
+    return Number.isFinite(alpha) && alpha > 0 ? alpha / referenceScale : null;
+  });
+  if (grid.some(function (lambda) { return !Number.isFinite(lambda) || lambda <= 0; })) return null;
+  return grid;
+}
+
+export function effectiveRidgeAlpha(lambda, kernelScale) {
+  if (!Number.isFinite(lambda) || lambda <= 0 ||
+    !Number.isFinite(kernelScale) || kernelScale <= 1e-12) return null;
+  const alpha = lambda * kernelScale;
+  return Number.isFinite(alpha) && alpha > 0 ? alpha : null;
+}
+
+export function summarizeNumericScale(values) {
+  const valid = (Array.isArray(values) ? values : [])
+    .filter(function (value) { return Number.isFinite(value) && value > 0; })
+    .slice()
+    .sort(function (left, right) { return left - right; });
+  if (!valid.length) return {
+    available: false, count: 0, mean: null, median: null, min: null, max: null
+  };
+  const middle = Math.floor(valid.length / 2);
+  return {
+    available: true,
+    count: valid.length,
+    mean: valid.reduce(function (sum, value) { return sum + value; }, 0) / valid.length,
+    median: valid.length % 2 ? valid[middle] : (valid[middle - 1] + valid[middle]) / 2,
+    min: valid[0],
+    max: valid[valid.length - 1]
+  };
+}

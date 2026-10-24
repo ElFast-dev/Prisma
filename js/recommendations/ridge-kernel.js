@@ -43,6 +43,102 @@ export function buildKernel(rows) {
   return kernel;
 }
 
+
+const KERNEL_SCALE_EPSILON = 1e-12;
+
+/**
+ * Measures the centered Gram-kernel diagonal using only the requested training
+ * indices. Returned statistics are safe to share: no row identities or
+ * feature vectors are retained.
+ */
+export function summarizeCenteredKernelScale(kernel, trainingIndices) {
+  if (!Array.isArray(kernel) || !Array.isArray(trainingIndices) || !trainingIndices.length) {
+    return {
+      available: false, count: 0, meanDiagonal: null, scale: null,
+      minDiagonal: null, medianDiagonal: null, maxDiagonal: null,
+      reason: "Conjunto de entrenamiento vacío o kernel no disponible."
+    };
+  }
+
+  const size = trainingIndices.length;
+  const rowMeans = new Float64Array(size);
+  let grandMean = 0;
+
+  for (let i = 0; i < size; i += 1) {
+    const rowIndex = trainingIndices[i];
+    if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= kernel.length ||
+      !kernel[rowIndex] || typeof kernel[rowIndex].length !== "number") {
+      return {
+        available: false, count: 0, meanDiagonal: null, scale: null,
+        minDiagonal: null, medianDiagonal: null, maxDiagonal: null,
+        reason: "Índices de entrenamiento inválidos."
+      };
+    }
+    let rowSum = 0;
+    for (let j = 0; j < size; j += 1) {
+      const columnIndex = trainingIndices[j];
+      const value = kernel[rowIndex][columnIndex];
+      if (!Number.isInteger(columnIndex) || columnIndex < 0 ||
+        columnIndex >= kernel[rowIndex].length || !Number.isFinite(value)) {
+        return {
+          available: false, count: 0, meanDiagonal: null, scale: null,
+          minDiagonal: null, medianDiagonal: null, maxDiagonal: null,
+          reason: "Kernel de entrenamiento no finito o incompleto."
+        };
+      }
+      rowSum += value;
+    }
+    rowMeans[i] = rowSum / size;
+    grandMean += rowMeans[i];
+  }
+  grandMean /= size;
+
+  const diagonals = [];
+  let sum = 0;
+  for (let i = 0; i < size; i += 1) {
+    const rowIndex = trainingIndices[i];
+    let diagonal = kernel[rowIndex][rowIndex] - 2 * rowMeans[i] + grandMean;
+    if (!Number.isFinite(diagonal)) {
+      return {
+        available: false, count: size, meanDiagonal: null, scale: null,
+        minDiagonal: null, medianDiagonal: null, maxDiagonal: null,
+        reason: "Diagonal centrada no finita."
+      };
+    }
+    // A centered positive-semidefinite kernel has non-negative diagonal.
+    // Clamp only tiny negative round-off; a material violation is a failed scale.
+    if (diagonal < 0 && diagonal >= -1e-10) diagonal = 0;
+    if (diagonal < 0) {
+      return {
+        available: false, count: size, meanDiagonal: null, scale: null,
+        minDiagonal: null, medianDiagonal: null, maxDiagonal: null,
+        reason: "La diagonal centrada viola la tolerancia numérica."
+      };
+    }
+    diagonals.push(diagonal);
+    sum += diagonal;
+  }
+
+  diagonals.sort(function (left, right) { return left - right; });
+  const meanDiagonal = sum / size;
+  const middle = Math.floor(size / 2);
+  const medianDiagonal = size % 2
+    ? diagonals[middle]
+    : (diagonals[middle - 1] + diagonals[middle]) / 2;
+  const available = Number.isFinite(meanDiagonal) && meanDiagonal > KERNEL_SCALE_EPSILON;
+
+  return {
+    available: available,
+    count: size,
+    meanDiagonal: Number.isFinite(meanDiagonal) ? meanDiagonal : null,
+    scale: available ? meanDiagonal : null,
+    minDiagonal: diagonals[0],
+    medianDiagonal: medianDiagonal,
+    maxDiagonal: diagonals[diagonals.length - 1],
+    reason: available ? null : "La escala media de la diagonal centrada no supera 1e-12."
+  };
+}
+
 function solveCholesky(matrix, target) {
   const size = target.length;
   const lower = Array.from({ length: size }, function () { return new Float64Array(size); });

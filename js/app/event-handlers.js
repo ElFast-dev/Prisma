@@ -71,7 +71,7 @@ export function registerAppEvents(ctx) {
         return;
       }
       if (action === "clear-recommendation-diagnostics") { ctx.clearRecommendationDiagnosticReport(); return; }
-      if (action === "run-ridge-experiment") { await ctx.runRidgeExperiment(); return; }
+      if (action === "run-ridge-experiment" || action === "run-ridge-relative-experiment") { await ctx.runRidgeExperiment(); return; }
       if (action === "run-temporal-ridge-experiment") { await ctx.runTemporalRidgeExperiment(); return; }
       if (action === "toggle-temporal-added-date-proxy") { ctx.toggleTemporalAddedAtProxy(); return; }
       if (action === "run-influence-normalization-experiment") { await ctx.runInfluenceNormalizationExperiment(); return; }
