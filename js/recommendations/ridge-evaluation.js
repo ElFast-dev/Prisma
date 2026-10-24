@@ -996,6 +996,14 @@ ing: bestRankingAlpha,
             const rankingSelectedDcg = rankingAlpha == null ? null : dcgAt5(rankingSelectedTop.map(function (candidate) {
               return { gain: gains.get(candidate.evaluationToken) || 0 };
             }));
+            const relativeMaeTop = relativeMaeSelectedModel ? rankRows(relativeMaeCandidates, mode) : [];
+            const relativeRankingTop = relativeRankingSelectedModel ? rankRows(relativeRankingCandidates, mode) : [];
+            const relativeMaeSelectedDcg = relativeMaeSelectedModel ? dcgAt5(relativeMaeTop.map(function (candidate) {
+              return { gain: gains.get(candidate.evaluationToken) || 0 };
+            })) : null;
+            const relativeRankingSelectedDcg = relativeRankingSelectedModel ? dcgAt5(relativeRankingTop.map(function (candidate) {
+              return { gain: gains.get(candidate.evaluationToken) || 0 };
+            })) : null;
             const foldDelta = (ridgeDcg - baselineDcg) / idealDcg;
             const hybridFoldDelta = (hybridDcg - baselineDcg) / idealDcg;
             if (foldDelta > 1e-10) rankingTotals[mode].foldsRidgeWins += 1;
@@ -1047,6 +1055,42 @@ ing: bestRankingAlpha,
                 rankingVsBaselineLosses: rankingBaselineDelta < -1e-10 ? 1 : 0
               };
             }
+
+            const relativeMaeAvailable = Boolean(relativeMaeSelectedModel && Number.isFinite(relativeMaeSelectedDcg));
+            const relativeRankingAvailable = Boolean(relativeRankingSelectedModel && Number.isFinite(relativeRankingSelectedDcg));
+            const relativeMaeDelta = relativeMaeAvailable ? (relativeMaeSelectedDcg - baselineDcg) / idealDcg : null;
+            const relativeRankingDelta = relativeRankingAvailable ? (relativeRankingSelectedDcg - baselineDcg) / idealDcg : null;
+            const relativeSelectorDelta = relativeMaeAvailable && relativeRankingAvailable
+              ? (relativeRankingSelectedDcg - relativeMaeSelectedDcg) / idealDcg : null;
+            const deltaCounts = function (delta) {
+              return {
+                wins: delta != null && delta > 1e-10 ? 1 : 0,
+                ties: delta != null && Math.abs(delta) <= 1e-10 ? 1 : 0,
+                losses: delta != null && delta < -1e-10 ? 1 : 0
+              };
+            };
+            const relativeMaeCounts = deltaCounts(relativeMaeDelta);
+            const relativeRankingCounts = deltaCounts(relativeRankingDelta);
+            const relativeSelectorCounts = deltaCounts(relativeSelectorDelta);
+            foldRankingComparisons[mode] = Object.assign({}, foldRankingComparisons[mode], {
+              relativeMaeAvailable: relativeMaeAvailable,
+              relativeRankingAvailable: relativeRankingAvailable,
+              relativeMaeSelectedNdcgAt5: relativeMaeAvailable ? relativeMaeSelectedDcg / idealDcg : null,
+              relativeRankingSelectedNdcgAt5: relativeRankingAvailable ? relativeRankingSelectedDcg / idealDcg : null,
+              deltaRelativeMaeSelectionMinusBaseline: relativeMaeDelta,
+              deltaRelativeRankingSelectionMinusBaseline: relativeRankingDelta,
+              deltaRelativeRankingSelectionMinusRelativeMae: relativeSelectorDelta,
+              idealDcgWeight: idealDcg,
+              relativeMaeVsBaselineWins: relativeMaeCounts.wins,
+              relativeMaeVsBaselineTies: relativeMaeCounts.ties,
+              relativeMaeVsBaselineLosses: relativeMaeCounts.losses,
+              relativeRankingVsBaselineWins: relativeRankingCounts.wins,
+              relativeRankingVsBaselineTies: relativeRankingCounts.ties,
+              relativeRankingVsBaselineLosses: relativeRankingCounts.losses,
+              relativeRankingVsRelativeMaeWins: relativeSelectorCounts.wins,
+              relativeRankingVsRelativeMaeTies: relativeSelectorCounts.ties,
+              relativeRankingVsRelativeMaeLosses: relativeSelectorCounts.losses
+            });
           });
         }
       }
