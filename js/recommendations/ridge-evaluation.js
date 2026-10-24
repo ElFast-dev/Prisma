@@ -734,6 +734,17 @@ ing: bestRankingAlpha,
     const alphaComparisonRankingErrors = [];
     const alphaComparisonFoldMaeDeltas = [];
     const alphaComparisonFoldSummaries = [];
+    const relativeMaeSelectorErrors = [];
+    const relativeMaeBaselineErrors = [];
+    const relativeRankingSelectorErrors = [];
+    const relativeRankingBaselineErrors = [];
+    const selectedRelativeLambdaCountsByMae = Object.create(null);
+    const selectedRelativeLambdaCountsByRanking = Object.create(null);
+    ALPHAS.forEach(function (alpha) {
+      selectedRelativeLambdaCountsByMae[String(alpha)] = 0;
+      selectedRelativeLambdaCountsByRanking[String(alpha)] = 0;
+    });
+    let relativeNumericErrors = 0;
     RANKING_MODES.forEach(function (mode) {
       rankingTotals[mode] = {
         baselineDcg: 0, ridgeDcg: 0, hybridDcg: 0, idealDcg: 0, foldsEvaluated: 0,
@@ -760,6 +771,16 @@ ing: bestRankingAlpha,
       if (alphaSelection == null || alphaSelection.mae == null || !control.shouldContinue()) return null;
       const alpha = alphaSelection.mae;
       const rankingAlpha = alphaSelection.ranking;
+      const relativeLambdaMae = alphaSelection.relativeMae;
+      const relativeLambdaRanking = alphaSelection.relativeRanking;
+      const outerKernelScale = alphaSelection.outerKernelScale;
+      const relativeAlphaMae = effectiveRidgeAlpha(relativeLambdaMae, outerKernelScale && outerKernelScale.scale);
+      const relativeAlphaRanking = effectiveRidgeAlpha(relativeLambdaRanking, outerKernelScale && outerKernelScale.scale);
+      const relativeMaeIndex = alphaSelection.lambdaGrid ? alphaSelection.lambdaGrid.indexOf(relativeLambdaMae) : -1;
+      const relativeRankingIndex = alphaSelection.lambdaGrid ? alphaSelection.lambdaGrid.indexOf(relativeLambdaRanking) : -1;
+      relativeNumericErrors += Number(alphaSelection.relativeNumericErrors) || 0;
+      if (relativeMaeIndex >= 0) selectedRelativeLambdaCountsByMae[String(ALPHAS[relativeMaeIndex])] += 1;
+      if (relativeRankingIndex >= 0) selectedRelativeLambdaCountsByRanking[String(ALPHAS[relativeRankingIndex])] += 1;
       if (typeof onAlphaSelectionAudit === "function") onAlphaSelectionAudit({
         repeat: repetitionIndex + 1,
         outerFold: outerFold + 1,
@@ -767,7 +788,15 @@ ing: bestRankingAlpha,
         outerTestIndices: testIndices.slice(),
         innerValidationIndices: alphaSelection.innerValidationIndices.map(function (fold) { return fold.slice(); }),
         selectedAlphaByMae: alpha,
-        selectedAlphaByRanking: rankingAlpha
+        selectedAlphaByRanking: rankingAlpha,
+        outerKernelScale: outerKernelScale,
+        innerTrainingScales: alphaSelection.innerTrainingScales,
+        innerScaleReference: alphaSelection.innerScaleReference,
+        lambdaGrid: alphaSelection.lambdaGrid,
+        selectedLambdaByMae: relativeLambdaMae,
+        selectedLambdaByRanking: relativeLambdaRanking,
+        effectiveAlphaByRelativeMae: relativeAlphaMae,
+        effectiveAlphaByRelativeRanking: relativeAlphaRanking
       });
       selectedAlphaCounts[String(alpha)] += 1;
       const ridgeModel = await trainRidgeAsync(rows, kernel, trainingIndices, alpha, {
@@ -792,6 +821,50 @@ ing: bestRankingAlpha,
           outerFold: outerFold
         });
       }
+      let relativeMaeSelectedModel = null;
+      let relativeRankingSelectedModel = null;
+      if (relativeAlphaMae != null) {
+        try {
+          relativeMaeSelectedModel = await trainRidgeAsync(rows, kernel, trainingIndices, relativeAlphaMae, {
+            shouldContinue: control.shouldContinue,
+            yieldToBrowser: control.yieldToBrowser,
+            batchSize: control.batchSize
+          });
+        } catch (error) {
+          relativeNumericErrors += 1;
+        }
+        if (!control.shouldContinue()) return null;
+      }
+      if (relativeAlphaRanking != null) {
+        if (relativeAlphaRanking === relativeAlphaMae) {
+          relativeRankingSelectedModel = relativeMaeSelectedModel;
+        } else {
+          try {
+            relativeRankingSelectedModel = await trainRidgeAsync(rows, kernel, trainingIndices, relativeAlphaRanking, {
+              shouldContinue: control.shouldContinue,
+              yieldToBrowser: control.yieldToBrowser,
+              batchSize: control.batchSize
+            });
+          } catch (error) {
+            relativeNumericErrors += 1;
+          }
+          if (!control.shouldContinue()) return null;
+        }
+      }
+      if (relativeMaeSelectedModel) control.onModelFit({
+        stage: "outer-relative-mae",
+        alpha: relativeAlphaMae,
+        lambda: relativeLambdaMae,
+        repetitionIndex: repetitionIndex,
+        outerFold: outerFold
+      });
+      if (relativeRankingSelectedModel && relativeAlphaRanking !== relativeAlphaMae) control.onModelFit({
+        stage: "outer-relative-ranking",
+        alpha: relativeAlphaRanking,
+        lambda: relativeLambdaRanking,
+        repetitionIndex: repetitionIndex,
+        outerFold: outerFold
+      });
       control.onModelFit({
         stage: "outer",
         alpha: alpha,
@@ -804,16 +877,27 @@ ing: bestRankingAlpha,
       const ridgeCandidates = [];
       const hybridCandidates = [];
       const rankingSelectedCandidates = [];
+      const relativeMaeCandidates = [];
+      const relativeRankingCandidates = [];
       const gains = new Map();
       const ridgeFoldErrors = [];
       const baselineFoldErrors = [];
       const hybridFoldErrors = [];
       const rankingSelectedFoldErrors = [];
+      const relativeMaeFoldErrors = [];
+      const relativeRankingFoldErrors = [];
       const foldRankingComparisons = Object.create(null);
       RANKING_MODES.forEach(function (mode) {
         foldRankingComparisons[mode] = {
           mode: mode, available: false, baselineNdcgAt5: null, maeSelectedNdcgAt5: null,
           rankingSelectedNdcgAt5: null, deltaRankingSelectionMinusMaeSelection: null,
+          relativeMaeAvailable: false, relativeRankingAvailable: false,
+          relativeMaeSelectedNdcgAt5: null, relativeRankingSelectedNdcgAt5: null,
+          deltaRelativeMaeSelectionMinusBaseline: null, deltaRelativeRankingSelectionMinusBaseline: null,
+          deltaRelativeRankingSelectionMinusRelativeMae: null, idealDcgWeight: null,
+          relativeMaeVsBaselineWins: 0, relativeMaeVsBaselineTies: 0, relativeMaeVsBaselineLosses: 0,
+          relativeRankingVsBaselineWins: 0, relativeRankingVsBaselineTies: 0, relativeRankingVsBaselineLosses: 0,
+          relativeRankingVsRelativeMaeWins: 0, relativeRankingVsRelativeMaeTies: 0, relativeRankingVsRelativeMaeLosses: 0,
           wins: 0, ties: 0, losses: 0
         };
       });
