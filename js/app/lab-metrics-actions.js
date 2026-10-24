@@ -74,6 +74,8 @@ export function createLabMetricsActions(ctx) {
   const sourceIds = new WeakMap();
   let nextSourceId = 1;
   let reportedPipelineKey = "";
+  let automaticEnsurePromise = null;
+  let automaticEnsureKey = "";
 
   function sourceId(value) {
     if ((typeof value !== "object" || value === null) && typeof value !== "function") return "none";
@@ -215,6 +217,12 @@ export function createLabMetricsActions(ctx) {
       revision += 1;
       metrics = null;
       cachedKey = "";
+      automaticEnsurePromise = null;
+      automaticEnsureKey = "";
+      ctx.recommendationDiagnosticReportText = "";
+      ctx.recommendationDiagnosticCopyMessage = "";
+      ctx.recommendationDiagnosticReportFormat = "json";
+      ctx.recommendationDiagnosticFeatureLabelsIncluded = false;
       if (coordinator) coordinator.invalidate();
     }
     observed = current;
@@ -467,7 +475,9 @@ export function createLabMetricsActions(ctx) {
       }, {
         shouldContinue: control.shouldContinue,
         yieldToBrowser: function () { return yieldToBrowser(ctx.window); },
-        batchSize: 48
+        batchSize: 48,
+        includeExtendedAlphaGrid: true,
+        includeRelativeScale: true
       });
     },
     temporal: async function (control) {
@@ -531,10 +541,26 @@ export function createLabMetricsActions(ctx) {
     observeSourceReferences();
     const key = dataKey();
     if (metrics && cachedKey === key && snapshot && snapshot.status !== "running") return Promise.resolve(metrics);
+    if (automaticEnsurePromise && automaticEnsureKey === key) return automaticEnsurePromise;
     error = null;
-    return coordinator.ensure().then(function () {
+    automaticEnsureKey = key;
+    automaticEnsurePromise = (async function () {
+      await coordinator.ensure();
+      if (dataKey() !== key) return metrics;
+      const completedSnapshot = coordinator.getSnapshot();
+      const needsRetry = completedSnapshot && completedSnapshot.dataKey === key &&
+        Array.isArray(completedSnapshot.phases) && completedSnapshot.phases.some(function (phase) {
+          return phase.status === "error" || phase.status === "cancelled";
+        });
+      if (needsRetry) await coordinator.retryFailures();
       return metrics;
+    })().finally(function () {
+      if (automaticEnsureKey === key) {
+        automaticEnsurePromise = null;
+        automaticEnsureKey = "";
+      }
     });
+    return automaticEnsurePromise;
   }
 
   function restartLabDiagnostic() {
@@ -554,6 +580,8 @@ export function createLabMetricsActions(ctx) {
 
   function cancelLabMetrics() {
     if (coordinator) coordinator.invalidate();
+    automaticEnsurePromise = null;
+    automaticEnsureKey = "";
     metrics = null;
     error = null;
     cachedKey = "";
@@ -561,9 +589,15 @@ export function createLabMetricsActions(ctx) {
 
   function invalidateLabMetrics() {
     revision += 1;
+    automaticEnsurePromise = null;
+    automaticEnsureKey = "";
     metrics = null;
     error = null;
     cachedKey = "";
+    ctx.recommendationDiagnosticReportText = "";
+    ctx.recommendationDiagnosticCopyMessage = "";
+    ctx.recommendationDiagnosticReportFormat = "json";
+    ctx.recommendationDiagnosticFeatureLabelsIncluded = false;
     observed = observation();
     if (coordinator) coordinator.invalidate();
   }
