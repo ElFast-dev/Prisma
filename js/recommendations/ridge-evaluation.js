@@ -1,5 +1,5 @@
 import { dateOnlyInTimeZone, PANAMA_TIME_ZONE } from "../core/date-utils.js";
-import { RIDGE_ALPHA_GRID, selectAlphaByMae, selectAlphaByRanking, summarizeAlphaBoundary } from "./ridge-alpha-selection.js?v=rec-20261023-1";
+import { RIDGE_ALPHA_GRID, MIN_RANKING_INNER_FOLDS, selectAlphaByMae, selectAlphaByRanking, summarizeAlphaBoundary } from "./ridge-alpha-selection.js?v=rec-20261023-1";
 import { buildKernel, buildKernelAsync, clampRating, predictRidge, trainRidge, trainRidgeAsync, vectorize } from "./ridge-kernel.js?v=rec-20261023-2";
 
 const OUTER_FOLDS = 5;
@@ -578,7 +578,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       }
       if (!errors.length) throw new Error("Validación interna insuficiente");
       maeCandidates.push({ alpha: alpha, score: meanAbsoluteError(errors) });
-      if (canSelectRanking && rankingFoldsEvaluated >= 2 && rankingScores.length) {
+      if (canSelectRanking && rankingFoldsEvaluated >= MIN_RANKING_INNER_FOLDS && rankingScores.length) {
         const score = rankingScores.reduce(function (sum, value) { return sum + value; }, 0) / rankingScores.length;
         rankingCandidates.push({ alpha: alpha, score: score, foldsEvaluated: rankingFoldsEvaluated });
       }
@@ -1114,7 +1114,7 @@ export function createRidgeRecommendationExperiment(dependencies) {
       alphaGrid: ALPHAS.slice(),
       selectionCriteria: {
         mae: "Menor MAE medio en validación interna del entrenamiento exterior.",
-        ranking: "Mayor nDCG@5 medio en validación interna entre los modos disponibles con relevancia >= 7; sin acceso a notas del pliegue exterior."
+        ranking: "Mayor nDCG@5 medio en validación interna entre modos disponibles con relevancia >= 7; mínimo de 50 películas, 10 relevantes y dos pliegues internos válidos; sin acceso a notas exteriores."
       },
       selectedAlphaCountsByMae: maeCounts,
       selectedAlphaCountsByRanking: rankingCounts,
