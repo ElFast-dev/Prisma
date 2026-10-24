@@ -15,7 +15,7 @@ const APP_ASSETS = [
   "./styles/watch-streak.css?v=ui-20261023-27",
   "./styles/prisma-design-system.css?v=ui-20261023-27",
 
-  "./app.js?v=ui-20261024-114",
+  "./app.js?v=ui-20261024-115",
   "./js/tmdb/client.js?v=core-20261022-3",
   "./js/core/movie-utils.js",
   "./js/core/date-utils.js",
