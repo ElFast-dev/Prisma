@@ -1,4 +1,4 @@
-const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v13";
+const REPORT_SCHEMA = "prisma-recommendation-diagnostics/v14";
 const MAX_FEATURE_DETAILS = 40;
 
 function numeric(value) {
@@ -278,7 +278,7 @@ function ridgeAlphaSelectionEvaluation(source) {
   const evaluation = source && typeof source === "object" ? source : null;
   const available = Boolean(evaluation && evaluation.available);
   const alphaGrid = evaluation && Array.isArray(evaluation.alphaGrid) ? evaluation.alphaGrid
-    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 12) : [];
+    .map(numeric).filter(function (value) { return value != null && value > 0; }).slice(0, 14) : [];
   const summarizeCounts = function (counts) {
     const input = counts && typeof counts === "object" ? counts : {};
     return Object.keys(input).sort(function (left, right) { return Number(left) - Number(right); }).reduce(function (all, alpha) {
@@ -338,6 +338,50 @@ function ridgeAlphaSelectionEvaluation(source) {
       rankingModes: modes
     };
   });
+  const boundarySummary = function (source) {
+    const item = source && typeof source === "object" ? source : {};
+    return {
+      available: Boolean(item.available),
+      minimumAlpha: numeric(item.minimumAlpha),
+      selectedCount: nonNegativeInteger(item.selectedCount),
+      foldsEvaluated: nonNegativeInteger(item.foldsEvaluated),
+      selectedFraction: rounded(item.selectedFraction, 4),
+      majoritySelected: Boolean(item.majoritySelected),
+      unresolved: Boolean(item.unresolved)
+    };
+  };
+  const boundary = evaluation && evaluation.lowerBoundary || {};
+  const foldSummaries = (Array.isArray(evaluation && evaluation.foldSummaries) ? evaluation.foldSummaries : [])
+    .slice(0, 15).map(function (fold) {
+      const item = fold || {};
+      const modes = (Array.isArray(item.rankingModes) ? item.rankingModes : []).slice(0, 3).map(function (mode) {
+        const value = mode || {};
+        const modeAvailable = Boolean(value.available);
+        return {
+          mode: ["balanced", "affinity", "variety"].includes(value.mode) ? value.mode : "",
+          available: modeAvailable,
+          baselineNdcgAt5: modeAvailable ? rounded(value.baselineNdcgAt5, 4) : null,
+          maeSelectedNdcgAt5: modeAvailable ? rounded(value.maeSelectedNdcgAt5, 4) : null,
+          rankingSelectedNdcgAt5: modeAvailable ? rounded(value.rankingSelectedNdcgAt5, 4) : null,
+          deltaRankingSelectionMinusMaeSelection: modeAvailable
+            ? rounded(value.deltaRankingSelectionMinusMaeSelection, 4) : null,
+          wins: nonNegativeInteger(value.wins),
+          ties: nonNegativeInteger(value.ties),
+          losses: nonNegativeInteger(value.losses)
+        };
+      });
+      return {
+        repeat: nonNegativeInteger(item.repeat),
+        outerFold: nonNegativeInteger(item.outerFold),
+        selectedAlphaByMae: numeric(item.selectedAlphaByMae),
+        selectedAlphaByRanking: numeric(item.selectedAlphaByRanking),
+        maeSelectedMae: rounded(item.maeSelectedMae, 4),
+        baselineMae: rounded(item.baselineMae, 4),
+        rankingSelectedMae: rounded(item.rankingSelectedMae, 4),
+        deltaRankingSelectionMinusMaeSelection: rounded(item.deltaRankingSelectionMinusMaeSelection, 4),
+        rankingModes: modes
+      };
+    });
   const paired = evaluation && evaluation.pairedMaeDifference || {};
   return {
     executionStatus: evaluation ? (available ? "completed" : "unavailable") : "not-run",
@@ -353,6 +397,13 @@ function ridgeAlphaSelectionEvaluation(source) {
     },
     selectedAlphaCountsByMae: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByMae),
     selectedAlphaCountsByRanking: summarizeCounts(evaluation && evaluation.selectedAlphaCountsByRanking),
+    lowerBoundary: {
+      mae: boundarySummary(boundary.mae),
+      ranking: boundarySummary(boundary.ranking),
+      unresolved: Boolean(boundary.unresolved || (boundary.mae && boundary.mae.unresolved) ||
+        (boundary.ranking && boundary.ranking.unresolved))
+    },
+    foldSummaries: foldSummaries,
     maeSelected: summary(evaluation && evaluation.maeSelected, "deltaBaselineMinusMaeSelected"),
     rankingSelected: summary(evaluation && evaluation.rankingSelected, "deltaBaselineMinusRankingSelected"),
     pairedMaeDifference: {
