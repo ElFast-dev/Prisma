@@ -247,8 +247,8 @@ export function createLabActions(ctx) {
     ctx.recommendationDiagnosticReportText = reportText;
     ctx.recommendationDiagnosticReportFormat = outputFormat;
     ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
-      ? "JSON técnico completo generado localmente. Revisa el contenido antes de compartirlo; Prisma no lo envía a ningún servidor."
-      : "Contexto resumido para la IA generado localmente. Incluye hallazgos, límites y próximos pasos; no incluye nombres individuales de señales ni datos personales.";
+      ? "JSON técnico completo generado localmente. Prisma no lo envía a ningún servidor."
+      : "Contexto resumido para la IA generado localmente. No incluye nombres individuales de señales ni datos personales.";
 
     let copied = false;
     try {
@@ -260,8 +260,8 @@ export function createLabActions(ctx) {
       await writePromise;
       copied = true;
       ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
-        ? "JSON completo copiado. Revisa el contenido de abajo antes de compartirlo."
-        : "Contexto resumido copiado. Revisa el contenido de abajo antes de pegarlo en otra conversación.";
+        ? "Informe técnico copiado. Ya puedes pegarlo en la conversación de desarrollo."
+        : "Contexto resumido copiado. Ya puedes pegarlo en la conversación de desarrollo.";
     } catch (_) {
       ctx.recommendationDiagnosticCopyMessage = outputFormat === "json"
         ? "No se pudo copiar automáticamente. El JSON completo está visible abajo para seleccionarlo y copiarlo manualmente."
