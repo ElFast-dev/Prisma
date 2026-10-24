@@ -429,7 +429,7 @@ const automaticPhases = [
 const integrated = buildRecommendationDiagnosticReport({
   ...baseInput,
   generatedAt: "2026-10-23T14:00:00.000Z",
-  applicationVersion: "prisma-web/2026.10.23-lab-diagnostic.1",
+  applicationVersion: "prisma-web/2026.10.24-lab-diagnostic.2",
   diagnosticSnapshot: {
     schema: "prisma-lab-diagnostic-run/v1",
     status: "partial-error",
@@ -491,8 +491,10 @@ const integrated = buildRecommendationDiagnosticReport({
   }
 });
 assert.equal(integrated.schema, "prisma-recommendation-diagnostics/v14");
+assert.equal(integrated.evaluation.ridgeExperiment.alphaSelectionComparison.alphaGrid.length, 14,
+  "La evaluación histórica debe conservar exactamente sus 14 anclajes.");
 assert.equal(integrated.generatedAt, "2026-10-23T14:00:00.000Z");
-assert.equal(integrated.applicationVersion, "prisma-web/2026.10.23-lab-diagnostic.1");
+assert.equal(integrated.applicationVersion, "prisma-web/2026.10.24-lab-diagnostic.2");
 assert.equal(integrated.diagnostic.status, "partial-error");
 assert.equal(integrated.diagnostic.run.phases.length, 7);
 assert.equal(integrated.diagnostic.run.completedPhases, 7);
@@ -523,6 +525,68 @@ for (const forbidden of ["private diagnostic title", "personal film title", "998
 }
 assert.equal(integrated.privacy.networkTransmission, false);
 assert.equal(integrated.privacy.featureLabelsIncluded, false);
+
+
+const extendedAlphaGrid = [
+  1e-7, 3e-7, 1e-6, 3e-6,
+  1e-5, 3e-5, 1e-4, 3e-4,
+  1e-3, 3e-3, 1e-2, 3e-2,
+  1e-1, 0.3, 1, 3, 10, 100
+];
+const extendedAlphaReport = buildRecommendationDiagnosticReport({
+  ratedCount: 60,
+  ratingValues: Array(60).fill(7),
+  profile: { average: 7, withMetadata: 60, features: new Map() },
+  ridgeEvaluation: {
+    available: true, count: 60, mae: 0.9, baselineMae: 1.1,
+    alphaGrid: extendedAlphaGrid,
+    selectedAlphaCounts: { "1e-7": 1, "100": 1 },
+    alphaSelectionComparison: {
+      available: true, sampleCount: 60, alphaGrid: extendedAlphaGrid,
+      selectedAlphaCountsByMae: { "1e-7": 8, "100": 7 },
+      selectedAlphaCountsByRanking: { "1e-7": 2, "100": 13 },
+      lowerBoundary: {
+        mae: { available: true, minimumAlpha: 1e-7, selectedCount: 8, foldsEvaluated: 15,
+          selectedFraction: 8 / 15, majoritySelected: true, unresolved: true },
+        ranking: { available: true, minimumAlpha: 1e-7, selectedCount: 2, foldsEvaluated: 15,
+          selectedFraction: 2 / 15, majoritySelected: false, unresolved: false },
+        unresolved: true
+      },
+      relativeScaleComparison: {
+        available: true, executionStatus: "completed", sampleCount: 60,
+        relativeMae: {
+          available: true, selectedAnchorAlphaCounts: { "1e-7": 4, "100": 1 },
+          lowerBoundary: { available: true, minimumAlpha: 1e-7, selectedCount: 4, foldsEvaluated: 15,
+            selectedFraction: 4 / 15, majoritySelected: false, unresolved: false }
+        },
+        relativeRanking: {
+          available: true, selectedAnchorAlphaCounts: { "1e-7": 2, "100": 3 },
+          lowerBoundary: { available: true, minimumAlpha: 1e-7, selectedCount: 2, foldsEvaluated: 15,
+            selectedFraction: 2 / 15, majoritySelected: false, unresolved: false }
+        }
+      }
+    }
+  }
+});
+const serializedExtendedRidge = extendedAlphaReport.evaluation.ridgeExperiment;
+const serializedExtendedSelection = serializedExtendedRidge.alphaSelectionComparison;
+assert.equal(serializedExtendedRidge.alphaGrid.length, 18);
+assert.deepEqual(serializedExtendedRidge.alphaGrid, extendedAlphaGrid);
+assert.equal(serializedExtendedSelection.alphaGrid.length, 18,
+  "El JSON de selección debe conservar los 18 valores de la rejilla extendida.");
+assert.deepEqual(serializedExtendedSelection.alphaGrid, extendedAlphaGrid);
+assert.deepEqual(serializedExtendedSelection.selectedAlphaCountsByMae, { "1e-7": 8, "100": 7 },
+  "La selección por MAE debe conservar los anclajes mínimo y máximo.");
+assert.deepEqual(serializedExtendedSelection.selectedAlphaCountsByRanking, { "1e-7": 2, "100": 13 },
+  "La selección por ranking debe conservar los anclajes mínimo y máximo.");
+assert.equal(serializedExtendedSelection.lowerBoundary.mae.minimumAlpha, 1e-7);
+assert.equal(serializedExtendedSelection.lowerBoundary.ranking.minimumAlpha, 1e-7);
+assert.deepEqual(serializedExtendedSelection.relativeScaleComparison.relativeMae.selectedAnchorAlphaCounts,
+  { "1e-7": 4, "100": 1 },
+  "La selección relativa por MAE debe conservar todos los anclajes declarados.");
+assert.deepEqual(serializedExtendedSelection.relativeScaleComparison.relativeRanking.selectedAnchorAlphaCounts,
+  { "1e-7": 2, "100": 3 },
+  "La selección relativa por ranking debe conservar todos los anclajes declarados.");
 
 const unavailable = buildRecommendationDiagnosticReport({
   ratedCount: 2,
