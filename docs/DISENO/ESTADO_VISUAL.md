@@ -90,6 +90,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Tratamiento visual de la navegación inferior: **concepto B seleccionado**. La píldora exterior conserva la superficie **`#222222`** y el contorno **`#353535`**. La sección activa se distingue solo por el icono y el texto en azul de acento **`#5B9BD5`**, colocados directamente sobre la superficie común, sin cápsula ni fondo interior adicional. La sección inactiva utiliza icono y texto en gris **`#BDBDBD`**. El concepto define este tratamiento de selección, no aprueba todavía el diseño completo de la navegación ni de la pantalla.
 - Disposición interna de cada elemento de la navegación inferior: **concepto B seleccionado**. El icono se coloca encima del nombre y ambos quedan centrados horizontalmente. Esta decisión complementa el tratamiento cromático anterior, pero no aprueba todavía la composición completa de la navegación.
 - Tamaño de los nombres «Personal» y «Descubrir» en la navegación inferior: **12 px** en ambas secciones.
+- Separación vertical entre el icono y el nombre de cada sección de la navegación inferior: **4 px**.
 - Peso tipográfico en la navegación inferior: sección activa **medio (500)**; sección inactiva **regular (400)**. El cambio de peso acompaña al color de estado y no añade una cápsula interior.
 - Tamaño de los iconos de Personal y Descubrir en la navegación inferior: **20 px** en ambas secciones.
 - Feed predeterminado de tres columnas.
