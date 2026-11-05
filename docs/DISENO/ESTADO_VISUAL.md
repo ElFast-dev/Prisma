@@ -20,6 +20,10 @@
 - Los accesos son Historial, Pendientes, Ocultos, Estadísticas y Gestionar listas.
 - No se abre Historial directamente.
 - La distribución queda aprobada como estructura: Historial, Pendientes, Ocultos y Estadísticas son cuatro tarjetas grandes en una cuadrícula de dos columnas; Gestionar listas es un acceso horizontal de ancho completo debajo.
+- La pantalla comienza directamente con los cinco accesos: no debe mostrar «PRISMA», un título repetido «Personal» ni un eslogan/subtítulo como «Tu historia como espectador».
+- Historial, Pendientes y Ocultos muestran un contador discreto de películas; Historial cuenta películas únicas, no visionados.
+- Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
+- Las tarjetas mantienen el título del acceso y el contador cuando corresponda; no necesitan frases descriptivas largas.
 - La aprobación cubre la distribución y jerarquía de los cinco accesos, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual, tipografía, colores, iconos, espaciado y detalles de los componentes.
 - No se han aprobado todavía colores, tipografías, radios, iconos definitivos, fondos ni estilo de tarjetas.
 
