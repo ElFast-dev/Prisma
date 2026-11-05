@@ -25,6 +25,10 @@
 - Desplazamiento infinito.
 - Marcapáginas azul para Vista y gris para Pendiente.
 
+### Personal: listas personalizadas
+- «Gestionar listas» es una sección propia de Personal para crear y administrar listas cinematográficas personalizadas.
+- No debe confundirse visual ni funcionalmente con Historial o Pendientes.
+
 ### Ficha de película
 - Cabecera horizontal a todo lo ancho, con degradado inferior, título en blanco y controles circulares semitransparentes.
 - Claqueta gris sobre fondo gris oscuro como sustituto si falta imagen.
@@ -48,6 +52,7 @@ Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía
 | Personal: Pendientes | Pendiente de concepto y aprobación | Por definir |
 | Personal: Ocultos | Pendiente de concepto y aprobación | Por definir |
 | Personal: Estadísticas | Pendiente de concepto y aprobación | Por definir |
+| Personal: Gestionar listas | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Ficha cinematográfica | Estructura funcional detallada; diseño visual pendiente | Por definir |
 | Ajustes | Requisitos funcionales; diseño visual pendiente | Por definir |
 
