@@ -16,28 +16,29 @@
 ## Requisitos visuales ya acordados
 
 ### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
+
 - Al tocar Personal desde la píldora inferior, se abre un centro de navegación con cinco accesos visibles.
 - Los accesos son Historial, Pendientes, Ocultos, Estadísticas y Gestionar listas.
 - No se abre Historial directamente.
 - La distribución queda aprobada como estructura: Historial, Pendientes, Ocultos y Estadísticas son cuatro tarjetas grandes en una cuadrícula de dos columnas; Gestionar listas es un acceso horizontal de ancho completo debajo.
 - Concepto elegido para las cuatro tarjetas: **A, iconos grandes y minimalistas**. Se descarta para esta pantalla la alternativa de collages de pósteres.
 - Los iconos son los elementos gráficos principales de las cuatro tarjetas; los contadores se mantienen pequeños y discretos.
-- Estilo de iconografía elegido: **concepto A, iconos lineales minimalistas**, sin placas ni fondos geométricos detrás del símbolo.
-- Grosor de trazo elegido para los iconos de Personal: **concepto A, trazo fino**. Debe conservar buena legibilidad en tamaños pequeños y no volverse excesivamente delicado.
-- Tamaño elegido para los iconos de las cuatro tarjetas: **grandes**, con espacio suficiente alrededor para que no compitan con el nombre ni con el contador.
-- Tamaño elegido para los iconos de Personal: **concepto B, grandes**. Deben destacar dentro de las tarjetas, con espacio libre suficiente a su alrededor y sin competir con el nombre.
+- Estilo de iconografía: **A, lineal y minimalista**, sin placas ni fondos geométricos detrás del símbolo.
+- Grosor del trazo: **A, fino**. Debe conservar buena legibilidad y no volverse excesivamente delicado.
+- Tamaño: **B, grande**. Los iconos deben destacar dentro de las tarjetas, con espacio libre suficiente y sin competir con el nombre.
+- Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono neutro; no habrá un color distinto por sección. El tono exacto se definirá al aprobar la paleta del sistema de diseño.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
-- Proporción elegida para las cuatro tarjetas: **concepto A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
-- Tratamiento de superficie elegido para las cuatro tarjetas: **concepto B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
-- Estilo de iconografía elegido para las cuatro tarjetas: **concepto A, iconos lineales minimalistas**, sin base geométrica ni fondo propio.
+- Proporción de las cuatro tarjetas: **A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
+- Tratamiento de superficie de las cuatro tarjetas: **B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
 - La pantalla comienza directamente con los cinco accesos: no debe mostrar «PRISMA», un título repetido «Personal» ni un eslogan/subtítulo como «Tu historia como espectador».
 - Historial, Pendientes y Ocultos muestran un contador discreto de películas; Historial cuenta películas únicas, no visionados.
 - Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
 - Las tarjetas mantienen el título del acceso y el contador cuando corresponda; no necesitan frases descriptivas largas.
-- La aprobación cubre la distribución y jerarquía de los cinco accesos, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual, tipografía, colores, iconos, espaciado y detalles de los componentes.
-- No se han aprobado todavía colores, tipografías, radios, grosores/tamaños definitivos de iconos, detalles de los trazos, fondos generales ni otros componentes del sistema visual.
+- La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo, tipografía, paleta, espaciado y detalles de los componentes.
+- Siguen pendientes los tonos exactos de la paleta, tipografías, radios, dimensiones definitivas, valores exactos de grosor de trazo, fondos generales y demás componentes del sistema visual.
 
 ### Navegación y Descubrir
+
 - Descubrir es la sección inicial.
 - Barra/búsqueda en la parte superior, con accesos a filtros y Ajustes.
 - Feed debajo del buscador.
@@ -48,6 +49,7 @@
 - Marcapáginas azul para Vista y gris para Pendiente.
 
 ### Personal: listas personalizadas
+
 - «Gestionar listas» es una sección propia de Personal para crear y administrar listas cinematográficas personalizadas.
 - Cada lista muestra un nombre obligatorio y una descripción opcional.
 - Cada lista tiene un color identificativo elegible al crearla, visible discretamente junto al nombre y en detalles.
@@ -70,6 +72,7 @@
 - Desde una ficha, «GESTIONAR LISTAS» abre una ventana con la relación de listas personalizadas y casillas de selección múltiple; las casillas reflejan la pertenencia actual de la película.
 
 ### Ficha de película
+
 - Cabecera horizontal a todo lo ancho, con degradado inferior, título en blanco y controles circulares semitransparentes.
 - Claqueta gris sobre fondo gris oscuro como sustituto si falta imagen.
 - Datos básicos en una línea separados por barras.
@@ -79,7 +82,7 @@
 
 ## Referencia de componentes
 
-Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía aprobados. No se debe inferir una paleta oscura definitiva solo porque se haya pedido un tono cinematográfico para ciertos elementos.
+Todavía no hay un sistema de diseño completo aprobado. Las decisiones de Personal indicadas arriba son parciales: por ejemplo, ya está decidido que los iconos sean lineales, grandes y monocromáticos en un tono neutro, pero no se ha elegido el valor exacto de ese color. No se debe inferir una paleta oscura definitiva solo porque se haya pedido un tono cinematográfico para ciertos elementos.
 
 ## Decisiones de concepto pendientes de aprobación
 
@@ -92,7 +95,7 @@ Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
-| Personal: pantalla principal | Concepto A y distribución de cinco accesos aprobados; aspecto final todavía en borrador | Por definir |
+| Personal: pantalla principal | Concepto A, distribución y decisiones parciales de tarjetas aprobadas; aspecto final todavía en borrador | Por definir |
 | Personal: Historial | Pendiente de concepto y aprobación | Por definir |
 | Personal: Pendientes | Pendiente de concepto y aprobación | Por definir |
 | Personal: Ocultos | Pendiente de concepto y aprobación | Por definir |
