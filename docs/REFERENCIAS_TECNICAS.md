@@ -22,6 +22,13 @@ Fuentes consultadas para el diseño técnico inicial de Prisma (5 de noviembre d
 - Cómo construir URL de imágenes: https://developer.themoviedb.org/docs/image-basics
 - Referencia general de API: https://developer.themoviedb.org/reference/intro/getting-started
 
+## Fuentes de puntuaciones externas
+
+- IMDb API y acceso: https://data.imdb.com/documentation/api-documentation/
+- IMDb: uso de datos en software y restricciones: https://help.imdb.com/article/imdb/general-information/can-i-use-imdb-data-in-my-software/G5JTRESSHJBBHTGX
+- Rotten Tomatoes: proceso de licencia de datos y marcas: https://www.rottentomatoes.com/help_desk/licensing
+- Metacritic vía proveedor licenciado Fabric Origin: https://developer.origin.fabricdata.com/origin/apis-all/metacritic-api-docs
+
 ## GitHub
 
 - Crear un flujo de trabajo de Gradle: https://docs.github.com/es/actions/tutorials/build-and-test-code/java-with-gradle
