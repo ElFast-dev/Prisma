@@ -48,6 +48,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - Proporción de las cuatro tarjetas: **A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
 - Tratamiento de superficie de las cuatro tarjetas: **B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
+- Grosor del contorno de las tarjetas de Personal: **A, delicado, 1 px**. Se descarta la alternativa de 1.5 px.
 - Radio de las esquinas: **A, redondeo sutil de 14 px**. Se descarta el redondeo amplio de 26 px.
 - Separación entre las cuatro tarjetas: **A, compacta, 12 px**. Se descarta la alternativa amplia de 20 px.
 - Espacio interior de las cuatro tarjetas: **A, compacto, 16 px** entre el contenido y el contorno.
