@@ -30,6 +30,7 @@
 - Cada lista muestra un nombre obligatorio y una descripción opcional.
 - Las portadas se pueden reordenar manualmente mediante arrastre.
 - Cada lista ofrece controles de filtros propios, separados de los de otras listas y de Descubrir.
+- El panel de filtros de cada lista parte de los filtros de Descubrir y puede crecer con filtros adicionales que se aprueben; su contenido se definirá al diseñar esa pantalla.
 - No debe confundirse visual ni funcionalmente con Historial o Pendientes.
 
 ### Ficha de película
