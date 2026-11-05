@@ -102,6 +102,7 @@ La licencia particular informada permite caché ilimitada de contenido e imágen
 
 - Los criterios de filtro se representarán como condiciones combinables y evaluables de forma determinista.
 - La capa de dominio admitirá operadores AND y OR cuando los criterios seleccionados permitan esa combinación lógica.
+- El operador inicial será AND; la preferencia de cambiar a OR podrá mantenerse mientras se edita el conjunto de filtros, sin alterar los datos guardados.
 - El estado de filtros de Descubrir y el de cada lista personalizada se almacenará por separado; una lista no heredará ni modificará el estado de otra.
 - El orden manual de una lista se conservará como orden propio. Los criterios de ordenación temporal (título, año, duración, fecha de estreno o calificación) se aplicarán como una vista/orden alternativo y no sobrescribirán las posiciones manuales.
 - Los filtros y la ordenación deben tener resultados coherentes sin conexión sobre los metadatos disponibles localmente. Si falta un dato requerido, no se inventará un valor para forzar el orden o el filtro.
