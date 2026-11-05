@@ -144,6 +144,7 @@ Para una película no oculta:
 - A su derecha, acción de texto gris «AGREGAR A PENDIENTES».
 - El menú de tres puntos ofrece acciones pequeñas con icono y texto en mayúsculas: «GESTIONAR LISTAS» y «OCULTAR».
 - «GESTIONAR LISTAS» se refiere a las listas personalizadas definidas en Personal; no agrega ni quita la película de Historial o Pendientes.
+- Al pulsar «GESTIONAR LISTAS» se abre una ventana con todas las listas personalizadas y una casilla por lista. Las casillas reflejan las listas a las que ya pertenece la película; el usuario puede marcar o desmarcar varias para agregarla o quitarla de esas listas en una sola acción.
 - La relación exacta entre esa acción de la ficha y la sección de Personal (por ejemplo, abrir un selector de listas personalizadas) queda pendiente de concretar.
 - La ubicación y el comportamiento exactos de «Colecciones» se detallan en la sección de preguntas abiertas.
 
