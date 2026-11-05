@@ -28,6 +28,8 @@
 ### Personal: listas personalizadas
 - «Gestionar listas» es una sección propia de Personal para crear y administrar listas cinematográficas personalizadas.
 - Cada lista muestra un nombre obligatorio y una descripción opcional.
+- Cada lista tiene un color identificativo elegible al crearla, visible discretamente junto al nombre y en detalles.
+- El color de identidad no modifica los colores de los pósteres que componen el collage.
 - La portada de cada lista es un collage de pósteres de las películas incluidas; se actualiza al cambiar el contenido.
 - La acción de eliminar una lista no elimina las películas ni sus datos; solo retira la lista y las asociaciones de pertenencia.
 - Antes de confirmar la eliminación, se presenta una ventana con el nombre de la lista y las opciones «CANCELAR» y «ELIMINAR».
