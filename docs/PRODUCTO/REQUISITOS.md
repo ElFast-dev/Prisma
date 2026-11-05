@@ -250,6 +250,8 @@ Sección independiente de Personal para crear y administrar listas cinematográf
 - Cada lista puede tener una **descripción opcional**.
 - Una misma película puede pertenecer simultáneamente a varias listas personalizadas.
 - Añadir o quitar una película de una lista personalizada no altera su pertenencia a otras listas, ni cambia Historial, Pendientes u Ocultos.
+- El usuario puede ordenar manualmente las películas de cada lista arrastrando sus portadas.
+- Cada lista personalizada tiene filtros propios e independientes. Cambiar los filtros de una lista no modifica los filtros ni el contenido de las demás listas ni los del Feed de Descubrir.
 - Los nombres y descripciones son definidos por el usuario.
 - La estructura detallada de una lista y las acciones disponibles se concretarán con el propietario.
 
@@ -344,7 +346,8 @@ La lista se considera viva mientras el propietario siga precisando el producto. 
 Las reglas descritas en las secciones anteriores fueron expresadas o confirmadas por el propietario.
 
 ### Pendiente de concretar, sin bloquear el registro actual
-- Detalle de listas personalizadas: crear, renombrar, eliminar, ordenar y añadir/quitar películas; se definirá con el propietario antes de esa parte del desarrollo.
+- Detalle de listas personalizadas: crear, renombrar, eliminar, añadir/quitar películas y persistencia del orden manual; se definirá con el propietario antes de esa parte del desarrollo.
+- Tipos exactos de filtros disponibles en listas personalizadas y comportamiento del orden manual cuando hay filtros activos.
 - Reglas de unicidad de nombres y orden inicial de las listas personalizadas.
 - Relación exacta entre la acción «GESTIONAR LISTAS» de la ficha y la sección de listas personalizadas.
 - Presentación exacta de Colecciones desde el menú de tres puntos.
