@@ -5,6 +5,24 @@
 
 ## Reglas de diseño
 
+## Regla permanente para crear conceptos visuales
+
+Cada vez que se presenten conceptos visuales para Prisma, deben ser propuestas trabajadas y de calidad de presentación, no simples bocetos repetidos o variaciones superficiales.
+
+Criterios obligatorios:
+- Revisar primero este documento y los requisitos de producto para respetar todas las decisiones aprobadas y no reabrirlas accidentalmente.
+- Mostrar la pantalla o componente dentro de su contexto real de uso, con composición completa y jerarquía visual clara.
+- Cuando se comparen alternativas, mantener constantes los elementos ya aprobados y cambiar únicamente la variable que se está evaluando, salvo que la comparación solicite explícitamente explorar direcciones distintas.
+- Hacer que las alternativas sean visualmente distinguibles y que cada una tenga una intención de diseño reconocible; evitar duplicados que solo cambien una cifra sin que la diferencia se perciba.
+- Cuidar proporciones, alineaciones, ritmo de espaciado, márgenes, tipografía, iconografía, estados y consistencia entre componentes.
+- Utilizar datos de ejemplo claramente identificados como ficticios; nunca presentarlos como datos reales del usuario.
+- Explicar brevemente qué diferencia a cada concepto y qué efecto produce en la experiencia.
+- Si el propietario pide «mejores diseños conceptuales», rehacer la propuesta con una mejora visible de calidad, detalle y composición; no responder repitiendo esencialmente el mismo boceto.
+- Los conceptos se construyen directamente en la conversación con componentes visuales; no se sustituyen por imágenes generadas por IA.
+- No declarar una pantalla aprobada hasta que el propietario confirme expresamente el diseño completo.
+
+Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla Personal.
+
 - El propietario dirige la decisión visual.
 - Los conceptos de pantalla se muestran en la conversación, no se sustituyen por imágenes generadas con IA.
 - El sistema de diseño es la referencia principal para color, tipografía, botones, espaciado, iconos y estilo.
