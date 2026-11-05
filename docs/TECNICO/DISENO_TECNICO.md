@@ -53,7 +53,7 @@ Room será la base principal para datos estructurados y relaciones. Se usará pa
 - Fechas/horas, origen de la fecha y calificaciones de cada visionado.
 - Calificación personal todavía no asociada a un visionado.
 - Listas Historial, Pendientes y Ocultos y estado anterior a ocultar.
-- Listas personalizadas, pertenencia de películas, orden manual, preferencias de filtros, color identificativo y estado fijado/desfijado; la consulta de la sección prioriza las listas fijadas sin cambiar el orden interno de sus películas.
+- Listas personalizadas, pertenencia de películas, orden de películas, orden de listas, preferencias de filtros, color identificativo y estado fijado/desfijado. El orden de listas se conserva de forma independiente para fijadas y no fijadas; la prioridad de las fijadas no cambia el orden interno de sus películas.
 - Datos locales de estadísticas y señales de Espectro, cuando se materialicen.
 - Estado/paginación de resultados que deban sobrevivir a reinicios.
 
