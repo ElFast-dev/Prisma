@@ -23,6 +23,7 @@
 - Concepto elegido para las cuatro tarjetas: **A, iconos grandes y minimalistas**. Se descarta para esta pantalla la alternativa de collages de pósteres.
 - Los iconos son los elementos gráficos principales de las cuatro tarjetas; los contadores se mantienen pequeños y discretos.
 - Estilo de iconografía elegido: **concepto A, iconos lineales minimalistas**, sin placas ni fondos geométricos detrás del símbolo.
+- Grosor de trazo elegido para los iconos de Personal: **concepto A, trazo fino**. Debe conservar buena legibilidad en tamaños pequeños y no volverse excesivamente delicado.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - Proporción elegida para las cuatro tarjetas: **concepto A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
 - Tratamiento de superficie elegido para las cuatro tarjetas: **concepto B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
