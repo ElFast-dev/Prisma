@@ -253,6 +253,8 @@ Sección independiente de Personal para crear y administrar listas cinematográf
 - Antes de eliminar una lista, Prisma muestra una confirmación con el nombre de la lista y las acciones «CANCELAR» y «ELIMINAR».
 - Cada lista tiene un **nombre obligatorio**.
 - Cada lista puede tener una **descripción opcional**.
+- Cada lista tiene un **color identificativo propio**, elegido por el usuario al crearla.
+- El color se muestra de forma discreta junto al nombre y en detalles de la lista; no altera los colores originales de los pósteres del collage.
 - La portada de cada lista es un collage automático compuesto por los pósteres de las películas que pertenecen a esa lista; no se elige una imagen de portada manualmente.
 - El collage se actualiza cuando cambia el conjunto de películas de la lista y utiliza únicamente imágenes disponibles localmente o descargadas legítimamente de TMDB.
 - Una misma película puede pertenecer simultáneamente a varias listas personalizadas.
