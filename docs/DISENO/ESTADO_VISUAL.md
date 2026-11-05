@@ -62,6 +62,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Proporción de las cuatro tarjetas: **A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
 - Tratamiento de superficie de las cuatro tarjetas: superficie elevada sólida `#222222`, según la paleta Dark Mode confirmada. Esta decisión sustituye el fondo transparente elegido anteriormente; se conserva el contorno fino de 1 px.
 - Grosor del contorno de las tarjetas de Personal: **A, delicado, 1 px**. Se descarta la alternativa de 1.5 px.
+- Color del contorno de las tarjetas de Personal: **A, `#353535`**, sutil y discreto. Este valor corresponde a estas tarjetas; no define automáticamente todos los bordes de la aplicación.
 - Radio de las esquinas: **A, redondeo sutil de 14 px**. Se descarta el redondeo amplio de 26 px.
 - Separación entre las cuatro tarjetas: **A, compacta, 12 px**. Se descarta la alternativa amplia de 20 px.
 - Espacio interior de las cuatro tarjetas: **A, compacto, 16 px** entre el contenido y el contorno.
@@ -119,7 +120,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para los iconos inactivos de las tarjetas de Personal también está confirmado el neutro `#D0D0D0`; los activos podrán utilizar el acento azul. Los tonos de texto, otros neutros, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+Todavía no hay un sistema de diseño completo aprobado. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos y el contorno `#353535` de 1 px; los iconos activos podrán utilizar el acento azul. Los tonos de texto, otros neutros y bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
 
 ## Decisiones de concepto pendientes de aprobación
 
