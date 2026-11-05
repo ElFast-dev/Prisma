@@ -108,6 +108,20 @@ Sin red, el Feed solo presenta páginas y películas ya guardadas; no inventa re
 
 WorkManager gestionará tareas aplazables que deban persistir al salir/cerrar la app, como reintentar enriquecimiento de películas manuales cuando vuelva la conectividad. Se usarán restricciones de red, reintentos con backoff y trabajo idempotente. No se dependerá de una tarea inmediata que Android pueda interrumpir.
 
+## 5.1 Fuentes de puntuaciones externas
+
+La interfaz aprobada reserva cuatro espacios para TMDB, IMDb, Rotten Tomatoes y Metacritic. La integración se hará con estas reglas:
+
+- TMDB puede proporcionar su propia puntuación de usuarios a través de su API oficial.
+- Para IMDb, la documentación vigente indica acceso a su API mediante AWS Data Exchange, con solicitud/suscripción, credenciales AWS y condiciones de uso propias. La alternativa de datasets tiene restricciones y requisitos de atribución específicos.
+- Rotten Tomatoes exige tramitar una solicitud de uso/licencia para integrar sus datos en una aplicación; sus pautas públicas indican atribución y enlaces al contenido. La autorización particular de TMDB no sustituye el permiso de Rotten Tomatoes.
+- Metacritic no se tratará como una API pública gratuita. La ruta de acceso documentada encontrada es una oferta licenciada mediante proveedor asociado, con aprobación y suscripción comercial. Se verificará el contrato aplicable antes de usarla.
+- No se utilizará scraping, extracción automatizada de páginas ni servicios intermediarios no autorizados para obtener puntuaciones.
+- La puntuación solo se muestra cuando existe un origen legítimo, una correspondencia inequívoca de película y permiso para el uso y distribución previstos por Prisma.
+- Si una fuente no se puede integrar legal y técnicamente, su espacio mostrará el icono de enlace de la interfaz o se abrirá su página pública si existe una URL válida; nunca se rellenará con una estimación.
+
+La autorización particular recibida de TMDB cubre el contenido entregado por TMDB, incluida su disponibilidad de streaming de JustWatch según lo comunicado por el propietario. No se extiende a los derechos de IMDb, Rotten Tomatoes, Metacritic ni a proveedores ajenos.
+
 ## 6. Seguridad y privacidad
 
 ### 6.1 Token de TMDB
