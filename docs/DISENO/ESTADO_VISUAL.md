@@ -43,7 +43,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Los iconos son los elementos gráficos principales de las cuatro tarjetas; los contadores se mantienen pequeños y discretos.
 - Estilo de iconografía: **A, lineal y minimalista**, sin placas ni fondos geométricos detrás del símbolo.
 - Grosor del trazo: **A, fino**. Debe conservar buena legibilidad y no volverse excesivamente delicado.
-- Tamaño: **B, grande**. Los iconos deben destacar dentro de las tarjetas, con espacio libre suficiente y sin competir con el nombre.
+- Tamaño: **A, 32 px, grande y equilibrado**. Los iconos deben destacar con claridad dentro de las tarjetas, manteniendo espacio libre suficiente y sin competir con el nombre. Se descarta el tamaño extra grande de 40 px.
 - Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono neutro; no habrá un color distinto por sección. El tono exacto se definirá al aprobar la paleta del sistema de diseño.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - Tipografía de los nombres de las secciones: **concepto A, discreta, 16 px y peso medio**. Es una referencia inicial pendiente de validación dentro del sistema tipográfico completo.
