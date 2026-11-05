@@ -264,6 +264,7 @@ Sección independiente de Personal para crear y administrar listas cinematográf
 - Las listas podrán incorporar muchos filtros adicionales. La selección exacta se definirá con el propietario progresivamente; no se asumirán filtros no aprobados.
 - Los filtros pueden combinarse entre sí y su configuración queda separada por lista.
 - Cuando la combinación sea lógica, el usuario puede elegir entre operadores **AND** (deben cumplirse todas las condiciones) y **OR** (puede cumplirse cualquiera de las condiciones). La interfaz no ofrecerá combinaciones que no tengan sentido para los filtros seleccionados.
+- **AND** es el operador predeterminado al abrir los filtros; el usuario puede cambiarlo a **OR**.
 - Los nombres y descripciones son definidos por el usuario.
 - La estructura detallada de una lista y las acciones disponibles se concretarán con el propietario.
 
