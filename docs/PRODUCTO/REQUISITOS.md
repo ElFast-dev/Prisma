@@ -45,6 +45,7 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 
 - Tratamiento visual de la píldora inferior: **concepto B seleccionado**. La píldora exterior mantiene la superficie **`#222222`** y el contorno **`#353535`**; la sección activa se distingue únicamente mediante el icono y el texto en azul de acento **`#5B9BD5`**, directamente sobre la superficie común, sin una cápsula ni un fondo adicional. La sección inactiva utiliza icono y texto en gris **`#BDBDBD`**.
 - Disposición de cada elemento de la navegación inferior: **concepto B seleccionado**, con el icono encima del nombre y ambos centrados horizontalmente en su elemento. Esta elección define la disposición interna, sin aprobar todavía el diseño completo de la navegación.
+- Tamaño de los nombres «Personal» y «Descubrir» en la navegación inferior: **12 px** en ambas secciones.
 - Tamaño de los iconos de Personal y Descubrir en la navegación inferior: **20 px** en ambas secciones.
 
 ### 4.1 Personal
