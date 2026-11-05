@@ -98,6 +98,15 @@ La licencia particular informada permite caché ilimitada de contenido e imágen
 4. Persistir metadatos antes de exponerlos como contenido guardado.
 5. Si se trata de una película manual con varias coincidencias, pedir elección humana y no asociar una coincidencia dudosa.
 
+### Filtros y ordenación
+
+- Los criterios de filtro se representarán como condiciones combinables y evaluables de forma determinista.
+- La capa de dominio admitirá operadores AND y OR cuando los criterios seleccionados permitan esa combinación lógica.
+- El estado de filtros de Descubrir y el de cada lista personalizada se almacenará por separado; una lista no heredará ni modificará el estado de otra.
+- El orden manual de una lista se conservará como orden propio. Los criterios de ordenación temporal (título, año, duración, fecha de estreno o calificación) se aplicarán como una vista/orden alternativo y no sobrescribirán las posiciones manuales.
+- Los filtros y la ordenación deben tener resultados coherentes sin conexión sobre los metadatos disponibles localmente. Si falta un dato requerido, no se inventará un valor para forzar el orden o el filtro.
+- La sintaxis exacta para combinar grupos de condiciones y el orden predeterminado se definirá en la especificación de la fase correspondiente, después de validar los casos de uso reales.
+
 ### Feed infinito
 
 Se empleará paginación real de la fuente y persistencia de claves/estado. Se evaluará Paging 3 con RemoteMediator y Room para que la UI lea del origen local y la paginación remota alimente esa base. Debe haber claves estables y deduplicación por identificador TMDB.
