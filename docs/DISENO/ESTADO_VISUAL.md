@@ -27,6 +27,7 @@
 
 ### Personal: listas personalizadas
 - «Gestionar listas» es una sección propia de Personal para crear y administrar listas cinematográficas personalizadas.
+- Cada lista muestra un nombre obligatorio y una descripción opcional.
 - No debe confundirse visual ni funcionalmente con Historial o Pendientes.
 
 ### Ficha de película
