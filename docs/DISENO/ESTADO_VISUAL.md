@@ -59,6 +59,10 @@
 
 Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía aprobados. No se debe inferir una paleta oscura definitiva solo porque se haya pedido un tono cinematográfico para ciertos elementos.
 
+## Decisiones de concepto pendientes de aprobación
+
+- Para la entrada a Personal se eligió el **concepto A**: una pantalla principal que presenta accesos a Historial, Pendientes, Ocultos, Estadísticas y Gestionar listas. La distribución y los componentes aún están en refinamiento; no implementar hasta aprobación expresa.
+
 ## Registro de aprobaciones visuales
 
 | Elemento | Estado | Versión de implementación |
@@ -66,6 +70,7 @@ Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
+| Personal (pantalla principal) | Concepto A elegido; en refinamiento, todavía no aprobado | Por definir |
 | Personal: Historial | Pendiente de concepto y aprobación | Por definir |
 | Personal: Pendientes | Pendiente de concepto y aprobación | Por definir |
 | Personal: Ocultos | Pendiente de concepto y aprobación | Por definir |
