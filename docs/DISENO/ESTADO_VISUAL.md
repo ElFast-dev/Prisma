@@ -25,6 +25,7 @@
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - Proporción elegida para las cuatro tarjetas: **concepto A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
 - Tratamiento de superficie elegido para las cuatro tarjetas: **concepto B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
+- Estilo de iconografía elegido para las cuatro tarjetas: **concepto A, iconos lineales minimalistas**, sin base geométrica ni fondo propio.
 - La pantalla comienza directamente con los cinco accesos: no debe mostrar «PRISMA», un título repetido «Personal» ni un eslogan/subtítulo como «Tu historia como espectador».
 - Historial, Pendientes y Ocultos muestran un contador discreto de películas; Historial cuenta películas únicas, no visionados.
 - Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
