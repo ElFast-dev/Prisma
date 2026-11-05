@@ -33,6 +33,14 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 
 ## Requisitos visuales ya acordados
 
+### Paleta de colores — Dark Mode (confirmada)
+
+- **Fondo principal:** `#131313` (RGB 19, 19, 19).
+- **Superficies elevadas** — tarjetas, secciones, contenedores y listas: `#222222` (RGB 34, 34, 34).
+- **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#5B9BD5` (RGB 91, 155, 213).
+
+La paleta establece estos tres roles; no implica que el sistema visual completo ni ninguna pantalla estén aprobados. Los tonos de texto, neutros, bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+
 ### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
 
 - Al tocar Personal desde la píldora inferior, se abre un centro de navegación con cinco accesos visibles.
@@ -44,7 +52,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Estilo de iconografía: **A, lineal y minimalista**, sin placas ni fondos geométricos detrás del símbolo.
 - Grosor del trazo: **A, fino**. Debe conservar buena legibilidad y no volverse excesivamente delicado.
 - Tamaño: **A, 32 px, grande y equilibrado**. Los iconos deben destacar con claridad dentro de las tarjetas, manteniendo espacio libre suficiente y sin competir con el nombre. Se descarta el tamaño extra grande de 40 px.
-- Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono neutro; no habrá un color distinto por sección. El tono exacto se definirá al aprobar la paleta del sistema de diseño.
+- Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono neutro en estado inactivo; no habrá un color distinto por sección. El valor neutro se definirá más adelante. Los iconos en estado activo podrán utilizar el acento principal `#5B9BD5`.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - Separación vertical entre el icono y el nombre de las tarjetas: **concepto A, 20 px**, equilibrada y compacta.
 - Tamaño de los contadores de las tarjetas de Personal: **concepto A, 12 px**, pequeños y discretos, sin cápsula ni fondo.
@@ -52,7 +60,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Tipografía de los nombres de las secciones: **concepto A, discreta, 16 px y peso medio**. Es una referencia inicial pendiente de validación dentro del sistema tipográfico completo.
 - Alineación de los nombres de las cuatro tarjetas: **concepto A, alineados a la izquierda**, respetando el margen interior de 16 px.
 - Proporción de las cuatro tarjetas: **A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
-- Tratamiento de superficie de las cuatro tarjetas: **B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
+- Tratamiento de superficie de las cuatro tarjetas: superficie elevada sólida `#222222`, según la paleta Dark Mode confirmada. Esta decisión sustituye el fondo transparente elegido anteriormente; se conserva el contorno fino de 1 px.
 - Grosor del contorno de las tarjetas de Personal: **A, delicado, 1 px**. Se descarta la alternativa de 1.5 px.
 - Radio de las esquinas: **A, redondeo sutil de 14 px**. Se descarta el redondeo amplio de 26 px.
 - Separación entre las cuatro tarjetas: **A, compacta, 12 px**. Se descarta la alternativa amplia de 20 px.
@@ -63,8 +71,8 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Tamaño de los contadores: **A, 12 px**, pequeño y discreto.
 - Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
 - Las tarjetas mantienen el título del acceso y el contador cuando corresponda; no necesitan frases descriptivas largas.
-- La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo, tipografía, paleta, espaciado y detalles de los componentes.
-- Siguen pendientes los tonos exactos de la paleta, tipografías, dimensiones definitivas, valores exactos de grosor de trazo, fondos generales y demás componentes del sistema visual.
+- La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo, tipografía, tonos secundarios y neutros, espaciado y detalles de los componentes.
+- Siguen pendientes las tipografías, tonos de texto y neutros, colores de estados adicionales, dimensiones definitivas, valores exactos del grosor de trazo, reglas de tema claro y demás componentes del sistema visual. Los tres roles cromáticos base de Dark Mode ya están definidos.
 
 ### Navegación y Descubrir
 
@@ -111,7 +119,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. Las decisiones de Personal indicadas arriba son parciales: por ejemplo, ya está decidido que los iconos sean lineales, grandes y monocromáticos en un tono neutro, pero no se ha elegido el valor exacto de ese color. No se debe inferir una paleta oscura definitiva solo porque se haya pedido un tono cinematográfico para ciertos elementos.
+Todavía no hay un sistema de diseño completo aprobado. La paleta base de Dark Mode sí está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Los tonos de texto, neutros, estados adicionales y una eventual paleta para tema claro siguen pendientes. Los iconos inactivos de Personal conservarán un tono neutro monocromático cuyo valor aún debe definirse; los activos podrán utilizar el acento azul.
 
 ## Decisiones de concepto pendientes de aprobación
 
@@ -122,6 +130,7 @@ Todavía no hay un sistema de diseño completo aprobado. Las decisiones de Perso
 | Elemento | Estado | Versión de implementación |
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
+| Paleta de colores Dark Mode | Confirmada: fondo `#131313`, superficies `#222222`, acento `#5B9BD5` | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Personal: pantalla principal | Concepto A, distribución y decisiones parciales de tarjetas aprobadas; aspecto final todavía en borrador | Por definir |
