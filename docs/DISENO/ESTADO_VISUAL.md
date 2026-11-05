@@ -19,8 +19,8 @@
 - Al tocar Personal desde la píldora inferior, se abre un centro de navegación con cinco accesos visibles.
 - Los accesos son Historial, Pendientes, Ocultos, Estadísticas y Gestionar listas.
 - No se abre Historial directamente.
-- La primera propuesta estructural organiza Historial, Pendientes, Ocultos y Estadísticas como cuatro accesos en una cuadrícula de dos columnas; Gestionar listas ocupa una fila de ancho completo.
-- Esta distribución es una dirección de trabajo, no un diseño de pantalla aprobado. Se seguirá refinando en el chat antes de cerrar la pantalla.
+- La distribución queda aprobada como estructura: Historial, Pendientes, Ocultos y Estadísticas son cuatro tarjetas grandes en una cuadrícula de dos columnas; Gestionar listas es un acceso horizontal de ancho completo debajo.
+- La aprobación cubre la distribución y jerarquía de los cinco accesos, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual, tipografía, colores, iconos, espaciado y detalles de los componentes.
 - No se han aprobado todavía colores, tipografías, radios, iconos definitivos, fondos ni estilo de tarjetas.
 
 ### Navegación y Descubrir
@@ -69,7 +69,7 @@ Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía
 
 ## Decisiones de concepto pendientes de aprobación
 
-- Para la entrada a Personal se eligió el **concepto A**: una pantalla principal que presenta accesos a Historial, Pendientes, Ocultos, Estadísticas y Gestionar listas. La distribución y los componentes aún están en refinamiento; no implementar hasta aprobación expresa.
+- Para la entrada a Personal se eligió el **concepto A**: una pantalla principal con cinco accesos. La distribución aprobada es una cuadrícula de dos columnas para Historial, Pendientes, Ocultos y Estadísticas, más Gestionar listas en una fila de ancho completo. El aspecto final de la pantalla sigue pendiente de aprobación; no implementar hasta cerrar el diseño.
 
 ## Registro de aprobaciones visuales
 
@@ -78,8 +78,7 @@ Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
-| Personal (pantalla principal) | Concepto A elegido; en refinamiento, todavía no aprobado | Por definir |
-| Personal: pantalla principal | Concepto A elegido; borrador en refinamiento, no aprobado | Por definir |
+| Personal: pantalla principal | Concepto A y distribución de cinco accesos aprobados; aspecto final todavía en borrador | Por definir |
 | Personal: Historial | Pendiente de concepto y aprobación | Por definir |
 | Personal: Pendientes | Pendiente de concepto y aprobación | Por definir |
 | Personal: Ocultos | Pendiente de concepto y aprobación | Por definir |
