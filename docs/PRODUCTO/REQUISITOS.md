@@ -48,6 +48,7 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 Al pulsar Personal, se abre una pantalla principal (centro de navegación) con cinco accesos visibles a sus subsecciones. No entra directamente a Historial.
 - Las cuatro tarjetas principales utilizan iconos grandes y un tratamiento minimalista; no usan collages de pósteres en esta pantalla.
 - Las cuatro tarjetas utilizan fondo transparente con un contorno fino; no llevan un fondo sólido destacado.
+- El contorno de las cuatro tarjetas tiene un grosor de **1 px**, delicado y discreto.
 - La pantalla no repite un encabezado de marca o sección como «PRISMA» o «Personal», ni utiliza un subtítulo o eslogan como «Tu historia como espectador». La navegación inferior ya comunica la sección activa; el contenido comienza directamente con los accesos.
 - Las tarjetas de Historial, Pendientes y Ocultos muestran discretamente la cantidad de películas que contienen. Historial cuenta películas únicas, no el número total de visionados.
 - «Gestionar listas» muestra la cantidad de listas personalizadas.
