@@ -182,7 +182,14 @@ Se conserva la hora local del teléfono. Para «Ajustar al inicio», el texto de
 - Si hay varios visionados ya registrados, al pulsar «Calificar» se pregunta a cuál de ellos se quiere asignar la nueva puntuación. No se elige uno ni se sobrescriben otros automáticamente.
 - La ficha muestra como puntuación personal la del visionado más reciente. Si no existe ningún visionado, puede mostrar la calificación personal no asociada.
 
-La ficha incluye también cuatro columnas de puntuaciones externas, con el número grande y el nombre de la fuente debajo. Si no existe puntuación, se muestra un icono de enlace en lugar de inventar un número. Los nombres de las cuatro fuentes todavía no están confirmados.
+La ficha incluye cuatro columnas de puntuaciones externas, con el número grande y el nombre de la fuente debajo. Las cuatro fuentes elegidas por el propietario son:
+
+1. **TMDB**
+2. **IMDb**
+3. **Rotten Tomatoes**
+4. **Metacritic**
+
+Si no existe una puntuación, no hay un dato verificable o no existe una vía de acceso autorizada, se muestra el icono de enlace previsto en lugar de inventar un número. La selección de estas fuentes define el objetivo de producto y visual; no constituye por sí sola una licencia ni garantiza acceso técnico a sus datos. No se permite obtener las puntuaciones mediante scraping o extracción no autorizada. Cada fuente adicional a TMDB requiere verificar sus condiciones de acceso, licencia, atribución y posibilidad de distribución pública antes de integrarla.
 
 ### 7.7 Dónde verla
 
@@ -324,7 +331,6 @@ La lista se considera viva mientras el propietario siga precisando el producto. 
 Las reglas descritas en las secciones anteriores fueron expresadas o confirmadas por el propietario.
 
 ### Pendiente de concretar, sin bloquear el registro actual
-- Nombres de las cuatro fuentes de puntuación externa.
 - Qué hace exactamente «GESTIONAR LISTAS» en cada estado y cómo se ordenan sus opciones.
 - Presentación exacta de Colecciones desde el menú de tres puntos.
 - Fuente y criterios para los tráileres y enlaces rápidos.
