@@ -52,7 +52,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Estilo de iconografía: **A, lineal y minimalista**, sin placas ni fondos geométricos detrás del símbolo.
 - Grosor del trazo: **A, fino**. Debe conservar buena legibilidad y no volverse excesivamente delicado.
 - Tamaño: **A, 32 px, grande y equilibrado**. Los iconos deben destacar con claridad dentro de las tarjetas, manteniendo espacio libre suficiente y sin competir con el nombre. Se descarta el tamaño extra grande de 40 px.
-- Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono neutro en estado inactivo; no habrá un color distinto por sección. El valor neutro se definirá más adelante. Los iconos en estado activo podrán utilizar el acento principal `#5B9BD5`.
+- Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono en estado inactivo; no habrá un color distinto por sección. El propietario confirmó **`#D0D0D0`** (gris claro) para los iconos inactivos. Los iconos en estado activo podrán utilizar el acento principal **`#5B9BD5`**.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - Separación vertical entre el icono y el nombre de las tarjetas: **concepto A, 20 px**, equilibrada y compacta.
 - Tamaño de los contadores de las tarjetas de Personal: **concepto A, 12 px**, pequeños y discretos, sin cápsula ni fondo.
@@ -119,7 +119,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La paleta base de Dark Mode sí está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Los tonos de texto, neutros, estados adicionales y una eventual paleta para tema claro siguen pendientes. Los iconos inactivos de Personal conservarán un tono neutro monocromático cuyo valor aún debe definirse; los activos podrán utilizar el acento azul.
+Todavía no hay un sistema de diseño completo aprobado. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para los iconos inactivos de las tarjetas de Personal también está confirmado el neutro `#D0D0D0`; los activos podrán utilizar el acento azul. Los tonos de texto, otros neutros, estados adicionales y una eventual paleta para tema claro siguen pendientes.
 
 ## Decisiones de concepto pendientes de aprobación
 
