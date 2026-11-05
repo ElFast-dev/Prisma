@@ -252,6 +252,9 @@ Sección independiente de Personal para crear y administrar listas cinematográf
 - Añadir o quitar una película de una lista personalizada no altera su pertenencia a otras listas, ni cambia Historial, Pendientes u Ocultos.
 - El usuario puede ordenar manualmente las películas de cada lista arrastrando sus portadas.
 - Cada lista personalizada tiene filtros propios e independientes. Cambiar los filtros de una lista no modifica los filtros ni el contenido de las demás listas ni los del Feed de Descubrir.
+- Cada lista personalizada incluye como base los filtros de Descubrir: géneros, año de estreno, país de producción, duración, idioma original y puntuación de TMDB.
+- Las listas podrán incorporar muchos filtros adicionales. La selección exacta se definirá con el propietario progresivamente; no se asumirán filtros no aprobados.
+- Los filtros pueden combinarse entre sí y su configuración queda separada por lista.
 - Los nombres y descripciones son definidos por el usuario.
 - La estructura detallada de una lista y las acciones disponibles se concretarán con el propietario.
 
@@ -347,7 +350,7 @@ Las reglas descritas en las secciones anteriores fueron expresadas o confirmadas
 
 ### Pendiente de concretar, sin bloquear el registro actual
 - Detalle de listas personalizadas: crear, renombrar, eliminar, añadir/quitar películas y persistencia del orden manual; se definirá con el propietario antes de esa parte del desarrollo.
-- Tipos exactos de filtros disponibles en listas personalizadas y comportamiento del orden manual cuando hay filtros activos.
+- Catálogo completo de filtros adicionales para listas personalizadas y comportamiento del orden manual cuando hay filtros activos.
 - Reglas de unicidad de nombres y orden inicial de las listas personalizadas.
 - Relación exacta entre la acción «GESTIONAR LISTAS» de la ficha y la sección de listas personalizadas.
 - Presentación exacta de Colecciones desde el menú de tres puntos.
