@@ -33,6 +33,7 @@
 - Los tonos concretos se propondrán en el sistema de diseño y requerirán aprobación del propietario.
 - Cada lista puede mostrar la acción «FIJAR»; no se rotulará como «Favoritas».
 - Las listas fijadas se muestran primero en «Gestionar listas», por encima de las no fijadas.
+- Las listas se pueden reordenar entre sí mediante arrastre, siempre dentro de su grupo (fijadas o no fijadas); las fijadas permanecen arriba.
 - El color de identidad no modifica los colores de los pósteres que componen el collage.
 - La portada de cada lista es un collage de pósteres de las películas incluidas; se actualiza al cambiar el contenido.
 - La acción de eliminar una lista no elimina las películas ni sus datos; solo retira la lista y las asociaciones de pertenencia.
