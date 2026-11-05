@@ -47,6 +47,7 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 
 Al pulsar Personal, se abre una pantalla principal (centro de navegación) con cinco accesos visibles a sus subsecciones. No entra directamente a Historial.
 - Las cuatro tarjetas principales utilizan iconos grandes y un tratamiento minimalista; no usan collages de pósteres en esta pantalla.
+- Los iconos de las cuatro tarjetas de Personal utilizan el concepto A: tamaño de referencia de **32 px**, grande y equilibrado; se descarta la alternativa extra grande de 40 px.
 - Las cuatro tarjetas utilizan fondo transparente con un contorno fino; no llevan un fondo sólido destacado.
 - El contorno de las cuatro tarjetas tiene un grosor de **1 px**, delicado y discreto.
 - La pantalla no repite un encabezado de marca o sección como «PRISMA» o «Personal», ni utiliza un subtítulo o eslogan como «Tu historia como espectador». La navegación inferior ya comunica la sección activa; el contenido comienza directamente con los accesos.
