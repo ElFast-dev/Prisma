@@ -43,6 +43,8 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 - **Personal**
 - **Descubrir**
 
+- Tratamiento visual de la píldora inferior: **concepto B seleccionado**. La píldora exterior mantiene la superficie **`#222222`** y el contorno **`#353535`**; la sección activa se distingue únicamente mediante el icono y el texto en azul de acento **`#5B9BD5`**, directamente sobre la superficie común, sin una cápsula ni un fondo adicional. La sección inactiva utiliza icono y texto en gris **`#BDBDBD`**.
+
 ### 4.1 Personal
 
 Al pulsar Personal, se abre una pantalla principal (centro de navegación) con cinco accesos visibles a sus subsecciones. No entra directamente a Historial.
