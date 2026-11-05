@@ -35,6 +35,7 @@
 - Se podrá cambiar temporalmente el criterio de ordenación sin perder el orden manual guardado.
 - Cada lista ofrece controles de filtros propios, separados de los de otras listas y de Descubrir.
 - Cuando sea lógico, los controles permitirán combinar condiciones con AND u OR.
+- AND aparece seleccionado inicialmente; OR se ofrece como alternativa visible cuando la combinación lo admita.
 - El panel de filtros de cada lista parte de los filtros de Descubrir y puede crecer con filtros adicionales que se aprueben; su contenido se definirá al diseñar esa pantalla.
 - No debe confundirse visual ni funcionalmente con Historial o Pendientes.
 - Desde una ficha, «GESTIONAR LISTAS» abre una ventana con la relación de listas personalizadas y casillas de selección múltiple; las casillas reflejan la pertenencia actual de la película.
