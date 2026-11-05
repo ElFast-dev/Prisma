@@ -98,6 +98,8 @@ Se pueden combinar varios filtros a la vez:
 - Idioma original.
 - Puntuación de TMDB.
 
+Los filtros de Descubrir también admiten combinación AND/OR cuando tenga sentido para las condiciones elegidas; no se fuerza un operador donde no resulte aplicable.
+
 También existe un filtro para ocultar del Feed las películas que tengan marcadores:
 
 - Ocultar Vista.
@@ -256,10 +258,12 @@ Sección independiente de Personal para crear y administrar listas cinematográf
 - Una misma película puede pertenecer simultáneamente a varias listas personalizadas.
 - Añadir o quitar una película de una lista personalizada no altera su pertenencia a otras listas, ni cambia Historial, Pendientes u Ocultos.
 - El usuario puede ordenar manualmente las películas de cada lista arrastrando sus portadas.
+- Además del orden manual, puede aplicar un orden temporal por título, año, duración, fecha de estreno o calificación. Este orden temporal no reemplaza ni borra el orden manual guardado.
 - Cada lista personalizada tiene filtros propios e independientes. Cambiar los filtros de una lista no modifica los filtros ni el contenido de las demás listas ni los del Feed de Descubrir.
 - Cada lista personalizada incluye como base los filtros de Descubrir: géneros, año de estreno, país de producción, duración, idioma original y puntuación de TMDB.
 - Las listas podrán incorporar muchos filtros adicionales. La selección exacta se definirá con el propietario progresivamente; no se asumirán filtros no aprobados.
 - Los filtros pueden combinarse entre sí y su configuración queda separada por lista.
+- Cuando la combinación sea lógica, el usuario puede elegir entre operadores **AND** (deben cumplirse todas las condiciones) y **OR** (puede cumplirse cualquiera de las condiciones). La interfaz no ofrecerá combinaciones que no tengan sentido para los filtros seleccionados.
 - Los nombres y descripciones son definidos por el usuario.
 - La estructura detallada de una lista y las acciones disponibles se concretarán con el propietario.
 
