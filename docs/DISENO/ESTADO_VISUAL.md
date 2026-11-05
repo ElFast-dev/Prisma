@@ -46,6 +46,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Tamaño: **B, grande**. Los iconos deben destacar dentro de las tarjetas, con espacio libre suficiente y sin competir con el nombre.
 - Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono neutro; no habrá un color distinto por sección. El tono exacto se definirá al aprobar la paleta del sistema de diseño.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
+- Tipografía de los nombres de las secciones: **concepto A, discreta, 16 px y peso medio**. Es una referencia inicial pendiente de validación dentro del sistema tipográfico completo.
 - Proporción de las cuatro tarjetas: **A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
 - Tratamiento de superficie de las cuatro tarjetas: **B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
 - Grosor del contorno de las tarjetas de Personal: **A, delicado, 1 px**. Se descarta la alternativa de 1.5 px.
