@@ -47,6 +47,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Los accesos son Historial, Pendientes, Ocultos, Estadísticas y Gestionar listas.
 - No se abre Historial directamente.
 - La distribución queda aprobada como estructura: Historial, Pendientes, Ocultos y Estadísticas son cuatro tarjetas grandes en una cuadrícula de dos columnas; Gestionar listas es un acceso horizontal de ancho completo debajo.
+- Presentación de «Gestionar listas»: **concepto B seleccionado**. Se representa como una fila horizontal de ancho completo, con icono deliberadamente más pequeño que los iconos principales de 32 px, nombre, contador discreto y chevron/flecha de navegación alineado al extremo derecho. Mantiene la superficie `#222222`, el contorno `#353535` de 1 px y el radio de 14 px. El tamaño exacto del icono reducido y los detalles visuales de la flecha quedan pendientes de concretar.
 - Concepto elegido para las cuatro tarjetas: **A, iconos grandes y minimalistas**. Se descarta para esta pantalla la alternativa de collages de pósteres.
 - Los iconos son los elementos gráficos principales de las cuatro tarjetas; los contadores se mantienen pequeños y discretos.
 - Estilo de iconografía: **A, lineal y minimalista**, sin placas ni fondos geométricos detrás del símbolo.
