@@ -45,6 +45,8 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 
 ### 4.1 Personal
 
+Al pulsar Personal, se abre una pantalla principal (centro de navegación) con cinco accesos visibles a sus subsecciones. No entra directamente a Historial.
+
 Contiene estas subsecciones:
 
 - **Historial:** películas vistas.
