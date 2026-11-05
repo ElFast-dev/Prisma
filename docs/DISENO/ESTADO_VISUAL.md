@@ -32,6 +32,7 @@
 - Cada lista ofrece controles de filtros propios, separados de los de otras listas y de Descubrir.
 - El panel de filtros de cada lista parte de los filtros de Descubrir y puede crecer con filtros adicionales que se aprueben; su contenido se definirá al diseñar esa pantalla.
 - No debe confundirse visual ni funcionalmente con Historial o Pendientes.
+- Desde una ficha, «GESTIONAR LISTAS» abre una ventana con la relación de listas personalizadas y casillas de selección múltiple; las casillas reflejan la pertenencia actual de la película.
 
 ### Ficha de película
 - Cabecera horizontal a todo lo ancho, con degradado inferior, título en blanco y controles circulares semitransparentes.
