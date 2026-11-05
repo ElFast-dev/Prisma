@@ -57,6 +57,7 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - «Gestionar listas» muestra la cantidad de listas personalizadas.
 - Estadísticas no necesita un contador de elementos en esta pantalla.
 - Los nombres de las secciones de Personal utilizan el concepto A: tratamiento discreto de 16 px y peso medio, como referencia inicial pendiente de validación con el sistema tipográfico.
+- Color de los nombres de las cuatro tarjetas de Personal: **`#F0F0F0`** (blanco suave), según el concepto A seleccionado. Este valor se limita a esos nombres y no define por sí solo todos los colores de texto de la aplicación.
 - Los nombres de las cuatro tarjetas de Personal se alinean a la izquierda, siguiendo el margen interior de la tarjeta.
 - La separación vertical de referencia entre el icono y el nombre es de **20 px**.
 - La separación vertical entre el icono y el nombre de cada tarjeta es de aproximadamente **20 px**.
