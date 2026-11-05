@@ -56,6 +56,7 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - Estadísticas no necesita un contador de elementos en esta pantalla.
 - Los nombres de las secciones de Personal utilizan el concepto A: tratamiento discreto de 16 px y peso medio, como referencia inicial pendiente de validación con el sistema tipográfico.
 - Los nombres de las cuatro tarjetas de Personal se alinean a la izquierda, siguiendo el margen interior de la tarjeta.
+- La separación vertical de referencia entre el icono y el nombre es de **20 px**.
 - La separación vertical entre el icono y el nombre de cada tarjeta es de aproximadamente **20 px**.
 - Estilo de los contadores: **A, número integrado sin fondo ni cápsula**, con tipografía discreta y alineación en la esquina superior derecha.
 
