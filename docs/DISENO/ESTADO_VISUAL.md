@@ -15,6 +15,14 @@
 
 ## Requisitos visuales ya acordados
 
+### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
+- Al tocar Personal desde la píldora inferior, se abre un centro de navegación con cinco accesos visibles.
+- Los accesos son Historial, Pendientes, Ocultos, Estadísticas y Gestionar listas.
+- No se abre Historial directamente.
+- La primera propuesta estructural organiza Historial, Pendientes, Ocultos y Estadísticas como cuatro accesos en una cuadrícula de dos columnas; Gestionar listas ocupa una fila de ancho completo.
+- Esta distribución es una dirección de trabajo, no un diseño de pantalla aprobado. Se seguirá refinando en el chat antes de cerrar la pantalla.
+- No se han aprobado todavía colores, tipografías, radios, iconos definitivos, fondos ni estilo de tarjetas.
+
 ### Navegación y Descubrir
 - Descubrir es la sección inicial.
 - Barra/búsqueda en la parte superior, con accesos a filtros y Ajustes.
@@ -71,6 +79,7 @@ Todavía no hay colores, tipografías, tamaños, radios, sombras ni iconografía
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Personal (pantalla principal) | Concepto A elegido; en refinamiento, todavía no aprobado | Por definir |
+| Personal: pantalla principal | Concepto A elegido; borrador en refinamiento, no aprobado | Por definir |
 | Personal: Historial | Pendiente de concepto y aprobación | Por definir |
 | Personal: Pendientes | Pendiente de concepto y aprobación | Por definir |
 | Personal: Ocultos | Pendiente de concepto y aprobación | Por definir |
