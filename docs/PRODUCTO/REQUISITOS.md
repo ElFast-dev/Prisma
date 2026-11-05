@@ -59,6 +59,7 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - La separación vertical de referencia entre el icono y el nombre es de **20 px**.
 - La separación vertical entre el icono y el nombre de cada tarjeta es de aproximadamente **20 px**.
 - Estilo de los contadores: **A, número integrado sin fondo ni cápsula**, con tipografía discreta y alineación en la esquina superior derecha.
+- Tamaño de referencia de los contadores: **12 px**.
 - Tamaño de los contadores: **12 px**, según el concepto A elegido.
 
 Contiene estas subsecciones:
