@@ -259,6 +259,7 @@ Sección independiente de Personal para crear y administrar listas cinematográf
 - Cada lista puede marcarse mediante la acción **«FIJAR»**; no se utilizará una categoría o acción llamada «Favoritas».
 - La lista fijada conserva ese estado hasta que el usuario la desfije.
 - Las listas fijadas aparecen automáticamente al principio de la sección «Gestionar listas», antes de las no fijadas. Esta prioridad no modifica el orden de las películas dentro de cada lista.
+- El usuario puede reordenar manualmente las listas arrastrándolas. Se conserva un orden independiente dentro del grupo de listas fijadas y dentro del grupo de listas no fijadas; ninguna lista no fijada puede adelantarse a una fijada.
 - El color se muestra de forma discreta junto al nombre y en detalles de la lista; no altera los colores originales de los pósteres del collage.
 - La portada de cada lista es un collage automático compuesto por los pósteres de las películas que pertenecen a esa lista; no se elige una imagen de portada manualmente.
 - El collage se actualiza cuando cambia el conjunto de películas de la lista y utiliza únicamente imágenes disponibles localmente o descargadas legítimamente de TMDB.
