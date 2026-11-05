@@ -22,6 +22,7 @@
 - La distribución queda aprobada como estructura: Historial, Pendientes, Ocultos y Estadísticas son cuatro tarjetas grandes en una cuadrícula de dos columnas; Gestionar listas es un acceso horizontal de ancho completo debajo.
 - Concepto elegido para las cuatro tarjetas: **A, iconos grandes y minimalistas**. Se descarta para esta pantalla la alternativa de collages de pósteres.
 - Los iconos son los elementos gráficos principales de las cuatro tarjetas; los contadores se mantienen pequeños y discretos.
+- Estilo de iconografía elegido: **concepto A, iconos lineales minimalistas**, sin placas ni fondos geométricos detrás del símbolo.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - Proporción elegida para las cuatro tarjetas: **concepto A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
 - Tratamiento de superficie elegido para las cuatro tarjetas: **concepto B, fondo transparente con contorno fino**. Se descarta el fondo sólido sutil.
@@ -31,7 +32,7 @@
 - Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
 - Las tarjetas mantienen el título del acceso y el contador cuando corresponda; no necesitan frases descriptivas largas.
 - La aprobación cubre la distribución y jerarquía de los cinco accesos, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual, tipografía, colores, iconos, espaciado y detalles de los componentes.
-- No se han aprobado todavía colores, tipografías, radios, iconos definitivos, fondos ni estilo de tarjetas.
+- No se han aprobado todavía colores, tipografías, radios, grosores/tamaños definitivos de iconos, detalles de los trazos, fondos generales ni otros componentes del sistema visual.
 
 ### Navegación y Descubrir
 - Descubrir es la sección inicial.
