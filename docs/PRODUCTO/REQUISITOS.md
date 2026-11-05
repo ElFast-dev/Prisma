@@ -51,6 +51,7 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - Color de los iconos inactivos de las cuatro tarjetas de Personal: **`#D0D0D0`**, uniforme y monocromático. Cuando estén activos, utilizan el acento principal **`#5B9BD5`**.
 - Las cuatro tarjetas utilizan la superficie elevada del tema Dark Mode (**#222222**) con un contorno fino de **1 px**; esta decisión sustituye el fondo transparente acordado previamente.
 - El contorno de las cuatro tarjetas tiene un grosor de **1 px**, delicado y discreto.
+- Color del contorno de las cuatro tarjetas de Personal: **`#353535`**, una línea sutil que mantiene la separación respecto del fondo y la superficie.
 - La pantalla no repite un encabezado de marca o sección como «PRISMA» o «Personal», ni utiliza un subtítulo o eslogan como «Tu historia como espectador». La navegación inferior ya comunica la sección activa; el contenido comienza directamente con los accesos.
 - Las tarjetas de Historial, Pendientes y Ocultos muestran discretamente la cantidad de películas que contienen. Historial cuenta películas únicas, no el número total de visionados.
 - «Gestionar listas» muestra la cantidad de listas personalizadas.
