@@ -58,6 +58,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Tamaño de los contadores de las tarjetas de Personal: **concepto A, 12 px**, pequeños y discretos, sin cápsula ni fondo.
 - Separación vertical entre icono y nombre: **concepto A, aproximadamente 20 px**, para mantener una relación compacta y clara.
 - Tipografía de los nombres de las secciones: **concepto A, discreta, 16 px y peso medio**. Es una referencia inicial pendiente de validación dentro del sistema tipográfico completo.
+- Color de los nombres de las cuatro tarjetas de Personal: **concepto A, `#F0F0F0`** (blanco suave). La elección aplica a esos nombres; no cierra la paleta tipográfica general.
 - Alineación de los nombres de las cuatro tarjetas: **concepto A, alineados a la izquierda**, respetando el margen interior de 16 px.
 - Proporción de las cuatro tarjetas: **A, casi cuadradas y compactas**. Se descarta la alternativa rectangular vertical.
 - Tratamiento de superficie de las cuatro tarjetas: superficie elevada sólida `#222222`, según la paleta Dark Mode confirmada. Esta decisión sustituye el fondo transparente elegido anteriormente; se conserva el contorno fino de 1 px.
@@ -72,8 +73,8 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Tamaño de los contadores: **A, 12 px**, pequeño y discreto.
 - Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
 - Las tarjetas mantienen el título del acceso y el contador cuando corresponda; no necesitan frases descriptivas largas.
-- La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo, tipografía, tonos secundarios y neutros, espaciado y detalles de los componentes.
-- Siguen pendientes las tipografías, tonos de texto y neutros, colores de estados adicionales, dimensiones definitivas, valores exactos del grosor de trazo, reglas de tema claro y demás componentes del sistema visual. Los tres roles cromáticos base de Dark Mode ya están definidos.
+- La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo, tipografía general, demás tonos de texto, neutros, espaciado y detalles de los componentes.
+- Siguen pendientes la familia tipográfica general, los demás tonos de texto y neutros, colores de estados adicionales, dimensiones definitivas, valores exactos del grosor de trazo, reglas de tema claro y demás componentes del sistema visual. Ya están definidos los tres roles cromáticos base de Dark Mode y los colores específicos de iconos inactivos, contorno y nombres de las tarjetas de Personal.
 
 ### Navegación y Descubrir
 
@@ -120,7 +121,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos y el contorno `#353535` de 1 px; los iconos activos podrán utilizar el acento azul. Los tonos de texto, otros neutros y bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+Todavía no hay un sistema de diseño completo aprobado. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. La familia tipográfica general, otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
 
 ## Decisiones de concepto pendientes de aprobación
 
