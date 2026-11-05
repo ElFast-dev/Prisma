@@ -49,7 +49,6 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - El contenido principal de Personal mantiene un **margen lateral exterior de 16 px** a izquierda y derecha entre los bordes de la pantalla y los accesos; aplica tanto a la cuadrícula de tarjetas como a la fila «Gestionar listas».
 - Margen superior de Personal: **16 px** desde el final del área segura superior hasta la primera fila de tarjetas.
 - Las cuatro tarjetas principales de Personal tienen proporción **cuadrada 1:1**.
-- Margen superior de Personal: **16 px** desde el final del área segura superior hasta la primera fila de tarjetas.
 - Las cuatro tarjetas principales utilizan iconos grandes y un tratamiento minimalista; no usan collages de pósteres en esta pantalla.
 - Los iconos de las cuatro tarjetas de Personal utilizan el concepto A: tamaño de referencia de **32 px**, grande y equilibrado; se descarta la alternativa extra grande de 40 px.
 - Color de los iconos inactivos de las cuatro tarjetas de Personal: **`#D0D0D0`**, uniforme y monocromático. Cuando estén activos, utilizan el acento principal **`#5B9BD5`**.
