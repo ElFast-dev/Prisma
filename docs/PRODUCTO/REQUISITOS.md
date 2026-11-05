@@ -247,6 +247,7 @@ Una portada por película oculta. Desde la ficha se puede «MOSTRAR DE NUEVO» y
 ### Gestionar listas
 Sección independiente de Personal para crear y administrar listas cinematográficas personalizadas. Estas listas no sustituyen ni se confunden con Historial o Pendientes.
 
+- Eliminar una lista elimina solo esa lista y sus asociaciones con películas; no elimina las películas, visionados, calificaciones ni la pertenencia de esas películas a otras listas personalizadas.
 - Cada lista tiene un **nombre obligatorio**.
 - Cada lista puede tener una **descripción opcional**.
 - Una misma película puede pertenecer simultáneamente a varias listas personalizadas.
