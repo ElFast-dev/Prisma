@@ -51,6 +51,7 @@ Contiene estas subsecciones:
 - **Pendientes:** películas que el usuario quiere ver.
 - **Ocultos:** películas ocultadas deliberadamente.
 - **Estadísticas:** evolución y análisis de gustos.
+- **Gestionar listas:** sección independiente para crear y administrar listas cinematográficas personalizadas. No es una forma de gestionar Historial o Pendientes; estas listas principales siguen siendo independientes.
 
 ### 4.2 Descubrir
 
@@ -142,6 +143,8 @@ Para una película no oculta:
 - Botón ancho de contorno fino «AGREGAR A HISTORIAL».
 - A su derecha, acción de texto gris «AGREGAR A PENDIENTES».
 - El menú de tres puntos ofrece acciones pequeñas con icono y texto en mayúsculas: «GESTIONAR LISTAS» y «OCULTAR».
+- «GESTIONAR LISTAS» se refiere a las listas personalizadas definidas en Personal; no agrega ni quita la película de Historial o Pendientes.
+- La relación exacta entre esa acción de la ficha y la sección de Personal (por ejemplo, abrir un selector de listas personalizadas) queda pendiente de concretar.
 - La ubicación y el comportamiento exactos de «Colecciones» se detallan en la sección de preguntas abiertas.
 
 Estados del botón:
@@ -240,6 +243,9 @@ Una portada por película, sin duplicados. Al registrar un visionado, la pelícu
 ### Ocultos
 Una portada por película oculta. Desde la ficha se puede «MOSTRAR DE NUEVO» y recuperar el estado anterior.
 
+### Gestionar listas
+Sección independiente de Personal para crear y administrar listas cinematográficas personalizadas. Estas listas no sustituyen ni se confunden con Historial o Pendientes. La estructura detallada de una lista y las acciones disponibles se concretarán con el propietario.
+
 ## 10. Estadísticas y comprensión de gustos
 
 Estadísticas es uno de los pilares de Prisma. Debe incluir al menos:
@@ -321,7 +327,7 @@ El idioma de la interfaz y la región de disponibilidad son preferencias indepen
 
 La versión 1.0.0 será la primera versión completa que cumpla todos los requisitos aprobados en este documento. No es un prototipo ni la última versión de Prisma.
 
-La 1.0.0 debe cubrir: navegación Personal/Descubrir; listas Historial, Pendientes y Ocultos; fichas; visionados repetidos y calificación; buscador y Feed; filtros y modos; TMDB y caché local; región e idioma; modo de spoilers; Estadísticas; Espectro local y explicable; alta manual y enriquecimiento; copia cifrada y restauración; y pruebas de funcionamiento offline.
+La 1.0.0 debe cubrir: navegación Personal/Descubrir; Historial, Pendientes, Ocultos y listas personalizadas; fichas; visionados repetidos y calificación; buscador y Feed; filtros y modos; TMDB y caché local; región e idioma; modo de spoilers; Estadísticas; Espectro local y explicable; alta manual y enriquecimiento; copia cifrada y restauración; y pruebas de funcionamiento offline.
 
 La lista se considera viva mientras el propietario siga precisando el producto. No se debe reducir el alcance de 1.0.0 sin su aprobación explícita.
 
@@ -331,7 +337,8 @@ La lista se considera viva mientras el propietario siga precisando el producto. 
 Las reglas descritas en las secciones anteriores fueron expresadas o confirmadas por el propietario.
 
 ### Pendiente de concretar, sin bloquear el registro actual
-- Qué hace exactamente «GESTIONAR LISTAS» en cada estado y cómo se ordenan sus opciones.
+- Detalle de listas personalizadas: crear, renombrar, eliminar, ordenar y añadir/quitar películas; se definirá con el propietario antes de esa parte del desarrollo.
+- Relación exacta entre la acción «GESTIONAR LISTAS» de la ficha y la sección de listas personalizadas.
 - Presentación exacta de Colecciones desde el menú de tres puntos.
 - Fuente y criterios para los tráileres y enlaces rápidos.
 - Detalle de las estadísticas adicionales y visualizaciones.
