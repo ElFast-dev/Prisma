@@ -256,6 +256,8 @@ Sección independiente de Personal para crear y administrar listas cinematográf
 - Cada lista tiene un **color identificativo propio**, elegido por el usuario al crearla.
 - El color se elige de una **paleta predeterminada y curada por Prisma**; no habrá selector libre de cualquier color.
 - Los tonos exactos de la paleta se definirán y mostrarán dentro del sistema de diseño visual para aprobación del propietario antes de cerrar esa decisión.
+- Cada lista puede marcarse mediante la acción **«FIJAR»**; no se utilizará una categoría o acción llamada «Favoritas».
+- La lista fijada conserva ese estado hasta que el usuario la desfije. La ubicación y prioridad visual de las listas fijadas se concretarán con el propietario.
 - El color se muestra de forma discreta junto al nombre y en detalles de la lista; no altera los colores originales de los pósteres del collage.
 - La portada de cada lista es un collage automático compuesto por los pósteres de las películas que pertenecen a esa lista; no se elige una imagen de portada manualmente.
 - El collage se actualiza cuando cambia el conjunto de películas de la lista y utiliza únicamente imágenes disponibles localmente o descargadas legítimamente de TMDB.
