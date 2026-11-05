@@ -46,6 +46,10 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 ### 4.1 Personal
 
 Al pulsar Personal, se abre una pantalla principal (centro de navegación) con cinco accesos visibles a sus subsecciones. No entra directamente a Historial.
+- La pantalla no repite un encabezado de marca o sección como «PRISMA» o «Personal», ni utiliza un subtítulo o eslogan como «Tu historia como espectador». La navegación inferior ya comunica la sección activa; el contenido comienza directamente con los accesos.
+- Las tarjetas de Historial, Pendientes y Ocultos muestran discretamente la cantidad de películas que contienen. Historial cuenta películas únicas, no el número total de visionados.
+- «Gestionar listas» muestra la cantidad de listas personalizadas.
+- Estadísticas no necesita un contador de elementos en esta pantalla.
 
 Contiene estas subsecciones:
 
