@@ -53,6 +53,7 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - Las tarjetas de Historial, Pendientes y Ocultos muestran discretamente la cantidad de películas que contienen. Historial cuenta películas únicas, no el número total de visionados.
 - «Gestionar listas» muestra la cantidad de listas personalizadas.
 - Estadísticas no necesita un contador de elementos en esta pantalla.
+- Los nombres de las secciones de Personal utilizan el concepto A: tratamiento discreto de 16 px y peso medio, como referencia inicial pendiente de validación con el sistema tipográfico.
 - Estilo de los contadores: **A, número integrado sin fondo ni cápsula**, con tipografía discreta y alineación en la esquina superior derecha.
 
 Contiene estas subsecciones:
