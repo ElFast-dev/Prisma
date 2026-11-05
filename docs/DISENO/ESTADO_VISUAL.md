@@ -29,6 +29,7 @@
 - «Gestionar listas» es una sección propia de Personal para crear y administrar listas cinematográficas personalizadas.
 - Cada lista muestra un nombre obligatorio y una descripción opcional.
 - La acción de eliminar una lista no elimina las películas ni sus datos; solo retira la lista y las asociaciones de pertenencia.
+- Antes de confirmar la eliminación, se presenta una ventana con el nombre de la lista y las opciones «CANCELAR» y «ELIMINAR».
 - Las portadas se pueden reordenar manualmente mediante arrastre.
 - Cada lista ofrece controles de filtros propios, separados de los de otras listas y de Descubrir.
 - El panel de filtros de cada lista parte de los filtros de Descubrir y puede crecer con filtros adicionales que se aprueben; su contenido se definirá al diseñar esa pantalla.
