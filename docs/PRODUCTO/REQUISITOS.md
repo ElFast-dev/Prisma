@@ -48,7 +48,7 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 Al pulsar Personal, se abre una pantalla principal (centro de navegación) con cinco accesos visibles a sus subsecciones. No entra directamente a Historial.
 - Las cuatro tarjetas principales utilizan iconos grandes y un tratamiento minimalista; no usan collages de pósteres en esta pantalla.
 - Los iconos de las cuatro tarjetas de Personal utilizan el concepto A: tamaño de referencia de **32 px**, grande y equilibrado; se descarta la alternativa extra grande de 40 px.
-- Las cuatro tarjetas utilizan fondo transparente con un contorno fino; no llevan un fondo sólido destacado.
+- Las cuatro tarjetas utilizan la superficie elevada del tema Dark Mode (**#222222**) con un contorno fino de **1 px**; esta decisión sustituye el fondo transparente acordado previamente.
 - El contorno de las cuatro tarjetas tiene un grosor de **1 px**, delicado y discreto.
 - La pantalla no repite un encabezado de marca o sección como «PRISMA» o «Personal», ni utiliza un subtítulo o eslogan como «Tu historia como espectador». La navegación inferior ya comunica la sección activa; el contenido comienza directamente con los accesos.
 - Las tarjetas de Historial, Pendientes y Ocultos muestran discretamente la cantidad de películas que contienen. Historial cuenta películas únicas, no el número total de visionados.
@@ -73,6 +73,16 @@ Contiene estas subsecciones:
 ### 4.2 Descubrir
 
 Contiene el buscador y el Feed de películas. El buscador va arriba, junto a un acceso a filtros y otro a Ajustes. El Feed aparece debajo.
+
+### 4.3 Paleta cromática — Dark Mode
+
+La paleta base confirmada para el tema oscuro de Prisma es:
+
+- **Fondo principal:** `#131313` (RGB 19, 19, 19).
+- **Superficies elevadas** — tarjetas, secciones, contenedores y listas: `#222222` (RGB 34, 34, 34).
+- **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#5B9BD5` (RGB 91, 155, 213).
+
+Esta decisión define únicamente esos tres roles cromáticos. No cierra todavía los tonos de texto, neutros, bordes, estados adicionales ni una eventual paleta para tema claro.
 
 ## 5. Descubrir: Feed
 
