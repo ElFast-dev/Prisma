@@ -55,6 +55,7 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - La pantalla no repite un encabezado de marca o sección como «PRISMA» o «Personal», ni utiliza un subtítulo o eslogan como «Tu historia como espectador». La navegación inferior ya comunica la sección activa; el contenido comienza directamente con los accesos.
 - Las tarjetas de Historial, Pendientes y Ocultos muestran discretamente la cantidad de películas que contienen. Historial cuenta películas únicas, no el número total de visionados.
 - «Gestionar listas» muestra la cantidad de listas personalizadas.
+- Presentación de «Gestionar listas»: acceso horizontal de ancho completo con un icono más pequeño que los iconos principales de 32 px y una flecha de navegación al extremo derecho. Conserva la superficie `#222222`, el contorno `#353535` de 1 px y el radio de 14 px. La medida exacta del icono reducido queda pendiente.
 - Estadísticas no necesita un contador de elementos en esta pantalla.
 - Los nombres de las secciones de Personal utilizan el concepto A: tratamiento discreto de 16 px y peso medio, como referencia inicial pendiente de validación con el sistema tipográfico.
 - Color de los nombres de las cuatro tarjetas de Personal: **`#F0F0F0`** (blanco suave), según el concepto A seleccionado. Este valor se limita a esos nombres y no define por sí solo todos los colores de texto de la aplicación.
