@@ -51,6 +51,7 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 - Separación vertical entre el icono y el nombre de cada sección de la navegación inferior: **4 px**.
 - Peso tipográfico en la navegación inferior: sección activa **medio (500)**; sección inactiva **regular (400)**.
 - Tamaño de los iconos de Personal y Descubrir en la navegación inferior: **20 px** en ambas secciones.
+- Separación inferior de la píldora flotante respecto al área de gestos del sistema: **16 px** (concepto A), medida desde el borde inferior de la píldora hasta el límite superior del área de gestos.
 
 ### 4.1 Personal
 
