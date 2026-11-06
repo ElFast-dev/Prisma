@@ -58,6 +58,8 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 - Símbolo de la sección **Personal** en la navegación inferior: **silueta lineal de usuario**.
 - Símbolo de la sección **Descubrir** en la navegación inferior: **destellos lineales**, asociados al descubrimiento y las recomendaciones.
 - Separación inferior de la píldora flotante respecto al área de gestos del sistema: **16 px** (concepto A), medida desde el borde inferior de la píldora hasta el límite superior del área de gestos.
+- La navegación inferior debe percibirse como una **píldora realmente flotante**, independiente del borde inferior y del contenido; no debe convertirse en una barra fija de ancho completo. El tratamiento concreto de elevación (por ejemplo, sombra) queda pendiente de refinamiento.
+- Al desplazarse hacia abajo por el contenido, la píldora de navegación inferior **se oculta**. El comportamiento exacto para volver a mostrarla queda pendiente de definir.
 
 ### 4.1 Personal
 
