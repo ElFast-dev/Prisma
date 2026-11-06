@@ -140,6 +140,7 @@ El modo vuelve automáticamente a Equilibrado cuando Prisma ha permanecido fuera
 - Proporción de las portadas verticales del Feed: **2:3** (opción A seleccionada, formato cinematográfico clásico).
 - Margen exterior del Feed: **16 px** a izquierda y derecha, medido desde los bordes de la pantalla hasta los extremos de la cuadrícula (opción B seleccionada).
 - Separación horizontal entre pósteres de columnas adyacentes en el Feed: **12 px** (opción B seleccionada).
+- Separación vertical entre filas consecutivas de pósteres en el Feed: **12 px** (opción B seleccionada).
 - En Ajustes se podrá elegir un segundo diseño: mosaico variado de tres columnas, combinando pósteres verticales con imágenes horizontales de doble o triple ancho entre filas.
 - Los dos diseños deben respetar los márgenes y el sistema visual que se apruebe.
 - Cada elemento del Feed muestra únicamente la portada de la película; no se coloca texto debajo de ella (ni título, ni año, ni descripción). Los indicadores de estado mediante marcapáginas se conservan según la regla específica de la sección 5.3.
