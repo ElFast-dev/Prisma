@@ -175,6 +175,7 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
 En el Feed de Descubrir, el marcapáginas es **exclusivamente informativo**: no es un botón, no tiene una zona táctil independiente ni cambia el estado al pulsarlo. Al tocar la portada se abre la ficha de la película; los cambios entre Historial (Vista) y Pendientes se realizan mediante las acciones correspondientes dentro de esa ficha.
 Cuando una película pasa de Pendientes a Historial (Vista) desde su ficha y el nuevo estado se refleja en Descubrir, el marcapáginas cambia progresivamente de gris a azul: el relleno transiciona de `#D0D0D0` a `#5B9BD5` y el contorno de `#A8A8A8` a `#3E78A7`. La transición dura **200 ms** y utiliza `ease-in-out`, con la curva Bézier `cubic-bezier(0.42, 0, 0.58, 1)`. Se anima únicamente el color; la geometría, la posición, las dimensiones y la sombra permanecen constantes. Esta transición se aplica al reflejar un cambio real de estado, no al cargar inicialmente el Feed.
+La transición también se aplica en sentido inverso cuando una película pasa de Historial (Vista) a Pendientes: el relleno cambia de `#5B9BD5` a `#D0D0D0` y el contorno de `#3E78A7` a `#A8A8A8`, con la misma duración de **200 ms**, `ease-in-out` y Bézier `cubic-bezier(0.42, 0, 0.58, 1)`. Ambos sentidos comparten exactamente el mismo comportamiento cromático y solo se animan los colores.
 
 ### 5.4 Filtros
 
