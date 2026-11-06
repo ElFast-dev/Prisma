@@ -103,6 +103,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Estilo gráfico de los iconos de Personal y Descubrir en la navegación inferior: **opción A seleccionada, iconografía lineal**, basada en trazos y no en siluetas rellenas.
 - Grosor del trazo de los iconos de la navegación inferior: **opción A seleccionada, 1,4 px**, fino y ligero.
 - Terminaciones de los trazos de los iconos de la navegación inferior: **opción A seleccionada, redondeadas** (`stroke-linecap: round`), para conservar un acabado suave y delicado.
+- Uniones entre segmentos de los trazos de los iconos de la navegación inferior: **opción A seleccionada, redondeadas** (`stroke-linejoin: round`), para mantener continuidad visual en los cambios de dirección.
 - Uniones entre segmentos de los trazos de los iconos de la navegación inferior: **opción A seleccionada, redondeadas** (`stroke-linejoin: round`), para mantener continuidad visual y coherencia con las terminaciones redondeadas.
 - Símbolo de la sección **Personal** en la navegación inferior: **silueta lineal de usuario**.
 - Símbolo de la sección **Descubrir** en la navegación inferior: **destellos lineales**, asociados al descubrimiento y las recomendaciones.
