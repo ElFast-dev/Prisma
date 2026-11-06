@@ -212,7 +212,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, pero su escala (tamaños, pesos, alturas de línea y espaciado entre caracteres) sigue pendiente. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados. Siguen pendientes los tamaños globales, la asignación de pesos por nivel, las alturas de línea y el espaciado entre caracteres. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
 
 ## Decisiones de concepto pendientes de aprobación
 
