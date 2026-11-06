@@ -147,6 +147,14 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Aparición del marcapáginas al restaurar una película oculta: **directa** (opción A seleccionada), sin animación ni fundido de opacidad. Se muestra de inmediato el color del estado recuperado —Vista `#5B9BD5`, Pendiente `#D0D0D0`— o no se muestra si la película vuelve sin estado. La restauración no cambia el estado recuperado.
 - Actualización del marcapáginas al volver a Descubrir después de modificar el estado desde la ficha: **directa, sin animación**. Se muestra inmediatamente el estado final (Vista: relleno `#5B9BD5`, contorno `#3E78A7`; Pendiente: relleno `#D0D0D0`, contorno `#A8A8A8`) o deja de mostrarse si ya no pertenece a ninguno de los dos estados. Esta regla cubre la asignación inicial, el cambio Vista/Pendiente y la eliminación del estado. No se animan el color, la opacidad, la entrada ni la salida, porque la modificación ocurre dentro de la ficha y Descubrir no está visible durante la acción.
 
+### Buscador: marcapáginas en resultados
+
+- En las miniaturas de póster de los resultados de búsqueda, el marcapáginas conserva la misma silueta de cinta con muesca cóncava en V, simetría, acabado sólido y correspondencia cromática que el marcador de tamaño normal del Feed, pero se representa al **75 % de su escala** para mantener el equilibrio con el póster reducido y el texto del resultado.
+- Medidas exteriores visibles resultantes: **12 px de ancho** y **16,5 px de profundidad interior**; sobresale **4,5 px** por encima del póster. La muesca cóncava mide **4,5 px** de profundidad. La separación hasta el borde derecho del póster es de **1,5 px** y el radio de las esquinas superiores es de **0,75 px**.
+- El contorno conserva su posición centrada, uniones angulares y colores tonales; su grosor se escala de **0,6 px a 0,45 px**. Se mantienen los rellenos Vista **`#5B9BD5`** y Pendiente **`#D0D0D0`**, y los contornos Vista **`#3E78A7`** y Pendiente **`#A8A8A8`**.
+- La sombra conserva el color negro, la opacidad del **12 %** y el desplazamiento de **0 px**; el desenfoque se escala de **0,5 px a 0,375 px**. Se limita al perímetro en contacto con la superficie del póster, excluyendo el borde superior y cualquier tramo que sobresalga por encima de la imagen.
+- La escala reducida se aplica únicamente a las miniaturas de los resultados de búsqueda. No modifica el tamaño del marcapáginas del Feed ni el de «También podría gustarte».
+
 ### Personal: listas personalizadas
 
 - «Gestionar listas» es una sección propia de Personal para crear y administrar listas cinematográficas personalizadas.
