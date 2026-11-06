@@ -159,8 +159,9 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 - Sobresale exactamente **6 px por encima del borde superior** de la portada; una parte del marcador queda fuera de la imagen.
 - Debe percibirse como una **pestaña física que marca la película**, integrada en el borde de la portada, no como un icono flotante colocado encima de la imagen.
 - Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La profundidad interior seleccionada es de **22 px**, medida desde el borde superior de la portada hasta las esquinas inferiores de la pestaña, sin contar los **6 px** que sobresalen por encima. La profundidad de la muesca en V seleccionada es de **6 px** (opción B).
+- Radio de las dos esquinas superiores de la cinta: **1 px** (opción B seleccionada). La forma y profundidad de la muesca inferior en V permanecen sin cambios.
 - Tratamiento de sombra seleccionado: **sombra de contacto muy sutil**, color **`#000000`** (opción A), opacidad de **12 %** y radio de desenfoque de **0,5 px** (opción A); permanece pegada al contorno de la pestaña, con desplazamiento de **0 px**, y ayuda a separarla de la portada sin darle una apariencia elevada o artificial.
-- Grosor del contorno del marcapáginas: **0,6 px** (opción B seleccionada). Los colores específicos para Vista y Pendiente se indican en la decisión cromática siguiente.
+- Grosor del contorno del marcapáginas: **0,6 px** (opción B seleccionada).
 - Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde utiliza un tono más oscuro que el relleno de su propio marcapáginas. Contorno azul de Vista: **`#3E78A7`** (opción A). Contorno gris de Pendiente: **`#A8A8A8`** (opción A).
 
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
