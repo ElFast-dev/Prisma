@@ -131,6 +131,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La profundidad interior seleccionada es de **22 px**, medida desde el borde superior de la portada hasta las esquinas inferiores de la pestaña, sin contar los **6 px** que sobresalen por encima. La profundidad de la muesca en V seleccionada es de **6 px** (opción B).
 - Sombra del marcapáginas: **sombra de contacto muy sutil** (opción B), suficiente para separarlo visualmente de la portada sin producir un efecto elevado o artificial.
 - Contorno del marcapáginas: **trazo fino de 0,6 px** (opción B seleccionada). El color exacto del contorno queda pendiente de definición.
+- Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde debe usar un tono más oscuro que el relleno de su propio marcapáginas. Los códigos HEX exactos para los contornos azul y gris quedan pendientes de definición.
 
 ### Personal: listas personalizadas
 
