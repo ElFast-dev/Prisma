@@ -97,6 +97,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Respuesta visual al pulsar una sección de la navegación inferior: **opción B seleccionada**. El elemento pulsado se comprime sutilmente hasta una escala de **0,96** mientras se mantiene la pulsación y recupera su escala original al soltar. El efecto es transitorio y no modifica el color de selección, la superficie común ni añade fondos o cápsulas interiores. La duración y curva de esta microinteracción quedan pendientes de definir.
 - Tamaño de los nombres «Personal» y «Descubrir» en la navegación inferior: **12 px** en ambas secciones.
 - Separación vertical entre el icono y el nombre de cada sección de la navegación inferior: **4 px**.
+- Respuesta visual al pulsar una sección de la navegación inferior: **opción B seleccionada**. El conjunto formado por el icono y el nombre se comprime sutilmente hasta una escala de **0,96** mientras se mantiene la pulsación y recupera su escala normal (**1,0**) al soltar. No se añade fondo, cápsula interior ni cambio de color distinto al estado activo ya definido.
 - Peso tipográfico en la navegación inferior: sección activa **medio (500)**; sección inactiva **regular (400)**. El cambio de peso acompaña al color de estado y no añade una cápsula interior.
 - Tamaño de los iconos de Personal y Descubrir en la navegación inferior: **20 px** en ambas secciones.
 - Estilo gráfico de los iconos de Personal y Descubrir en la navegación inferior: **opción A seleccionada, iconografía lineal**, basada en trazos y no en siluetas rellenas.
