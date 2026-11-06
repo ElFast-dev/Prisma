@@ -89,7 +89,6 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Píldora flotante inferior, separada de los bordes, con Personal y Descubrir.
 - Altura de la píldora flotante inferior: **64 px**.
 - Ancho de la píldora flotante inferior: **240 px** (concepto A, formato compacto).
-- Posición horizontal de la píldora flotante inferior: **centrada respecto al ancho total de la pantalla**, con márgenes laterales iguales.
 - Distribución horizontal de Personal y Descubrir dentro de la píldora: **concepto A seleccionado**, dos espacios iguales de **120 px** cada uno; cada sección centra su conjunto de icono y nombre dentro de su mitad.
 - Forma exterior de la píldora flotante inferior: **concepto A seleccionado**, cápsula completa con radio de **32 px**.
 - Grosor del contorno exterior de la cápsula de navegación inferior: **1 px**, color **`#353535`**.
