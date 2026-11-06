@@ -140,6 +140,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Posición del contorno respecto a la silueta: **centrado** (opción A seleccionada); con un grosor total de 0,6 px, se distribuye 0,3 px hacia el interior y 0,3 px hacia el exterior del límite de la forma.
 - Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde utiliza un tono más oscuro que el relleno de su propio marcapáginas. Contorno azul de Vista: **`#3E78A7`** (opción A). Contorno gris de Pendiente: **`#A8A8A8`** (opción A).
 - Comportamiento en el Feed de Descubrir: el marcapáginas es un **indicador visual exclusivamente informativo**, sin acción propia ni zona táctil independiente. La interacción táctil corresponde a la portada completa, que abre la ficha de la película; el estado Vista/Pendiente se modifica desde las acciones de esa ficha.
+- Transición cromática del marcapáginas cuando una película pasa de Pendientes a Historial (Vista) desde su ficha: **opción B seleccionada**. El relleno pasa de `#D0D0D0` a `#5B9BD5` y el contorno de `#A8A8A8` a `#3E78A7`, ambos progresivamente durante **200 ms**, con `ease-in-out` y Bézier `cubic-bezier(0.42, 0, 0.58, 1)`. Solo cambia el color; la geometría, posición, dimensiones y sombra no se alteran. No se ejecuta al cargar inicialmente el Feed, sino al reflejar un cambio real de estado.
 
 ### Personal: listas personalizadas
 
