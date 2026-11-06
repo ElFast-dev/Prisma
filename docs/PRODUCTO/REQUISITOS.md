@@ -38,7 +38,7 @@ El algoritmo personal de recomendaciones se llama **Espectro**. Aprende de forma
 ### 3.1 Identidad tipográfica global
 
 - Familia tipográfica global seleccionada: **Inter**. Esta es la familia de referencia para la interfaz de Prisma.
-- Esta decisión establece únicamente la familia tipográfica. No fija todavía tamaños globales, pesos, alturas de línea, espaciado entre caracteres ni ajustes ópticos; se definirán al completar el sistema de diseño.
+- Pesos globales aprobados para la familia Inter: **regular (400), medio (500) y seminegrita (600)**. Estos son los únicos pesos previstos para la identidad tipográfica global; su asignación a cada nivel de la interfaz se definirá al completar la escala tipográfica.
 - Las especificaciones tipográficas particulares ya aprobadas para componentes y pantallas —incluidos los tamaños, pesos y colores del buscador y de Personal— se conservan sin cambios. Elegir Inter no reabre ni modifica esas decisiones.
 
 ## 4. Navegación principal
