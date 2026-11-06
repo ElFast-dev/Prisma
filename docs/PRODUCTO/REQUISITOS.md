@@ -158,7 +158,7 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 - Se coloca en la **esquina superior derecha** de la portada, dejando exactamente **2 px** hacia el interior desde el borde derecho.
 - Sobresale exactamente **6 px por encima del borde superior** de la portada; una parte del marcador queda fuera de la imagen.
 - Debe percibirse como una **pestaña física que marca la película**, integrada en el borde de la portada, no como un icono flotante colocado encima de la imagen.
-- Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La profundidad interior seleccionada es de **22 px**, medida desde el borde superior de la portada hasta las esquinas inferiores de la pestaña, sin contar los **6 px** que sobresalen por encima. La profundidad exacta de la muesca en V sigue pendiente de definición visual.
+- Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La profundidad interior seleccionada es de **22 px**, medida desde el borde superior de la portada hasta las esquinas inferiores de la pestaña, sin contar los **6 px** que sobresalen por encima. La profundidad de la muesca en V seleccionada es de **6 px** (opción B).
 
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
 
