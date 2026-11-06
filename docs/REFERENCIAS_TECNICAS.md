@@ -15,6 +15,14 @@ Fuentes consultadas para el diseño técnico inicial de Prisma (5 de noviembre d
 - Rendimiento de Compose: https://developer.android.com/develop/ui/compose/performance
 - Baseline Profiles: https://developer.android.com/topic/performance/baselineprofiles/overview
 
+## Tipografía
+
+- Proyecto oficial de la familia Inter, descargas y documentación: https://github.com/rsms/inter
+- Lanzamientos oficiales de Inter: https://github.com/rsms/inter/releases
+- Licencia oficial: SIL Open Font License 1.1, incluida en el archivo `LICENSE.txt` del proyecto: https://github.com/rsms/inter/blob/master/LICENSE.txt
+- La OFL permite incluir, incrustar y redistribuir la fuente junto con una aplicación, pero no vender el archivo tipográfico por separado. Si se distribuye una fuente derivada, deben respetarse las condiciones de nombres reservados. Al incorporar Inter en Prisma se conservará el texto de licencia y los avisos correspondientes.
+- La versión concreta y el formato de los archivos de Inter que se incluirán en la aplicación se verificarán y fijarán en la especificación técnica de la fase de implementación.
+
 ## TMDB
 
 - Autenticación de aplicación y API Read Access Token: https://developer.themoviedb.org/docs/authentication-application
