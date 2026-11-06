@@ -161,7 +161,7 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 - Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La profundidad interior seleccionada es de **22 px**, medida desde el borde superior de la portada hasta las esquinas inferiores de la pestaña, sin contar los **6 px** que sobresalen por encima. La profundidad de la muesca en V seleccionada es de **6 px** (opción B).
 - Tratamiento de sombra seleccionado: **sombra de contacto muy sutil** (opción B), que ayuda a separar visualmente la pestaña de la portada sin darle una apariencia elevada o artificial.
 - Contorno del marcapáginas: **trazo fino de 0,6 px** (opción B seleccionada). El color exacto del contorno queda pendiente de definición.
-- Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde debe usar un tono más oscuro que el relleno de su propio marcapáginas. Los códigos HEX exactos para los contornos azul y gris quedan pendientes de definición.
+- Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde utiliza un tono más oscuro que el relleno de su propio marcapáginas. Contorno azul de Vista: **`#3E78A7`** (opción A). Contorno gris de Pendiente: **`#A8A8A8`** (opción A).
 
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
 
