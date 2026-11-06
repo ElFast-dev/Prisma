@@ -103,7 +103,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Símbolo de la sección **Personal** en la navegación inferior: **silueta lineal de usuario**.
 - Símbolo de la sección **Descubrir** en la navegación inferior: **destellos lineales**, asociados al descubrimiento y las recomendaciones.
 - Separación inferior de la píldora flotante respecto al área de gestos del sistema: **16 px** (concepto A), medida desde el borde inferior de la píldora hasta el límite superior del área de gestos.
-- La navegación inferior debe percibirse como una **píldora realmente flotante**, independiente del borde inferior y del contenido; no debe convertirse en una barra fija de ancho completo. El tratamiento concreto de elevación (por ejemplo, sombra) queda pendiente de refinamiento.
+- La navegación inferior debe percibirse como una **píldora realmente flotante**, independiente del borde inferior y del contenido; no debe convertirse en una barra fija de ancho completo. La píldora **no lleva sombra**. Su sensación flotante se logra mediante su separación respecto al borde inferior y al contenido, junto con el contraste entre la superficie `#222222` y el fondo `#131313`.
 - Al desplazarse hacia abajo por el contenido, la píldora de navegación inferior **se oculta**. El comportamiento exacto para volver a mostrarla queda pendiente de definir.
 - Feed predeterminado de tres columnas.
 - En las propuestas visuales del Feed no se muestran rótulos o encabezados como «Películas» ni subtítulos como «Para descubrir».
