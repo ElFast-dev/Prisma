@@ -107,7 +107,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Al desplazarse hacia abajo por el contenido, la píldora de navegación inferior **se oculta**.
 - Cuando el usuario invierte el sentido del desplazamiento y comienza a deslizar hacia arriba, la píldora de navegación inferior **reaparece inmediatamente**, incluso si todavía se encuentra a mitad del contenido.
 - La ocultación y reaparición utilizan una **animación de deslizamiento vertical**: al ocultarse, la píldora se desplaza hacia abajo y sale de la pantalla; al reaparecer, entra desde abajo hasta recuperar su posición habitual. La duración y la curva de aceleración de la animación quedan pendientes de definir.
-- La ocultación y reaparición de la píldora se realizan mediante **deslizamiento vertical**: al ocultarse, sale hacia abajo; al reaparecer, entra desde abajo y recupera su posición habitual.
+
 - Feed predeterminado de tres columnas.
 - En las propuestas visuales del Feed no se muestran rótulos o encabezados como «Películas» ni subtítulos como «Para descubrir».
 - Cada elemento del Feed muestra únicamente la portada, sin título, año, descripción ni ningún otro texto debajo de la imagen. Se mantienen los marcadores de estado aprobados cuando correspondan.
