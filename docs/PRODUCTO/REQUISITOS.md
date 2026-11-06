@@ -321,6 +321,7 @@ Si no existe una puntuación, no hay un dato verificable o no existe una vía de
 - Las películas ocultas se consultan exclusivamente en Personal → Ocultos.
 - En su ficha, las acciones de agregar a Historial/Pendientes se sustituyen por «MOSTRAR DE NUEVO».
 - Al restaurarla, vuelve a Descubrir y recupera el estado anterior: Vista, Pendiente o sin marcador.
+- Al volver a mostrarse en Descubrir después de «MOSTRAR DE NUEVO», el marcapáginas aparece **directamente**, sin animación de opacidad ni transición de entrada: azul `#5B9BD5` si recupera Vista, gris `#D0D0D0` si recupera Pendiente y sin marcapáginas si recupera el estado sin lista. La restauración conserva el estado anterior; no lo modifica.
 - El filtro de ocultar marcadores Vista/Pendiente no equivale a ocultar una película de forma permanente.
 
 ## 9. Personal: listas
