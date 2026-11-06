@@ -35,6 +35,12 @@ El algoritmo personal de recomendaciones se llama **Espectro**. Aprende de forma
 8. No se añaden funciones, SDK, anuncios, analítica o servicios externos por iniciativa propia sin acordarlo con el propietario.
 9. **Coherencia transversal:** la presentación visual, la lógica de producto, los comportamientos de interacción, la privacidad y las decisiones técnicas deben reforzarse mutuamente. Ningún elemento se define de forma aislada ni puede aparentar una función, un estado o una capacidad que el producto no respalde.
 
+### 3.1 Identidad tipográfica global
+
+- Familia tipográfica global seleccionada: **Inter**. Esta es la familia de referencia para la interfaz de Prisma.
+- Esta decisión establece únicamente la familia tipográfica. No fija todavía tamaños globales, pesos, alturas de línea, espaciado entre caracteres ni ajustes ópticos; se definirán al completar el sistema de diseño.
+- Las especificaciones tipográficas particulares ya aprobadas para componentes y pantallas —incluidos los tamaños, pesos y colores del buscador y de Personal— se conservan sin cambios. Elegir Inter no reabre ni modifica esas decisiones.
+
 ## 4. Navegación principal
 
 Al abrir Prisma, la sección predeterminada es **Descubrir**.
