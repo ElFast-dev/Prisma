@@ -155,10 +155,10 @@ Las películas que pertenezcan a las listas llevan un icono de **marcapáginas**
 - Azul: película registrada en Historial (vista).
 - Gris: película en Pendientes.
 La ubicación y la relación del marcapáginas con la portada quedan definidas así:
-- Se coloca en la **esquina superior derecha** de la portada, con un pequeño margen hacia el interior respecto al borde derecho (aproximadamente **1–2 px**).
+- Se coloca en la **esquina superior derecha** de la portada, dejando exactamente **2 px** hacia el interior desde el borde derecho.
 - Sobresale parcialmente **por encima del borde superior** de la portada; una parte del marcador queda fuera de la imagen.
 - Debe percibirse como una **pestaña física que marca la película**, integrada en el borde de la portada, no como un icono flotante colocado encima de la imagen.
-- Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Esta decisión fija la forma general, pero el tamaño y las dimensiones exactas del marcapáginas siguen pendientes de definición visual.
+- Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La altura y la profundidad exactas de la pestaña siguen pendientes de definición visual.
 
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
 
