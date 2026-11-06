@@ -154,6 +154,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - El contorno conserva su posición centrada, uniones angulares y colores tonales; su grosor se escala de **0,6 px a 0,45 px**. Se mantienen los rellenos Vista **`#5B9BD5`** y Pendiente **`#D0D0D0`**, y los contornos Vista **`#3E78A7`** y Pendiente **`#A8A8A8`**.
 - La sombra conserva el color negro, la opacidad del **12 %** y el desplazamiento de **0 px**; el desenfoque se escala de **0,5 px a 0,375 px**. Se limita al perímetro en contacto con la superficie del póster, excluyendo el borde superior y cualquier tramo que sobresalga por encima de la imagen.
 - La escala reducida se aplica únicamente a las miniaturas de los resultados de búsqueda. No modifica el tamaño del marcapáginas del Feed ni el de «También podría gustarte».
+- Comportamiento táctil de los resultados: el marcapáginas es exclusivamente informativo y no dispone de acción ni zona táctil independiente. Toda la fila —póster, título y año— abre la ficha de la película; los cambios entre Vista y Pendiente se realizan desde las acciones de esa ficha.
 
 ### Personal: listas personalizadas
 
