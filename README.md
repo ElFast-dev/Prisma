@@ -47,4 +47,4 @@
 
 ## Versionado
 
-Se usa SemVer. Antes de completar el producto, las versiones serán 0.x.y. La versión 1.0.0 será la primera que cumpla todo el alcance aprobado. Después se continuará con 1.1.0, 1.2.0, etc. para mejoras, y 1.0.1, 1.0.2, etc. para correcciones.
+Prisma usa Semantic Versioning (SemVer) con una única secuencia pública y global para toda la aplicación. La numeración es continua entre fases: cada fase puede contener varias versiones, pero al comenzar otra fase no se reinicia ni se repite la numeración. Antes de completar el producto, las versiones serán 0.x.y; cada entrega con funcionalidad nueva incrementará el número menor y cada corrección sin ampliar funcionalidad incrementará el número de parche. La versión 1.0.0 será la primera que cumpla todo el alcance aprobado. Después se continuará con 1.1.0, 1.2.0, etc. para mejoras, y 1.0.1, 1.0.2, etc. para correcciones. Cada versión entregada debe corresponder a un incremento pequeño, verificable y aprobado.
