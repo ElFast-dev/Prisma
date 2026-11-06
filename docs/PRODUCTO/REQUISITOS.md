@@ -55,6 +55,8 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 - Tamaño de los iconos de Personal y Descubrir en la navegación inferior: **20 px** en ambas secciones.
 - Estilo gráfico de los iconos de Personal y Descubrir en la navegación inferior: **opción A seleccionada, iconografía lineal**, basada en trazos y no en siluetas rellenas.
 - Grosor del trazo de los iconos de la navegación inferior: **opción A seleccionada, 1,4 px**, fino y ligero.
+- Símbolo de la sección **Personal** en la navegación inferior: **silueta lineal de usuario**.
+- Símbolo de la sección **Descubrir** en la navegación inferior: **destellos lineales**, asociados al descubrimiento y las recomendaciones.
 - Separación inferior de la píldora flotante respecto al área de gestos del sistema: **16 px** (concepto A), medida desde el borde inferior de la píldora hasta el límite superior del área de gestos.
 
 ### 4.1 Personal
