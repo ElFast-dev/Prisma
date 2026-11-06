@@ -137,6 +137,7 @@ El modo vuelve automáticamente a Equilibrado cuando Prisma ha permanecido fuera
 ### 5.2 Diseño del Feed
 
 - Diseño predeterminado: cuadrícula de **tres columnas** con pósteres verticales.
+- Margen exterior del Feed: **16 px** a izquierda y derecha, medido desde los bordes de la pantalla hasta los extremos de la cuadrícula (opción B seleccionada).
 - Separación horizontal entre pósteres de columnas adyacentes en el Feed: **12 px** (opción B seleccionada).
 - En Ajustes se podrá elegir un segundo diseño: mosaico variado de tres columnas, combinando pósteres verticales con imágenes horizontales de doble o triple ancho entre filas.
 - Los dos diseños deben respetar los márgenes y el sistema visual que se apruebe.
