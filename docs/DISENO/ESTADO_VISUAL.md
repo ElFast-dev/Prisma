@@ -126,6 +126,9 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Diseño alternativo de mosaico de tres columnas, mezclando pósteres verticales con imágenes horizontales de doble o triple ancho.
 - Desplazamiento infinito.
 - Marcapáginas azul para Vista y gris para Pendiente.
+- Ubicación del marcapáginas: esquina superior derecha de cada portada, con un pequeño margen interior aproximado de **1–2 px** respecto al borde derecho.
+- El marcapáginas sobresale parcialmente por encima del borde superior de la portada y debe leerse como una **pestaña física que marca la película**, no como un icono flotante superpuesto.
+- El tamaño y la geometría exactos del marcador siguen pendientes de definición.
 
 ### Personal: listas personalizadas
 
