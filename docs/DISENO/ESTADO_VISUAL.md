@@ -129,6 +129,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Ubicación del marcapáginas: esquina superior derecha de cada portada, dejando exactamente **2 px** hacia el interior desde el borde derecho.
 - El marcapáginas sobresale exactamente **6 px por encima del borde superior** de la portada y debe leerse como una **pestaña física que marca la película**, no como un icono flotante superpuesto.
 - Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La profundidad interior seleccionada es de **22 px**, medida desde el borde superior de la portada hasta las esquinas inferiores de la pestaña, sin contar los **6 px** que sobresalen por encima. La profundidad de la muesca en V seleccionada es de **6 px** (opción B).
+- Sombra del marcapáginas: **sombra de contacto muy sutil** (opción B), suficiente para separarlo visualmente de la portada sin producir un efecto elevado o artificial.
 
 ### Personal: listas personalizadas
 
