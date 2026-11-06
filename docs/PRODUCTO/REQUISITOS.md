@@ -160,6 +160,7 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 - Debe percibirse como una **pestaña física que marca la película**, integrada en el borde de la portada, no como un icono flotante colocado encima de la imagen.
 - Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Anchura seleccionada: **16 px** (opción B). La profundidad interior seleccionada es de **22 px**, medida desde el borde superior de la portada hasta las esquinas inferiores de la pestaña, sin contar los **6 px** que sobresalen por encima. La profundidad de la muesca en V seleccionada es de **6 px** (opción B).
 - Radio de las dos esquinas superiores de la cinta: **1 px** (opción B seleccionada). La forma y profundidad de la muesca inferior en V permanecen sin cambios.
+- Terminación del vértice interior de la muesca: **aguda y definida** (opción A seleccionada), sin redondeo adicional ni tramo plano; el vértice apunta hacia dentro de la cinta.
 - Acabado interior de la cinta: **color sólido uniforme** (opción A seleccionada), sin degradado ni reflejo central.
 - Tratamiento de sombra seleccionado: **sombra de contacto muy sutil**, color **`#000000`** (opción A), opacidad de **12 %** y radio de desenfoque de **0,5 px** (opción A); permanece pegada al contorno de la pestaña, con desplazamiento de **0 px**, y ayuda a separarla de la portada sin darle una apariencia elevada o artificial.
 - Grosor del contorno del marcapáginas: **0,6 px** (opción B seleccionada).
