@@ -39,6 +39,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Pesos globales aprobados para Inter: **regular (400), medio (500) y seminegrita (600)**. La asignación de cada peso a los niveles y componentes se definirá al completar la escala tipográfica; esta decisión no obliga a utilizar los tres pesos en cada pantalla.
 - Tamaño de referencia para el texto normal de lectura continua: **16 px** (opción B aprobada). Es la base de la escala tipográfica global; no reemplaza los tamaños específicos ya definidos para títulos, años, contadores, navegación ni otros componentes. La altura de línea de referencia para este texto normal queda fijada en **24 px** (opción B aprobada), equivalente a 1,5 veces el tamaño de fuente. Las alturas de línea de los demás niveles se definirán por separado al completar la escala.
 - Tamaño de referencia para el texto secundario: **14 px** (opción A aprobada). Es el segundo nivel general de la jerarquía tipográfica y no reemplaza tamaños específicos ya definidos para componentes, como los años y contadores de 12 px o los textos de 14 px con reglas propias. La altura de línea de referencia para este texto secundario queda fijada en **20 px** (opción B aprobada). La asignación de peso se definirá al completar la escala; esta referencia no modifica las reglas tipográficas específicas de otros componentes.
+- Tamaño de referencia para títulos de sección: **22 px** (opción B aprobada). Se aplica a encabezados generales de secciones y pantallas, como «Historial» o «Estadísticas». No sustituye tamaños ya definidos para títulos de películas ni otros encabezados o componentes con especificación propia. Su altura de línea y asignación de peso se definirán al completar la escala.
 - Las decisiones tipográficas particulares ya aprobadas para Personal, navegación y resultados de búsqueda se conservan exactamente como están documentadas. La definición de la escala global no debe contradecirlas ni modificarlas sin una nueva aprobación.
 
 ### Paleta de colores — Dark Mode (confirmada)
@@ -214,7 +215,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados, **16 px** como tamaño de referencia para texto normal y **14 px** como tamaño de referencia para texto secundario. El texto secundario queda definido en **14/20 px**. Siguen pendientes otros tamaños globales, la asignación de pesos por nivel, las alturas de línea de los demás niveles y el espaciado entre caracteres. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados, **16 px** como tamaño de referencia para texto normal y **14 px** como tamaño de referencia para texto secundario. El texto secundario queda definido en **14/20 px** y los títulos de sección en **22 px**. Siguen pendientes otros tamaños globales, la asignación de pesos por nivel, las alturas de línea de los demás niveles y el espaciado entre caracteres. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
 
 ## Decisiones de concepto pendientes de aprobación
 
@@ -225,7 +226,7 @@ Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica
 | Elemento | Estado | Versión de implementación |
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
-| Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal 16/24 px; texto secundario 14/20 px; resto de la escala pendiente | Por definir |
+| Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal 16/24 px; texto secundario 14/20 px; títulos de sección 22 px; resto de la escala pendiente | Por definir |
 | Paleta de colores Dark Mode | Confirmada: fondo `#131313`, superficies `#222222`, acento `#5B9BD5` | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
