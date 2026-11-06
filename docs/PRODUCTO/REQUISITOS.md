@@ -2,7 +2,7 @@
 
 **Estado:** borrador vivo de descubrimiento.  
 **Revisión:** 0.1.0.  
-**Última actualización:** 5 de noviembre de 2026.  
+**Última actualización:** 6 de noviembre de 2026.  
 **Propietario y aprobador del producto:** ElFast-dev.  
 **Alcance:** decisiones expresadas y confirmadas en la conversación; no equivale a aprobar una fase de implementación.
 
@@ -110,7 +110,7 @@ Contiene estas subsecciones:
 
 ### 4.2 Descubrir
 
-Contiene el buscador y el Feed de películas. En la parte superior aparece una **única barra horizontal continua**: el campo de búsqueda ocupa el espacio izquierdo y, dentro del mismo contenedor y superficie, se integran a la derecha el icono de Filtros y el icono de Ajustes (`[Buscar...  (Filtros) (Ajustes)]`). Los tres elementos forman visualmente una sola barra, no tres controles o tarjetas independientes. La barra tiene una **altura de 52 px** (opción B seleccionada), esquinas completamente redondeadas con un **radio de 26 px** (opción B seleccionada) y los iconos de Filtros y Ajustes tienen un tamaño de **18 px** (opción A seleccionada). El margen interior de la barra entre sus bordes y los elementos interiores es de **12 px** (opción A seleccionada). La separación horizontal entre los iconos de Filtros y Ajustes es de **12 px** (opción A seleccionada). El Feed aparece debajo.
+Contiene el buscador y el Feed de películas. En la parte superior aparece una **única barra horizontal continua**: el campo de búsqueda ocupa el espacio izquierdo y, dentro del mismo contenedor y superficie, se integran a la derecha el icono de Filtros y el icono de Ajustes (`[Buscar...  (Filtros) (Ajustes)]`). Los tres elementos forman visualmente una sola barra, no tres controles o tarjetas independientes. La barra tiene una **altura de 52 px** (opción B seleccionada), esquinas completamente redondeadas con un **radio de 26 px** (opción B seleccionada) y los iconos de Filtros y Ajustes tienen un tamaño de **18 px** (opción A seleccionada). El margen interior de la barra entre sus bordes y los elementos interiores es de **12 px** (opción A seleccionada). La separación horizontal entre los iconos de Filtros y Ajustes es de **12 px** (opción A seleccionada). **Tratamiento de superficie seleccionado: opción B, sin contorno; la barra utiliza únicamente la superficie `#222222` sobre el fondo `#131313`, sin borde visible.** El Feed aparece debajo.
 
 ### 4.3 Paleta cromática — Dark Mode
 
