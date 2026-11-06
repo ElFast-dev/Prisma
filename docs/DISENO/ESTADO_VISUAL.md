@@ -150,6 +150,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ### Buscador: marcapáginas en resultados
 - Tamaño de cada miniatura de póster en los resultados: **56 × 84 px** (opción B), manteniendo la proporción cinematográfica **2:3**. El tamaño del póster es independiente de la escala del marcapáginas: el indicador sigue aplicando el **75 %** de las dimensiones de la cinta principal.
+- Radio de las esquinas de las miniaturas de los resultados de búsqueda: **2 px** (opción B aprobada). El redondeo se limita a estas miniaturas y no altera las esquinas de los pósteres del Feed ni de «También podría gustarte».
 - Alineación del bloque de texto: el título y el año se agrupan y se centran verticalmente respecto a la altura de la miniatura (**84 px**), manteniendo su alineación horizontal a la izquierda y la separación aprobada entre póster y texto.
 - Separación horizontal entre la miniatura del póster y el bloque de texto: **12 px** (opción B seleccionada).
 - Márgenes laterales de las filas de resultados: **16 px** a izquierda y derecha, medidos desde los bordes de la pantalla hasta los extremos de la fila. Las filas quedan alineadas horizontalmente con los extremos de la barra superior de búsqueda.
