@@ -168,6 +168,10 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - La escala reducida se aplica únicamente a las miniaturas de los resultados de búsqueda. No modifica el tamaño del marcapáginas del Feed ni el de «También podría gustarte».
 - Comportamiento táctil de los resultados: el marcapáginas es exclusivamente informativo y no dispone de acción ni zona táctil independiente. Toda la fila —póster, título y año— abre la ficha de la película; los cambios entre Vista y Pendiente se realizan desde las acciones de esa ficha.
 
+### Buscador: respuesta visual al mantener pulsada una fila
+
+- Estado de pulsación seleccionado: **opción A, iluminación sutil**. Mientras se mantiene pulsada una fila completa, su superficie cambia temporalmente a **`#222222`** y adopta un **radio medio (`md`)**, sin contorno. Al soltar, vuelve a su apariencia normal. Es un resaltado transitorio, no una tarjeta permanente, y no utiliza el azul de acento.
+
 ### Personal: listas personalizadas
 
 - «Gestionar listas» es una sección propia de Personal para crear y administrar listas cinematográficas personalizadas.
