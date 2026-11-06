@@ -226,7 +226,7 @@ Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica
 | Elemento | Estado | Versión de implementación |
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
-| Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal 16/24 px, peso 400; texto secundario 14/20 px, peso pendiente; títulos de sección 22/28 px, peso 500; resto de la escala pendiente | Por definir |
+| Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal 16/24 px, peso 400; texto secundario 14/20 px, peso 400; títulos de sección 22/28 px, peso 500; resto de la escala pendiente | Por definir |
 | Paleta de colores Dark Mode | Confirmada: fondo `#131313`, superficies `#222222`, acento `#5B9BD5` | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
