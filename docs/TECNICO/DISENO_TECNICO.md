@@ -204,6 +204,12 @@ Pruebas previstas:
 
 ## 10. Integración continua y entregas con GitHub
 
+### Identificación de versiones Android
+
+- `versionName` mostrará la versión pública SemVer de Prisma y seguirá la secuencia global definida en el Roadmap (por ejemplo, `0.1.0`, `0.2.0`, `0.2.1`). No se reinicia al cambiar de fase.
+- `versionCode` será el entero interno que Android utiliza para ordenar actualizaciones. Debe aumentar en cada APK distribuido como actualización y nunca puede reutilizarse ni reiniciarse entre fases.
+- La regla concreta para asignar y reservar `versionCode` se fijará en la especificación de la Fase 1, antes de generar el primer APK instalable.
+
 GitHub Actions será el sistema de CI:
 
 - Al abrir/actualizar Pull Requests y al integrar cambios en la rama principal: compilar y ejecutar pruebas automatizadas.
