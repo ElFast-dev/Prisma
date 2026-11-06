@@ -170,6 +170,7 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 - Todas las cotas geométricas del marcapáginas se refieren a su envolvente exterior visible e incluyen el contorno. El trazado interior debe ajustarse para que, una vez aplicado el contorno centrado, se mantengan exactamente esas dimensiones exteriores.
 - Grosor del contorno del marcapáginas: **0,6 px** (opción B seleccionada).
 - Posición del contorno respecto a la silueta: **centrado** (opción A seleccionada); con un grosor total de 0,6 px, se distribuye 0,3 px hacia el interior y 0,3 px hacia el exterior del límite de la forma.
+- Tratamiento de las uniones del trazo del contorno: **angular** (opción A seleccionada), con encuentros nítidos y vértices definidos, sin redondeo ni bisel. Esta decisión regula únicamente la unión del trazo; no altera la silueta, la V cóncava simétrica, las dimensiones ni el grosor de 0,6 px ya aprobados.
 - Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde utiliza un tono más oscuro que el relleno de su propio marcapáginas. Contorno azul de Vista: **`#3E78A7`** (opción A). Contorno gris de Pendiente: **`#A8A8A8`** (opción A).
 
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
