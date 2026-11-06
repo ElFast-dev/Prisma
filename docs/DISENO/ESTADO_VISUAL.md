@@ -36,7 +36,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 ### Sistema tipográfico global — familia seleccionada
 
 - Familia tipográfica global: **Inter** (selección aprobada). Se utilizará como familia de referencia para la interfaz de Prisma.
-- La decisión aprueba únicamente la familia; no fija todavía tamaños globales, pesos, alturas de línea, espaciado entre caracteres ni configuración de archivos estáticos o variables.
+- Pesos globales aprobados para Inter: **regular (400), medio (500) y seminegrita (600)**. La asignación de cada peso a los niveles y componentes se definirá al completar la escala tipográfica; esta decisión no obliga a utilizar los tres pesos en cada pantalla.
 - Las decisiones tipográficas particulares ya aprobadas para Personal, navegación y resultados de búsqueda se conservan exactamente como están documentadas. La definición de la escala global no debe contradecirlas ni modificarlas sin una nueva aprobación.
 
 ### Paleta de colores — Dark Mode (confirmada)
@@ -223,7 +223,7 @@ Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica
 | Elemento | Estado | Versión de implementación |
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
-| Familia tipográfica global | Inter seleccionada; escala tipográfica pendiente | Por definir |
+| Familia tipográfica global | Inter seleccionada; pesos 400, 500 y 600 aprobados; escala tipográfica pendiente | Por definir |
 | Paleta de colores Dark Mode | Confirmada: fondo `#131313`, superficies `#222222`, acento `#5B9BD5` | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
