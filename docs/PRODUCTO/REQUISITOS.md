@@ -33,6 +33,7 @@ El algoritmo personal de recomendaciones se llama **Espectro**. Aprende de forma
 6. La información remota se guarda localmente para que lo ya descargado siga disponible sin conexión.
 7. La falta de conexión o una caída temporal de TMDB no debe impedir consultar o modificar el diario personal.
 8. No se añaden funciones, SDK, anuncios, analítica o servicios externos por iniciativa propia sin acordarlo con el propietario.
+9. **Coherencia transversal:** la presentación visual, la lógica de producto, los comportamientos de interacción, la privacidad y las decisiones técnicas deben reforzarse mutuamente. Ningún elemento se define de forma aislada ni puede aparentar una función, un estado o una capacidad que el producto no respalde.
 
 ## 4. Navegación principal
 
