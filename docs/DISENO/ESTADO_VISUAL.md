@@ -139,6 +139,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Grosor del contorno del marcapáginas: **0,6 px** (opción B seleccionada).
 - Posición del contorno respecto a la silueta: **centrado** (opción A seleccionada); con un grosor total de 0,6 px, se distribuye 0,3 px hacia el interior y 0,3 px hacia el exterior del límite de la forma.
 - Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde utiliza un tono más oscuro que el relleno de su propio marcapáginas. Contorno azul de Vista: **`#3E78A7`** (opción A). Contorno gris de Pendiente: **`#A8A8A8`** (opción A).
+- Comportamiento en el Feed de Descubrir: el marcapáginas es un **indicador visual exclusivamente informativo**, sin acción propia ni zona táctil independiente. La interacción táctil corresponde a la portada completa, que abre la ficha de la película; el estado Vista/Pendiente se modifica desde las acciones de esa ficha.
 
 ### Personal: listas personalizadas
 
