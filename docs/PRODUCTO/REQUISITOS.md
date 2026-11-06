@@ -152,8 +152,8 @@ El modo vuelve automáticamente a Equilibrado cuando Prisma ha permanecido fuera
 
 Las películas que pertenezcan a las listas llevan un icono de **marcapáginas**:
 
-- Azul: película registrada en Historial (vista).
-- Gris: película en Pendientes.
+- Azul `#5B9BD5`: película registrada en Historial (Vista).
+- Gris `#D0D0D0`: película en Pendientes.
 La ubicación y la relación del marcapáginas con la portada quedan definidas así:
 - Se coloca en la **esquina superior derecha** de la portada, dejando exactamente **2 px** hacia el interior desde el borde derecho.
 - Sobresale exactamente **6 px por encima del borde superior** de la portada; una parte del marcador queda fuera de la imagen.
