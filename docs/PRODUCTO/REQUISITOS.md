@@ -110,7 +110,7 @@ Contiene estas subsecciones:
 
 ### 4.2 Descubrir
 
-Contiene el buscador y el Feed de películas. En la parte superior aparece una **única barra horizontal continua**: el campo de búsqueda ocupa el espacio izquierdo y, dentro del mismo contenedor y superficie, se integran a la derecha el icono de Filtros y el icono de Ajustes (`[Buscar...  (Filtros) (Ajustes)]`). Los tres elementos forman visualmente una sola barra, no tres controles o tarjetas independientes. La barra tiene esquinas completamente redondeadas con un **radio de 26 px** (opción B seleccionada). El Feed aparece debajo.
+Contiene el buscador y el Feed de películas. En la parte superior aparece una **única barra horizontal continua**: el campo de búsqueda ocupa el espacio izquierdo y, dentro del mismo contenedor y superficie, se integran a la derecha el icono de Filtros y el icono de Ajustes (`[Buscar...  (Filtros) (Ajustes)]`). Los tres elementos forman visualmente una sola barra, no tres controles o tarjetas independientes. La barra tiene una **altura de 52 px** (opción B seleccionada) y esquinas completamente redondeadas con un **radio de 26 px** (opción B seleccionada). El Feed aparece debajo.
 
 ### 4.3 Paleta cromática — Dark Mode
 
