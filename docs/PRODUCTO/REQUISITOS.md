@@ -314,6 +314,7 @@ Si no existe una puntuación, no hay un dato verificable o no existe una vía de
 - La opción «Colecciones» está asociada a la zona del menú de tres puntos; el detalle exacto de apertura está pendiente de definición visual.
 - «También podría gustarte» muestra un carrusel de pósteres que continúa visualmente más allá del borde de pantalla para invitar a deslizar.
 - Los pósteres relacionados usan el marcapáginas azul para Vista y gris para Pendiente.
+- En «También podría gustarte», el marcapáginas es **exclusivamente informativo**, igual que en el Feed de Descubrir: no tiene zona táctil ni acción independiente. Al tocar cualquier parte de la portada se abre la ficha de esa película; los cambios de estado se realizan desde las acciones de la ficha correspondiente. Se conserva el mismo diseño y la misma correspondencia cromática de estados.
 
 ## 8. Ocultos y restauración
 
