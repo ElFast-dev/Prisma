@@ -15,7 +15,7 @@ Las decisiones se basan primero en las recomendaciones oficiales de Android. Las
 
 - **Lenguaje:** Kotlin.
 - **Interfaz:** Jetpack Compose y Material 3.
-- **Tipografía de interfaz:** familia **Inter**, seleccionada como identidad tipográfica global de Prisma. Se incorporará como recurso local dentro de la aplicación, no como fuente descargada en tiempo de ejecución, para mantener la presentación disponible sin conexión y consistente entre dispositivos. Se incluirán los pesos aprobados **400, 500 y 600**; la versión concreta y los archivos de fuente se fijarán en la especificación técnica de implementación, conservando la licencia SIL OFL 1.1.
+- **Tipografía de interfaz:** familia **Inter**, seleccionada como identidad tipográfica global de Prisma. El tamaño de referencia para el texto normal de lectura continua es **16 px**; los pesos aprobados son **400, 500 y 600**. Estos valores no sustituyen los tamaños específicos de componentes ya aprobados. Inter se incorporará como recurso local dentro de la aplicación, no como fuente descargada en tiempo de ejecución, para mantener la presentación disponible sin conexión y consistente entre dispositivos. La altura de línea, la distribución de pesos por nivel, la versión concreta y los archivos de fuente se fijarán en la especificación técnica de implementación, conservando la licencia SIL OFL 1.1.
 - **Navegación:** una sola Activity; se evaluará Navigation 3 si su versión estable y su integración cumplen los requisitos al iniciar la fase de navegación.
 - **Concurrencia:** Kotlin Coroutines y Flow.
 - **Estado de interfaz:** ViewModel, StateFlow y flujo unidireccional de datos.
