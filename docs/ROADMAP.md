@@ -17,17 +17,17 @@
 
 ## Versionado
 
-Se utilizará Semantic Versioning:
+Se utilizará Semantic Versioning (SemVer) con **una única secuencia pública y global para toda la aplicación Prisma**.
 
-- Antes de completar el producto: 0.x.y.
-- Incremento visible de funcionalidad: aumenta x, por ejemplo 0.3.0.
-- Corrección sin ampliar funcionalidad: aumenta y, por ejemplo 0.3.1.
-- La versión **1.0.0** será la primera versión completa que cumpla todo el alcance aprobado.
+- Las versiones de la aplicación avanzan de forma continua a través de todas las fases. Las fases agrupan el trabajo y sus entregables; no tienen numeraciones independientes.
+- Una fase puede contener varias versiones publicables. Al comenzar la fase siguiente, la numeración continúa desde la última versión entregada: nunca se reinicia ni se repite.
+- Antes de completar el producto: **0.x.y**. Una entrega que incorpora funcionalidad nueva o una ampliación aprobada incrementa el número menor (x), por ejemplo, 0.2.0 → 0.3.0. Una corrección que no amplía funcionalidad incrementa el número de parche (y), por ejemplo, 0.3.0 → 0.3.1.
+- La versión **1.0.0** será la primera versión completa que cumpla todo el alcance aprobado; no se utilizará para un prototipo ni para una entrega intermedia.
 - Después de 1.0.0: nuevas funciones compatibles en 1.1.0, 1.2.0; correcciones en 1.0.1, 1.0.2.
 
-Cada versión aprobada se marca con tag vX.Y.Z y notas de Release en lenguaje sencillo. Se adjunta APK cuando sea posible. Mientras se desarrolla, el APK también puede entregarse como artifact de GitHub Actions.
+Cada versión aprobada se marca con tag vX.Y.Z y notas de Release en lenguaje sencillo. Se adjunta APK cuando sea posible. Mientras se desarrolla, el APK también puede entregarse como artifact de GitHub Actions. Cada entrega debe tener alcance pequeño, criterios de aceptación y comprobaciones propias; compilar por sí solo no basta para darla por terminada.
 
-La numeración es una propuesta de planificación y podrá ajustarse antes de comenzar una fase, manteniendo el orden y sin redefinir el significado de 1.0.0.
+Los números asignados a los hitos de cada fase son una planificación y podrán ajustarse antes de iniciar esa fase. Cualquier ajuste debe conservar una única secuencia global, creciente y sin reutilizar versiones, además del significado reservado para 1.0.0.
 
 ## Fase 0 — Descubrimiento y definición del producto
 
