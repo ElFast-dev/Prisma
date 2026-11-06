@@ -97,9 +97,12 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Separación vertical entre el icono y el nombre de cada sección de la navegación inferior: **4 px**.
 - Peso tipográfico en la navegación inferior: sección activa **medio (500)**; sección inactiva **regular (400)**. El cambio de peso acompaña al color de estado y no añade una cápsula interior.
 - Tamaño de los iconos de Personal y Descubrir en la navegación inferior: **20 px** en ambas secciones.
-- Estilo gráfico de los iconos de Personal y Descubrir en la navegación inferior: **opción A seleccionada, iconografía lineal**, basada en trazos y no en siluetas rellenas. Esta decisión define el tratamiento gráfico, no fija todavía el grosor exacto del trazo ni aprueba el diseño completo de la navegación.
+- Estilo gráfico de los iconos de Personal y Descubrir en la navegación inferior: **opción A seleccionada, iconografía lineal**, basada en trazos y no en siluetas rellenas.
+- Grosor del trazo de los iconos de la navegación inferior: **opción A seleccionada, 1,4 px**, fino y ligero.
 - Separación inferior de la píldora flotante respecto al área de gestos del sistema: **16 px** (concepto A), medida desde el borde inferior de la píldora hasta el límite superior del área de gestos.
 - Feed predeterminado de tres columnas.
+- En las propuestas visuales del Feed no se muestran rótulos o encabezados como «Películas» ni subtítulos como «Para descubrir».
+- Cada elemento del Feed muestra únicamente la portada, sin título, año, descripción ni ningún otro texto debajo de la imagen. Se mantienen los marcadores de estado aprobados cuando correspondan.
 - Diseño alternativo de mosaico de tres columnas, mezclando pósteres verticales con imágenes horizontales de doble o triple ancho.
 - Desplazamiento infinito.
 - Marcapáginas azul para Vista y gris para Pendiente.
