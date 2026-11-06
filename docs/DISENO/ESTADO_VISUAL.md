@@ -120,6 +120,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Proporción de las portadas verticales del Feed: **2:3** (opción A seleccionada, formato cinematográfico clásico).
 - Margen exterior del Feed: **16 px** a izquierda y derecha, medido desde los bordes de la pantalla hasta los extremos de la cuadrícula (opción B seleccionada).
 - Separación horizontal entre pósteres de columnas adyacentes: **12 px** (opción B seleccionada).
+- Separación vertical entre filas consecutivas de pósteres: **12 px** (opción B seleccionada).
 - En las propuestas visuales del Feed no se muestran rótulos o encabezados como «Películas» ni subtítulos como «Para descubrir».
 - Cada elemento del Feed muestra únicamente la portada, sin título, año, descripción ni ningún otro texto debajo de la imagen. Se mantienen los marcadores de estado aprobados cuando correspondan.
 - Diseño alternativo de mosaico de tres columnas, mezclando pósteres verticales con imágenes horizontales de doble o triple ancho.
