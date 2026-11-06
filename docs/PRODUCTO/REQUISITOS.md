@@ -172,6 +172,7 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 - Tratamiento cromático del contorno: **tonal** (opción A seleccionada); cada borde utiliza un tono más oscuro que el relleno de su propio marcapáginas. Contorno azul de Vista: **`#3E78A7`** (opción A). Contorno gris de Pendiente: **`#A8A8A8`** (opción A).
 
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
+En el Feed de Descubrir, el marcapáginas es **exclusivamente informativo**: no es un botón, no tiene una zona táctil independiente ni cambia el estado al pulsarlo. Al tocar la portada se abre la ficha de la película; los cambios entre Historial (Vista) y Pendientes se realizan mediante las acciones correspondientes dentro de esa ficha.
 
 ### 5.4 Filtros
 
