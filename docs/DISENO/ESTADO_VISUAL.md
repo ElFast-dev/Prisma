@@ -14,7 +14,7 @@ Criterios obligatorios:
 - Mostrar la pantalla o componente dentro de su contexto real de uso, con composición completa y jerarquía visual clara.
 - Cuando se comparen alternativas, mantener constantes los elementos ya aprobados y cambiar únicamente la variable que se está evaluando, salvo que la comparación solicite explícitamente explorar direcciones distintas.
 - Hacer que las alternativas sean visualmente distinguibles y que cada una tenga una intención de diseño reconocible; evitar duplicados que solo cambien una cifra sin que la diferencia se perciba.
-- Cuidar proporciones, alineaciones, ritmo de espaciado, márgenes, tipografía, iconografía, estados y consistencia entre componentes.
+- Cuidar proporciones, alineaciones, ritmo de espaciado, márgenes, tipografía, iconografía y estados, manteniendo coherencia entre la intención funcional, las reglas de producto, el comportamiento de interacción y su representación visual. Ningún componente debe diseñarse de forma aislada ni sugerir algo que la lógica de Prisma no respalde.
 - Utilizar datos de ejemplo claramente identificados como ficticios; nunca presentarlos como datos reales del usuario.
 - Explicar brevemente qué diferencia a cada concepto y qué efecto produce en la experiencia.
 - Si el propietario pide «mejores diseños conceptuales», rehacer la propuesta con una mejora visible de calidad, detalle y composición; no responder repitiendo esencialmente el mismo boceto.
@@ -132,6 +132,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Radio de las dos esquinas superiores de la cinta: **1 px** (opción B seleccionada). La forma y profundidad de la muesca inferior en V permanecen sin cambios.
 - Terminación del vértice interior de la muesca: **aguda y definida** (opción A seleccionada), sin redondeo adicional ni tramo plano; el vértice apunta hacia dentro de la cinta.
 - Tratamiento de las dos uniones inferiores exteriores entre los laterales y las diagonales de la muesca: **angular** (opción A seleccionada), con encuentros rectos, sin redondeo ni bisel. El vértice interior agudo de la muesca permanece orientado hacia dentro.
+- Trayectoria de los dos lados diagonales de la muesca interior: **recta** (opción A seleccionada), sin curvatura; forman una V cóncava clásica con el vértice dirigido hacia dentro de la cinta.
 - Acabado interior de la cinta: **color sólido uniforme** (opción A seleccionada), sin degradado ni reflejo central.
 - Sombra del marcapáginas: **sombra de contacto muy sutil**, color **`#000000`** (opción A), opacidad de **12 %** y radio de desenfoque de **0,5 px** (opción A); permanece pegada al contorno de la pestaña, con desplazamiento de **0 px**, y la separa visualmente de la portada sin producir un efecto elevado o artificial.
 - Grosor del contorno del marcapáginas: **0,6 px** (opción B seleccionada).
