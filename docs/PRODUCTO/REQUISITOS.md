@@ -158,7 +158,7 @@ La ubicación y la relación del marcapáginas con la portada quedan definidas a
 - Se coloca en la **esquina superior derecha** de la portada, con un pequeño margen hacia el interior respecto al borde derecho (aproximadamente **1–2 px**).
 - Sobresale parcialmente **por encima del borde superior** de la portada; una parte del marcador queda fuera de la imagen.
 - Debe percibirse como una **pestaña física que marca la película**, integrada en el borde de la portada, no como un icono flotante colocado encima de la imagen.
-- Esta decisión fija la ubicación y el efecto de sobresalir; el tamaño y la geometría exactos del marcapáginas quedan pendientes de definición visual.
+- Silueta seleccionada: **cinta clásica con muesca en V en el extremo inferior** (opción A). Esta decisión fija la forma general, pero el tamaño y las dimensiones exactas del marcapáginas siguen pendientes de definición visual.
 
 El icono también se usa en las portadas de «También podría gustarte» dentro de la ficha.
 
