@@ -37,6 +37,7 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 
 - Familia tipográfica global: **Inter** (selección aprobada). Se utilizará como familia de referencia para la interfaz de Prisma.
 - Pesos globales aprobados para Inter: **regular (400), medio (500) y seminegrita (600)**. La asignación de cada peso a los niveles y componentes se definirá al completar la escala tipográfica; esta decisión no obliga a utilizar los tres pesos en cada pantalla.
+- Tamaño de referencia para el texto normal de lectura continua: **16 px** (opción B aprobada). Es la base de la escala tipográfica global; no reemplaza los tamaños específicos ya definidos para títulos, años, contadores, navegación ni otros componentes. La altura de línea y la asignación exacta de pesos se definirán por nivel al completar la escala.
 - Las decisiones tipográficas particulares ya aprobadas para Personal, navegación y resultados de búsqueda se conservan exactamente como están documentadas. La definición de la escala global no debe contradecirlas ni modificarlas sin una nueva aprobación.
 
 ### Paleta de colores — Dark Mode (confirmada)
@@ -212,7 +213,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados. Siguen pendientes los tamaños globales, la asignación de pesos por nivel, las alturas de línea y el espaciado entre caracteres. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados y **16 px** como tamaño de referencia para texto normal. Siguen pendientes otros tamaños globales, la asignación de pesos por nivel, las alturas de línea y el espaciado entre caracteres. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
 
 ## Decisiones de concepto pendientes de aprobación
 
@@ -223,7 +224,7 @@ Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica
 | Elemento | Estado | Versión de implementación |
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
-| Familia tipográfica global | Inter seleccionada; pesos 400, 500 y 600 aprobados; escala tipográfica pendiente | Por definir |
+| Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal de referencia de 16 px; resto de la escala pendiente | Por definir |
 | Paleta de colores Dark Mode | Confirmada: fondo `#131313`, superficies `#222222`, acento `#5B9BD5` | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
