@@ -205,6 +205,7 @@ Este filtro solo cambia lo que aparece en Descubrir. No modifica las listas ni e
 - Muestra resultados mientras el usuario escribe, sin exigir que pulse Enter.
 - Los resultados muestran póster, título y año de estreno cuando se conozca.
 - Tamaño de miniatura seleccionado: **56 × 84 px** (opción B), con proporción **2:3**. El marcapáginas de estas miniaturas utiliza la escala proporcional del **75 %** definida a continuación. Esta medida corresponde solo a los resultados de búsqueda y no modifica el tamaño de los pósteres del Feed ni de «También podría gustarte».
+- Separación horizontal entre la miniatura del póster y el bloque de texto de cada resultado: **12 px** (opción B seleccionada).
 - Alineación del texto de cada resultado: el bloque formado por el título y el año se centra verticalmente respecto a la miniatura de **56 × 84 px** (opción A).
 - Jerarquía tipográfica de cada resultado: título de película de **14 px**, peso **medio (500)**; año de **12 px**, peso **regular (400)**. Esta jerarquía moderada distingue el título sin competir con la portada. Se limita a los resultados de búsqueda y no define la tipografía general de Prisma.
 - Comportamiento de títulos largos: el título puede ocupar **hasta dos líneas**. Si no cabe completo en ese límite, se trunca al final de la segunda línea mediante puntos suspensivos (**…**). El año permanece en su línea independiente, debajo del título, conservando la separación vertical de **2 px** y el bloque completo centrado verticalmente respecto a la miniatura.
