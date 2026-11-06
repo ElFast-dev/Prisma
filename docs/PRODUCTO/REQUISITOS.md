@@ -53,7 +53,8 @@ La navegación principal es una píldora flotante, separada de los bordes inferi
 - Separación vertical entre el icono y el nombre de cada sección de la navegación inferior: **4 px**.
 - Peso tipográfico en la navegación inferior: sección activa **medio (500)**; sección inactiva **regular (400)**.
 - Tamaño de los iconos de Personal y Descubrir en la navegación inferior: **20 px** en ambas secciones.
-- Estilo gráfico de los iconos de Personal y Descubrir en la navegación inferior: **opción A seleccionada, iconografía lineal**, basada en trazos y no en siluetas rellenas. Esta decisión define el tratamiento gráfico, no fija todavía el grosor exacto del trazo ni aprueba el diseño completo de la navegación.
+- Estilo gráfico de los iconos de Personal y Descubrir en la navegación inferior: **opción A seleccionada, iconografía lineal**, basada en trazos y no en siluetas rellenas.
+- Grosor del trazo de los iconos de la navegación inferior: **opción A seleccionada, 1,4 px**, fino y ligero.
 - Separación inferior de la píldora flotante respecto al área de gestos del sistema: **16 px** (concepto A), medida desde el borde inferior de la píldora hasta el límite superior del área de gestos.
 
 ### 4.1 Personal
@@ -123,6 +124,7 @@ El modo vuelve automáticamente a Equilibrado cuando Prisma ha permanecido fuera
 - Diseño predeterminado: cuadrícula de **tres columnas** con pósteres verticales.
 - En Ajustes se podrá elegir un segundo diseño: mosaico variado de tres columnas, combinando pósteres verticales con imágenes horizontales de doble o triple ancho entre filas.
 - Los dos diseños deben respetar los márgenes y el sistema visual que se apruebe.
+- Cada elemento del Feed muestra únicamente la portada de la película; no se coloca texto debajo de ella (ni título, ni año, ni descripción). Los indicadores de estado mediante marcapáginas se conservan según la regla específica de la sección 5.3.
 - El Feed utiliza desplazamiento infinito: carga más resultados al acercarse al final, sin botón de paginación.
 - Se deben evitar duplicados entre páginas y preservar el orden coherente del modo y los filtros.
 - Sin conexión se muestra solamente el contenido disponible localmente; no se simulan películas nuevas.
