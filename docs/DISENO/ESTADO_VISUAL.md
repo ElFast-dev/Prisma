@@ -149,6 +149,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ### Buscador: marcapáginas en resultados
 - Tamaño de cada miniatura de póster en los resultados: **56 × 84 px** (opción B), manteniendo la proporción cinematográfica **2:3**. El tamaño del póster es independiente de la escala del marcapáginas: el indicador sigue aplicando el **75 %** de las dimensiones de la cinta principal.
+- Alineación del bloque de texto: el título y el año se agrupan y se centran verticalmente respecto a la altura de la miniatura (**84 px**), manteniendo su alineación horizontal a la izquierda y la separación aprobada entre póster y texto.
 
 - En las miniaturas de póster de los resultados de búsqueda, el marcapáginas conserva la misma silueta de cinta con muesca cóncava en V, simetría, acabado sólido y correspondencia cromática que el marcador de tamaño normal del Feed, pero se representa al **75 % de su escala** para mantener el equilibrio con el póster reducido y el texto del resultado.
 - Medidas exteriores visibles resultantes: **12 px de ancho** y **16,5 px de profundidad interior**; sobresale **4,5 px** por encima del póster. La muesca cóncava mide **4,5 px** de profundidad. La separación hasta el borde derecho del póster es de **1,5 px** y el radio de las esquinas superiores es de **0,75 px**.
