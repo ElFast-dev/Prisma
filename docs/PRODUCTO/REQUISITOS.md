@@ -39,7 +39,7 @@ El algoritmo personal de recomendaciones se llama **Espectro**. Aprende de forma
 
 - Familia tipográfica global seleccionada: **Inter**. Esta es la familia de referencia para la interfaz de Prisma.
 - Pesos globales aprobados para la familia Inter: **regular (400), medio (500) y seminegrita (600)**. Estos son los únicos pesos previstos para la identidad tipográfica global; su asignación a cada nivel de la interfaz se definirá al completar la escala tipográfica.
-- Tamaño de referencia para el texto normal de lectura continua: **16 px** (opción B aprobada). Este valor sirve como base de la escala tipográfica global; no reemplaza los tamaños específicos ya definidos para títulos, años, contadores, navegación ni otros componentes. La altura de línea y la asignación exacta de pesos se definirán por nivel al completar la escala.
+- Tamaño de referencia para el texto normal de lectura continua: **16 px** (opción B aprobada). Este valor sirve como base de la escala tipográfica global; no reemplaza los tamaños específicos ya definidos para títulos, años, contadores, navegación ni otros componentes. La altura de línea de referencia para este texto normal queda fijada en **24 px** (opción B aprobada), equivalente a 1,5 veces el tamaño de fuente. Las alturas de línea de los demás niveles se definirán por separado al completar la escala.
 - Las especificaciones tipográficas particulares ya aprobadas para componentes y pantallas —incluidos los tamaños, pesos y colores del buscador y de Personal— se conservan sin cambios. Elegir Inter no reabre ni modifica esas decisiones.
 
 ## 4. Navegación principal
