@@ -206,6 +206,7 @@ Este filtro solo cambia lo que aparece en Descubrir. No modifica las listas ni e
 - Muestra resultados mientras el usuario escribe, sin exigir que pulse Enter.
 - Los resultados muestran póster, título y año de estreno cuando se conozca.
 - Tamaño de miniatura seleccionado: **56 × 84 px** (opción B), con proporción **2:3**. El marcapáginas de estas miniaturas utiliza la escala proporcional del **75 %** definida a continuación. Esta medida corresponde solo a los resultados de búsqueda y no modifica el tamaño de los pósteres del Feed ni de «También podría gustarte».
+- Radio de las esquinas de las miniaturas de los resultados de búsqueda: **2 px** (opción B aprobada). Este acabado se aplica únicamente a estas miniaturas y no modifica el tratamiento de los pósteres del Feed ni de «También podría gustarte».
 - Separación horizontal entre la miniatura del póster y el bloque de texto de cada resultado: **12 px** (opción B seleccionada).
 - Márgenes laterales de las filas de resultados: **16 px** a izquierda y derecha, medidos desde los bordes de la pantalla hasta los extremos de la fila. Las filas quedan alineadas horizontalmente con los extremos de la barra superior de búsqueda.
 - Alineación del texto de cada resultado: el bloque formado por el título y el año se centra verticalmente respecto a la miniatura de **56 × 84 px** (opción A).
