@@ -84,7 +84,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 ### Navegación y Descubrir
 
 - Descubrir es la sección inicial.
-- En la parte superior, **una única barra horizontal continua**: campo de búsqueda a la izquierda y, dentro del mismo contenedor y superficie, icono de Filtros e icono de Ajustes a la derecha (`[Buscar...  (Filtros) (Ajustes)]`). Los tres elementos deben percibirse como partes integradas de una sola barra, no como controles o tarjetas independientes. Altura: **52 px** (opción B seleccionada). Radio de las esquinas: **26 px** (opción B seleccionada), con extremos completamente redondeados.
+- En la parte superior, **una única barra horizontal continua**: campo de búsqueda a la izquierda y, dentro del mismo contenedor y superficie, icono de Filtros e icono de Ajustes a la derecha (`[Buscar...  (Filtros) (Ajustes)]`). Los tres elementos deben percibirse como partes integradas de una sola barra, no como controles o tarjetas independientes. Altura: **52 px** (opción B seleccionada). Radio de las esquinas: **26 px** (opción B seleccionada), con extremos completamente redondeados. Tamaño de los iconos de Filtros y Ajustes: **18 px** (opción A seleccionada).
 - Feed debajo del buscador.
 - Píldora flotante inferior, separada de los bordes, con Personal y Descubrir.
 - Altura de la píldora flotante inferior: **64 px**.
