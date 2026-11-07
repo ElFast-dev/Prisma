@@ -136,7 +136,7 @@ Esta decisión define únicamente esos tres roles cromáticos de Obsidiana. No c
 
 ### 4.4 Paleta cromática — Cuarzo
 
-La definición de Cuarzo comienza con la siguiente decisión aprobada:
+Los roles cromáticos de Cuarzo aprobados hasta ahora son:
 
 - **Fondo principal:** `#F4F1EA` (RGB 244, 241, 234), concepto A «Marfil mineral».
 - **Superficies** — tarjetas, secciones, contenedores y listas: `#FFFFFF` (RGB 255, 255, 255), opción A «Blanco cristalino».
@@ -466,7 +466,7 @@ Ajustes incluirá, como mínimo:
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
 
-Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64` y el acento principal `#356F9F` y el neutro de iconos inactivos `#8A857B`; otros neutros, otros bordes, estados y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
+Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64`, el acento principal `#356F9F` y el neutro para iconos inactivos `#8A857B`. Permanecen pendientes otros neutros, otros bordes, estados y los detalles de selección y comportamiento de los temas.
 
 El idioma de la interfaz y la región de disponibilidad son preferencias independientes.
 
