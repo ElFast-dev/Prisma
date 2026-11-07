@@ -144,8 +144,9 @@ La definición de Cuarzo comienza con la siguiente decisión aprobada:
 - **Texto principal:** `#292B2F` (RGB 41, 43, 47), opción A «Grafito mineral».
 - **Texto secundario:** `#68655F` (RGB 104, 101, 95), opción A «Gris mineral cálido».
 - **Texto auxiliar:** `#706C64` (RGB 112, 108, 100), opción A «Piedra suave».
+- **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#356F9F` (RGB 53, 111, 159), opción A «Azul mineral».
 
-Estas aprobaciones cubren el fondo principal, las superficies y los textos principal, secundario y auxiliar, además del contorno de superficie de 1 px. Los neutros adicionales, otros bordes no cubiertos por este rol, estados, acento y demás roles de la paleta clara siguen pendientes de definición.
+Estas aprobaciones cubren el fondo principal, las superficies, los textos principal, secundario y auxiliar, el contorno de superficie de 1 px y el acento principal. Los neutros adicionales, otros bordes no cubiertos por este rol, estados y demás roles de la paleta clara siguen pendientes de definición.
 
 ## 5. Descubrir: Feed
 
@@ -464,7 +465,7 @@ Ajustes incluirá, como mínimo:
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
 
-Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F` y el texto auxiliar `#706C64`; el resto de los roles cromáticos y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
+Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64` y el acento principal `#356F9F`; los neutros adicionales, otros bordes, estados y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
 
 El idioma de la interfaz y la región de disponibilidad son preferencias independientes.
 
