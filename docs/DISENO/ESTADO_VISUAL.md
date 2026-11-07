@@ -156,6 +156,7 @@ Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra glob
 - Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono en estado inactivo; no habrá un color distinto por sección. El propietario confirmó **`#D0D0D0`** (gris claro) para los iconos inactivos. Los iconos en estado activo podrán utilizar el acento principal **`#5B9BD5`**.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
 - **Símbolo de Historial:** reloj lineal con flecha de retorno integrada en el contorno del reloj (aprobado). La especificación se limita al símbolo; conserva el tamaño particular de **32 px** y las demás reglas compartidas de las tarjetas de Personal.
+- **Símbolo de Pendientes:** marcador lineal (*bookmark*) como representación de una película guardada para verla después (opción A aprobada). La especificación se limita al símbolo; conserva el tamaño particular de **32 px** y las demás reglas compartidas de las tarjetas de Personal.
 - Separación vertical entre el icono y el nombre de las tarjetas: **concepto A, 20 px**, equilibrada y compacta.
 - Tamaño de los contadores de las tarjetas de Personal: **concepto A, 12 px**, pequeños y discretos, sin cápsula ni fondo.
 - Separación vertical entre icono y nombre: **concepto A, aproximadamente 20 px**, para mantener una relación compacta y clara.
@@ -326,7 +327,7 @@ La iconografía global está definida como lineal, minimalista, esencial e híbr
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Personal: pantalla principal | Concepto A, distribución y decisiones parciales de tarjetas aprobadas; aspecto final todavía en borrador | Por definir |
 | Personal: Historial | Símbolo aprobado: reloj lineal con flecha de retorno integrada; el resto del concepto visual de la tarjeta y de la pantalla continúa pendiente | Por definir |
-| Personal: Pendientes | Pendiente de concepto y aprobación | Por definir |
+| Personal: Pendientes | Símbolo aprobado: marcador lineal para películas guardadas para ver después; el resto del concepto visual de la tarjeta y de la pantalla continúa pendiente | Por definir |
 | Personal: Ocultos | Pendiente de concepto y aprobación | Por definir |
 | Personal: Estadísticas | Pendiente de concepto y aprobación | Por definir |
 | Personal: Gestionar listas | Estructura funcional acordada; diseño visual pendiente | Por definir |
