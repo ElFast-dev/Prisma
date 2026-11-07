@@ -127,7 +127,7 @@ Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra glob
 - **Terminaciones y uniones de trazo de referencia:** redondeadas (opción A aprobada; `stroke-linecap: round` y `stroke-linejoin: round`). Se utilizan como tratamiento predeterminado para iconos nuevos que no tengan especificaciones particulares.
 - Esta referencia no sustituye terminaciones ni uniones particulares ya aprobadas para componentes existentes; se conservan sus reglas expresas.
 - El grosor de 1,75 px es una referencia, no una medida universal obligatoria. Se conservan sin cambios las especificaciones particulares ya aprobadas para componentes concretos, tanto si expresan un valor exacto como si definen un tratamiento propio; por ejemplo, los iconos de la navegación inferior mantienen su grosor de **1,4 px**.
-- Esta decisión no fija un tamaño, color, geometría, terminación ni unión de trazo universal. Esos atributos se determinan según cada componente y sus necesidades.
+- Esta decisión no fija un tamaño, color ni geometría universal. Esos atributos se determinan según cada componente y sus necesidades; las terminaciones y uniones redondeadas son el valor predeterminado global, salvo especificación particular aprobada.
 - El estilo lineal y el grosor de referencia se aplican con la misma lógica y cobertura a Obsidiana y Cuarzo; cada tema conserva sus colores y tratamientos cromáticos aprobados.
 
 ### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
