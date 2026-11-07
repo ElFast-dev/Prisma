@@ -25,6 +25,17 @@ Las decisiones se basan primero en las recomendaciones oficiales de Android. Las
 
 Jetpack Compose es el toolkit moderno recomendado por Android para aplicaciones nuevas. La arquitectura se organizará por capas con repositorios y una única fuente de verdad.
 
+## 2.1 Unidades de diseño e implementación
+
+- **Dimensiones y geometría de interfaz:** se implementan en `dp` (`Dp` de Compose). Incluye anchos, alturas, tamaños de componentes e iconos, márgenes, rellenos, separaciones, radios de esquina, contornos y grosores de trazo.
+- **Tipografía:** se implementa en `sp` (`TextUnit.sp` de Compose). Incluye tamaños de fuente, alturas de línea y espaciado entre caracteres.
+- **Trazos vectoriales y dibujo personalizado:** su medida de diseño se define en `dp`. Cuando una API de dibujo de bajo nivel requiera píxeles, la conversión se realiza mediante la densidad de Compose en el límite de dibujo; no se introducen valores de píxeles físicos en las especificaciones.
+- **Conservación de valores:** las cifras numéricas existentes en `REQUISITOS.md` y `ESTADO_VISUAL.md`, actualmente escritas con la notación `px`, son magnitudes nominales de diseño y no píxeles físicos. Se conserva su valor numérico al mapear cada propiedad a `dp` o `sp`; por ejemplo, una separación nominal de 16 se implementa como 16 dp y un texto nominal de 16 como 16 sp.
+- **Recursos rasterizados:** `px` se reserva para las dimensiones intrínsecas de archivos de imagen y mapas de bits, no para dimensionar los componentes de la interfaz.
+- Compose y Android gestionan la densidad de pantalla al representar `dp`, y la escala de fuente del usuario al representar `sp`. No se multiplica manualmente el valor de diseño por la densidad del dispositivo.
+- Esta regla conserva todos los números y excepciones de diseño ya aprobados. No modifica por sí sola tamaños, proporciones, radios, grosores ni la apariencia de ningún componente.
+
+
 ## 3. Arquitectura de la aplicación
 
 Capas:

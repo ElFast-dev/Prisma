@@ -47,6 +47,10 @@ El algoritmo personal de recomendaciones se llama **Espectro**. Aprende de forma
 - Por ahora, los cuatro niveles anteriores constituyen la escala tipográfica global de referencia y se consideran suficientes para las necesidades generales identificadas. No se incorporan niveles adicionales en esta etapa; la escala podrá ampliarse si una necesidad concreta del producto lo justifica.
 - Las especificaciones tipográficas particulares ya aprobadas para componentes y pantallas —incluidos los tamaños, pesos y colores del buscador y de Personal— se conservan sin cambios. Elegir Inter no reabre ni modifica esas decisiones.
 
+### 3.2 Interpretación de unidades de diseño en Android
+
+Las medidas expresadas como `px` en este documento son valores numéricos nominales del sistema de diseño, no píxeles físicos de pantalla. En la implementación Android se conserva el mismo valor numérico y se asigna `dp` a dimensiones, márgenes, rellenos, separaciones, radios, contornos y grosores de trazo; `sp` a tamaños tipográficos, alturas de línea y espaciado entre caracteres. La equivalencia y sus reglas técnicas se detallan en `docs/TECNICO/DISENO_TECNICO.md`, sección 2.1.
+
 ## 4. Navegación principal
 
 Al abrir Prisma, la sección predeterminada es **Descubrir**.
@@ -93,6 +97,7 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - Las cuatro tarjetas principales de Personal tienen proporción **cuadrada 1:1**.
 - Las cuatro tarjetas principales utilizan iconos grandes y un tratamiento minimalista; no usan collages de pósteres en esta pantalla.
 - Los iconos de las cuatro tarjetas de Personal utilizan el concepto A: tamaño de referencia de **32 px**, grande y equilibrado; se descarta la alternativa extra grande de 40 px.
+- **Grosor de trazo de los cinco iconos de Personal:** **1,75 dp**, por aplicación de la referencia global aprobada al no existir un grosor numérico particular distinto para estos símbolos. La navegación inferior conserva su excepción particular de **1,4 dp**.
 - **En Obsidiana**, los iconos inactivos de las cuatro tarjetas de Personal utilizan **`#D0D0D0`**, uniforme y monocromático. Cuando están activos, utilizan el color particular aprobado **`#5B9BD5`**, conservado como excepción para este componente. En Cuarzo se aplica la adaptación cromática específica descrita más abajo.
 - **En Obsidiana**, las cuatro tarjetas utilizan la superficie particular **`#222222`** con un contorno fino de **1 px**; esta decisión sustituye el fondo transparente acordado previamente. En Cuarzo utilizan la superficie y el contorno especificados en su adaptación cromática.
 - El contorno de las cuatro tarjetas tiene un grosor de **1 px**, delicado y discreto.
@@ -108,12 +113,10 @@ Al pulsar Personal, se abre una pantalla principal (centro de navegación) con c
 - Los nombres de las cuatro tarjetas de Personal utilizan 16 px, peso medio (500) y una altura de línea de 20 px (opción A aprobada). Esta es una especificación particular de esos nombres y no modifica la escala tipográfica global ni las demás medidas de las tarjetas.
 - **En Obsidiana**, los nombres de las cuatro tarjetas de Personal utilizan **`#F0F0F0`** (blanco suave), según el concepto A seleccionado. Este valor se limita a esos nombres y no define por sí solo todos los colores de texto de la aplicación; Cuarzo utiliza el texto principal `#292B2F`.
 - Los nombres de las cuatro tarjetas de Personal se alinean a la izquierda, siguiendo el margen interior de la tarjeta.
-- La separación vertical de referencia entre el icono y el nombre es de **20 px**.
-- La separación vertical entre el icono y el nombre de cada tarjeta es de aproximadamente **20 px**.
+- La separación vertical entre el icono y el nombre de cada tarjeta es de **20 px**.
 - Estilo de los contadores: **A, número integrado sin fondo ni cápsula**, con tipografía discreta y alineación en la esquina superior derecha.
 - **En Obsidiana**, los contadores de Historial, Pendientes, Ocultos y Gestionar listas utilizan **`#D0D0D0`** (gris claro). En Cuarzo utilizan el texto auxiliar `#706C64`.
-- Tamaño de referencia de los contadores: **12 px**.
-- Tamaño de los contadores: **12 px**, según el concepto A elegido.
+- Tamaño de los contadores de las tarjetas de Personal: **12 px** (concepto A aprobado).
 
 Contiene estas subsecciones:
 

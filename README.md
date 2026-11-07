@@ -31,8 +31,8 @@
 7. Cada versión debe ser un incremento pequeño y comprobable. Registrar cada versión en GitHub con una explicación sencilla y, cuando sea viable, un APK instalable.
 8. Mantener requisitos y decisiones visuales sincronizados con lo acordado. Si algo cambia, actualizar los documentos y explicarlo.
 9. Mostrar conceptos visuales en la conversación; no usar imágenes generadas por IA para sustituir los diseños. No cerrar una pantalla sin aprobación.
-11. Los conceptos visuales deben tener calidad de presentación, contexto completo, jerarquía clara y alternativas realmente distinguibles. Cuando el propietario pida mejores conceptos, rehacerlos con una mejora visible y respetar las decisiones ya aprobadas. La regla detallada está en `docs/DISENO/ESTADO_VISUAL.md`.
 10. No añadir funciones sugeridas hasta que el propietario las apruebe.
+11. Los conceptos visuales deben tener calidad de presentación, contexto completo, jerarquía clara y alternativas realmente distinguibles. Cuando el propietario pida mejores conceptos, rehacerlos con una mejora visible y respetar las decisiones ya aprobadas. La regla detallada está en `docs/DISENO/ESTADO_VISUAL.md`.
 
 ## Principios no negociables
 
