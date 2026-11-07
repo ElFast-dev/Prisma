@@ -146,8 +146,9 @@ Los roles cromáticos de Cuarzo aprobados hasta ahora son:
 - **Texto auxiliar:** `#706C64` (RGB 112, 108, 100), opción A «Piedra suave».
 - **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#356F9F` (RGB 53, 111, 159), opción A «Azul mineral».
 - **Iconos inactivos:** `#8A857B` (RGB 138, 133, 123), opción A «Piedra cálida». Este neutro se aplica a iconografía inactiva en Cuarzo y no sustituye los colores particulares ya aprobados para Obsidiana ni las reglas específicas de componentes como Personal.
+- **Separadores internos:** `#E8E3DA` (RGB 232, 227, 218), opción B «Separación delicada». Se utiliza para dividir internamente secciones y grupos de información; el grosor y el espaciado de cada separador quedan sujetos a la especificación del componente.
 
-Estas aprobaciones cubren el fondo principal, las superficies, los textos principal, secundario y auxiliar, el contorno de superficie de 1 px, el acento principal y el neutro de iconos inactivos. Otros neutros, otros bordes no cubiertos por los roles ya aprobados, estados y demás elementos pendientes de la paleta clara siguen sujetos a definición.
+Estas aprobaciones cubren el fondo principal, las superficies, los textos principal, secundario y auxiliar, el contorno de superficie de 1 px, el acento principal, el neutro de iconos inactivos y el color de separadores internos. El grosor y espaciado de los separadores, otros neutros, otros bordes no cubiertos por los roles ya aprobados, estados y demás elementos pendientes de la paleta clara siguen sujetos a definición.
 
 ## 5. Descubrir: Feed
 
@@ -466,7 +467,7 @@ Ajustes incluirá, como mínimo:
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
 
-Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64`, el acento principal `#356F9F` y el neutro para iconos inactivos `#8A857B`. Permanecen pendientes otros neutros, otros bordes, estados y los detalles de selección y comportamiento de los temas.
+Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64`, el acento principal `#356F9F`, el neutro para iconos inactivos `#8A857B` y los separadores internos `#E8E3DA`. Permanecen pendientes el grosor y el espaciado de los separadores, otros neutros, otros bordes, estados y los detalles de selección y comportamiento de los temas.
 
 El idioma de la interfaz y la región de disponibilidad son preferencias independientes.
 
