@@ -127,11 +127,13 @@ Contiene el buscador y el Feed de películas. En la parte superior aparece una *
 
 ### 4.3 Paleta cromática — Dark Mode
 
-La paleta base confirmada para el tema oscuro de Prisma es:
+Los siguientes valores son **referencias cromáticas iniciales que le gustan al propietario, pero no son definitivas ni están aprobadas como paleta global de Obsidiana**:
 
-- **Fondo principal:** `#131313` (RGB 19, 19, 19).
-- **Superficies elevadas** — tarjetas, secciones, contenedores y listas: `#222222` (RGB 34, 34, 34).
-- **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#5B9BD5` (RGB 91, 155, 213).
+- **Fondo de referencia:** `#131313` (RGB 19, 19, 19).
+- **Superficie elevada de referencia:** `#222222` (RGB 34, 34, 34).
+- **Preferencia cromática general:** azul. El tono `#5B9BD5` (RGB 91, 155, 213) es una referencia azul que le gusta al propietario, pero el acento global definitivo queda pendiente.
+
+La selección final del fondo principal, las superficies y el acento de Obsidiana se resolverá por separado. Las especificaciones particulares de componentes que ya cuentan con aprobación expresa se conservan tal como están documentadas; una decisión futura de paleta global deberá revisar su coherencia antes de cualquier cambio, sin modificarlas automáticamente.
 - **Texto principal global:** `#F0F0F0` (RGB 240, 240, 240), alternativa A aprobada.
 - **Texto secundario global:** `#BDBDBD` (RGB 189, 189, 189), alternativa A aprobada.
 - **Texto auxiliar global:** `#9B9B9B` (RGB 155, 155, 155), alternativa A aprobada.
@@ -139,7 +141,7 @@ La paleta base confirmada para el tema oscuro de Prisma es:
 - Esta jerarquía cromática y el neutro de iconos inactivos se aplican como referencias globales de Obsidiana. Se conservan los colores específicos ya aprobados para componentes concretos cuando sus reglas particulares indiquen un tratamiento distinto.
 - **Separadores internos:** `#353535` (RGB 53, 53, 53), grosor **1 px**, opción A aprobada. Se utiliza para dividir internamente secciones y grupos de información en Obsidiana; reutiliza un color ya presente en componentes aprobados sin convertirlo en un contorno general para todas las superficies. Separación respecto al contenido adyacente: **8 px por encima y 8 px por debajo (alternativa A aprobada)**, igual que en Cuarzo.
 
-Los tres roles cromáticos anteriores constituyen la paleta base confirmada de Obsidiana. También están aprobados los tres niveles globales de texto, el neutro global de iconos inactivos `#BDBDBD` (conservando las excepciones particulares, como Personal `#D0D0D0`) y el color, el grosor y el espaciado de los separadores internos. Los demás neutros no asignados, otros bordes y estados adicionales siguen pendientes.
+Los tres valores de referencia anteriores no constituyen una paleta definitiva. Sí están aprobados los tres niveles globales de texto, el neutro global de iconos inactivos `#BDBDBD` (conservando las excepciones particulares, como Personal `#D0D0D0`), el contenido de controles deshabilitados `#888888` y el color, grosor y espaciado de los separadores internos. Quedan pendientes la selección definitiva del fondo, las superficies y el acento globales, además de los demás neutros no asignados, otros bordes y estados adicionales.
 
 ### 4.4 Paleta cromática — Cuarzo
 
@@ -477,7 +479,7 @@ Ajustes incluirá, como mínimo:
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
 
-Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Obsidiana están aprobados el texto principal global `#F0F0F0`, el secundario global `#BDBDBD`, el auxiliar global `#9B9B9B`, el neutro global para iconos inactivos `#BDBDBD` (con la excepción particular de Personal `#D0D0D0`) y los separadores internos `#353535` de 1 px. En Cuarzo están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64`, el acento principal `#356F9F`, el neutro para iconos inactivos `#8A857B`, el contenido (texto e iconos) de controles deshabilitados `#9D998F`, su superficie `#F0EDE6` y la ausencia de contorno visible en esos controles (opción A aprobada), los separadores internos `#E8E3DA` y la superficie transitoria de pulsación `#ECE7DE` para elementos interactivos sobre superficies blancas. La ausencia de contorno visible en los controles deshabilitados y la ausencia de opacidad adicional (**100 %**, opción A) están aprobadas. El grosor de los separadores internos está aprobado en **1 px** en ambos temas y su separación respecto al contenido adyacente es de **8 px por encima y 8 px por debajo (alternativa A aprobada)**; otros neutros no definidos, otros bordes, otros estados y los detalles de selección y comportamiento de los temas permanecen pendientes.
+Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Obsidiana siguen pendientes los valores globales definitivos de fondo, superficies y acento; las referencias iniciales que le gustan al propietario son `#131313`, `#222222` y el azul `#5B9BD5`, respectivamente, y el azul es su preferencia cromática general. Están aprobados el texto principal global `#F0F0F0`, el secundario global `#BDBDBD`, el auxiliar global `#9B9B9B`, el neutro global para iconos inactivos `#BDBDBD` (con la excepción particular de Personal `#D0D0D0`), el contenido de controles deshabilitados `#888888` y los separadores internos `#353535` de 1 px. En Cuarzo están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64`, el acento principal `#356F9F`, el neutro para iconos inactivos `#8A857B`, el contenido (texto e iconos) de controles deshabilitados `#9D998F`, su superficie `#F0EDE6` y la ausencia de contorno visible en esos controles (opción A aprobada), los separadores internos `#E8E3DA` y la superficie transitoria de pulsación `#ECE7DE` para elementos interactivos sobre superficies blancas. La ausencia de contorno visible en los controles deshabilitados y la ausencia de opacidad adicional (**100 %**, opción A) están aprobadas. El grosor de los separadores internos está aprobado en **1 px** en ambos temas y su separación respecto al contenido adyacente es de **8 px por encima y 8 px por debajo (alternativa A aprobada)**; otros neutros no definidos, otros bordes, otros estados y los detalles de selección y comportamiento de los temas permanecen pendientes.
 
 El idioma de la interfaz y la región de disponibilidad son preferencias independientes.
 
