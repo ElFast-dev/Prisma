@@ -166,6 +166,10 @@ Los roles cromáticos de Cuarzo aprobados hasta ahora son:
 
 Estas aprobaciones cubren el fondo principal, las superficies, los textos principal, secundario y auxiliar, el contorno de superficie de 1 px, el acento principal, el neutro de iconos inactivos, el contenido y la superficie de controles deshabilitados, el color de separadores internos y la superficie transitoria durante la pulsación. El contenido deshabilitado utiliza `#9D998F` y su superficie `#F0EDE6`; los controles deshabilitados no llevan contorno visible (opción A aprobada) ni reciben opacidad adicional (**100 %**, opción A aprobada). Se conservan íntegros los colores aprobados del contenido y de la superficie. Los separadores internos están aprobados en **1 px** en ambos temas: `#353535` en Obsidiana y `#E8E3DA` en Cuarzo. La separación respecto al contenido adyacente es de **8 px por encima y 8 px por debajo (alternativa A aprobada)** en ambos temas; otros neutros, otros bordes no cubiertos por los roles ya aprobados, otros estados y demás elementos pendientes de la paleta clara siguen sujetos a definición.
 
+### 4.5 Sombras de superficies generales
+
+Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra global** (alternativa A aprobada). La diferenciación entre niveles se resuelve mediante los colores de fondo y superficie, así como los contornos aprobados cuando correspondan. Esta regla no elimina ni modifica sombras de contacto expresamente aprobadas para componentes concretos, como la sombra del marcapáginas; las excepciones particulares se conservan sin extenderlas a otros elementos.
+
 ## 5. Descubrir: Feed
 
 ### 5.1 Modos de contenido
