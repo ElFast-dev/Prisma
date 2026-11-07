@@ -70,7 +70,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Separación vertical entre el icono y el nombre de las tarjetas: **concepto A, 20 px**, equilibrada y compacta.
 - Tamaño de los contadores de las tarjetas de Personal: **concepto A, 12 px**, pequeños y discretos, sin cápsula ni fondo.
 - Separación vertical entre icono y nombre: **concepto A, aproximadamente 20 px**, para mantener una relación compacta y clara.
-- Tipografía de los nombres de las secciones: **concepto A, discreta, 16 px y peso medio**. Es una referencia inicial pendiente de validación dentro del sistema tipográfico completo.
+- Tipografía de los nombres de las cuatro tarjetas de Personal: **16 px, peso medio (500) y altura de línea de 20 px** (opción A aprobada). Es una regla particular de este componente; no sustituye ni amplía por sí sola los niveles de la escala tipográfica global.
 - Color de los nombres de las cuatro tarjetas de Personal: **concepto A, `#F0F0F0`** (blanco suave). La elección aplica a esos nombres; no cierra la paleta tipográfica general.
 - Alineación de los nombres de las cuatro tarjetas: **concepto A, alineados a la izquierda**, respetando el margen interior de 16 px.
 - Proporción de las cuatro tarjetas: **A, cuadradas con relación de aspecto 1:1**. Se descarta la alternativa ligeramente vertical.
