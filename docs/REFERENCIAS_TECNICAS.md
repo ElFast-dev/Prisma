@@ -45,6 +45,8 @@ Fuentes consultadas para el diseño técnico inicial de Prisma (5 de noviembre d
 
 - Crear un flujo de trabajo de Gradle: https://docs.github.com/es/actions/tutorials/build-and-test-code/java-with-gradle
 - API REST de Releases: consulta de la Release estable más reciente y sus assets: https://docs.github.com/en/rest/releases/releases#get-the-latest-release
+- API REST de Releases: listado paginado de las Releases publicadas, con acceso al cuerpo de las notas y sus assets: https://docs.github.com/en/rest/releases/releases#list-releases
+- Acerca de GitHub Releases: publicación de versiones, notas de publicación y archivos binarios: https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases
 - API REST de assets de Releases y metadatos de integridad: https://docs.github.com/en/rest/releases/assets
 - Guardar/compartir artifacts de Actions: https://docs.github.com/es/actions/concepts/workflows-and-actions/workflow-artifacts
 
