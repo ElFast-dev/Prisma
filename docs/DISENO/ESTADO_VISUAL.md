@@ -45,8 +45,6 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 
 ### Temas de apariencia — Obsidiana y Cuarzo
 
-### Temas de apariencia — Obsidiana y Cuarzo
-
 - **Obsidiana:** nombre aprobado para el modo oscuro.
 - **Cuarzo:** nombre aprobado para el modo claro.
 - La aprobación confirma los nombres de los dos temas, no sus paletas completas, el selector ni sus reglas de comportamiento. La paleta de Cuarzo y los detalles pendientes del sistema visual requieren definición y aprobación posteriores.
