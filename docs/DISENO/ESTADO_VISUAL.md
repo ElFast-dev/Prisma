@@ -158,6 +158,7 @@ Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra glob
 - **Símbolo de Historial:** reloj lineal con flecha de retorno integrada en el contorno del reloj (aprobado). La especificación se limita al símbolo; conserva el tamaño particular de **32 px** y las demás reglas compartidas de las tarjetas de Personal.
 - **Símbolo de Pendientes:** marcador lineal (*bookmark*) como representación de una película guardada para verla después (opción A aprobada). La especificación se limita al símbolo; conserva el tamaño particular de **32 px** y las demás reglas compartidas de las tarjetas de Personal.
 - **Símbolo de Ocultos:** ojo lineal atravesado por una línea diagonal (opción A aprobada), que comunica que la película está oculta. La especificación se limita al símbolo; conserva el tamaño particular de **32 px** y las demás reglas compartidas de las tarjetas de Personal.
+- **Símbolo de Estadísticas:** tres barras verticales lineales de distinta altura, ascendentes de izquierda a derecha (opción A aprobada), como representación de datos y métricas personales. La especificación se limita al símbolo; conserva el tamaño particular de **32 px** y las demás reglas compartidas de las tarjetas de Personal.
 - Separación vertical entre el icono y el nombre de las tarjetas: **concepto A, 20 px**, equilibrada y compacta.
 - Tamaño de los contadores de las tarjetas de Personal: **concepto A, 12 px**, pequeños y discretos, sin cápsula ni fondo.
 - Separación vertical entre icono y nombre: **concepto A, aproximadamente 20 px**, para mantener una relación compacta y clara.
@@ -330,7 +331,7 @@ La iconografía global está definida como lineal, minimalista, esencial e híbr
 | Personal: Historial | Símbolo aprobado: reloj lineal con flecha de retorno integrada; el resto del concepto visual de la tarjeta y de la pantalla continúa pendiente | Por definir |
 | Personal: Pendientes | Símbolo aprobado: marcador lineal para películas guardadas para ver después; el resto del concepto visual de la tarjeta y de la pantalla continúa pendiente | Por definir |
 | Personal: Ocultos | Símbolo aprobado: ojo lineal tachado para representar películas ocultas; el resto del concepto visual de la tarjeta y de la pantalla continúa pendiente | Por definir |
-| Personal: Estadísticas | Pendiente de concepto y aprobación | Por definir |
+| Personal: Estadísticas | Símbolo aprobado: tres barras verticales lineales ascendentes; el resto del concepto visual de la tarjeta y de la pantalla continúa pendiente | Por definir |
 | Personal: Gestionar listas | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Ficha cinematográfica | Estructura funcional detallada; diseño visual pendiente | Por definir |
 | Ajustes | Requisitos funcionales; diseño visual pendiente | Por definir |
