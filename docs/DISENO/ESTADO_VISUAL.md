@@ -88,8 +88,8 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 - Tamaño de los contadores: **A, 12 px**, pequeño y discreto.
 - Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
 - Las tarjetas mantienen el título del acceso y el contador cuando corresponda; no necesitan frases descriptivas largas.
-- La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo, la escala tipográfica global de Inter, demás tonos de texto, neutros, espaciado y detalles de los componentes.
-- Siguen pendientes la familia tipográfica general, los demás tonos de texto y neutros, colores de estados adicionales, dimensiones definitivas, valores exactos del grosor de trazo, reglas de tema claro y demás componentes del sistema visual. Ya están definidos los tres roles cromáticos base de Dark Mode y los colores específicos de iconos inactivos, contorno y nombres de las tarjetas de Personal.
+- La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo y los detalles visuales que aún falten. La familia Inter y la escala tipográfica global de cuatro niveles ya están definidas; esta aprobación tipográfica no cierra por sí sola el diseño final de Personal.
+- Siguen pendientes la definición global de los demás tonos de texto y neutros, los colores de estados adicionales, las especificaciones de trazo que aún no estén cerradas, las reglas de una eventual paleta para tema claro y otros componentes del sistema visual. Ya están definidos la familia Inter y sus cuatro niveles tipográficos globales, los tres roles cromáticos base de Dark Mode y los colores específicos de iconos inactivos, contorno y nombres de las tarjetas de Personal. Las dimensiones y los detalles ya aprobados para componentes concretos se conservan sin cambios.
 
 ### Navegación y Descubrir
 
