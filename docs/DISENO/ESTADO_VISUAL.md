@@ -9,6 +9,8 @@
 
 Cada vez que se presenten conceptos visuales para Prisma, deben ser propuestas trabajadas y de calidad de presentación, no simples bocetos repetidos o variaciones superficiales.
 
+**Dirección visual general:** Prisma debe ser minimalista, limpio y elegante. La composición prioriza la claridad, la jerarquía y el espacio; cada elemento, control o detalle debe responder a una finalidad lógica y útil. Se evitan adornos, duplicaciones y complejidad que no aporte valor. La simplicidad no debe perjudicar la legibilidad, la accesibilidad ni la comprensión.
+
 Criterios obligatorios:
 - Revisar primero este documento y los requisitos de producto para respetar todas las decisiones aprobadas y no reabrirlas accidentalmente.
 - Mostrar la pantalla o componente dentro de su contexto real de uso, con composición completa y jerarquía visual clara.
