@@ -147,7 +147,7 @@ La definición de Cuarzo comienza con la siguiente decisión aprobada:
 - **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#356F9F` (RGB 53, 111, 159), opción A «Azul mineral».
 - **Iconos inactivos:** `#8A857B` (RGB 138, 133, 123), opción A «Piedra cálida». Este neutro se aplica a iconografía inactiva en Cuarzo y no sustituye los colores particulares ya aprobados para Obsidiana ni las reglas específicas de componentes como Personal.
 
-Estas aprobaciones cubren el fondo principal, las superficies, los textos principal, secundario y auxiliar, el contorno de superficie de 1 px y el acento principal. Otros neutros, otros bordes no cubiertos por los roles ya aprobados, estados y demás elementos pendientes de la paleta clara siguen sujetos a definición.
+Estas aprobaciones cubren el fondo principal, las superficies, los textos principal, secundario y auxiliar, el contorno de superficie de 1 px, el acento principal y el neutro de iconos inactivos. Otros neutros, otros bordes no cubiertos por los roles ya aprobados, estados y demás elementos pendientes de la paleta clara siguen sujetos a definición.
 
 ## 5. Descubrir: Feed
 
