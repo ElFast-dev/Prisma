@@ -120,6 +120,13 @@ Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra glob
 - Es una guía de consistencia, no una lista exclusiva ni una orden de sustituir medidas existentes. Las especificaciones particulares ya aprobadas se mantienen intactas, incluidos los valores que no sean múltiplos de 4.
 - Ambos temas comparten la misma lógica y cobertura de espaciado.
 
+### Regla compartida — estilo global de iconografía
+
+- **Estilo global:** iconografía lineal (opción A aprobada). Los iconos se construyen visualmente a partir de trazos, con formas limpias y ligeras; no se utiliza como lenguaje global la silueta sólida rellena.
+- Esta decisión define el lenguaje gráfico general, no un grosor de trazo, tamaño, color, geometría o terminación universal. Esos atributos se determinan según cada componente y sus necesidades.
+- Se conservan sin cambios las especificaciones particulares ya aprobadas para componentes concretos, incluidos tamaños, grosores, terminaciones y uniones de trazo. La regla global no las sustituye ni obliga a homogeneizarlas.
+- El estilo lineal se aplica con la misma lógica y cobertura a Obsidiana y Cuarzo; cada tema conserva sus colores y tratamientos cromáticos aprobados.
+
 ### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
 
 - Al tocar Personal desde la píldora inferior, se abre un centro de navegación con cinco accesos visibles.
