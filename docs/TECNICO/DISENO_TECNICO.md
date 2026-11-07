@@ -240,7 +240,20 @@ El MVP incluirá un actualizador dentro de Prisma para que el usuario pueda cons
 - Consultar las Releases públicas mediante la API REST oficial de GitHub. Para la versión estable más reciente se utilizará el endpoint público `GET /repos/ElFast-dev/Prisma/releases/latest`; el acceso de solo lectura a recursos públicos no necesita autenticación.
 - No se incrusta en la aplicación ningún token personal de GitHub ni secreto con permisos de escritura.
 - La información de la Release debe incluir, como mínimo, tag/versión, notas de publicación y el asset APK correspondiente. El actualizador compara la versión instalada con la versión publicada antes de ofrecer una descarga.
-- La comprobación manual desde Ajustes forma parte del MVP. La comprobación automática al iniciar, la periodicidad y las notificaciones quedan pendientes de decisión.
+- **Comprobación exclusivamente manual:** la consulta se ejecuta únicamente cuando el usuario pulsa «Buscar actualizaciones» desde Ajustes. No se consulta al iniciar Prisma, al reanudarla ni en segundo plano; no se programan tareas periódicas ni notificaciones automáticas.
+
+### Changelog e historial de versiones
+
+- **Obligatorio por versión:** ninguna versión distribuida de Prisma se publica sin un changelog propio, no vacío, escrito en español y asociado a su GitHub Release.
+- **Fuente única:** el cuerpo (`body`) de la GitHub Release es el contenido oficial del changelog. Ese mismo contenido se muestra en GitHub Releases y dentro de Prisma; no se mantiene una segunda versión redactada manualmente en la aplicación.
+- El changelog debe estar redactado para las personas usuarias y resumir cambios reales de esa versión. Se recomienda utilizar encabezados solo cuando correspondan: `Novedades`, `Mejoras`, `Correcciones` y `Cambios importantes`. Una versión de corrección puede incluir únicamente `Correcciones`; no deben añadirse secciones vacías ni cambios que no pertenezcan a esa entrega.
+- Cada entrada debe identificar la versión/tag y la fecha de publicación, y explicar los cambios con un lenguaje claro. No se reemplaza el changelog por una lista automática de commits.
+- **Antes de descargar una actualización:** cuando se encuentra una versión nueva, Prisma muestra su versión, fecha y changelog completo para que el usuario pueda revisar qué cambia antes de decidir descargarla e instalarla.
+- **Historial dentro de Prisma:** en `Ajustes → Actualizaciones → Historial de versiones` se puede consultar el changelog de cada Release pública publicada en el repositorio. La lista distingue las Releases estables de las *pre-releases*; que estas últimas puedan instalarse desde el actualizador queda sujeto a una decisión aparte.
+- Para obtener la versión estable más reciente se usa `GET /repos/ElFast-dev/Prisma/releases/latest`. Para cargar el historial se usa `GET /repos/ElFast-dev/Prisma/releases` y se procesan sus páginas de resultados, incluyendo el cuerpo de cada Release. Los borradores no publicados no forman parte del historial público.
+- Los changelogs recuperados se guardan en caché local para que las notas ya consultadas puedan leerse sin conexión. La consulta de versiones nuevas y la primera carga de notas que aún no estén guardadas requieren conexión.
+- La aplicación presenta el cuerpo de la Release mediante un renderizador Markdown seguro y acotado. No ejecuta HTML, scripts, contenido activo ni código incluido en las notas.
+- La publicación de una versión se considera incompleta si la Release no tiene un changelog válido y visible en GitHub Releases y en el historial de Prisma.
 
 ### Descarga e integridad
 
@@ -261,7 +274,7 @@ El MVP incluirá un actualizador dentro de Prisma para que el usuario pueda cons
 
 ### Publicación
 
-- Cada versión distribuida se publica en GitHub Releases con tag SemVer, notas en español y un APK instalable compatible con el formato de distribución elegido.
+- Cada versión distribuida se publica en GitHub Releases con tag SemVer, changelog obligatorio en español y un APK instalable compatible con el formato de distribución elegido. El contenido del changelog debe coincidir con el que Prisma muestra dentro de su historial de versiones.
 - Las Releases y sus assets se generan mediante el flujo de entrega continua definido en esta sección.
 - El actualizador del MVP ofrece la versión pública estable más reciente. El soporte de *pre-releases*, canales alternativos o selección de versiones queda pendiente de aprobación.
 
