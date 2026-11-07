@@ -170,6 +170,11 @@ Estas aprobaciones cubren el fondo principal, las superficies, los textos princi
 
 Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra global** (alternativa A aprobada). La diferenciación entre niveles se resuelve mediante los colores de fondo y superficie, así como los contornos aprobados cuando correspondan. Esta regla no elimina ni modifica sombras de contacto expresamente aprobadas para componentes concretos, como la sombra del marcapáginas; las excepciones particulares se conservan sin extenderlas a otros elementos.
 
+### 4.6 Geometría general — radio base
+
+- **Radio base de las superficies generales:** **14 px** en Obsidiana y Cuarzo (alternativa A aprobada). Se utiliza como referencia general cuando una superficie no tenga un radio particular definido.
+- Esta regla no modifica automáticamente los componentes que ya cuentan con una especificación particular de radio. Sus medidas aprobadas se conservan sin cambios; el valor de 14 px no es una instrucción para homogeneizar indiscriminadamente todos los elementos.
+
 ## 5. Descubrir: Feed
 
 ### 5.1 Modos de contenido
