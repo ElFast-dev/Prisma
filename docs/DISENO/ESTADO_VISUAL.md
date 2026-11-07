@@ -151,7 +151,7 @@ Las medidas expresadas como `px` en este documento son magnitudes nominales del 
 - Concepto elegido para las cuatro tarjetas: **A, iconos grandes y minimalistas**. Se descarta para esta pantalla la alternativa de collages de pósteres.
 - Los iconos son los elementos gráficos principales de las cuatro tarjetas; los contadores se mantienen pequeños y discretos.
 - Estilo de iconografía: **A, lineal y minimalista**, sin placas ni fondos geométricos detrás del símbolo.
-- **Grosor del trazo de los cinco símbolos de Personal:** **1,75 dp**, por aplicación de la referencia global aprobada al no existir un grosor numérico particular distinto para estos iconos. El trazo conserva un aspecto fino y legible. La navegación inferior mantiene su excepción particular de **1,4 px** en la notación nominal existente.
+- **Grosor del trazo de los cinco símbolos de Personal:** **1,75 dp**, por aplicación de la referencia global aprobada al no existir un grosor numérico particular distinto para estos iconos. El trazo conserva un aspecto fino y legible. La navegación inferior mantiene su excepción particular de **1,4 dp**.
 - Tamaño: **A, 32 px, grande y equilibrado**. Los iconos deben destacar con claridad dentro de las tarjetas, manteniendo espacio libre suficiente y sin competir con el nombre. Se descarta el tamaño extra grande de 40 px.
 - Color de iconos: **A, monocromático**. Los cuatro iconos utilizarán un mismo tono en estado inactivo; no habrá un color distinto por sección. **En Obsidiana**, el color inactivo es **`#D0D0D0`** y el activo conserva la excepción particular **`#5B9BD5`**. En Cuarzo, el inactivo utiliza `#8A857B` y el activo el acento global `#356F9F`.
 - Composición interna aprobada: icono grande arriba a la izquierda, contador discreto arriba a la derecha cuando corresponda y nombre de la sección abajo.
@@ -175,7 +175,6 @@ Las medidas expresadas como `px` en este documento son magnitudes nominales del 
 - Historial, Pendientes y Ocultos muestran un contador discreto de películas; Historial cuenta películas únicas, no visionados.
 - Estilo de los contadores: **A, número integrado sin fondo ni cápsula**, con tipografía discreta y alineación en la esquina superior derecha.
 - Color de los contadores de Historial, Pendientes, Ocultos y Gestionar listas: **en Obsidiana, `#D0D0D0`**; en **Cuarzo, `#706C64`**. El color es uniforme en los cuatro accesos de cada tema.
-- Tamaño de los contadores: **A, 12 px**, pequeño y discreto.
 - Gestionar listas muestra un contador discreto de listas personalizadas. Estadísticas no muestra contador en el centro de navegación.
 - Las tarjetas mantienen el título del acceso y el contador cuando corresponda; no necesitan frases descriptivas largas.
 - La aprobación cubre la distribución y estas decisiones parciales de las tarjetas, no el aspecto final: la pantalla sigue en borrador hasta definir y aprobar el sistema visual completo y los detalles visuales que aún falten. La familia Inter y la escala tipográfica global de cuatro niveles ya están definidas; esta aprobación tipográfica no cierra por sí sola el diseño final de Personal.
