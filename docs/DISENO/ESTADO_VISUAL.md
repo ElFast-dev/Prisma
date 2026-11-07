@@ -16,6 +16,7 @@ Criterios obligatorios:
 - Mostrar la pantalla o componente dentro de su contexto real de uso, con composición completa y jerarquía visual clara.
 - Cuando se comparen alternativas, mantener constantes los elementos ya aprobados y cambiar únicamente la variable que se está evaluando, salvo que la comparación solicite explícitamente explorar direcciones distintas.
 - En cada comparación de alternativas, indicar también cuál recomienda el asistente para Prisma y explicar brevemente el criterio. La recomendación es orientación profesional, no una aprobación ni sustituye la decisión expresa del propietario.
+- Al presentar o comparar un componente compartido por ambos temas, mostrarlo en Obsidiana y Cuarzo en paralelo. Mantener equivalente su estructura, jerarquía y comportamiento; ajustar los valores visuales propios de cada tema para conservar contraste, legibilidad e identidad, sin forzar colores idénticos.
 - Hacer que las alternativas sean visualmente distinguibles y que cada una tenga una intención de diseño reconocible; evitar duplicados que solo cambien una cifra sin que la diferencia se perciba.
 - Cuidar proporciones, alineaciones, ritmo de espaciado, márgenes, tipografía, iconografía y estados, manteniendo coherencia entre la intención funcional, las reglas de producto, el comportamiento de interacción y su representación visual. Ningún componente debe diseñarse de forma aislada ni sugerir algo que la lógica de Prisma no respalde.
 - Utilizar datos de ejemplo claramente identificados como ficticios; nunca presentarlos como datos reales del usuario.
