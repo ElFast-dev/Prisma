@@ -43,13 +43,21 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 - Tamaño de referencia para títulos de sección: **22 px** (opción B aprobada). Se aplica a encabezados generales de secciones y pantallas, como «Historial» o «Estadísticas». No sustituye tamaños ya definidos para títulos de películas ni otros encabezados o componentes con especificación propia. La altura de línea de referencia para estos títulos de sección queda fijada en **28 px** (opción B aprobada) y su peso tipográfico es **medio (500)** (opción A aprobada). El espaciado entre caracteres (*letter spacing*) queda fijado en **0 px adicionales** (opción A aprobada), conservando el espaciado natural de Inter. Esta referencia no modifica las reglas tipográficas específicas de otros encabezados o componentes.
 - Las decisiones tipográficas particulares ya aprobadas para Personal, navegación y resultados de búsqueda se conservan exactamente como están documentadas. La definición de la escala global no debe contradecirlas ni modificarlas sin una nueva aprobación.
 
-### Paleta de colores — Dark Mode (confirmada)
+### Temas de apariencia — Obsidiana y Cuarzo
+
+### Temas de apariencia — Obsidiana y Cuarzo
+
+- **Obsidiana:** nombre aprobado para el modo oscuro.
+- **Cuarzo:** nombre aprobado para el modo claro.
+- La aprobación confirma los nombres de los dos temas, no sus paletas completas, el selector ni sus reglas de comportamiento. La paleta de Cuarzo y los detalles pendientes del sistema visual requieren definición y aprobación posteriores.
+
+#### Obsidiana — paleta base confirmada
 
 - **Fondo principal:** `#131313` (RGB 19, 19, 19).
 - **Superficies elevadas** — tarjetas, secciones, contenedores y listas: `#222222` (RGB 34, 34, 34).
 - **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#5B9BD5` (RGB 91, 155, 213).
 
-La paleta establece estos tres roles; no implica que el sistema visual completo ni ninguna pantalla estén aprobados. Los tonos de texto, neutros, bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+Estos tres roles de Obsidiana ya están confirmados. No implican que el sistema visual completo ni ninguna pantalla estén aprobados. Los tonos globales de texto y neutros, otros bordes, estados adicionales y la paleta de Cuarzo siguen pendientes.
 
 ### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
 
@@ -216,7 +224,7 @@ La paleta establece estos tres roles; no implica que el sistema visual completo 
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados. Los tamaños de referencia definidos son **16 px** para texto normal, **14 px** para texto secundario, **12 px** para texto auxiliar y **22 px** para títulos de sección. El texto normal queda definido en **16/24 px**, peso **regular (400)** y letter spacing **0 px**; el texto secundario en **14/20 px**, peso **regular (400)** y letter spacing **0 px**; y los títulos de sección en **22/28 px**, peso **medio (500)** y letter spacing **0 px**. El texto auxiliar queda definido en **12/18 px**, peso **regular (400)** y letter spacing **0 px adicionales** (opción A aprobada), conservando el espaciado natural de Inter. Estos cuatro niveles se consideran suficientes por ahora; no se prevén niveles adicionales en esta etapa, aunque la escala podrá ampliarse si una necesidad concreta del producto lo justifica. La paleta base de Dark Mode está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
+Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados. Los tamaños de referencia definidos son **16 px** para texto normal, **14 px** para texto secundario, **12 px** para texto auxiliar y **22 px** para títulos de sección. El texto normal queda definido en **16/24 px**, peso **regular (400)** y letter spacing **0 px**; el texto secundario en **14/20 px**, peso **regular (400)** y letter spacing **0 px**; y los títulos de sección en **22/28 px**, peso **medio (500)** y letter spacing **0 px**. El texto auxiliar queda definido en **12/18 px**, peso **regular (400)** y letter spacing **0 px adicionales** (opción A aprobada), conservando el espaciado natural de Inter. Estos cuatro niveles se consideran suficientes por ahora; no se prevén niveles adicionales en esta etapa, aunque la escala podrá ampliarse si una necesidad concreta del producto lo justifica. Los temas de apariencia se denominan **Obsidiana** (modo oscuro) y **Cuarzo** (modo claro); ambos nombres están aprobados. La paleta base de **Obsidiana** está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. La paleta de Cuarzo sigue pendiente de definición y aprobación. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos de texto y neutros, demás bordes, estados adicionales y una eventual paleta para tema claro siguen pendientes.
 
 ## Decisiones de concepto pendientes de aprobación
 
@@ -228,7 +236,7 @@ Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
 | Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal 16/24 px, peso 400, letter spacing 0 px; texto secundario 14/20 px, peso 400, letter spacing 0 px; texto auxiliar 12/18 px, peso 400, letter spacing 0 px; títulos de sección 22/28 px, peso 500, letter spacing 0 px; escala actual suficiente por ahora; ampliable si surge una necesidad concreta | Por definir |
-| Paleta de colores Dark Mode | Confirmada: fondo `#131313`, superficies `#222222`, acento `#5B9BD5` | Por definir |
+| Temas de apariencia | Nombres aprobados: Obsidiana (oscuro) y Cuarzo (claro); paleta base de Obsidiana confirmada: fondo `#131313`, superficies `#222222`, acento `#5B9BD5`; paleta de Cuarzo pendiente | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Personal: pantalla principal | Concepto A, distribución y decisiones parciales de tarjetas aprobadas; aspecto final todavía en borrador | Por definir |
