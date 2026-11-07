@@ -132,7 +132,15 @@ La paleta base confirmada para el tema oscuro de Prisma es:
 - **Superficies elevadas** — tarjetas, secciones, contenedores y listas: `#222222` (RGB 34, 34, 34).
 - **Acento principal** — botones, iconos en estado activo, destacados y calificaciones: `#5B9BD5` (RGB 91, 155, 213).
 
-Esta decisión define únicamente esos tres roles cromáticos. No cierra todavía los tonos de texto, neutros, bordes, estados adicionales ni una eventual paleta para tema claro.
+Esta decisión define únicamente esos tres roles cromáticos de Obsidiana. No cierra todavía sus tonos globales de texto, neutros, bordes ni estados adicionales.
+
+### 4.4 Paleta cromática — Cuarzo
+
+La definición de Cuarzo comienza con la siguiente decisión aprobada:
+
+- **Fondo principal:** `#F4F1EA` (RGB 244, 241, 234), concepto A «Marfil mineral».
+
+Esta aprobación cubre únicamente el fondo principal. No fija todavía el color de las superficies, textos, neutros, bordes, estados, acento ni otros roles de la paleta clara.
 
 ## 5. Descubrir: Feed
 
