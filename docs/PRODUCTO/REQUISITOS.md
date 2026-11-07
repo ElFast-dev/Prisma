@@ -459,7 +459,7 @@ Ajustes incluirá, como mínimo:
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
 
-Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. Esta decisión confirma únicamente sus denominaciones; la paleta de Cuarzo y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
+Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya está aprobado el fondo principal `#F4F1EA`; sus demás roles cromáticos y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
 
 El idioma de la interfaz y la región de disponibilidad son preferencias independientes.
 
