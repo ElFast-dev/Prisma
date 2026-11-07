@@ -138,6 +138,7 @@ La selección final del fondo principal, las superficies y el acento de Obsidian
 - **Texto secundario global:** `#BDBDBD` (RGB 189, 189, 189), alternativa A aprobada.
 - **Texto auxiliar global:** `#9B9B9B` (RGB 155, 155, 155), alternativa A aprobada.
 - **Iconos inactivos globales:** `#BDBDBD` (RGB 189, 189, 189), alternativa A aprobada. Se aplica a iconografía inactiva de Obsidiana cuando el componente no tenga un color particular aprobado. Se mantienen las excepciones específicas ya definidas, como los iconos inactivos de las tarjetas de Personal en `#D0D0D0`.
+- **Contenido de controles deshabilitados (texto e iconos):** `#888888` (RGB 136, 136, 136), alternativa A aprobada. Se aplica al contenido interno de los controles deshabilitados; la superficie de esos controles en Obsidiana se definirá por separado.
 - Esta jerarquía cromática y el neutro de iconos inactivos se aplican como referencias globales de Obsidiana. Se conservan los colores específicos ya aprobados para componentes concretos cuando sus reglas particulares indiquen un tratamiento distinto.
 - **Separadores internos:** `#353535` (RGB 53, 53, 53), grosor **1 px**, opción A aprobada. Se utiliza para dividir internamente secciones y grupos de información en Obsidiana; reutiliza un color ya presente en componentes aprobados sin convertirlo en un contorno general para todas las superficies. Separación respecto al contenido adyacente: **8 px por encima y 8 px por debajo (alternativa A aprobada)**, igual que en Cuarzo.
 
