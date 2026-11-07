@@ -57,11 +57,12 @@ Esta regla aplica a todos los conceptos futuros de Prisma, no solo a la pantalla
 
 Estos tres roles de Obsidiana ya están confirmados. No implican que el sistema visual completo ni ninguna pantalla estén aprobados. Sus tonos globales de texto y neutros, otros bordes y estados adicionales siguen pendientes.
 
-#### Cuarzo — primer rol cromático aprobado
+#### Cuarzo — roles cromáticos aprobados hasta ahora
 
 - **Fondo principal:** `#F4F1EA` (RGB 244, 241, 234), concepto A «Marfil mineral».
+- **Superficies** — tarjetas, secciones, contenedores y listas: `#FFFFFF` (RGB 255, 255, 255), opción A «Blanco cristalino».
 
-Esta decisión define únicamente el fondo principal de Cuarzo. Las superficies, textos, neutros, bordes, estados y acento de este tema siguen pendientes de definición y aprobación.
+Estas decisiones definen únicamente el fondo principal y las superficies de Cuarzo. Los textos, neutros adicionales, bordes, estados y acento de este tema siguen pendientes de definición y aprobación.
 
 ### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
 
@@ -228,7 +229,7 @@ Esta decisión define únicamente el fondo principal de Cuarzo. Las superficies,
 
 ## Referencia de componentes
 
-Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados. Los tamaños de referencia definidos son **16 px** para texto normal, **14 px** para texto secundario, **12 px** para texto auxiliar y **22 px** para títulos de sección. El texto normal queda definido en **16/24 px**, peso **regular (400)** y letter spacing **0 px**; el texto secundario en **14/20 px**, peso **regular (400)** y letter spacing **0 px**; y los títulos de sección en **22/28 px**, peso **medio (500)** y letter spacing **0 px**. El texto auxiliar queda definido en **12/18 px**, peso **regular (400)** y letter spacing **0 px adicionales** (opción A aprobada), conservando el espaciado natural de Inter. Estos cuatro niveles se consideran suficientes por ahora; no se prevén niveles adicionales en esta etapa, aunque la escala podrá ampliarse si una necesidad concreta del producto lo justifica. Los temas de apariencia se denominan **Obsidiana** (modo oscuro) y **Cuarzo** (modo claro); ambos nombres están aprobados. La paleta base de **Obsidiana** está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. En **Cuarzo** está aprobado únicamente el fondo principal `#F4F1EA`; los demás roles de su paleta siguen pendientes de definición y aprobación. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos globales de texto y neutros, demás bordes y estados adicionales siguen pendientes; en Cuarzo solo está aprobado el fondo principal y faltan sus restantes roles cromáticos.
+Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica global seleccionada es **Inter**, con pesos **400, 500 y 600** aprobados. Los tamaños de referencia definidos son **16 px** para texto normal, **14 px** para texto secundario, **12 px** para texto auxiliar y **22 px** para títulos de sección. El texto normal queda definido en **16/24 px**, peso **regular (400)** y letter spacing **0 px**; el texto secundario en **14/20 px**, peso **regular (400)** y letter spacing **0 px**; y los títulos de sección en **22/28 px**, peso **medio (500)** y letter spacing **0 px**. El texto auxiliar queda definido en **12/18 px**, peso **regular (400)** y letter spacing **0 px adicionales** (opción A aprobada), conservando el espaciado natural de Inter. Estos cuatro niveles se consideran suficientes por ahora; no se prevén niveles adicionales en esta etapa, aunque la escala podrá ampliarse si una necesidad concreta del producto lo justifica. Los temas de apariencia se denominan **Obsidiana** (modo oscuro) y **Cuarzo** (modo claro); ambos nombres están aprobados. La paleta base de **Obsidiana** está confirmada en tres roles: fondo `#131313`, superficies elevadas `#222222` y acento `#5B9BD5`. En **Cuarzo** están aprobados el fondo principal `#F4F1EA` y las superficies `#FFFFFF`; los demás roles de su paleta siguen pendientes de definición y aprobación. Para las tarjetas de Personal también están confirmados el neutro `#D0D0D0` de los iconos inactivos, el contorno `#353535` de 1 px y el color `#F0F0F0` de los nombres; los iconos activos podrán utilizar el acento azul. Otros tonos globales de texto y neutros, demás bordes y estados adicionales siguen pendientes; en Cuarzo están aprobados el fondo principal y las superficies; faltan sus restantes roles cromáticos.
 
 ## Decisiones de concepto pendientes de aprobación
 
@@ -240,7 +241,7 @@ Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
 | Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal 16/24 px, peso 400, letter spacing 0 px; texto secundario 14/20 px, peso 400, letter spacing 0 px; texto auxiliar 12/18 px, peso 400, letter spacing 0 px; títulos de sección 22/28 px, peso 500, letter spacing 0 px; escala actual suficiente por ahora; ampliable si surge una necesidad concreta | Por definir |
-| Temas de apariencia | Nombres aprobados: Obsidiana (oscuro) y Cuarzo (claro); Obsidiana: fondo `#131313`, superficies `#222222`, acento `#5B9BD5`; Cuarzo: fondo `#F4F1EA` aprobado, otros roles pendientes | Por definir |
+| Temas de apariencia | Nombres aprobados: Obsidiana (oscuro) y Cuarzo (claro); Obsidiana: fondo `#131313`, superficies `#222222`, acento `#5B9BD5`; Cuarzo: fondo `#F4F1EA` y superficies `#FFFFFF` aprobados, otros roles pendientes | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Navegación Personal/Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
 | Personal: pantalla principal | Concepto A, distribución y decisiones parciales de tarjetas aprobadas; aspecto final todavía en borrador | Por definir |
