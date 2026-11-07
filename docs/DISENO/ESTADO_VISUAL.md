@@ -113,6 +113,13 @@ Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra glob
 - El valor se aplica como referencia predeterminada a las superficies generales que no tengan un radio particular aprobado.
 - Los componentes con radios específicos ya aprobados conservan sus medidas. Esta regla no ordena cambiar todos los radios ni homogeneizar elementos con geometría propia.
 
+### Regla compartida — escala global de espaciado
+
+- **Unidad modular base:** **4 px** (opción A aprobada), común a Obsidiana y Cuarzo.
+- **Escala de referencia:** **4, 8, 12, 16, 20, 24, 32, 40, 48 y 64 px**. Orienta la elección de márgenes, separaciones y espacios interiores para nuevos componentes y composiciones.
+- Es una guía de consistencia, no una lista exclusiva ni una orden de sustituir medidas existentes. Las especificaciones particulares ya aprobadas se mantienen intactas, incluidos los valores que no sean múltiplos de 4.
+- Ambos temas comparten la misma lógica y cobertura de espaciado.
+
 ### Personal: pantalla principal (concepto A seleccionado, todavía en borrador)
 
 - Al tocar Personal desde la píldora inferior, se abre un centro de navegación con cinco accesos visibles.
@@ -290,6 +297,7 @@ Todavía no hay un sistema de diseño completo aprobado. La familia tipográfica
 |---|---|---|
 | Sistema de diseño | Pendiente de concepto y aprobación | Por definir |
 | Geometría general | Radio base de 14 px para las superficies generales de Obsidiana y Cuarzo; se conservan los radios particulares ya aprobados | Por definir |
+| Espaciado global | Unidad modular de 4 px y escala de referencia compartida; se conservan los espaciados particulares ya aprobados | Aprobado |
 | Familia tipográfica global | Inter; pesos 400, 500 y 600; texto normal 16/24 px, peso 400, letter spacing 0 px; texto secundario 14/20 px, peso 400, letter spacing 0 px; texto auxiliar 12/18 px, peso 400, letter spacing 0 px; títulos de sección 22/28 px, peso 500, letter spacing 0 px; escala actual suficiente por ahora; ampliable si surge una necesidad concreta | Por definir |
 | Temas de apariencia | Nombres aprobados: Obsidiana (oscuro) y Cuarzo (claro); Obsidiana: fondo principal global aprobado `#171A20`, superficie elevada global aprobada `#242A35` (RGB 36, 42, 53), con contorno global `#353535` de 1 px cuando no haya una regla particular de componente, y acento global aprobado `#70AEE0` (RGB 112, 174, 224), con `#5B9BD5` conservado como referencia anterior y en componentes con reglas particulares ya aprobadas; textos globales principal `#F0F0F0`, secundario `#BDBDBD` y auxiliar `#9B9B9B`, iconos inactivos globales `#BDBDBD` (excepto Personal `#D0D0D0`), contenido de controles deshabilitados `#888888`, superficie deshabilitada `#1D222B`, superficie transitoria de pulsación `#2B303A` sobre `#242A35`, contorno de controles deshabilitados sin línea visible (opción A aprobada), sin opacidad adicional (100 %, opción A aprobada), sin sombra global en superficies elevadas generales (alternativa A aprobada; se conservan sombras específicas de componentes), separadores internos `#353535` de 1 px, con 8 px por encima y 8 px por debajo del contenido adyacente (alternativa A aprobada); Cuarzo: fondo `#F4F1EA`, superficies `#FFFFFF`, contorno `#DDD8CE` de 1 px, texto principal `#292B2F`, secundario `#68655F`, auxiliar `#706C64`, acento `#356F9F`, neutro de iconos inactivos `#8A857B`, contenido de controles deshabilitados (texto e iconos) `#9D998F`, superficie deshabilitada `#F0EDE6`, separadores internos `#E8E3DA` de 1 px, con 8 px por encima y 8 px por debajo del contenido adyacente (alternativa A aprobada), y superficie de pulsación `#ECE7DE` aprobados; contorno de controles deshabilitados sin línea visible (opción A) aprobado; sin opacidad adicional (100 %, opción A aprobada), grosor de separadores de 1 px y separación de 8 px por encima y 8 px por debajo aprobados en ambos temas, otros neutros, otros bordes y otros estados pendientes | Por definir |
 | Pantalla Descubrir | Estructura funcional acordada; diseño visual pendiente | Por definir |
