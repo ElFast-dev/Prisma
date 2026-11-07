@@ -142,8 +142,9 @@ La definición de Cuarzo comienza con la siguiente decisión aprobada:
 - **Superficies** — tarjetas, secciones, contenedores y listas: `#FFFFFF` (RGB 255, 255, 255), opción A «Blanco cristalino».
 - **Texto principal:** `#292B2F` (RGB 41, 43, 47), opción A «Grafito mineral».
 - **Texto secundario:** `#68655F` (RGB 104, 101, 95), opción A «Gris mineral cálido».
+- **Texto auxiliar:** `#706C64` (RGB 112, 108, 100), opción A «Piedra suave».
 
-Estas aprobaciones cubren el fondo principal, las superficies y el texto principal y secundario. El texto auxiliar, los neutros adicionales, bordes, estados, acento y otros roles de la paleta clara siguen pendientes de definición.
+Estas aprobaciones cubren el fondo principal, las superficies y los textos principal, secundario y auxiliar. Los neutros adicionales, bordes, estados, acento y otros roles de la paleta clara siguen pendientes de definición.
 
 ## 5. Descubrir: Feed
 
@@ -462,7 +463,7 @@ Ajustes incluirá, como mínimo:
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
 
-Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el texto principal `#292B2F` y el texto secundario `#68655F`; el resto de los roles cromáticos y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
+Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el texto principal `#292B2F`, el texto secundario `#68655F` y el texto auxiliar `#706C64`; el resto de los roles cromáticos y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
 
 El idioma de la interfaz y la región de disponibilidad son preferencias independientes.
 
