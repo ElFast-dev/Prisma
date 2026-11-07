@@ -33,6 +33,7 @@
 9. Mostrar conceptos visuales en la conversación; no usar imágenes generadas por IA para sustituir los diseños. No cerrar una pantalla sin aprobación.
 10. No añadir funciones sugeridas hasta que el propietario las apruebe.
 11. Los conceptos visuales deben tener calidad de presentación, contexto completo, jerarquía clara y alternativas realmente distinguibles. Cuando el propietario pida mejores conceptos, rehacerlos con una mejora visible y respetar las decisiones ya aprobadas. La regla detallada está en `docs/DISENO/ESTADO_VISUAL.md`.
+12. **Regla del Porqué:** toda función, decisión, elemento visual, interacción, dependencia, proceso o cambio debe tener una razón explícita y comprensible. Al proponerlo o incorporarlo, explicar qué problema resuelve, qué beneficio aporta y por qué se prefiere frente a alternativas relevantes. Si no existe una justificación útil, no se añade. El propietario puede preguntar «¿Por qué?» en cualquier momento y debe recibir una explicación concreta, incluidas sus ventajas, límites y consecuencias.
 
 ## Principios no negociables
 
@@ -44,7 +45,10 @@
 - No mostrar valores técnicos inválidos como duración de -1 minuto.
 - Las búsquedas y solicitudes de información a TMDB salen del dispositivo; el historial personal no se envía.
 - Las copias de seguridad son exportaciones manuales cifradas; Prisma no sincroniza datos personales mediante una nube propia.
+- Las actualizaciones se distribuyen mediante GitHub Releases y pueden gestionarse desde la propia aplicación, respetando el instalador y las autorizaciones del sistema Android.
 
 ## Versionado
+
+Todas las versiones distribuidas de Prisma se publicarán en GitHub Releases con notas en español y un APK instalable. La aplicación incluirá un actualizador para consultar y descargar las versiones publicadas sin tener que navegar manualmente por GitHub Releases.
 
 Prisma usa Semantic Versioning (SemVer) con una única secuencia pública y global para toda la aplicación. La numeración es continua entre fases: cada fase puede contener varias versiones, pero al comenzar otra fase no se reinicia ni se repite la numeración. Antes de completar el producto, las versiones serán 0.x.y; cada entrega con funcionalidad nueva incrementará el número menor y cada corrección sin ampliar funcionalidad incrementará el número de parche. La versión 1.0.0 será la primera que cumpla todo el alcance aprobado. Después se continuará con 1.1.0, 1.2.0, etc. para mejoras, y 1.0.1, 1.0.2, etc. para correcciones. Cada versión entregada debe corresponder a un incremento pequeño, verificable y aprobado.

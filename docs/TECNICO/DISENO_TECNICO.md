@@ -226,9 +226,45 @@ GitHub Actions será el sistema de CI:
 
 - Al abrir/actualizar Pull Requests y al integrar cambios en la rama principal: compilar y ejecutar pruebas automatizadas.
 - Al completar una versión: crear tag y Release con notas breves en español.
-- Cuando el entorno y la fase lo permitan: adjuntar APK instalable a la Release o publicar el APK como artifact de workflow mientras se valida.
+- **Cada versión distribuida al usuario** se publica en GitHub Releases con tag SemVer, notas en español y un APK instalable compatible con la distribución elegida. Los artifacts de GitHub Actions se reservan para validaciones internas y no sustituyen la Release de una versión distribuida.
 - Nunca guardar secretos en workflows o repositorio.
 - No ejecutar ni vigilar procesos de GitHub Actions después de dejarlos en marcha; informar al propietario qué se inició y esperar a que indique que terminó.
+
+## 10.1 Actualizador integrado desde GitHub Releases
+
+El MVP incluirá un actualizador dentro de Prisma para que el usuario pueda consultar y aplicar nuevas versiones sin navegar manualmente por la página de GitHub Releases.
+
+### Origen y consulta de versiones
+
+- Repositorio oficial y único origen de actualizaciones: `ElFast-dev/Prisma`.
+- Consultar las Releases públicas mediante la API REST oficial de GitHub. Para la versión estable más reciente se utilizará el endpoint público `GET /repos/ElFast-dev/Prisma/releases/latest`; el acceso de solo lectura a recursos públicos no necesita autenticación.
+- No se incrusta en la aplicación ningún token personal de GitHub ni secreto con permisos de escritura.
+- La información de la Release debe incluir, como mínimo, tag/versión, notas de publicación y el asset APK correspondiente. El actualizador compara la versión instalada con la versión publicada antes de ofrecer una descarga.
+- La comprobación manual desde Ajustes forma parte del MVP. La comprobación automática al iniciar, la periodicidad y las notificaciones quedan pendientes de decisión.
+
+### Descarga e integridad
+
+- El APK se descarga únicamente desde el asset de la Release del repositorio oficial.
+- Antes de iniciar la instalación se valida la integridad del archivo mediante el digest SHA-256 publicado por GitHub para el asset o mediante un manifiesto/checksum SHA-256 asociado a la Release.
+- Si el asset no corresponde a la aplicación, no tiene una verificación de integridad válida o la comprobación no coincide, se bloquea la instalación y se informa al usuario.
+- La descarga debe comunicar su progreso y reconocer errores o interrupciones; la estrategia de reanudación se definirá en la especificación de implementación.
+- El actualizador no debe ejecutar código ni instalar archivos obtenidos de otros repositorios, enlaces aportados por terceros o fuentes no verificadas.
+
+### Instalación Android y continuidad de datos
+
+- La instalación se delega al instalador de paquetes del sistema Android. Prisma no intenta eludir el permiso de instalación desde esta fuente, las confirmaciones del sistema ni las decisiones del usuario.
+- Según la configuración del dispositivo, Android puede exigir que el usuario autorice a Prisma como fuente para instalar aplicaciones y confirme la instalación.
+- Para que Android acepte una Release como actualización de la instalación existente, se mantiene el mismo `applicationId`, se firma con el mismo certificado de firma (o una línea de rotación válida) y se publica un `versionCode` superior al instalado.
+- La clave privada de firma se protege fuera del repositorio y nunca se incorpora al código, a los APK de distribución ni a los logs.
+- La actualización normal no debe requerir desinstalar Prisma ni borrar su almacenamiento local. Se conserva la base de datos y se ejecutan las migraciones necesarias de manera segura.
+- Si una actualización no se puede validar o instalar, la versión actual debe seguir disponible y los datos personales no deben perderse.
+
+### Publicación
+
+- Cada versión distribuida se publica en GitHub Releases con tag SemVer, notas en español y un APK instalable compatible con el formato de distribución elegido.
+- Las Releases y sus assets se generan mediante el flujo de entrega continua definido en esta sección.
+- El actualizador del MVP ofrece la versión pública estable más reciente. El soporte de *pre-releases*, canales alternativos o selección de versiones queda pendiente de aprobación.
+
 
 La configuración y los permisos exactos de Actions se verificarán antes de implementarlos.
 

@@ -12,6 +12,10 @@ Fuentes consultadas para el diseño técnico inicial de Prisma (5 de noviembre d
 - Android Keystore: https://developer.android.com/privacy-and-security/keystore
 - Idiomas por aplicación: https://developer.android.com/guide/topics/resources/app-languages
 - WorkManager: https://developer.android.com/develop/background-work/background-tasks/persistent
+- Actualización de aplicaciones Android (applicationId, firma y versionCode): https://developer.android.com/google/play/app-updates
+- Firma de aplicaciones y continuidad de la clave de firma: https://developer.android.com/studio/publish/app-signing
+- PackageManager.canRequestPackageInstalls y permiso REQUEST_INSTALL_PACKAGES: https://developer.android.com/reference/android/content/pm/PackageManager#canRequestPackageInstalls()
+- PackageInstaller y sesiones de instalación: https://developer.android.com/reference/android/content/pm/PackageInstaller
 - Rendimiento de Compose: https://developer.android.com/develop/ui/compose/performance
 - Baseline Profiles: https://developer.android.com/topic/performance/baselineprofiles/overview
 
@@ -40,6 +44,8 @@ Fuentes consultadas para el diseño técnico inicial de Prisma (5 de noviembre d
 ## GitHub
 
 - Crear un flujo de trabajo de Gradle: https://docs.github.com/es/actions/tutorials/build-and-test-code/java-with-gradle
+- API REST de Releases: consulta de la Release estable más reciente y sus assets: https://docs.github.com/en/rest/releases/releases#get-the-latest-release
+- API REST de assets de Releases y metadatos de integridad: https://docs.github.com/en/rest/releases/assets
 - Guardar/compartir artifacts de Actions: https://docs.github.com/es/actions/concepts/workflows-and-actions/workflow-artifacts
 
 ## Notas

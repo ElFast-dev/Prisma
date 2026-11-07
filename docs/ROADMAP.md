@@ -14,6 +14,9 @@
 - Una idea futura se anota aquí como pendiente, sin desarrollarla antes de su turno.
 - La última versión de cada fase la cierra.
 - Una versión no se da por terminada solo porque compile: debe satisfacer los criterios de esa versión y ser revisada por el propietario.
+- Cada fase tendrá un nombre descriptivo que exprese la capacidad o experiencia que entrega; se evitarán nombres genéricos que no permitan entender su contenido.
+- La primera versión funcional será un hito **MVP 0.x.y**, construido a lo largo de las fases que se definan para cubrir el alcance aprobado en `REQUISITOS.md`, sección 17. La versión **1.0.0** sigue reservada para la primera versión completa del producto.
+- El desglose actual de fases y números de versión es preliminar. Antes de cerrar la Fase 0 se redistribuirán las capacidades del MVP, se renombrarán las fases según sus entregables y se ajustarán los hitos SemVer; no se inicia implementación con el reparto antiguo.
 
 ## Versionado
 
@@ -23,9 +26,10 @@ Se utilizará Semantic Versioning (SemVer) con **una única secuencia pública y
 - Una fase puede contener varias versiones publicables. Al comenzar la fase siguiente, la numeración continúa desde la última versión entregada: nunca se reinicia ni se repite.
 - Antes de completar el producto: **0.x.y**. Una entrega que incorpora funcionalidad nueva o una ampliación aprobada incrementa el número menor (x), por ejemplo, 0.2.0 → 0.3.0. Una corrección que no amplía funcionalidad incrementa el número de parche (y), por ejemplo, 0.3.0 → 0.3.1.
 - La versión **1.0.0** será la primera versión completa que cumpla todo el alcance aprobado; no se utilizará para un prototipo ni para una entrega intermedia.
+- El MVP es una entrega utilizable anterior a 1.0.0, publicada como versión **0.x.y** cuando todas sus funciones y criterios de aceptación estén completos. Su número exacto se asignará al reorganizar las fases.
 - Después de 1.0.0: nuevas funciones compatibles en 1.1.0, 1.2.0; correcciones en 1.0.1, 1.0.2.
 
-Cada versión aprobada se marca con tag vX.Y.Z y notas de Release en lenguaje sencillo. Se adjunta APK cuando sea posible. Mientras se desarrolla, el APK también puede entregarse como artifact de GitHub Actions. Cada entrega debe tener alcance pequeño, criterios de aceptación y comprobaciones propias; compilar por sí solo no basta para darla por terminada.
+Cada versión distribuida se publica en GitHub Releases con tag vX.Y.Z, notas en lenguaje sencillo y APK instalable. El MVP incluye un actualizador dentro de Prisma para consultar y descargar las versiones publicadas; la instalación final respeta el instalador y las autorizaciones de Android. Mientras se desarrolla, los artifacts de GitHub Actions podrán utilizarse para validaciones internas, sin sustituir la publicación de las versiones distribuidas. Mientras se desarrolla, el APK también puede entregarse como artifact de GitHub Actions. Cada entrega debe tener alcance pequeño, criterios de aceptación y comprobaciones propias; compilar por sí solo no basta para darla por terminada.
 
 Los números asignados a los hitos de cada fase son una planificación y podrán ajustarse antes de iniciar esa fase. Cualquier ajuste debe conservar una única secuencia global, creciente y sin reutilizar versiones, además del significado reservado para 1.0.0.
 
@@ -45,7 +49,8 @@ Entregables:
 - Lista de preguntas abiertas y decisiones confirmadas.
 
 Criterio de cierre:
-- El propietario confirma que el alcance de 1.0.0 representa lo que quiere.
+- El propietario confirma el alcance de la primera versión funcional (MVP) y distingue sus contenidos del alcance completo reservado para 1.0.0.
+- Las fases están renombradas según sus entregables, el reparto funcional y los hitos de versión están actualizados, y los documentos están sincronizados.
 - Los documentos están actualizados.
 - Se acuerda la primera especificación de implementación.
 

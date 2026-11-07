@@ -35,6 +35,7 @@ El algoritmo personal de recomendaciones se llama **Espectro**. Aprende de forma
 8. No se añaden funciones, SDK, anuncios, analítica o servicios externos por iniciativa propia sin acordarlo con el propietario.
 9. **Dirección de diseño y coherencia transversal:** Prisma debe ser minimalista, limpio y elegante. Cada decisión visual debe responder a una finalidad lógica y útil; la presentación, la lógica del producto, los comportamientos de interacción, la privacidad y las decisiones técnicas deben reforzarse mutuamente. Se evitarán adornos, duplicaciones y complejidad que no aporten valor. Ningún elemento se define de forma aislada ni puede aparentar una función, un estado o una capacidad que el producto no respalde.
 10. **Equivalencia entre temas:** Obsidiana y Cuarzo son temas de primera clase y deben mantenerse a la par en prioridad, cobertura funcional y calidad visual. Ninguno es secundario ni debe recibir menos cuidado. Todos los componentes, estados y flujos deben contemplarse en ambos temas; sus colores y tratamientos pueden diferir cuando sea necesario para respetar el contraste, la legibilidad y la identidad propia de cada uno.
+11. **Regla del Porqué:** cada función, componente, interacción, decisión visual, dependencia, proceso o cambio de Prisma debe responder a una necesidad concreta del producto o del usuario. Se debe explicar qué problema resuelve, qué beneficio aporta y por qué es preferible a las alternativas relevantes. Si no tiene una justificación clara, no se incorpora. El propietario puede preguntar «¿Por qué?» en cualquier momento y recibirá una explicación concreta de la razón, los beneficios, los límites y las consecuencias de lo propuesto o realizado.
 
 ### 3.1 Identidad tipográfica global
 
@@ -504,6 +505,7 @@ Ajustes incluirá, como mínimo:
 - Idioma de Prisma: se inicia con el idioma del teléfono y el usuario puede cambiarlo.
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
+- **Actualizaciones de Prisma:** desde Ajustes se puede buscar una versión nueva publicada en GitHub Releases, consultar su versión y notas, descargar el APK e iniciar su instalación sin navegar por la página de Releases. La instalación se completa mediante el instalador del sistema Android y respeta las autorizaciones o confirmaciones que este solicite.
 
 Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Obsidiana están aprobados el fondo principal `#171A20`, la superficie elevada global `#242A35` (RGB 36, 42, 53) y su contorno global `#353535` de 1 px cuando no exista una regla particular de componente; el acento global está aprobado en `#70AEE0` (RGB 112, 174, 224), alternativa B. El azul `#5B9BD5` se conserva como referencia anterior y en componentes con especificaciones particulares ya aprobadas; el azul es la preferencia cromática general del propietario. Están aprobados el texto principal global `#F0F0F0`, el secundario global `#BDBDBD`, el auxiliar global `#9B9B9B`, el neutro global para iconos inactivos `#BDBDBD` (con la excepción particular de Personal `#D0D0D0`), el contenido de controles deshabilitados `#888888`, su superficie `#1D222B`, la superficie transitoria de pulsación `#2B303A` para elementos interactivos sobre `#242A35`, y los separadores internos `#353535` de 1 px; el contorno de los controles deshabilitados está aprobado sin línea visible (opción A) y no se aplica opacidad adicional (**100 %, opción A aprobada**). En Cuarzo están aprobados el fondo principal `#F4F1EA`, las superficies `#FFFFFF`, el contorno de superficie `#DDD8CE` de 1 px, el texto principal `#292B2F`, el texto secundario `#68655F`, el texto auxiliar `#706C64`, el acento principal `#356F9F`, el neutro para iconos inactivos `#8A857B`, el contenido (texto e iconos) de controles deshabilitados `#9D998F`, su superficie `#F0EDE6` y la ausencia de contorno visible en esos controles (opción A aprobada), los separadores internos `#E8E3DA` y la superficie transitoria de pulsación `#ECE7DE` para elementos interactivos sobre superficies blancas. La ausencia de contorno visible en los controles deshabilitados y la ausencia de opacidad adicional (**100 %**, opción A) están aprobadas. El grosor de los separadores internos está aprobado en **1 px** en ambos temas y su separación respecto al contenido adyacente es de **8 px por encima y 8 px por debajo (alternativa A aprobada)**; otros neutros no definidos, otros bordes, otros estados y los detalles de selección y comportamiento de los temas permanecen pendientes.
 
@@ -527,15 +529,59 @@ El idioma de la interfaz y la región de disponibilidad son preferencias indepen
 - Las credenciales/API tokens no se incluyen en la copia.
 - El archivo debe tener formato versionado para permitir futuras migraciones.
 
-## 17. Alcance previsto de la versión 1.0.0
+## 17. Primera versión funcional — MVP
+
+**Propósito:** entregar una primera versión de Prisma que ya sea útil como diario cinematográfico personal y permita completar el recorrido esencial de descubrir, guardar, ver y registrar películas. El MVP no equivale a la versión completa **1.0.0**; se publicará como una versión previa **0.x.y**, cuyo número concreto se asignará al cerrar la planificación de fases.
+
+### Incluido en el MVP
+
+1. **Base de la aplicación:** aplicación Android nativa, navegación principal entre Personal y Descubrir, temas Obsidiana y Cuarzo con paridad funcional y visual, y almacenamiento local sin cuenta ni backend propio de Prisma.
+2. **Descubrimiento básico con TMDB:** exploración inicial sencilla, búsqueda por título y consulta de una ficha básica con póster, título, año, sinopsis, géneros y duración cuando esos datos estén disponibles. Las búsquedas y consultas remotas requieren conexión.
+3. **Alta manual:** posibilidad de añadir una película que no se encuentre en TMDB, con título obligatorio y año opcional, y conservarla en la base local.
+4. **Diario personal:** Historial, Pendientes y Ocultos; registro de varios visionados de una misma película; fecha y calificación independiente para cada visionado; restauración de películas ocultas; y consulta de los registros guardados.
+5. **Listas personalizadas básicas:** crear, renombrar y eliminar listas, añadirles películas y retirarlas. Los detalles de ordenación, filtros y reglas de nombres se concretarán en la especificación de esa parte.
+6. **Estadísticas básicas:** primeras métricas sencillas derivadas de los datos locales del diario. No incluye análisis avanzado ni gráficos complejos; el conjunto exacto de métricas se concretará antes de diseñarlo.
+7. **Funcionamiento sin conexión:** consultar y modificar el diario y las listas con los datos guardados localmente. Los metadatos e imágenes ya descargados se conservan en caché; las búsquedas y la exploración remota de TMDB no se simulan cuando no hay conexión.
+8. **Copias de seguridad:** exportación manual cifrada y restauración, con formato versionado. Las credenciales y tokens no se incluyen en las copias.
+9. **Actualizador integrado:** desde Ajustes, buscar versiones públicas de Prisma en el repositorio oficial `ElFast-dev/Prisma`, mostrar la versión disponible y sus notas, descargar el APK de la Release y comprobar su integridad antes de iniciar la instalación mediante Android. El usuario no tendrá que navegar manualmente por GitHub Releases. La instalación respeta las autorizaciones y confirmaciones del sistema.
+10. **Distribución de versiones:** cada versión distribuida se publica en GitHub Releases con tag SemVer, notas en español y APK instalable. El actualizador consulta el contenido público del repositorio; no requiere una cuenta de Prisma ni incorpora un token personal de GitHub.
+
+La primera instalación del APK sigue realizándose por el procedimiento de instalación elegido para esa primera entrega. Una vez instalada Prisma, las actualizaciones posteriores pueden iniciarse desde la propia aplicación.
+
+### Fuera del MVP, previsto para entregas posteriores
+
+- Espectro y recomendaciones personalizadas avanzadas.
+- Estadísticas detalladas, análisis de gustos y visualizaciones complejas.
+- Ficha cinematográfica completa: créditos detallados, tráileres, colecciones, películas relacionadas y otros datos ampliados.
+- Feed avanzado, modos de afinidad/exploración y filtros complejos.
+- Información ampliada de plataformas de streaming por región.
+- Cuentas, funciones sociales, sincronización en nube o backend propio.
+- Series y episodios.
+
+### Recorrido mínimo que debe funcionar
+
+**Descubrir o añadir manualmente una película → consultar sus datos básicos → guardarla como pendiente → registrar uno o varios visionados con fecha y calificación → encontrarla después en el historial → conservar los datos sin conexión → crear una copia cifrada y poder restaurarla → buscar e instalar una actualización desde Prisma.**
+
+### Criterios generales de aceptación del MVP
+
+- El recorrido anterior funciona de principio a fin con datos reales y sin información inventada.
+- Los registros y las listas persisten tras cerrar y volver a abrir la aplicación.
+- El diario se puede consultar y modificar sin conexión; las funciones remotas muestran claramente cuándo necesitan Internet.
+- Las copias cifradas se pueden restaurar y se valida su formato.
+- El actualizador solo ofrece APK publicados en el repositorio oficial, valida su integridad y delega la instalación al sistema Android; no elude confirmaciones ni protecciones.
+- Una actualización conserva los datos locales y cumple los requisitos de identidad, firma y versión de Android.
+- Obsidiana y Cuarzo tienen la misma cobertura funcional y el mismo nivel de calidad.
+- El propietario instala la versión, prueba los recorridos críticos y aprueba su entrega.
+
+## 18. Alcance previsto de la versión 1.0.0
 
 La versión 1.0.0 será la primera versión completa que cumpla todos los requisitos aprobados en este documento. No es un prototipo ni la última versión de Prisma.
 
-La 1.0.0 debe cubrir: navegación Personal/Descubrir; Historial, Pendientes, Ocultos y listas personalizadas; fichas; visionados repetidos y calificación; buscador y Feed; filtros y modos; TMDB y caché local; región e idioma; modo de spoilers; Estadísticas; Espectro local y explicable; alta manual y enriquecimiento; copia cifrada y restauración; y pruebas de funcionamiento offline.
+La 1.0.0 debe cubrir todo el MVP y, además, la ficha cinematográfica completa; los filtros y modos avanzados del Feed; región e idioma; modo de spoilers; Estadísticas completas; Espectro local y explicable; datos ampliados y enriquecimiento de películas; pruebas integrales de privacidad y funcionamiento offline; y el resto de requisitos completos aprobados en este documento.
 
 La lista se considera viva mientras el propietario siga precisando el producto. No se debe reducir el alcance de 1.0.0 sin su aprobación explícita.
 
-## 18. Decisiones confirmadas y cuestiones abiertas
+## 19. Decisiones confirmadas y cuestiones abiertas
 
 ### Confirmado
 Las reglas descritas en las secciones anteriores fueron expresadas o confirmadas por el propietario.
@@ -553,5 +599,8 @@ Las reglas descritas en las secciones anteriores fueron expresadas o confirmadas
 - Cómo se muestra una fecha de estreno elegida como fecha de visionado cuando no existe hora real.
 - Idiomas concretos que se traducirán en la primera versión (el idioma inicial sí está definido).
 - Versión mínima de Android e identificador del paquete, decisiones técnicas que se fijarán antes de implementar.
+- Comprobación de actualizaciones: decidir si el MVP solo ofrecerá búsqueda manual desde Ajustes o también comprobará automáticamente al abrir la aplicación; cualquier comprobación periódica o notificación debe justificarse y aprobarse.
+- Publicación de versiones preliminares: decidir si el actualizador del MVP muestra únicamente Releases estables o también versiones marcadas como *pre-release*.
+- Formato y arquitectura del APK de Release, ubicación de la suma SHA-256 y gestión segura a largo plazo de la clave de firma: concretar en la especificación técnica de la fase correspondiente.
 
 Una cuestión abierta no autoriza al equipo a inventar una regla; se debe resolver en la fase correspondiente y actualizar este documento.
