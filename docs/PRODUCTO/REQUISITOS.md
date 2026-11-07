@@ -175,6 +175,13 @@ Las superficies elevadas generales de **Obsidiana y Cuarzo no llevan sombra glob
 - **Radio base de las superficies generales:** **14 px** en Obsidiana y Cuarzo (alternativa A aprobada). Se utiliza como referencia general cuando una superficie no tenga un radio particular definido.
 - Esta regla no modifica automáticamente los componentes que ya cuentan con una especificación particular de radio. Sus medidas aprobadas se conservan sin cambios; el valor de 14 px no es una instrucción para homogeneizar indiscriminadamente todos los elementos.
 
+### 4.7 Sistema global de espaciado
+
+- **Unidad modular base:** **4 px** (opción A aprobada). El sistema de referencia compartido por Obsidiana y Cuarzo utiliza incrementos de 4 px.
+- **Escala de referencia:** **4, 8, 12, 16, 20, 24, 32, 40, 48 y 64 px**. Los valores sirven para orientar la definición de nuevos márgenes, separaciones y espacios interiores, seleccionando el tamaño adecuado según la jerarquía y la función del componente.
+- La escala es una guía de consistencia, no una obligación de utilizar exclusivamente esos valores ni de cambiar medidas existentes. Se conservan todas las especificaciones particulares ya aprobadas, incluidos los espaciados que no coincidan con la escala.
+- La misma lógica y cobertura se aplica a ambos temas; la escala no introduce diferencias de espaciado entre Obsidiana y Cuarzo.
+
 ## 5. Descubrir: Feed
 
 ### 5.1 Modos de contenido
