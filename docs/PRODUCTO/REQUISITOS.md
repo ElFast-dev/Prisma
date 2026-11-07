@@ -139,8 +139,9 @@ Esta decisión define únicamente esos tres roles cromáticos de Obsidiana. No c
 La definición de Cuarzo comienza con la siguiente decisión aprobada:
 
 - **Fondo principal:** `#F4F1EA` (RGB 244, 241, 234), concepto A «Marfil mineral».
+- **Superficies** — tarjetas, secciones, contenedores y listas: `#FFFFFF` (RGB 255, 255, 255), opción A «Blanco cristalino».
 
-Esta aprobación cubre únicamente el fondo principal. No fija todavía el color de las superficies, textos, neutros, bordes, estados, acento ni otros roles de la paleta clara.
+Estas aprobaciones cubren únicamente el fondo principal y las superficies. Los textos, neutros adicionales, bordes, estados, acento y otros roles de la paleta clara siguen pendientes de definición.
 
 ## 5. Descubrir: Feed
 
@@ -459,7 +460,7 @@ Ajustes incluirá, como mínimo:
 - Región de disponibilidad de «Dónde verla»: inicial «Todas las regiones»; se puede restringir a una región.
 - «Ocultar spoilers»: desactivado por defecto. Al activarlo, oculta sinopsis, tráileres y otros contenidos que puedan revelar sorpresas.
 
-Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya está aprobado el fondo principal `#F4F1EA`; sus demás roles cromáticos y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
+Los dos temas de apariencia reciben los nombres **Obsidiana** para el modo oscuro y **Cuarzo** para el modo claro. En Cuarzo ya están aprobados el fondo principal `#F4F1EA` y las superficies `#FFFFFF`; sus demás roles cromáticos y los detalles de selección y comportamiento de los temas siguen pendientes de definición y aprobación.
 
 El idioma de la interfaz y la región de disponibilidad son preferencias independientes.
 
