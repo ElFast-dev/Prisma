@@ -49,6 +49,6 @@
 
 ## Versionado
 
-Todas las versiones distribuidas de Prisma se publicarán en GitHub Releases con notas en español y un APK instalable. La aplicación incluirá un actualizador para consultar y descargar las versiones publicadas sin tener que navegar manualmente por GitHub Releases.
+Todas las versiones distribuidas de Prisma se publicarán en GitHub Releases con un changelog obligatorio en español y un APK instalable. El mismo changelog de cada Release se podrá consultar dentro de Prisma, tanto al revisar una actualización como en el historial de versiones. El actualizador solo buscará versiones cuando el usuario pulse «Buscar actualizaciones» desde Ajustes; no realizará consultas automáticas al iniciar ni en segundo plano. La instalación respetará las autorizaciones y confirmaciones del sistema Android.
 
 Prisma usa Semantic Versioning (SemVer) con una única secuencia pública y global para toda la aplicación. La numeración es continua entre fases: cada fase puede contener varias versiones, pero al comenzar otra fase no se reinicia ni se repite la numeración. Antes de completar el producto, las versiones serán 0.x.y; cada entrega con funcionalidad nueva incrementará el número menor y cada corrección sin ampliar funcionalidad incrementará el número de parche. La versión 1.0.0 será la primera que cumpla todo el alcance aprobado. Después se continuará con 1.1.0, 1.2.0, etc. para mejoras, y 1.0.1, 1.0.2, etc. para correcciones. Cada versión entregada debe corresponder a un incremento pequeño, verificable y aprobado.
