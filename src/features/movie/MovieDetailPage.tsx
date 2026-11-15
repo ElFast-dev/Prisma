@@ -120,7 +120,8 @@ export function MovieDetailPage() {
           getImageConfiguration(token).catch(() => ({ secure_base_url: "https://image.tmdb.org/t/p/", poster_sizes: [], backdrop_sizes: [], profile_sizes: [] }))
         ]);
         if (!active) return;
-        const saved = await saveTmdbMovie(data.details);
+        const saved = await saveTmdbMovie(data.details, data.credits);
+        await Promise.all(data.recommendations.slice(0, 20).map((recommendation) => saveTmdbMovie(recommendation).catch(() => undefined)));
         if (!active) return;
         setBundle(data);
         setImageBase(imageConfig.secure_base_url);

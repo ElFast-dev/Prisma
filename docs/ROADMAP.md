@@ -21,9 +21,16 @@
 - [x] 6. Historial con calendario mensual, edición y eliminación de experiencias.
 - [x] 7. Estadísticas personales derivadas del historial: películas, visionados, tiempo y rachas.
 - [x] 8. Colecciones, perfil editable y logros.
-- [ ] 9. Espectro por versiones.
+- [x] 9. Espectro por versiones (v1.0 local, afinidades, evolución y candidatas explicadas).
 - [ ] 10. Copias de seguridad validadas.
 - [ ] 11. Modo offline, pruebas Android y publicación de GitHub Pages.
+
+### Criterios de Espectro
+
+- Algoritmo local versionado con huella de entrada e instantáneas separadas.
+- Afinidades con soporte mínimo y explicaciones visibles.
+- Evolución mensual respaldada por visionados reales.
+- Candidatas no vistas puntuadas por coincidencias de género.
 
 ### Criterios del perfil y los logros
 

@@ -444,3 +444,50 @@ button:disabled { cursor: not-allowed; opacity: .48; }
     transition-duration: .01ms !important;
   }
 }
+
+/* Espectro: análisis local, afinidades y evolución */
+.spectro-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 15px 0 22px; }
+.spectro-summary-card { display: grid; gap: 4px; min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card); padding: 12px 10px; }
+.spectro-summary-card span { color: var(--color-text-muted); font-size: 10px; line-height: 1.35; }
+.spectro-summary-card strong { font-size: 23px; font-weight: 700; letter-spacing: -.04em; }
+.spectro-summary-card strong small { margin-left: 2px; color: var(--color-text-muted); font-size: 10px; font-weight: 500; }
+.spectro-insufficient { display: flex; align-items: flex-start; gap: 13px; margin: 6px 0 20px; padding: 16px; }
+.spectro-insufficient > svg { flex: 0 0 auto; margin-top: 2px; }
+.spectro-insufficient h2 { margin: 0 0 5px; font-size: 15px; }
+.spectro-insufficient p { margin: 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.55; }
+.spectro-section-intro { margin: -3px 0 14px; }
+.spectro-affinity-grid { display: grid; gap: 10px; }
+.spectro-affinity-panel { display: grid; gap: 12px; padding: 13px; }
+.spectro-panel-title { display: flex; align-items: center; gap: 8px; }
+.spectro-panel-title > span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: var(--color-active); color: var(--color-accent); }
+.spectro-panel-title h2 { margin: 0; font-size: 13px; }
+.spectro-affinity-row { display: grid; gap: 5px; }
+.spectro-affinity-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.spectro-affinity-heading strong { font-size: 11px; }
+.spectro-affinity-heading span { color: var(--color-accent); font-size: 10px; font-weight: 700; }
+.spectro-affinity-track, .spectro-evolution-track { overflow: hidden; height: 5px; border-radius: 6px; background: var(--color-active); }
+.spectro-affinity-track span, .spectro-evolution-track span { display: block; height: 100%; border-radius: inherit; background: var(--color-accent); }
+.spectro-affinity-row small { color: var(--color-text-muted); font-size: 9px; }
+.spectro-panel-empty { font-size: 11px; }
+.spectro-evolution-section, .spectro-recommendations-section { margin-top: 26px; }
+.spectro-evolution-list { display: grid; gap: 13px; padding: 15px; }
+.spectro-evolution-row { display: grid; grid-template-columns: 70px minmax(45px, 1fr) 30px; align-items: center; gap: 9px; }
+.spectro-evolution-row > span { color: var(--color-text-muted); font-size: 10px; text-transform: capitalize; }
+.spectro-evolution-row > strong { font-size: 11px; text-align: right; }
+.spectro-evolution-row > small { grid-column: 2 / -1; margin-top: -7px; color: var(--color-text-muted); font-size: 9px; }
+.spectro-recommendation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 9px; }
+.spectro-recommendation-card { display: grid; min-width: 0; gap: 7px; }
+.spectro-recommendation-copy { display: grid; gap: 3px; }
+.spectro-recommendation-copy strong { overflow: hidden; font-size: 10px; line-height: 1.35; text-overflow: ellipsis; }
+.spectro-recommendation-copy small { color: var(--color-accent); font-size: 9px; }
+.spectro-recommendation-copy p { margin: 0; color: var(--color-text-muted); font-size: 9px; line-height: 1.35; }
+.spectro-no-recommendations { display: flex; align-items: flex-start; gap: 10px; padding: 14px; }
+.spectro-no-recommendations svg { flex: 0 0 auto; }
+.spectro-no-recommendations p { margin: 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.5; }
+.spectro-version-note { margin: 20px 0 0; color: var(--color-text-muted); font-size: 9px; text-align: center; }
+@media (min-width: 700px) {
+  .spectro-summary-grid { gap: 12px; }
+  .spectro-summary-card { padding: 16px; }
+  .spectro-affinity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .spectro-recommendation-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+}

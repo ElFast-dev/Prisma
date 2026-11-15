@@ -11,7 +11,10 @@ export interface MovieRecord {
   runtimeMinutes?: number;
   status?: string;
   genres: string[];
+  genreIds?: number[];
   countries: string[];
+  directors?: string[];
+  castMembers?: string[];
   originalLanguage?: string;
   posterPath?: string;
   backdropPath?: string;

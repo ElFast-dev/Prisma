@@ -1,5 +1,5 @@
 import type { LibraryEntry, MovieRecord } from "../../domain/types";
-import type { TmdbMovieDetails, TmdbMovieSummary } from "../tmdb/TmdbService";
+import type { TmdbCredits, TmdbMovieDetails, TmdbMovieSummary } from "../tmdb/TmdbService";
 import { prismaDb } from "./database";
 
 function dateYear(value?: string): number | undefined {
@@ -7,7 +7,7 @@ function dateYear(value?: string): number | undefined {
   return Number(value.slice(0, 4));
 }
 
-export async function saveTmdbMovie(movie: TmdbMovieSummary | TmdbMovieDetails): Promise<MovieRecord> {
+export async function saveTmdbMovie(movie: TmdbMovieSummary | TmdbMovieDetails, credits?: TmdbCredits): Promise<MovieRecord> {
   const id = "tmdb-" + movie.id;
   const current = await prismaDb.movies.get(id);
   const details = movie as TmdbMovieDetails;
@@ -24,7 +24,14 @@ export async function saveTmdbMovie(movie: TmdbMovieSummary | TmdbMovieDetails):
     runtimeMinutes: details.runtime ?? current?.runtimeMinutes,
     status: details.status ?? current?.status,
     genres: details.genres?.map((genre) => genre.name) ?? current?.genres ?? [],
+    genreIds: details.genres?.map((genre) => genre.id) ?? movie.genre_ids ?? current?.genreIds ?? [],
     countries: details.production_countries?.map((country) => country.name) ?? current?.countries ?? [],
+    directors: credits?.crew.length
+      ? [...new Set(credits.crew.filter((person) => person.job === "Director").map((person) => person.name))]
+      : current?.directors ?? [],
+    castMembers: credits?.cast.length
+      ? [...new Set(credits.cast.slice(0, 12).map((person) => person.name))]
+      : current?.castMembers ?? [],
     originalLanguage: details.original_language ?? current?.originalLanguage,
     posterPath: movie.poster_path ?? current?.posterPath,
     backdropPath: movie.backdrop_path ?? current?.backdropPath,
