@@ -77,3 +77,43 @@ jobs:
             test-results/
           retention-days: 14
           if-no-files-found: ignore
+
+  persist-lockfile:
+    name: Generate and verify npm lockfile
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'automation/prisma-quality-gate' }}
+    needs: [verify, e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout this PR branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Generate the dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify clean installation from the lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Commit lockfile to this PR branch only
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "El package-lock.json ya está actualizado."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: add reproducible npm lockfile"
+          git push origin "HEAD:${HEAD_BRANCH}"
