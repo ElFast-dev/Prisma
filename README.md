@@ -12,7 +12,9 @@ Prisma se organiza en tres espacios:
 
 Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, perfil, logros, Espectro, integración TMDB, copias de seguridad, funcionamiento offline y publicación como PWA para Android.
 
-Las etapas 1–14 de la hoja de ruta están completadas. El enriquecimiento de metadatos se validó en un dispositivo Android con 821 películas y 24 trabajadores simultáneos, sin fallos observados. La siguiente etapa funcional queda pendiente de priorización.
+Las etapas 1–14 están completadas. El enriquecimiento de metadatos se validó en Android con 821 películas y 24 trabajadores simultáneos, sin fallos observados.
+
+Las siguientes etapas siguen el orden acordado: **15. Evolución de Personal**, **16. Espectro 2.0** y **17. Optimización integral**.
 
 ## Tecnologías previstas
 

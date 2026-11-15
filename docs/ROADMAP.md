@@ -1,6 +1,8 @@
 # Hoja de ruta
 
-## Etapa actual: integración de catálogo y ficha cinematográfica
+## Estado actual: etapas 1–14 completadas
+
+La siguiente etapa planificada es la 15 — Evolución de Personal.
 
 - [x] Repositorio público inicializado.
 - [x] Configuración React, TypeScript y Vite.
@@ -27,6 +29,14 @@
 - [x] 12. Prueba manual en Android completada: actualización instalada, apertura en modo avión y navegación de datos guardados verificadas en el teléfono.
 - [x] 13. Migración desde respaldo Android v2: importación exclusiva de películas, fusión por TMDB, historial/calificaciones y conservación del formato nativo de Prisma.
 - [x] 14. Enriquecimiento automático y reanudable de metadatos de las películas de la Biblioteca, con control de solicitudes y protección de datos personales.
+
+## Próximas etapas acordadas
+
+- [ ] 15. Evolución de Personal.
+- [ ] 16. Espectro 2.0.
+- [ ] 17. Optimización integral.
+
+Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
 
 ### Criterios offline y Android
 
