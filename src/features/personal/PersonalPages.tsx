@@ -6,7 +6,19 @@ import {
   Film, Clapperboard, Clock3 as AchievementClock,
   SlidersHorizontal
 } from "lucide-react";
-import type { Collection, LocalProfile, MovieRecord, Viewing } from "../../domain/types";
+import type { Collection, LocalProfile, MovieRecord } from "../../domain/types";
+import {
+  buildHistoryCalendarCells,
+  buildHistoryItems,
+  filterHistoryItems,
+  groupHistoryItemsByMonth,
+  shiftHistoryMonth,
+  type HistoryFilters,
+  type HistoryItem,
+  type HistoryNotesFilter,
+  type HistoryRatingFilter,
+  type HistorySortOrder
+} from "../../domain/history";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { ViewingForm } from "../../components/ViewingForm";
@@ -475,40 +487,22 @@ function FilmPlaceholder() {
   return <span className="list-poster-placeholder">PRISMA</span>;
 }
 
-interface HistoryItem {
-  viewing: Viewing;
-  movie: MovieRecord;
-}
-
-interface CalendarCell {
-  date: string;
-  day: number;
-}
-
-function shiftMonth(value: string, offset: number): string {
-  const [year, month] = value.split("-").map(Number);
-  const date = new Date(year, month - 1 + offset, 1);
-  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
-}
-
-function buildCalendarCells(month: string): (CalendarCell | null)[] {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const firstDay = new Date(year, monthNumber - 1, 1);
-  const offset = (firstDay.getDay() + 6) % 7;
-  const daysInMonth = new Date(year, monthNumber, 0).getDate();
-  const cells: (CalendarCell | null)[] = Array.from({ length: offset }, () => null);
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const date = year + "-" + String(monthNumber).padStart(2, "0") + "-" + String(day).padStart(2, "0");
-    cells.push({ date, day });
-  }
-  return cells;
-}
+type HistoryViewMode = "timeline" | "calendar";
 
 export function HistoryPage() {
-  const [month, setMonth] = useState(toLocalDateString(new Date()).slice(0, 7));
+  const today = toLocalDateString(new Date());
+  const [month, setMonth] = useState(today.slice(0, 7));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [items, setItems] = useState<HistoryItem[]>([]);
+  const [query, setQuery] = useState("");
+  const [notesFilter, setNotesFilter] = useState<HistoryNotesFilter>("all");
+  const [ratingFilter, setRatingFilter] = useState<HistoryRatingFilter>("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [sortOrder, setSortOrder] = useState<HistorySortOrder>("newest");
+  const [viewMode, setViewMode] = useState<HistoryViewMode>("timeline");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [editing, setEditing] = useState<HistoryItem | null>(null);
   const [error, setError] = useState("");
 
@@ -516,23 +510,42 @@ export function HistoryPage() {
     const viewings = await prismaDb.viewings.toArray();
     const movieIds = [...new Set(viewings.map((viewing) => viewing.movieId))];
     const movies = await prismaDb.movies.bulkGet(movieIds);
-    const byId = new Map(movies.filter((movie) => movie !== undefined).map((movie) => [movie.id, movie]));
-    const rows = viewings
-      .map((viewing) => ({ viewing, movie: byId.get(viewing.movieId) }))
-      .filter((item): item is HistoryItem => Boolean(item.movie))
-      .sort((a, b) => b.viewing.watchedOn.localeCompare(a.viewing.watchedOn)
-        || b.viewing.sequenceNumber - a.viewing.sequenceNumber);
-    setItems(rows);
+    setItems(buildHistoryItems(viewings, movies));
   }, []);
 
-  useEffect(() => { void loadHistory().catch(() => setError("No se pudo leer el historial local.")); }, [loadHistory]);
+  useEffect(() => {
+    void loadHistory().catch(() => setError("No se pudo leer el historial local."));
+  }, [loadHistory]);
 
-  const monthLabel = useMemo(() => {
-    const [year, monthNumber] = month.split("-").map(Number);
-    return new Intl.DateTimeFormat("es-PA", { month: "long", year: "numeric" }).format(new Date(year, monthNumber - 1, 1));
-  }, [month]);
+  const filters = useMemo<HistoryFilters>(() => ({
+    query,
+    notes: notesFilter,
+    rating: ratingFilter,
+    fromDate,
+    toDate
+  }), [query, notesFilter, ratingFilter, fromDate, toDate]);
 
-  const monthItems = useMemo(() => items.filter((item) => item.viewing.watchedOn.startsWith(month)), [items, month]);
+  const filteredItems = useMemo(
+    () => filterHistoryItems(items, filters, sortOrder),
+    [items, filters, sortOrder]
+  );
+  const monthItems = useMemo(
+    () => filteredItems.filter((item) => item.viewing.watchedOn.startsWith(month)),
+    [filteredItems, month]
+  );
+  const visibleItems = viewMode === "calendar"
+    ? selectedDate
+      ? monthItems.filter((item) => item.viewing.watchedOn === selectedDate)
+      : monthItems
+    : filteredItems;
+  const historyGroups = useMemo(
+    () => groupHistoryItemsByMonth(visibleItems),
+    [visibleItems]
+  );
+  const calendarCells = useMemo(
+    () => buildHistoryCalendarCells(month),
+    [month]
+  );
   const dayCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const item of monthItems) {
@@ -540,10 +553,35 @@ export function HistoryPage() {
     }
     return counts;
   }, [monthItems]);
-  const visibleItems = selectedDate
-    ? monthItems.filter((item) => item.viewing.watchedOn === selectedDate)
-    : monthItems;
-  const calendarCells = useMemo(() => buildCalendarCells(month), [month]);
+
+  const monthLabel = useMemo(() => {
+    const [year, monthNumber] = month.split("-").map(Number);
+    return new Intl.DateTimeFormat("es-PA", {
+      month: "long",
+      year: "numeric"
+    }).format(new Date(year, monthNumber - 1, 1));
+  }, [month]);
+
+  const uniqueMovies = useMemo(
+    () => new Set(items.map((item) => item.viewing.movieId)).size,
+    [items]
+  );
+  const averageRating = items.length
+    ? (items.reduce((total, item) => total + item.viewing.rating, 0) / items.length).toFixed(1)
+    : "—";
+  const activeFilterCount = Number(notesFilter !== "all")
+    + Number(ratingFilter !== "all")
+    + Number(Boolean(fromDate))
+    + Number(Boolean(toDate));
+
+  function clearHistoryFilters() {
+    setQuery("");
+    setNotesFilter("all");
+    setRatingFilter("all");
+    setFromDate("");
+    setToDate("");
+    setSelectedDate(null);
+  }
 
   async function handleDelete(item: HistoryItem) {
     const countForMovie = items.filter((entry) => entry.viewing.movieId === item.viewing.movieId).length;
@@ -567,85 +605,477 @@ export function HistoryPage() {
     setEditing(null);
   }
 
+  const selectedDateLabel = selectedDate
+    ? new Date(selectedDate + "T12:00:00").toLocaleDateString("es-PA", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    })
+    : "";
+
   return (
     <div className="page">
       <PageBack title="Historial" />
-      <section className="history-calendar card-surface">
-        <div className="history-calendar-header">
-          <div>
-            <p className="eyebrow">TU ACTIVIDAD CINEMATOGRÁFICA</p>
-            <h2>{monthLabel}</h2>
-          </div>
-          <div className="history-month-actions">
-            <button className="icon-button" onClick={() => { setMonth((value) => shiftMonth(value, -1)); setSelectedDate(null); }} aria-label="Mes anterior"><ChevronLeft size={19} /></button>
-            <button className="icon-button" onClick={() => { setMonth(toLocalDateString(new Date()).slice(0, 7)); setSelectedDate(null); }} aria-label="Ir al mes actual"><CalendarDays size={17} /></button>
-            <button className="icon-button" onClick={() => { setMonth((value) => shiftMonth(value, 1)); setSelectedDate(null); }} aria-label="Mes siguiente"><ChevronRight size={19} /></button>
-          </div>
+
+      <section className="history-overview card-surface" aria-label="Resumen de tu historial">
+        <div>
+          <strong>{items.length}</strong>
+          <span>Visionados</span>
         </div>
-        <div className="history-calendar-grid" role="grid" aria-label={"Calendario de " + monthLabel}>
-          {["L", "M", "X", "J", "V", "S", "D"].map((day) => <span className="history-weekday" key={day}>{day}</span>)}
-          {calendarCells.map((cell, index) => cell ? (
-            <button
-              className={[
-                "history-calendar-day",
-                dayCounts.has(cell.date) ? "has-viewing" : "",
-                selectedDate === cell.date ? "is-selected" : ""
-              ].filter(Boolean).join(" ")}
-              key={cell.date}
-              onClick={() => setSelectedDate((current) => current === cell.date ? null : cell.date)}
-              aria-pressed={selectedDate === cell.date}
-              aria-label={cell.date + (dayCounts.has(cell.date) ? ", " + dayCounts.get(cell.date) + " visionados" : ", sin visionados")}
-            >
-              <span>{cell.day}</span>
-              {dayCounts.has(cell.date) && <i />}
-            </button>
-          ) : <span className="history-calendar-empty" key={"empty-" + index} />)}
+        <div>
+          <strong>{uniqueMovies}</strong>
+          <span>Películas</span>
         </div>
-        <div className="history-calendar-legend">
-          <span><i /> Día con visionados</span>
-          <span>{monthItems.length} {monthItems.length === 1 ? "visionado" : "visionados"}</span>
+        <div>
+          <strong>{averageRating}</strong>
+          <span>Nota media / 10</span>
         </div>
       </section>
 
+      <UnifiedSearchBar
+        inputId="history-search"
+        placeholder="Película, director, género o comentario..."
+        searchLabel="Buscar en tu historial"
+        value={query}
+        onChange={setQuery}
+        onFiltersClick={() => setFiltersOpen(true)}
+        filtersOpen={filtersOpen}
+        filtersActive={activeFilterCount > 0}
+        onSettingsClick={() => setSettingsOpen(true)}
+        settingsExpanded={settingsOpen}
+      />
+
       <div className="history-list-heading">
         <div>
-          <p className="eyebrow">{selectedDate ? "DÍA SELECCIONADO" : "REGISTROS DEL MES"}</p>
-          <h2>{selectedDate ? new Date(selectedDate + "T12:00:00").toLocaleDateString("es-PA", { day: "numeric", month: "long", year: "numeric" }) : "Tus experiencias"}</h2>
+          <p className="eyebrow">
+            {viewMode === "calendar"
+              ? selectedDate ? "DÍA SELECCIONADO" : "REGISTROS DEL MES"
+              : "CRONOLOGÍA COMPLETA"}
+          </p>
+          <h2>
+            {viewMode === "calendar"
+              ? selectedDateLabel || monthLabel
+              : "Tus experiencias"}
+          </h2>
         </div>
-        {selectedDate && <button className="text-link" onClick={() => setSelectedDate(null)}>Ver mes</button>}
+        <span className="history-view-count">
+          {visibleItems.length} {visibleItems.length === 1 ? "experiencia" : "experiencias"}
+        </span>
       </div>
 
+      {viewMode === "calendar" && (
+        <section className="history-calendar card-surface">
+          <div className="history-calendar-header">
+            <div>
+              <p className="eyebrow">EXPLORA POR FECHA</p>
+              <h2>{monthLabel}</h2>
+            </div>
+            <div className="history-month-actions">
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => {
+                  setMonth((value) => shiftHistoryMonth(value, -1));
+                  setSelectedDate(null);
+                }}
+                aria-label="Mes anterior"
+              >
+                <ChevronLeft size={19} />
+              </button>
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => {
+                  setMonth(today.slice(0, 7));
+                  setSelectedDate(null);
+                }}
+                aria-label="Ir al mes actual"
+              >
+                <CalendarDays size={17} />
+              </button>
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => {
+                  setMonth((value) => shiftHistoryMonth(value, 1));
+                  setSelectedDate(null);
+                }}
+                aria-label="Mes siguiente"
+              >
+                <ChevronRight size={19} />
+              </button>
+            </div>
+          </div>
+
+          <div className="history-calendar-grid" role="grid" aria-label={"Calendario de " + monthLabel}>
+            {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+              <span className="history-weekday" key={day}>{day}</span>
+            ))}
+            {calendarCells.map((cell, index) => cell ? (
+              <button
+                className={[
+                  "history-calendar-day",
+                  dayCounts.has(cell.date) ? "has-viewing" : "",
+                  selectedDate === cell.date ? "is-selected" : ""
+                ].filter(Boolean).join(" ")}
+                key={cell.date}
+                type="button"
+                onClick={() => setSelectedDate((current) => current === cell.date ? null : cell.date)}
+                aria-pressed={selectedDate === cell.date}
+                aria-label={cell.date + (dayCounts.has(cell.date)
+                  ? ", " + dayCounts.get(cell.date) + " visionados"
+                  : ", sin visionados")}
+              >
+                <span>{cell.day}</span>
+                {dayCounts.has(cell.date) && <i aria-hidden="true" />}
+              </button>
+            ) : (
+              <span className="history-calendar-empty" key={"empty-" + index} />
+            ))}
+          </div>
+
+          <div className="history-calendar-legend">
+            <span><i aria-hidden="true" /> Día con visionados</span>
+            <span>{monthItems.length} {monthItems.length === 1 ? "visionado" : "visionados"}</span>
+          </div>
+        </section>
+      )}
+
       {error && <p className="form-error" role="alert">{error}</p>}
+
       {visibleItems.length === 0 ? (
         <EmptyState
           icon={<Clock3 size={25} />}
-          title={items.length ? "No hay visionados en este día" : "Todavía no hay visionados"}
-          description={items.length ? "Selecciona otro día del calendario o cambia de mes para consultar tus experiencias." : "Registra una película desde su ficha. Cada experiencia conservará su propia fecha y calificación."}
-          action={<a className="text-link" href="#/discover">Descubrir películas</a>}
+          title={items.length === 0
+            ? "Todavía no hay visionados"
+            : "No hay experiencias que coincidan"}
+          description={items.length === 0
+            ? "Registra una película desde su ficha. Cada experiencia conservará su propia fecha, calificación y comentario."
+            : viewMode === "calendar" && monthItems.length === 0
+              ? "No hay visionados en este mes con la búsqueda y los filtros actuales. Puedes volver a la cronología completa."
+              : "Prueba con otra búsqueda, amplía las fechas o elimina algún filtro para encontrar tus experiencias."}
+          action={items.length === 0 ? (
+            <a className="text-link" href="#/discover">Descubrir películas</a>
+          ) : viewMode === "calendar" && monthItems.length === 0 ? (
+            <button className="text-link" type="button" onClick={() => setViewMode("timeline")}>Ver toda la cronología</button>
+          ) : selectedDate ? (
+            <button className="text-link" type="button" onClick={() => setSelectedDate(null)}>Ver mes completo</button>
+          ) : (
+            <button className="text-link" type="button" onClick={clearHistoryFilters}>Limpiar búsqueda y filtros</button>
+          )}
         />
       ) : (
-        <div className="history-entry-list">
-          {visibleItems.map((item) => {
-            const image = getTmdbImageUrl("https://image.tmdb.org/t/p/", item.movie.posterPath, "w185");
-            return (
-              <article className="history-entry card-surface" key={item.viewing.id}>
-                <a className="history-entry-poster" href={"#/movie/" + item.movie.tmdbId}>
-                  {image ? <img src={image} alt={item.movie.title} loading="lazy" /> : <span>PRISMA</span>}
-                </a>
-                <div className="history-entry-info">
-                  <strong>{item.movie.title}</strong>
-                  <span>Visionado #{item.viewing.sequenceNumber} · {new Date(item.viewing.watchedOn + "T12:00:00").toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "numeric" })}</span>
-                  {item.viewing.watchedAtLocalTime && <small>{item.viewing.watchedAtLocalTime}</small>}
-                  <span className="history-entry-rating"><Star size={14} fill="currentColor" /> {item.viewing.rating}/10</span>
-                  {item.viewing.review && <p>{item.viewing.review}</p>}
+        <div className="history-groups">
+          {historyGroups.map((group) => (
+            <section className="history-month-group" key={group.month}>
+              {viewMode === "timeline" && (
+                <div className="history-month-heading">
+                  <h3>{group.label}</h3>
+                  <span>{group.items.length} {group.items.length === 1 ? "visionado" : "visionados"}</span>
                 </div>
-                <div className="history-entry-actions">
-                  <button className="icon-button" onClick={() => setEditing(item)} aria-label={"Editar visionado " + item.viewing.sequenceNumber}><Pencil size={16} /></button>
-                  <button className="icon-button history-delete-button" onClick={() => void handleDelete(item)} aria-label={"Eliminar visionado " + item.viewing.sequenceNumber}><Trash2 size={16} /></button>
-                </div>
-              </article>
-            );
-          })}
+              )}
+              <div className="history-entry-list">
+                {group.items.map((item) => {
+                  const image = getTmdbImageUrl(
+                    "https://image.tmdb.org/t/p/",
+                    item.movie.posterPath,
+                    "w185"
+                  );
+                  const dateLabel = new Date(item.viewing.watchedOn + "T12:00:00")
+                    .toLocaleDateString("es-PA", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric"
+                    });
+                  const genres = item.movie.genres.slice(0, 2).join(" · ");
+                  const directors = item.movie.directors?.slice(0, 2).join(", ");
+
+                  return (
+                    <article className="history-entry card-surface" key={item.viewing.id}>
+                      <a
+                        className="history-entry-poster"
+                        href={"#/movie/" + item.movie.tmdbId}
+                        aria-label={"Abrir ficha de " + item.movie.title}
+                      >
+                        {image
+                          ? <img src={image} alt={"Póster de " + item.movie.title} loading="lazy" />
+                          : <span>PRISMA</span>}
+                      </a>
+                      <div className="history-entry-info">
+                        <a className="history-entry-title" href={"#/movie/" + item.movie.tmdbId}>
+                          {item.movie.title}
+                        </a>
+                        {item.movie.originalTitle && item.movie.originalTitle !== item.movie.title && (
+                          <small className="history-entry-original">{item.movie.originalTitle}</small>
+                        )}
+                        <div className="history-entry-meta">
+                          <span>Visionado #{item.viewing.sequenceNumber}</span>
+                          <time dateTime={item.viewing.watchedOn}>{dateLabel}</time>
+                          {item.viewing.watchedAtLocalTime && (
+                            <time
+                              dateTime={item.viewing.watchedOn + "T" + item.viewing.watchedAtLocalTime}
+                              title={item.viewing.timeZone
+                                ? "Hora local · " + item.viewing.timeZone
+                                : "Hora local registrada"}
+                            >
+                              {item.viewing.watchedAtLocalTime}
+                            </time>
+                          )}
+                        </div>
+                        {(genres || directors || item.movie.releaseYear) && (
+                          <small className="history-entry-context">
+                            {[item.movie.releaseYear?.toString(), genres, directors ? "Dir. " + directors : ""]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </small>
+                        )}
+                        <span className="history-entry-rating">
+                          <Star size={14} fill="currentColor" aria-hidden="true" />
+                          {item.viewing.rating}/10
+                        </span>
+                        {item.viewing.review && (
+                          <details className="history-entry-review">
+                            <summary>Leer comentario personal</summary>
+                            <p>{item.viewing.review}</p>
+                          </details>
+                        )}
+                      </div>
+                      <div className="history-entry-actions">
+                        <button
+                          className="icon-button"
+                          type="button"
+                          onClick={() => setEditing(item)}
+                          aria-label={"Editar visionado " + item.viewing.sequenceNumber + " de " + item.movie.title}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          className="icon-button history-delete-button"
+                          type="button"
+                          onClick={() => void handleDelete(item)}
+                          aria-label={"Eliminar visionado " + item.viewing.sequenceNumber + " de " + item.movie.title}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {filtersOpen && (
+        <div
+          className="sheet-backdrop history-sheet-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setFiltersOpen(false);
+          }}
+        >
+          <section
+            className="bottom-sheet history-bottom-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="history-filters-title"
+          >
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div>
+                <p className="eyebrow">AFINA TU BÚSQUEDA</p>
+                <h2 id="history-filters-title">Filtros del historial</h2>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                aria-label="Cerrar filtros"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <div className="history-filter-section">
+              <span className="history-filter-label">Comentario personal</span>
+              <div className="library-status-options">
+                {([
+                  ["all", "Todos"],
+                  ["with-notes", "Con nota"],
+                  ["without-notes", "Sin nota"]
+                ] as [HistoryNotesFilter, string][]).map(([value, label]) => (
+                  <button
+                    className={notesFilter === value ? "library-status-option is-selected" : "library-status-option"}
+                    type="button"
+                    key={value}
+                    aria-pressed={notesFilter === value}
+                    onClick={() => setNotesFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="history-filter-section">
+              <span className="history-filter-label">Calificación personal</span>
+              <div className="library-status-options">
+                {([
+                  ["all", "Todas"],
+                  ["9-10", "9–10"],
+                  ["7-8", "7–8"],
+                  ["1-6", "1–6"]
+                ] as [HistoryRatingFilter, string][]).map(([value, label]) => (
+                  <button
+                    className={ratingFilter === value ? "library-status-option is-selected" : "library-status-option"}
+                    type="button"
+                    key={value}
+                    aria-pressed={ratingFilter === value}
+                    onClick={() => setRatingFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="history-filter-section">
+              <span className="history-filter-label">Periodo de visionado</span>
+              <div className="history-date-range">
+                <label className="history-filter-field">
+                  <span>Desde</span>
+                  <input
+                    className="text-field"
+                    type="date"
+                    value={fromDate}
+                    max={toDate || today}
+                    onChange={(event) => setFromDate(event.target.value)}
+                  />
+                </label>
+                <label className="history-filter-field">
+                  <span>Hasta</span>
+                  <input
+                    className="text-field"
+                    type="date"
+                    value={toDate}
+                    min={fromDate || undefined}
+                    max={today}
+                    onChange={(event) => setToDate(event.target.value)}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="history-panel-actions">
+              <button className="button button-quiet" type="button" onClick={clearHistoryFilters}>
+                Restablecer
+              </button>
+              <button className="button button-primary" type="button" onClick={() => setFiltersOpen(false)}>
+                Ver {filteredItems.length} resultados
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div
+          className="sheet-backdrop history-sheet-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSettingsOpen(false);
+          }}
+        >
+          <section
+            className="bottom-sheet history-bottom-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="history-settings-title"
+          >
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div>
+                <p className="eyebrow">PRESENTACIÓN</p>
+                <h2 id="history-settings-title">Vista del historial</h2>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                aria-label="Cerrar ajustes de visualización"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <div className="history-filter-section">
+              <span className="history-filter-label">Orden cronológico</span>
+              <div className="library-status-options">
+                <button
+                  className={sortOrder === "newest" ? "library-status-option is-selected" : "library-status-option"}
+                  type="button"
+                  aria-pressed={sortOrder === "newest"}
+                  onClick={() => setSortOrder("newest")}
+                >
+                  <ArrowDown size={15} /> Más recientes
+                </button>
+                <button
+                  className={sortOrder === "oldest" ? "library-status-option is-selected" : "library-status-option"}
+                  type="button"
+                  aria-pressed={sortOrder === "oldest"}
+                  onClick={() => setSortOrder("oldest")}
+                >
+                  <ArrowUp size={15} /> Más antiguos
+                </button>
+              </div>
+            </div>
+
+            <div className="history-filter-section">
+              <span className="history-filter-label">Forma de explorar</span>
+              <div className="library-view-options">
+                <button
+                  className={viewMode === "timeline" ? "library-view-option is-selected" : "library-view-option"}
+                  type="button"
+                  aria-pressed={viewMode === "timeline"}
+                  onClick={() => {
+                    setViewMode("timeline");
+                    setSelectedDate(null);
+                  }}
+                >
+                  <List size={20} />
+                  <span>
+                    <strong>Cronología</strong>
+                    <small>Todos los meses, del más reciente al más antiguo</small>
+                  </span>
+                  {viewMode === "timeline" && <span className="library-view-check" aria-hidden="true">✓</span>}
+                </button>
+                <button
+                  className={viewMode === "calendar" ? "library-view-option is-selected" : "library-view-option"}
+                  type="button"
+                  aria-pressed={viewMode === "calendar"}
+                  onClick={() => {
+                    setViewMode("calendar");
+                    setSelectedDate(null);
+                  }}
+                >
+                  <CalendarDays size={20} />
+                  <span>
+                    <strong>Calendario</strong>
+                    <small>Consulta las experiencias por mes y día</small>
+                  </span>
+                  {viewMode === "calendar" && <span className="library-view-check" aria-hidden="true">✓</span>}
+                </button>
+              </div>
+            </div>
+
+            <div className="history-panel-actions">
+              <span className="muted-copy">La vista solo cambia cómo consultas tus datos.</span>
+              <button className="button button-primary" type="button" onClick={() => setSettingsOpen(false)}>
+                Listo
+              </button>
+            </div>
+          </section>
         </div>
       )}
 

@@ -34,7 +34,7 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
 
 - [ ] 15. Evolución de Personal.
   - [x] 15.1 Biblioteca: búsqueda local por título oficial/original y director; filtros por estado personal, Próximamente/Estrenada, género y rango de años; orden por título, valoración TMDB, valoración personal, duración, estreno, incorporación y aleatorio con dirección reversible; preferencias persistentes en Dexie; barra contextual compartida con Descubrir; Ajustes como pantalla completa; restauración de scroll al regresar de fichas.
-  - [ ] 15.2 Historial: consulta y navegación de experiencias con filtros.
+  - [ ] 15.2 Historial: cronología global agrupada por mes, calendario mensual, búsqueda local por título oficial/original, director, género y comentario; filtros combinables por notas, calificación y fechas; orden cronológico reversible; acceso a fichas y edición/eliminación individual; conservación de revisionados y secuencias.
   - [ ] 15.3 Colecciones: organización y gestión mejoradas.
   - [ ] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
 - [ ] 16. Espectro 2.0.
