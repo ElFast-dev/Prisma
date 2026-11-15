@@ -22,8 +22,16 @@
 - [x] 7. Estadísticas personales derivadas del historial: películas, visionados, tiempo y rachas.
 - [x] 8. Colecciones, perfil editable y logros.
 - [x] 9. Espectro por versiones (v1.0 local, afinidades, evolución y candidatas explicadas).
-- [ ] 10. Copias de seguridad validadas.
+- [x] 10. Copias de seguridad validadas (exportación e importación local JSON).
 - [ ] 11. Modo offline, pruebas Android y publicación de GitHub Pages.
+
+### Criterios de copias de seguridad
+
+- Archivo JSON versionado, con estructura estricta y relaciones validadas.
+- Exportación de biblioteca, visionados, colecciones, perfil, preferencias y región.
+- Restauración transaccional, precedida por validación y confirmación explícita.
+- Credencial TMDB excluida y preservada al restaurar.
+- Cachés regenerables excluidas del archivo.
 
 ### Criterios de Espectro
 

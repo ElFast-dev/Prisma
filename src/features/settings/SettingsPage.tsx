@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, Eye, EyeOff, CheckCircle2, CircleAlert, LoaderCircle, Trash2 } from "lucide-react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { ArrowLeft, Eye, EyeOff, CheckCircle2, CircleAlert, LoaderCircle, Trash2, Download, Upload, ShieldCheck } from "lucide-react";
 import {
   clearTmdbAccessToken,
   getCatalogRegion,
@@ -8,6 +8,8 @@ import {
   saveTmdbAccessToken
 } from "../../infrastructure/tmdb/settings";
 import { testTmdbConnection } from "../../infrastructure/tmdb/TmdbService";
+import { createLocalBackup, restoreLocalBackup } from "../../infrastructure/database/backupService";
+import { parsePrismaBackup } from "../../domain/backup";
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
@@ -18,6 +20,9 @@ export function SettingsPage() {
   const [region, setRegion] = useState("PA");
   const [state, setState] = useState<ConnectionState>("idle");
   const [message, setMessage] = useState("");
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMessage, setBackupMessage] = useState("");
+  const [backupError, setBackupError] = useState("");
 
   useEffect(() => {
     const stored = getTmdbAccessToken();
@@ -61,6 +66,70 @@ export function SettingsPage() {
   function handleRegionChange(value: string) {
     setRegion(value);
     saveCatalogRegion(value);
+  }
+
+  async function handleCreateBackup() {
+    setBackupBusy(true);
+    setBackupMessage("");
+    setBackupError("");
+    try {
+      const content = await createLocalBackup();
+      const file = new Blob([content], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "prisma-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setBackupMessage("Copia creada. Guárdala en un lugar seguro; Prisma no la sube a ningún servidor.");
+    } catch (cause) {
+      setBackupError(cause instanceof Error ? cause.message : "No se pudo crear la copia de seguridad.");
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function handleRestoreBackup(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.name.toLocaleLowerCase().endsWith(".json")) {
+      setBackupError("Selecciona un archivo de copia Prisma con extensión .json.");
+      setBackupMessage("");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setBackupError("El archivo supera el tamaño máximo permitido de 50 MB.");
+      setBackupMessage("");
+      return;
+    }
+
+    setBackupBusy(true);
+    setBackupError("");
+    setBackupMessage("");
+    try {
+      const backup = parsePrismaBackup(await file.text());
+      const { data } = backup;
+      const confirmed = window.confirm(
+        "Se restaurarán " + data.movies.length + " películas, "
+        + data.viewings.length + " visionados y " + data.collections.length
+        + " colecciones. Esto reemplazará la biblioteca y los datos personales actuales de este dispositivo. "
+        + "La credencial TMDB no está en el archivo y no se modificará. ¿Continuar?"
+      );
+      if (!confirmed) {
+        setBackupMessage("Restauración cancelada. No se modificaron tus datos.");
+        return;
+      }
+      await restoreLocalBackup(backup);
+      setRegion(backup.catalogRegion);
+      setBackupMessage("Restauración completada. Se recuperaron tus datos locales; tu credencial TMDB se conservó.");
+    } catch (cause) {
+      setBackupError(cause instanceof Error ? cause.message : "No se pudo restaurar la copia.");
+    } finally {
+      setBackupBusy(false);
+    }
   }
 
   return (
@@ -137,6 +206,38 @@ export function SettingsPage() {
       </section>
 
       <section className="settings-section card-surface">
+        <div className="settings-section-heading">
+          <div className="settings-icon"><ShieldCheck size={21} /></div>
+          <div>
+            <h2>Copias de seguridad</h2>
+            <p className="muted-copy">Protege tu biblioteca y tus datos personales.</p>
+          </div>
+        </div>
+        <p className="muted-copy">La copia incluye películas guardadas, Biblioteca, visionados, colecciones, perfil, preferencias y región del catálogo.</p>
+        <button className="button button-primary button-full" type="button" onClick={() => void handleCreateBackup()} disabled={backupBusy}>
+          <Download size={17} /> {backupBusy ? "Procesando..." : "Crear copia de seguridad"}
+        </button>
+        <input
+          className="sr-only"
+          id="prisma-backup-file"
+          type="file"
+          accept=".json,application/json"
+          onChange={(event) => void handleRestoreBackup(event)}
+          disabled={backupBusy}
+        />
+        <label className="button button-secondary button-full" htmlFor="prisma-backup-file" aria-disabled={backupBusy}>
+          <Upload size={17} /> Restaurar desde una copia
+        </label>
+        {backupMessage && <div className="connection-message is-success" role="status"><CheckCircle2 size={17} /><span>{backupMessage}</span></div>}
+        {backupError && <div className="connection-message is-error" role="alert"><CircleAlert size={17} /><span>{backupError}</span></div>}
+        <ul className="settings-bullet-list">
+          <li>El archivo se crea y se guarda desde este dispositivo; Prisma no lo sube a internet.</li>
+          <li>Antes de restaurar, el archivo se valida. La restauración reemplaza los datos personales locales.</li>
+          <li>La credencial TMDB se excluye de la copia y no se modifica al restaurar.</li>
+        </ul>
+      </section>
+
+      <section className="settings-section card-surface">
         <h2>Privacidad de la credencial</h2>
         <ul className="settings-bullet-list">
           <li>Se guarda únicamente en el almacenamiento local de este navegador.</li>
@@ -149,7 +250,7 @@ export function SettingsPage() {
 
       <section className="settings-section card-surface">
         <h2>Próximamente</h2>
-        <p className="muted-copy">Almacenamiento, copias de seguridad, privacidad detallada y preferencias de interfaz se incorporarán por etapas.</p>
+        <p className="muted-copy">Preferencias adicionales de interfaz y controles avanzados de privacidad se incorporarán en próximas etapas.</p>
       </section>
       <footer className="page-footer"><span>PRISMA</span><span>Versión 0.1.1</span></footer>
     </div>
