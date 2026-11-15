@@ -1,0 +1,31 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
+
+export default defineConfig({
+  base: "/Prisma/",
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: "prompt",
+      includeAssets: ["favicon.svg"],
+      manifest: {
+        id: "/Prisma/",
+        name: "Prisma",
+        short_name: "Prisma",
+        description: "Tu espacio cinematográfico personal.",
+        lang: "es",
+        start_url: "/Prisma/#/discover",
+        scope: "/Prisma/",
+        display: "standalone",
+        orientation: "portrait",
+        background_color: "#0E1117",
+        theme_color: "#0E1117",
+        icons: [{ src: "icons/prisma.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }]
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,webmanifest}"]
+      }
+    })
+  ]
+});
