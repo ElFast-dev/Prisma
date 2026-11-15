@@ -17,6 +17,7 @@ import { getLibraryEntry } from "../../infrastructure/database/libraryService";
 import {
   createCollection,
   deleteCollection,
+  getCollections,
   getCollectionMovies,
   getCollectionSummaries,
   removeMovieFromCollection,
