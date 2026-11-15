@@ -231,7 +231,7 @@ export async function getMovieBundle(token: string, tmdbId: number, region: stri
 export function getTmdbImageUrl(
   baseUrl: string,
   path: string | null | undefined,
-  size: "w185" | "w342" | "w500" | "w780" | "original"
+  size: "w185" | "w342" | "w500" | "w780" | "w1280" | "original
 ): string | null {
   if (!path) return null;
   const normalizedPath = path.replace(/^\/+/, "");

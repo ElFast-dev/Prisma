@@ -11,6 +11,7 @@ import {
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { SpectroPage } from "./features/spectro/SpectroPage";
 import { MovieDetailPage } from "./features/movie/MovieDetailPage";
+import { initializeRouteHistory, recordRouteChange } from "./navigation/routeHistory";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
@@ -21,10 +22,23 @@ export default function App() {
   const [path, setPath] = useState(currentPath);
 
   useEffect(() => {
+    initializeRouteHistory(currentPath());
     if (!window.location.hash) window.location.hash = "#/discover";
-    const updatePath = () => setPath(currentPath());
-    window.addEventListener("hashchange", updatePath);
-    return () => window.removeEventListener("hashchange", updatePath);
+
+    const updatePath = (fromHistoryTraversal: boolean) => {
+      const nextPath = currentPath();
+      recordRouteChange(nextPath, fromHistoryTraversal);
+      setPath(nextPath);
+    };
+    const handleHashChange = () => updatePath(false);
+    const handlePopState = () => updatePath(true);
+
+    window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   const isMovie = path.startsWith("/movie/");

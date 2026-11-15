@@ -14,6 +14,7 @@ import { getLibraryEntry, getMovieViewings } from "../../infrastructure/database
 import type { LibraryEntry } from "../../domain/types";
 import { moveMovieToPending, undoMoveToPending, type LibraryStatusUndoToken } from "../../infrastructure/database/viewingService";
 import { prismaDb } from "../../infrastructure/database/database";
+import { navigateBack } from "../../navigation/routeHistory";
 
 type CrewTab = "Dirección" | "Escritores" | "Música";
 type PageState = "loading" | "ready" | "error" | "unconfigured";
@@ -169,7 +170,7 @@ export function MovieDetailPage() {
   }
 
   if (state === "unconfigured") {
-    return <div className="page"><a href="#/discover" className="back-link" aria-label="Volver"><ArrowLeft size={19} /></a><EmptyState icon={<Clapperboard size={26} />} title="Conecta TMDB para consultar esta película" description="Configura tu credencial desde Ajustes y vuelve a abrir la ficha." action={<a className="button button-primary" href="#/settings">Configurar TMDB</a>} /></div>;
+    return <div className="page"><a href="#/discover" className="back-link" aria-label="Volver" onClick={(event) => { event.preventDefault(); navigateBack(); }}><ArrowLeft size={19} /></a><EmptyState icon={<Clapperboard size={26} />} title="Conecta TMDB para consultar esta película" description="Configura tu credencial desde Ajustes y vuelve a abrir la ficha." action={<a className="button button-primary" href="#/settings">Configurar TMDB</a>} /></div>;
   }
 
   if (state === "loading") {
@@ -182,7 +183,9 @@ export function MovieDetailPage() {
 
   const movie = bundle.details;
   const title = movie.title;
+  const backdrop = getTmdbImageUrl(imageBase, movie.backdrop_path, "w1280");
   const poster = getTmdbImageUrl(imageBase, movie.poster_path, "w780");
+  const heroImage = backdrop ?? poster;
   const year = releaseYear(movie.release_date);
   const genres = movie.genres?.map((genre) => genre.name) ?? [];
   const runtime = runtimeLabel(movie.runtime);
@@ -196,9 +199,9 @@ export function MovieDetailPage() {
   return (
     <div className="movie-detail-page">
       <div className="movie-hero">
-        {poster ? <img src={poster} alt={"Carátula de " + title} /> : <div className="movie-hero-placeholder"><Clapperboard size={44} /></div>}
+        {heroImage ? <img src={heroImage} alt={(backdrop ? "Fondo cinematográfico de " : "Carátula de ") + title} className={backdrop ? undefined : "movie-hero-poster-fallback"} /> : <div className="movie-hero-placeholder"><Clapperboard size={44} /></div>}
         <div className="movie-hero-shade" />
-        <a href="#/discover" className="movie-hero-control hero-back" aria-label="Volver a Descubrir"><ArrowLeft size={21} /></a>
+        <a href="#/discover" className="movie-hero-control hero-back" aria-label="Volver a la pantalla anterior" onClick={(event) => { event.preventDefault(); navigateBack(); }}><ArrowLeft size={21} /></a>
         <button className="movie-hero-control hero-menu" aria-label="Más opciones" onClick={() => setRatingSectionOpen((open) => !open)}><EllipsisVertical size={22} /></button>
         <div className="movie-hero-title">
           <h1>{title}</h1>
