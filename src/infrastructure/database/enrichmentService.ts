@@ -568,17 +568,31 @@ export function subscribeEnrichmentQueue(
 
 // La cola no depende de que Ajustes permanezca abierta: los eventos de red
 // se observan desde el servicio mientras la aplicación esté cargada.
+async function resumeQueueAfterConnection(): Promise<void> {
+  if (!isOnline()) return;
+
+  const active = runner ?? starting;
+  if (active) {
+    // Si online llega antes de terminar la cancelación por offline, espera a
+    // que el ciclo anterior persista su estado antes de intentar reanudar.
+    await active.catch(() => undefined);
+  }
+
+  if (!isOnline()) return;
+  const state = await readQueueState();
+  if (state.status !== "waiting-connection" && state.status !== "running") return;
+
+  const token = getTmdbAccessToken();
+  if (token) await startEnrichmentQueue(token);
+}
+
 if (typeof window !== "undefined") {
   window.addEventListener("offline", () => {
     if (runner || starting) void pauseEnrichmentQueue(true).catch(() => undefined);
   });
 
   window.addEventListener("online", () => {
-    void readQueueState().then((state) => {
-      if (state.status !== "waiting-connection") return;
-      const token = getTmdbAccessToken();
-      if (token) void startEnrichmentQueue(token).catch(() => undefined);
-    }).catch(() => undefined);
+    void resumeQueueAfterConnection().catch(() => undefined);
   });
 }
 
