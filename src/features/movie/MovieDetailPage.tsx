@@ -174,11 +174,11 @@ export function MovieDetailPage() {
   }
 
   if (state === "loading") {
-    return <div className="page"><a href="#/discover" className="back-link" aria-label="Volver"><ArrowLeft size={19} /></a><div className="detail-loading"><LoaderCircle className="spin" size={24} /><span>Cargando ficha cinematográfica...</span></div></div>;
+    return <div className="page"><a href="#/discover" className="back-link" aria-label="Volver" onClick={(event) => { event.preventDefault(); navigateBack(); }}><ArrowLeft size={19} /></a><div className="detail-loading"><LoaderCircle className="spin" size={24} /><span>Cargando ficha cinematográfica...</span></div></div>;
   }
 
   if (state === "error" || !bundle) {
-    return <div className="page"><a href="#/discover" className="back-link" aria-label="Volver"><ArrowLeft size={19} /></a><EmptyState icon={<WifiOff size={25} />} title="No se pudo abrir la ficha" description={error || "Comprueba la conexión o la credencial de TMDB."} action={<a className="text-link" href="#/discover">Volver a Descubrir</a>} /></div>;
+    return <div className="page"><a href="#/discover" className="back-link" aria-label="Volver" onClick={(event) => { event.preventDefault(); navigateBack(); }}><ArrowLeft size={19} /></a><EmptyState icon={<WifiOff size={25} />} title="No se pudo abrir la ficha" description={error || "Comprueba la conexión o la credencial de TMDB."} action={<a className="text-link" href="#/discover">Volver a Descubrir</a>} /></div>;
   }
 
   const movie = bundle.details;
