@@ -440,7 +440,7 @@ export function LibraryPage() {
                   ? "Cada selección genera una distribución aleatoria nueva."
                   : (filtersState.sortDirection === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
                 {librarySortDirectionLabel(filtersState.sort, filtersState.sortDirection)}
-                {filtersState.sort !== "random" && " · Toca otra vez "" + (selectedSort?.label ?? "el criterio") + "" para invertir"}
+                {filtersState.sort !== "random" && " · Toca otra vez " + (selectedSort?.label ?? "el criterio") + " para invertir"}
               </div>
             </div>
 
