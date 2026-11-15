@@ -23,7 +23,17 @@
 - [x] 8. Colecciones, perfil editable y logros.
 - [x] 9. Espectro por versiones (v1.0 local, afinidades, evolución y candidatas explicadas).
 - [x] 10. Copias de seguridad validadas (exportación e importación local JSON).
-- [ ] 11. Modo offline, pruebas Android y publicación de GitHub Pages.
+- [x] 11. Preparación offline y publicación de GitHub Pages (app shell, caché limitada de imágenes, estado de conexión e iconos Android).
+- [ ] 12. Prueba manual en Android: actualización instalada, apertura en modo avión y navegación de datos guardados.
+
+### Criterios offline y Android
+
+- La aplicación y sus recursos esenciales se precargan para abrir su shell sin red.
+- Las imágenes TMDB se guardan en caché con límites para cuidar el almacenamiento.
+- La aplicación informa cuándo no hay conexión y cuándo Descubrir usa datos antiguos.
+- Al recuperar conexión, Descubrir solicita datos actualizados.
+- El manifiesto incluye iconos PNG estándar y una versión adaptable (maskable).
+- La comprobación real de instalación y modo avión debe completarse en un Android físico.
 
 ### Criterios de copias de seguridad
 

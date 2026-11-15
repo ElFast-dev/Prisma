@@ -491,3 +491,33 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .spectro-affinity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .spectro-recommendation-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
 }
+
+/* Estado de conexión y catálogo sin conexión */
+.offline-banner {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-bottom: 1px solid rgb(225 162 145 / 22%);
+  background: #34272A;
+  padding: 7px 14px;
+  color: #F0D3CB;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: center;
+}
+.offline-banner svg { flex: 0 0 auto; }
+.cached-feed-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: -14px 0 16px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.cached-feed-note svg { flex: 0 0 auto; margin-top: 1px; color: var(--color-accent); }

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { WifiOff } from "lucide-react";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { DiscoverPage } from "./features/discover/DiscoverPage";
 import {
@@ -20,6 +21,7 @@ function currentPath(): string {
 
 export default function App() {
   const [path, setPath] = useState(currentPath);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
 
   useEffect(() => {
     initializeRouteHistory(currentPath());
@@ -38,6 +40,16 @@ export default function App() {
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
       window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateConnection = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", updateConnection);
+    window.addEventListener("offline", updateConnection);
+    return () => {
+      window.removeEventListener("online", updateConnection);
+      window.removeEventListener("offline", updateConnection);
     };
   }, []);
 
@@ -77,6 +89,12 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {!isOnline && (
+        <div className="offline-banner" role="status">
+          <WifiOff size={16} />
+          <span>Sin conexión · Prisma mostrará los datos disponibles en este dispositivo.</span>
+        </div>
+      )}
       <main className={showNavigation ? "main-content with-navigation" : "main-content"}>
         {page}
       </main>

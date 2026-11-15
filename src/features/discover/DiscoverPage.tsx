@@ -19,6 +19,8 @@ export function DiscoverPage() {
   const [movies, setMovies] = useState<TmdbMovieSummary[]>([]);
   const [state, setState] = useState<FeedState>("loading");
   const [error, setError] = useState("");
+  const [showingCachedData, setShowingCachedData] = useState(false);
+  const [cachedFetchedAt, setCachedFetchedAt] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -37,6 +39,8 @@ export function DiscoverPage() {
     const currentRequest = ++requestId.current;
     setState("loading");
     setError("");
+    setShowingCachedData(false);
+    setCachedFetchedAt("");
     setPage(1);
 
     try {
@@ -49,6 +53,8 @@ export function DiscoverPage() {
       setTotalPages(feed.totalPages);
       setPage(1);
       setImageBase(imageConfig.secure_base_url);
+      setShowingCachedData(feed.stale);
+      setCachedFetchedAt(feed.stale ? feed.fetchedAt : "");
       setState("ready");
     } catch (cause) {
       if (currentRequest !== requestId.current) return;
@@ -61,6 +67,14 @@ export function DiscoverPage() {
     const timer = window.setTimeout(() => void loadFirstPage(query), query.trim() ? 420 : 0);
     return () => window.clearTimeout(timer);
   }, [query, loadFirstPage]);
+
+  useEffect(() => {
+    const refreshAfterReconnect = () => {
+      if (navigator.onLine) void loadFirstPage(query);
+    };
+    window.addEventListener("online", refreshAfterReconnect);
+    return () => window.removeEventListener("online", refreshAfterReconnect);
+  }, [loadFirstPage, query]);
 
   async function loadMore() {
     const token = getTmdbAccessToken();
@@ -75,6 +89,10 @@ export function DiscoverPage() {
         const seen = new Set(current.map((movie) => movie.id));
         return [...current, ...result.movies.filter((movie) => !seen.has(movie.id))];
       });
+      if (result.stale) {
+        setShowingCachedData(true);
+        setCachedFetchedAt(result.fetchedAt);
+      }
       setPage(nextPage);
     } catch {
       setError("No se pudieron cargar más películas. Comprueba tu conexión.");
@@ -138,6 +156,12 @@ export function DiscoverPage() {
         />
       ) : (
         <>
+          {showingCachedData && (
+            <p className="cached-feed-note" role="status">
+              <WifiOff size={14} />
+              <span>Mostrando catálogo guardado en este dispositivo{cachedFetchedAt ? " · " + new Date(cachedFetchedAt).toLocaleString("es-PA") : ""}.</span>
+            </p>
+          )}
           {state === "loading" && movies.length === 0 ? (
             <div className="poster-grid" aria-label="Cargando películas">
               {Array.from({ length: 8 }, (_, index) => <div className="poster-skeleton" key={index} />)}
