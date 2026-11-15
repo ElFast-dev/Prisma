@@ -7,9 +7,9 @@ import {
 } from "./enrichmentService";
 
 describe("enrichment queue throughput", () => {
-  it("uses four workers while spacing outgoing requests", () => {
-    expect(ENRICHMENT_CONCURRENCY).toBe(4);
-    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(250);
+  it("uses a higher parallelism and a controlled 20-requests-per-second pace", () => {
+    expect(ENRICHMENT_CONCURRENCY).toBe(16);
+    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(50);
   });
 });
 
