@@ -10,7 +10,9 @@ Prisma se organiza en tres espacios:
 
 ## Estado del proyecto
 
-El repositorio inicia con la estructura técnica y la primera interfaz navegable. Las funcionalidades cinematográficas y la persistencia se incorporarán progresivamente y se documentarán antes de su implementación.
+Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, perfil, logros, Espectro, integración TMDB, copias de seguridad, funcionamiento offline y publicación como PWA para Android.
+
+Las etapas 1–14 de la hoja de ruta están completadas. El enriquecimiento de metadatos se validó en un dispositivo Android con 821 películas y 24 trabajadores simultáneos, sin fallos observados. La siguiente etapa funcional queda pendiente de priorización.
 
 ## Tecnologías previstas
 
