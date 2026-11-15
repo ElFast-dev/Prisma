@@ -521,3 +521,90 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   line-height: 1.45;
 }
 .cached-feed-note svg { flex: 0 0 auto; margin-top: 1px; color: var(--color-accent); }
+
+
+/* Etapa 14: enriquecimiento controlado de la Biblioteca */
+.enrichment-panel { display: grid; gap: 14px; }
+.enrichment-panel .settings-section-heading { margin-bottom: 0; }
+.enrichment-connection {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+.enrichment-connection > svg { flex: 0 0 auto; color: var(--color-accent); }
+.enrichment-connection-separator { opacity: .55; }
+.enrichment-progress-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: -8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.enrichment-progress-heading strong { color: var(--color-text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.enrichment-progress {
+  overflow: hidden;
+  height: 7px;
+  border-radius: 99px;
+  background: var(--color-active);
+}
+.enrichment-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width 220ms ease;
+}
+.enrichment-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.enrichment-metrics > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  padding: 10px 8px;
+}
+.enrichment-metrics strong {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+}
+.enrichment-metrics span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.enrichment-note, .enrichment-error, .enrichment-success, .enrichment-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.enrichment-note > svg, .enrichment-success > svg { flex: 0 0 auto; margin-top: 1px; }
+.enrichment-error { color: #E5A49B; }
+.enrichment-success { color: var(--color-accent); }
+.enrichment-footnote {
+  border-top: 1px solid var(--color-border);
+  padding-top: 11px;
+  font-size: 10px;
+}
+.enrichment-spinner { animation: enrichment-spin 1.2s linear infinite; }
+@keyframes enrichment-spin { to { transform: rotate(360deg); } }
+@media (max-width: 380px) {
+  .enrichment-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

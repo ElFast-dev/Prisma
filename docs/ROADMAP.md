@@ -26,6 +26,7 @@
 - [x] 11. Preparación offline y publicación de GitHub Pages (app shell, caché limitada de imágenes, estado de conexión e iconos Android).
 - [x] 12. Prueba manual en Android completada: actualización instalada, apertura en modo avión y navegación de datos guardados verificadas en el teléfono.
 - [x] 13. Migración desde respaldo Android v2: importación exclusiva de películas, fusión por TMDB, historial/calificaciones y conservación del formato nativo de Prisma.
+- [ ] 14. Enriquecimiento automático y reanudable de metadatos de las películas de la Biblioteca, con control de solicitudes y protección de datos personales.
 
 ### Criterios offline y Android
 
@@ -61,3 +62,14 @@
 ## Regla
 
 No se considera funcional una pantalla solo por existir visualmente. Cada módulo requiere criterios de aceptación y pruebas.
+
+
+### Etapa 14 — criterios de aceptación
+
+- Detectar películas incompletas por ID TMDB y evitar duplicados o consultas repetidas.
+- Procesar una película a la vez, respetar una pausa entre solicitudes y atender Retry-After ante HTTP 429.
+- Reintentar errores temporales, detenerse ante credenciales inválidas y registrar los 404 como no encontrados.
+- Guardar el estado en IndexedDB para continuar tras pausas, desconexiones o cierre de la aplicación.
+- Actualizar solo metadatos cinematográficos; no modificar Biblioteca, favoritos, visionados ni datos personales.
+- Usar la caché TMDB existente para detalles (30 días) y la caché limitada del Service Worker para imágenes.
+- Iniciar el proceso únicamente después de una acción explícita del propietario.

@@ -99,7 +99,8 @@ async function getCached<T>(
   token: string,
   cacheKey: string,
   endpoint: string,
-  params: Record<string, string | number | boolean | undefined> = {}
+  params: Record<string, string | number | boolean | undefined> = {},
+  options: { signal?: AbortSignal; useStaleOnError?: boolean } = {}
 ): Promise<{ data: T; fetchedAt: string; stale: boolean }> {
   const cached = await prismaDb.catalogCache.get(cacheKey);
   const cachedTimestamp = cached ? Date.parse(cached.fetchedAt) : Number.NaN;
@@ -113,7 +114,7 @@ async function getCached<T>(
   }
 
   try {
-    const data = await client(token).get<T>(endpoint, { params });
+    const data = await client(token).get<T>(endpoint, { params, signal: options.signal });
     const now = new Date().toISOString();
     const entry: CatalogCacheEntry = {
       cacheKey,
@@ -132,7 +133,7 @@ async function getCached<T>(
 
     return { data, fetchedAt: now, stale: false };
   } catch (error) {
-    if (cached) {
+    if (cached && options.useStaleOnError !== false) {
       return { data: cached.payload as T, fetchedAt: cached.fetchedAt, stale: true };
     }
     throw error;
@@ -226,6 +227,24 @@ export async function getMovieBundle(token: string, tmdbId: number, region: stri
     watchFetchedAt: providers.status === "fulfilled" ? providers.value.fetchedAt : "",
     staleResources
   };
+}
+
+export async function getMovieDetailsForEnrichment(
+  token: string,
+  tmdbId: number,
+  signal?: AbortSignal
+): Promise<TmdbMovieDetails> {
+  if (!Number.isSafeInteger(tmdbId) || tmdbId <= 0) {
+    throw new Error("El identificador TMDB de la película no es válido.");
+  }
+  const result = await getCached<TmdbMovieDetails>(
+    token,
+    "movie:details:" + tmdbId,
+    "movie/" + tmdbId,
+    { language: LANGUAGE },
+    { signal, useStaleOnError: false }
+  );
+  return result.data;
 }
 
 export function getTmdbImageUrl(

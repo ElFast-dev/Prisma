@@ -12,6 +12,7 @@ import { createLocalBackup, restoreLocalBackup } from "../../infrastructure/data
 import { importExternalMovies } from "../../infrastructure/database/externalMovieImportService";
 import { parsePrismaBackup } from "../../domain/backup";
 import { parseExternalMovieImport } from "../../domain/externalMovieImport";
+import { EnrichmentPanel } from "./EnrichmentPanel";
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
@@ -267,6 +268,8 @@ export function SettingsPage() {
           </button>
         )}
       </section>
+
+      <EnrichmentPanel configured={configured} />
 
       <section className="settings-section card-surface">
         <div className="settings-section-heading">

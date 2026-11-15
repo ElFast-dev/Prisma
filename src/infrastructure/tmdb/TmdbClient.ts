@@ -4,7 +4,8 @@ export class TmdbHttpError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly endpoint: string
+    public readonly endpoint: string,
+    public readonly retryAfterMs?: number
   ) {
     super(message);
     this.name = "TmdbHttpError";
@@ -14,6 +15,17 @@ export class TmdbHttpError extends Error {
 export interface TmdbRequestOptions {
   params?: Record<string, string | number | boolean | undefined>;
   signal?: AbortSignal;
+}
+
+export function parseRetryAfter(value: string | null, now = Date.now()): number | undefined {
+  const normalized = value?.trim();
+  if (!normalized) return undefined;
+
+  const seconds = Number(normalized);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+
+  const date = Date.parse(normalized);
+  return Number.isFinite(date) ? Math.max(0, date - now) : undefined;
 }
 
 export class TmdbClient {
@@ -56,7 +68,8 @@ export class TmdbClient {
       throw new TmdbHttpError(
         "TMDB respondió con el estado HTTP " + response.status + ".",
         response.status,
-        safeEndpoint
+        safeEndpoint,
+        response.status === 429 ? parseRetryAfter(response.headers.get("Retry-After")) : undefined
       );
     }
 

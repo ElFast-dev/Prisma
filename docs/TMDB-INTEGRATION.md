@@ -60,3 +60,12 @@ La primera integración utiliza una credencial personal introducida desde Ajuste
 Las tendencias semanales y las búsquedas se consultan desde Descubrir. Los resultados estructurados se guardan en Dexie para poder reutilizarlos si la red falla. Las imágenes se almacenan en caché CacheFirst mediante el Service Worker, con un límite de entradas para administrar el espacio del dispositivo.
 
 La configuración de GitHub Pages se realiza seleccionando GitHub Actions como fuente en Settings → Pages. El flujo deploy.yml construye dist y lo publica.
+
+
+## Enriquecimiento de la Biblioteca
+
+El enriquecimiento usa los identificadores TMDB que ya están guardados en la Biblioteca. Recupera detalles de una película por solicitud, reutiliza la caché de detalles de 30 días y persiste el resultado de cada elemento en appMetadata de IndexedDB. No descarga imágenes en tamaño original: guarda sus rutas de TMDB y deja que la caché limitada del Service Worker administre las imágenes solicitadas por la interfaz.
+
+La cola es secuencial, separa las solicitudes al menos 1,1 segundos y respeta el encabezado Retry-After para HTTP 429. Los errores temporales se reintentan hasta tres veces; los 404 se registran como no encontrados y los errores de autenticación detienen el proceso. La cola pausa al perder conexión y puede reanudarse al volver a estar en línea o al reabrir Ajustes después de un cierre.
+
+El proceso solo actualiza campos de metadatos en movies. No modifica libraryEntries, viewings, collections, profile, preferences ni la credencial TMDB. El progreso de enriquecimiento es estado operativo local y no forma parte de los respaldos personales de Prisma.

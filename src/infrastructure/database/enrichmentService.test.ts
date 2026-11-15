@@ -1,0 +1,25 @@
+import { describe, expect, it } from "vitest";
+import { TmdbHttpError } from "../tmdb/TmdbClient";
+import { classifyEnrichmentError } from "./enrichmentService";
+
+describe("enrichment error handling", () => {
+  it("does not retry a movie that TMDB reports as missing", () => {
+    expect(classifyEnrichmentError(new TmdbHttpError("missing", 404, "movie/42"))).toBe("not-found");
+  });
+
+  it("stops the queue when TMDB credentials are rejected", () => {
+    expect(classifyEnrichmentError(new TmdbHttpError("unauthorized", 401, "movie/42"))).toBe("authentication");
+    expect(classifyEnrichmentError(new TmdbHttpError("forbidden", 403, "movie/42"))).toBe("authentication");
+  });
+
+  it("retries rate limits, timeouts and server errors", () => {
+    expect(classifyEnrichmentError(new TmdbHttpError("limited", 429, "movie/42", 3000))).toBe("retryable");
+    expect(classifyEnrichmentError(new TmdbHttpError("timeout", 408, "movie/42"))).toBe("retryable");
+    expect(classifyEnrichmentError(new TmdbHttpError("server", 503, "movie/42"))).toBe("retryable");
+    expect(classifyEnrichmentError(new TypeError("Failed to fetch"))).toBe("retryable");
+  });
+
+  it("does not repeatedly retry permanent client errors", () => {
+    expect(classifyEnrichmentError(new TmdbHttpError("bad request", 400, "movie/42"))).toBe("permanent");
+  });
+});

@@ -63,6 +63,20 @@ describe("TmdbClient", () => {
     });
   });
 
+  it("keeps the Retry-After delay for HTTP 429 responses", async () => {
+    const mockFetch = vi.fn(async () => new Response("Too Many Requests", {
+      status: 429,
+      headers: { "Retry-After": "3" }
+    }));
+    const client = new TmdbClient("test-access-token", mockFetch as unknown as typeof fetch);
+
+    await expect(client.get("movie/42")).rejects.toMatchObject({
+      name: "TmdbHttpError",
+      status: 429,
+      retryAfterMs: 3000
+    });
+  });
+
   it("rejects absolute URLs as endpoints", async () => {
     const mockFetch = vi.fn();
     const client = new TmdbClient("test-access-token", mockFetch as unknown as typeof fetch);
