@@ -44,7 +44,7 @@ El proyecto está configurado para publicarse en:
 
 `https://elfast-dev.github.io/Prisma/`
 
-El despliegue se realizará mediante GitHub Actions cuando se active GitHub Pages con la opción **GitHub Actions** como fuente de publicación.
+El flujo `.github/workflows/deploy.yml` construye la PWA y la publica mediante GitHub Actions. En **Settings → Pages → Build and deployment**, selecciona **GitHub Actions** como fuente para habilitar el despliegue.
 
 ## Privacidad y credenciales
 
@@ -56,6 +56,10 @@ El despliegue se realizará mediante GitHub Actions cuando se active GitHub Page
 ## Documentación
 
 La documentación técnica y funcional se encuentra en `docs/`.
+
+## Conexión con TMDB
+
+Abre Ajustes dentro de Prisma, introduce tu propia API Read Access Token y pulsa **Probar y guardar conexión**. La credencial se guarda en el navegador de esa instalación y no se publica en Git ni se incluye en los respaldos. Una credencial de una aplicación web puede inspeccionarse en el propio navegador; no es un secreto de servidor.
 
 ## Licencia
 

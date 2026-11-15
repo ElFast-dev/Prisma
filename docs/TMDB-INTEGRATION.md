@@ -51,3 +51,12 @@ Los intervalos de revalidación serán decisiones internas de Prisma, no límite
 ## No enviar datos personales
 
 Las valoraciones, comentarios, fechas de visionado, listas privadas y perfil de Espectro no se enviarán a TMDB.
+
+
+## Implementación inicial
+
+La primera integración utiliza una credencial personal introducida desde Ajustes. Se guarda en localStorage del navegador, nunca en el repositorio ni en los respaldos. El cliente realiza solicitudes Bearer desde el navegador; esta credencial puede inspeccionarse en el dispositivo y no debe tratarse como secreto de servidor.
+
+Las tendencias semanales y las búsquedas se consultan desde Descubrir. Los resultados estructurados se guardan en Dexie para poder reutilizarlos si la red falla. Las imágenes se almacenan en caché CacheFirst mediante el Service Worker, con un límite de entradas para administrar el espacio del dispositivo.
+
+La configuración de GitHub Pages se realiza seleccionando GitHub Actions como fuente en Settings → Pages. El flujo deploy.yml construye dist y lo publica.

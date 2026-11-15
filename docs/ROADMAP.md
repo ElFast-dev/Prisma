@@ -1,6 +1,6 @@
 # Hoja de ruta
 
-## Etapa actual: estructura inicial
+## Etapa actual: integración de catálogo y ficha cinematográfica
 
 - [x] Repositorio público inicializado.
 - [x] Configuración React, TypeScript y Vite.
@@ -11,17 +11,17 @@
 - [x] Cliente base TMDB sin credenciales.
 - [x] Configuración PWA y CI inicial.
 
-## Próximas entregas
+## Entregas
 
-1. Probar el primer build en GitHub Actions y corregir errores.
-2. Implementar repositorios locales y gestión de biblioteca.
-3. Implementar ficha cinematográfica y conexión TMDB configurada localmente.
-4. Implementar Historial, calificaciones, estados reversibles y Deshacer.
-5. Implementar exportación e importación.
-6. Completar Colecciones, perfil y logros.
-7. Implementar disponibilidad de streaming.
-8. Construir Espectro por versiones.
-9. Completar modo offline, pruebas Android y publicación de GitHub Pages.
+1. Conexión TMDB personal configurada desde Ajustes.
+2. Descubrir con tendencias, búsqueda y paginación progresiva.
+3. Ficha cinematográfica con metadatos, reparto, equipo, recomendaciones y disponibilidad por región.
+4. Guardado de películas y estados en IndexedDB.
+5. Historial, calificaciones individuales, confirmaciones y Deshacer.
+6. Colecciones, perfil y logros.
+7. Espectro por versiones.
+8. Copias de seguridad validadas.
+9. Modo offline, pruebas Android y publicación de GitHub Pages.
 
 ## Regla
 

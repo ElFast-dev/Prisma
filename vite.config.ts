@@ -24,7 +24,18 @@ export default defineConfig({
         icons: [{ src: "icons/prisma.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }]
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,webmanifest}"]
+        globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,webmanifest}"],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin === "https://image.tmdb.org" && url.pathname.startsWith("/t/p/"),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "prisma-tmdb-images",
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 2500 }
+            }
+          }
+        ]
       }
     })
   ]
