@@ -12,7 +12,7 @@ import {
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { SpectroPage } from "./features/spectro/SpectroPage";
 import { MovieDetailPage } from "./features/movie/MovieDetailPage";
-import { initializeRouteHistory, recordRouteChange } from "./navigation/routeHistory";
+import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
@@ -54,8 +54,8 @@ export default function App() {
   }, []);
 
   const isMovie = path.startsWith("/movie/");
-  const isPrimaryPage = ["/personal", "/discover", "/spectro"].includes(path);
-  const showNavigation = !isMovie && path !== "/settings";
+  const isPrimaryPage = isPrimaryRoute(path);
+  const showNavigation = isPrimaryPage;
 
   let page: ReactNode;
   switch (path) {
@@ -101,7 +101,6 @@ export default function App() {
       {showNavigation && (
         <BottomNavigation
           active={path.startsWith("/personal") ? "personal" : path === "/spectro" ? "spectro" : "discover"}
-          compact={!isPrimaryPage}
         />
       )}
     </div>

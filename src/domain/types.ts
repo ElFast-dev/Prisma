@@ -71,6 +71,15 @@ export interface LocalProfile {
   updatedAt: string;
 }
 
+export interface LibraryBrowsePreferences {
+  status: "all" | "watched" | "pending" | "favorites";
+  query: string;
+  genre: string;
+  yearFrom: string;
+  yearTo: string;
+  sort: "added-desc" | "title-asc" | "year-desc" | "year-asc";
+}
+
 export interface UserPreferences {
   id: "local";
   theme: "dark";
@@ -78,6 +87,8 @@ export interface UserPreferences {
   language: "es";
   region: string;
   libraryView: "grid" | "list";
+  /** Filtros activos de Biblioteca, separados de la presentación y los ajustes generales. */
+  libraryFilters?: LibraryBrowsePreferences;
   updatedAt: string;
 }
 

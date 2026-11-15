@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Search, Settings2, SlidersHorizontal, X, Film, LoaderCircle, WifiOff } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Search, Film, LoaderCircle, WifiOff } from "lucide-react";
+import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
 import {
@@ -111,34 +112,22 @@ export function DiscoverPage() {
     return () => observer.disconnect();
   }, [state, page, totalPages, query, loadingMore]);
 
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-  }
-
   function openMovie(movie: TmdbMovieSummary) {
     window.location.hash = "#/movie/" + movie.id;
   }
 
   return (
     <div className="page page-discover">
-      <form className="unified-search" onSubmit={handleSearch} role="search">
-        <Search size={19} aria-hidden="true" />
-        <label className="sr-only" htmlFor="discover-search">Buscar películas</label>
-        <input
-          id="discover-search"
-          type="search"
-          placeholder="Buscar..."
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          autoComplete="off"
-        />
-        {query && <button type="button" className="search-action" aria-label="Limpiar búsqueda" onClick={() => setQuery("")}><X size={18} /></button>}
-        <button className="search-action" type="button" aria-label="Abrir filtros" onClick={() => setFiltersOpen(true)}>
-          <SlidersHorizontal size={19} />
-        </button>
-        <span className="search-divider" aria-hidden="true" />
-        <a className="search-action" href="#/settings" aria-label="Abrir ajustes"><Settings2 size={20} /></a>
-      </form>
+      <UnifiedSearchBar
+        inputId="discover-search"
+        placeholder="Buscar..."
+        searchLabel="Buscar películas en TMDB"
+        value={query}
+        onChange={setQuery}
+        onFiltersClick={() => setFiltersOpen(true)}
+        filtersOpen={filtersOpen}
+        settingsHref="#/settings"
+      />
 
       {state === "unconfigured" ? (
         <EmptyState
