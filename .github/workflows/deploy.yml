@@ -37,15 +37,7 @@ jobs:
           npm run preview -- --host 127.0.0.1 --port 4174 --strictPort > /tmp/prisma-preview.log 2>&1 &
           PREVIEW_PID=$!
           trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 20); do
-            if curl --fail --silent --show-error http://127.0.0.1:4174/Prisma/ -o /tmp/prisma-index.html; then
-              break
-            fi
-            sleep 2
-          done
-          grep -qi '<title>Prisma</title>' /tmp/prisma-index.html
-          grep -q '/Prisma/assets/.*\.js' /tmp/prisma-index.html
-          grep -q 'manifest' /tmp/prisma-index.html
+          PRISMA_SMOKE_URL=http://127.0.0.1:4174/Prisma/ PRISMA_SMOKE_ATTEMPTS=20 PRISMA_SMOKE_RETRY_DELAY_MS=1000 node scripts/smoke-test-pages.mjs
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
