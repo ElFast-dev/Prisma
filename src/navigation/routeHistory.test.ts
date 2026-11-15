@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRouteHistory } from "./routeHistory";
+import { createRouteHistory, isPrimaryRoute } from "./routeHistory";
 
 describe("historial de navegación de Prisma", () => {
   it("conserva la cadena de fichas abiertas desde recomendaciones", () => {
@@ -43,5 +43,26 @@ describe("historial de navegación de Prisma", () => {
     history.record("/movie/555", true);
     expect(history.current()).toBe("/movie/555");
     expect(history.hasPrevious()).toBe(false);
+  });
+});
+
+
+describe("visibilidad de la navegación principal", () => {
+  it("solo reconoce Personal, Descubrir y Espectro como secciones principales", () => {
+    expect(isPrimaryRoute("/personal")).toBe(true);
+    expect(isPrimaryRoute("/discover")).toBe(true);
+    expect(isPrimaryRoute("/spectro")).toBe(true);
+  });
+
+  it("oculta la píldora en Biblioteca, Historial, Colecciones, Perfil, ajustes y fichas", () => {
+    [
+      "/personal/library",
+      "/personal/history",
+      "/personal/collections",
+      "/personal/profile",
+      "/settings",
+      "/movie/123",
+      "/spectro/affinities"
+    ].forEach((path) => expect(isPrimaryRoute(path)).toBe(false));
   });
 });

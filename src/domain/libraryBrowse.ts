@@ -1,19 +1,12 @@
-import type { LibraryEntry, MovieRecord } from "./types";
+import type { LibraryBrowsePreferences, LibraryEntry, MovieRecord } from "./types";
 
-export type LibraryStatusFilter = "all" | "watched" | "pending" | "favorites";
-export type LibrarySort = "added-desc" | "title-asc" | "year-desc" | "year-asc";
+export type LibraryStatusFilter = LibraryBrowsePreferences["status"];
+export type LibrarySort = LibraryBrowsePreferences["sort"];
+export type LibraryBrowseOptions = LibraryBrowsePreferences;
 
 export interface LibraryBrowseItem {
   movie: MovieRecord;
   entry: LibraryEntry;
-}
-
-export interface LibraryBrowseOptions {
-  status: LibraryStatusFilter;
-  query: string;
-  genre: string;
-  year: string;
-  sort: LibrarySort;
 }
 
 export interface LibraryFacets {
@@ -43,7 +36,6 @@ function compareReleaseYears(
   const leftYear = left.movie.releaseYear;
   const rightYear = right.movie.releaseYear;
 
-  // Los años desconocidos siempre quedan al final, sea cual sea el sentido.
   if (leftYear === undefined && rightYear === undefined) return compareTitles(left, right);
   if (leftYear === undefined) return 1;
   if (rightYear === undefined) return -1;
@@ -61,7 +53,8 @@ export function filterLibraryItems(
 ): LibraryBrowseItem[] {
   const query = normalizeSearchText(options.query.trim());
   const selectedGenre = normalizeSearchText(options.genre);
-  const selectedYear = options.year.trim();
+  const minimumYear = options.yearFrom ? Number(options.yearFrom) : undefined;
+  const maximumYear = options.yearTo ? Number(options.yearTo) : undefined;
 
   const filtered = items.filter(({ movie, entry }) => {
     const matchesStatus = options.status === "all"
@@ -80,7 +73,12 @@ export function filterLibraryItems(
       return false;
     }
 
-    if (selectedYear && String(movie.releaseYear ?? "") !== selectedYear) return false;
+    if (minimumYear !== undefined && (movie.releaseYear === undefined || movie.releaseYear < minimumYear)) {
+      return false;
+    }
+    if (maximumYear !== undefined && (movie.releaseYear === undefined || movie.releaseYear > maximumYear)) {
+      return false;
+    }
     return true;
   });
 

@@ -13,6 +13,7 @@ import { importExternalMovies } from "../../infrastructure/database/externalMovi
 import { parsePrismaBackup } from "../../domain/backup";
 import { parseExternalMovieImport } from "../../domain/externalMovieImport";
 import { EnrichmentPanel } from "./EnrichmentPanel";
+import { navigateBack } from "../../navigation/routeHistory";
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
@@ -200,7 +201,7 @@ export function SettingsPage() {
     <div className="page">
       <header className="section-heading">
         <div className="heading-with-back">
-          <a href="#/discover" className="back-link" aria-label="Volver a Descubrir"><ArrowLeft size={19} /></a>
+          <button type="button" className="back-link" aria-label="Volver a la pantalla anterior" onClick={() => navigateBack("/discover")}><ArrowLeft size={19} /></button>
           <div>
             <p className="eyebrow">PRISMA</p>
             <h1>Ajustes</h1>

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
-  ArrowLeft, Clock3, Folders, Grid2X2, Library, List, Search,
+  ArrowLeft, Clock3, Folders, Grid2X2, Library, List,
   UserRound, ChevronRight, Plus, Star, Heart, CalendarDays,
   ChevronLeft, Trash2, Pencil, X, Award, Flame, ImagePlus,
   Film, Clapperboard, Clock3 as AchievementClock,
+  SlidersHorizontal
 } from "lucide-react";
 import type { Collection, LocalProfile, MovieRecord, LibraryEntry, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
@@ -28,13 +29,18 @@ import { toLocalDateString } from "../../domain/viewingRules";
 import type { PersonalStats } from "../../domain/statistics";
 import { calculateAchievements, type AchievementIcon } from "../../domain/achievements";
 import { getLocalProfile, saveLocalProfile } from "../../infrastructure/database/profileService";
-import { filterLibraryItems, getLibraryFacets, type LibrarySort } from "../../domain/libraryBrowse";
+import { filterLibraryItems, getLibraryFacets, type LibraryBrowseOptions } from "../../domain/libraryBrowse";
+import { DEFAULT_LIBRARY_FILTERS, normalizeLibraryFilters } from "../../domain/libraryPreferences";
+import { getUserPreferences, saveLibraryBrowseFilters, saveLibraryView } from "../../infrastructure/database/preferencesService";
+import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
+import { navigateBack } from "../../navigation/routeHistory";
 
 function PageBack({ title, eyebrow = "PERSONAL", backHref = "#/personal" }: { title: string; eyebrow?: string; backHref?: string }) {
+  const fallback = backHref.replace(/^#/, "") || "/personal";
   return (
     <header className="section-heading">
       <div className="heading-with-back">
-        <a href={backHref} className="back-link" aria-label="Volver"><ArrowLeft size={19} /></a>
+        <button type="button" className="back-link" aria-label="Volver a la pantalla anterior" onClick={() => navigateBack(fallback)}><ArrowLeft size={19} /></button>
         <div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1></div>
       </div>
     </header>
@@ -99,26 +105,39 @@ export function PersonalPage() {
   );
 }
 
-type LibraryFilter = "all" | "watched" | "pending" | "favorites";
 type LibraryView = "grid" | "list";
 type LibraryItem = { movie: MovieRecord; entry: LibraryEntry };
-const filters: { id: LibraryFilter; label: string }[] = [
-  { id: "all", label: "Todas" }, { id: "watched", label: "Vistas" },
-  { id: "pending", label: "Pendientes" }, { id: "favorites", label: "Favoritas" }
+const filters: { id: LibraryBrowseOptions["status"]; label: string }[] = [
+  { id: "all", label: "Todas" },
+  { id: "watched", label: "Vistas" },
+  { id: "pending", label: "Pendientes" },
+  { id: "favorites", label: "Favoritas" }
 ];
 
 export function LibraryPage() {
-  const [filter, setFilter] = useState<LibraryFilter>("all");
-  const [view, setView] = useState<LibraryView>("grid");
-  const [query, setQuery] = useState("");
-  const [genre, setGenre] = useState("");
-  const [year, setYear] = useState("");
-  const [sort, setSort] = useState<LibrarySort>("added-desc");
+  const [filtersState, setFiltersState] = useState<LibraryBrowseOptions>({ ...DEFAULT_LIBRARY_FILTERS });
+  const [view, setView] = useState<LibraryView>("list");
   const [items, setItems] = useState<LibraryItem[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [preferencesError, setPreferencesError] = useState("");
 
   useEffect(() => {
     let active = true;
-    void getLibraryMovies().then((result) => { if (active) setItems(result); });
+    void Promise.all([getLibraryMovies(), getUserPreferences()])
+      .then(([libraryItems, preferences]) => {
+        if (!active) return;
+        setItems(libraryItems);
+        setFiltersState(normalizeLibraryFilters(preferences.libraryFilters));
+        setView(preferences.libraryView);
+        setPreferencesLoaded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setPreferencesError("No se pudieron cargar tus preferencias locales. Se mostrarán los valores predeterminados.");
+        setPreferencesLoaded(true);
+      });
     return () => { active = false; };
   }, []);
 
@@ -129,21 +148,47 @@ export function LibraryPage() {
     pending: items.filter(({ entry }) => entry.status === "pending").length,
     favorites: items.filter(({ entry }) => entry.isFavorite).length
   }), [items]);
-  const visible = useMemo(() => filterLibraryItems(items, {
-    status: filter,
-    query,
-    genre,
-    year,
-    sort
-  }), [items, filter, query, genre, year, sort]);
-  const hasActiveFilters = filter !== "all" || Boolean(query.trim()) || Boolean(genre) || Boolean(year) || sort !== "added-desc";
+  const visible = useMemo(
+    () => filterLibraryItems(items, filtersState),
+    [items, filtersState]
+  );
+
+  const hasActiveFilters = filtersState.status !== "all"
+    || Boolean(filtersState.query.trim())
+    || Boolean(filtersState.genre)
+    || Boolean(filtersState.yearFrom)
+    || Boolean(filtersState.yearTo);
+  const hasNonDefaultBrowseOptions = hasActiveFilters || filtersState.sort !== "added-desc";
+  const ascendingYears = useMemo(() => [...facets.years].sort((a, b) => a - b), [facets.years]);
+
+  function updateFilters(patch: Partial<LibraryBrowseOptions>) {
+    const next = normalizeLibraryFilters({ ...filtersState, ...patch });
+    setFiltersState(next);
+    if (preferencesLoaded) {
+      void saveLibraryBrowseFilters(next).catch(() => {
+        setPreferencesError("No se pudo guardar el último cambio de los filtros en este dispositivo.");
+      });
+    }
+  }
 
   function clearLibraryFilters() {
-    setFilter("all");
-    setQuery("");
-    setGenre("");
-    setYear("");
-    setSort("added-desc");
+    const defaults = { ...DEFAULT_LIBRARY_FILTERS };
+    setFiltersState(defaults);
+    if (preferencesLoaded) {
+      void saveLibraryBrowseFilters(defaults).catch(() => {
+        setPreferencesError("No se pudieron restablecer las preferencias de Biblioteca.");
+      });
+    }
+  }
+
+  function selectView(nextView: LibraryView) {
+    setView(nextView);
+    setSettingsOpen(false);
+    if (preferencesLoaded) {
+      void saveLibraryView(nextView).catch(() => {
+        setPreferencesError("No se pudo guardar el modo de presentación.");
+      });
+    }
   }
 
   function imageUrl(movie: MovieRecord) {
@@ -153,53 +198,37 @@ export function LibraryPage() {
   return (
     <div className="page">
       <PageBack title="Biblioteca" />
-      <div className="library-filter-row" role="group" aria-label="Filtrar biblioteca por estado">
-        {filters.map((item) => <button className={filter === item.id ? "filter-chip is-selected" : "filter-chip"} key={item.id} onClick={() => setFilter(item.id)} aria-pressed={filter === item.id}>
-          {item.label}<span className="filter-chip-count">{counts[item.id]}</span>
-        </button>)}
-      </div>
-      <div className="library-tools">
-        <label className="inline-search"><Search size={17} /><input type="search" placeholder="Título, título original, director o género..." aria-label="Buscar en mi biblioteca" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-        <div className="view-toggle" role="group" aria-label="Modo de presentación">
-          <button className={view === "grid" ? "view-toggle-button is-active" : "view-toggle-button"} onClick={() => setView("grid")} aria-label="Vista de cuadrícula" aria-pressed={view === "grid"}><Grid2X2 size={18} /></button>
-          <button className={view === "list" ? "view-toggle-button is-active" : "view-toggle-button"} onClick={() => setView("list")} aria-label="Vista de lista" aria-pressed={view === "list"}><List size={19} /></button>
+      <UnifiedSearchBar
+        inputId="library-search"
+        placeholder="Buscar..."
+        searchLabel="Buscar exclusivamente en mi Biblioteca"
+        value={filtersState.query}
+        onChange={(query) => updateFilters({ query })}
+        onFiltersClick={() => { setSettingsOpen(false); setFiltersOpen(true); }}
+        filtersOpen={filtersOpen}
+        onSettingsClick={() => { setFiltersOpen(false); setSettingsOpen(true); }}
+        settingsExpanded={settingsOpen}
+        filtersActive={hasNonDefaultBrowseOptions}
+        disabled={!preferencesLoaded}
+      />
+      {preferencesError && <p className="preferences-feedback" role="status">{preferencesError}</p>}
+      {preferencesLoaded && (
+        <div className="library-results-heading">
+          <div>
+            <h2>{filters.find((item) => item.id === filtersState.status)?.label ?? "Biblioteca"}</h2>
+            <span className="muted-copy">{visible.length} de {items.length} películas</span>
+          </div>
+          <span className="library-view-caption">{view === "list" ? "Lista" : "Cuadrícula"}</span>
         </div>
-      </div>
-      <div className="library-refinement-grid" aria-label="Filtros avanzados de biblioteca">
-        <label className="library-refinement-field" htmlFor="library-genre">
-          <span>Género</span>
-          <select id="library-genre" className="library-refinement-select" value={genre} onChange={(event) => setGenre(event.target.value)}>
-            <option value="">Todos los géneros</option>
-            {facets.genres.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-        </label>
-        <label className="library-refinement-field" htmlFor="library-year">
-          <span>Año de estreno</span>
-          <select id="library-year" className="library-refinement-select" value={year} onChange={(event) => setYear(event.target.value)}>
-            <option value="">Todos los años</option>
-            {facets.years.map((item) => <option key={item} value={String(item)}>{item}</option>)}
-          </select>
-        </label>
-        <label className="library-refinement-field library-refinement-field-sort" htmlFor="library-sort">
-          <span>Ordenar por</span>
-          <select id="library-sort" className="library-refinement-select" value={sort} onChange={(event) => setSort(event.target.value as LibrarySort)}>
-            <option value="added-desc">Añadidas recientemente</option>
-            <option value="title-asc">Título: A–Z</option>
-            <option value="year-desc">Año: más reciente</option>
-            <option value="year-asc">Año: más antiguo</option>
-          </select>
-        </label>
-      </div>
-      <div className="content-caption">
-        <div><h2>{filters.find((item) => item.id === filter)?.label}</h2><span className="muted-copy">{visible.length} de {items.length} películas</span></div>
-        {hasActiveFilters && <button className="library-clear-filters" type="button" onClick={clearLibraryFilters}>Limpiar filtros</button>}
-      </div>
+      )}
 
-      {visible.length === 0 ? (
+      {!preferencesLoaded ? (
+        <p className="library-loading" role="status">Cargando tu Biblioteca y tus preferencias locales...</p>
+      ) : visible.length === 0 ? (
         <EmptyState
           icon={view === "grid" ? <Grid2X2 size={25} /> : <List size={25} />}
           title={items.length ? "No hay películas con estos filtros" : "Tu biblioteca está esperando sus primeras películas"}
-          description={items.length ? "Prueba otra combinación de búsqueda, género o año." : "Añade películas desde Descubrir. Aquí podrás organizarlas como vistas, pendientes o favoritas."}
+          description={items.length ? "Prueba otra combinación de búsqueda, estado, género o año." : "Añade películas desde Descubrir. Aquí podrás organizarlas como vistas, pendientes o favoritas."}
           action={items.length
             ? <button className="button button-secondary" type="button" onClick={clearLibraryFilters}>Limpiar filtros</button>
             : <a className="button button-primary" href="#/discover">Descubrir películas</a>}
@@ -221,6 +250,119 @@ export function LibraryPage() {
               {entry.isFavorite && <Heart size={16} fill="currentColor" className="favorite-mark" />}
             </a>
           ))}
+        </div>
+      )}
+
+      {filtersOpen && (
+        <div className="sheet-backdrop library-sheet-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setFiltersOpen(false);
+        }}>
+          <section className="bottom-sheet library-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="library-filters-title">
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div><p className="eyebrow">MI COLECCIÓN</p><h2 id="library-filters-title">Filtros de Biblioteca</h2></div>
+              <button className="icon-button" type="button" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><X size={19} /></button>
+            </div>
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Estado</span><span>{counts[filtersState.status]} películas</span></div>
+              <div className="library-status-options" role="group" aria-label="Filtrar por estado">
+                {filters.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={filtersState.status === item.id ? "library-status-option is-selected" : "library-status-option"}
+                    onClick={() => updateFilters({ status: item.id })}
+                    aria-pressed={filtersState.status === item.id}
+                  >
+                    <span>{item.label}</span><small>{counts[item.id]}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="library-sheet-section">
+              <label className="library-sheet-field" htmlFor="library-genre">
+                <span>Género</span>
+                <select id="library-genre" className="library-refinement-select" value={filtersState.genre} onChange={(event) => updateFilters({ genre: event.target.value })}>
+                  <option value="">Todos los géneros</option>
+                  {facets.genres.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+                </select>
+              </label>
+              <div className="library-year-range">
+                <label className="library-sheet-field" htmlFor="library-year-from">
+                  <span>Desde el año</span>
+                  <select id="library-year-from" className="library-refinement-select" value={filtersState.yearFrom} onChange={(event) => {
+                    const yearFrom = event.target.value;
+                    updateFilters({ yearFrom, ...(yearFrom && filtersState.yearTo && Number(yearFrom) > Number(filtersState.yearTo) ? { yearTo: "" } : {}) });
+                  }}>
+                    <option value="">Cualquier año</option>
+                    {ascendingYears.map((year) => <option key={year} value={String(year)}>{year}</option>)}
+                  </select>
+                </label>
+                <label className="library-sheet-field" htmlFor="library-year-to">
+                  <span>Hasta el año</span>
+                  <select id="library-year-to" className="library-refinement-select" value={filtersState.yearTo} onChange={(event) => {
+                    const yearTo = event.target.value;
+                    updateFilters({ yearTo, ...(yearTo && filtersState.yearFrom && Number(yearTo) < Number(filtersState.yearFrom) ? { yearFrom: "" } : {}) });
+                  }}>
+                    <option value="">Cualquier año</option>
+                    {ascendingYears.map((year) => <option key={year} value={String(year)}>{year}</option>)}
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div className="library-sheet-section">
+              <label className="library-sheet-field" htmlFor="library-sort">
+                <span>Ordenar por</span>
+                <select id="library-sort" className="library-refinement-select" value={filtersState.sort} onChange={(event) => updateFilters({ sort: event.target.value as LibraryBrowseOptions["sort"] })}>
+                  <option value="added-desc">Añadidas recientemente</option>
+                  <option value="title-asc">Título: A–Z</option>
+                  <option value="year-desc">Año: más reciente</option>
+                  <option value="year-asc">Año: más antiguo</option>
+                </select>
+              </label>
+            </div>
+            {hasActiveFilters && (
+              <div className="library-active-filter-summary" aria-live="polite">
+                <SlidersHorizontal size={15} />
+                <span>
+                  {[filtersState.status !== "all" ? filters.find((item) => item.id === filtersState.status)?.label : "",
+                    filtersState.genre,
+                    filtersState.yearFrom || filtersState.yearTo
+                      ? (filtersState.yearFrom || "…") + "–" + (filtersState.yearTo || "…")
+                      : "",
+                    filtersState.query.trim() ? "Búsqueda" : ""]
+                    .filter(Boolean).join(" · ")}
+                </span>
+              </div>
+            )}
+            <div className="library-sheet-actions">
+              <button className="button button-quiet" type="button" onClick={clearLibraryFilters} disabled={!hasNonDefaultBrowseOptions}>Restablecer</button>
+              <button className="button button-primary" type="button" onClick={() => setFiltersOpen(false)}>Aplicar filtros</button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="sheet-backdrop library-sheet-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setSettingsOpen(false);
+        }}>
+          <section className="bottom-sheet library-bottom-sheet library-view-sheet" role="dialog" aria-modal="true" aria-labelledby="library-view-title">
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div><p className="eyebrow">PRESENTACIÓN</p><h2 id="library-view-title">Vista de Biblioteca</h2></div>
+              <button className="icon-button" type="button" onClick={() => setSettingsOpen(false)} aria-label="Cerrar ajustes de visualización"><X size={19} /></button>
+            </div>
+            <p className="muted-copy">Elige cómo quieres ver tu colección. Esta preferencia se conserva en este dispositivo.</p>
+            <div className="library-view-options" role="group" aria-label="Modo de presentación">
+              <button className={view === "list" ? "library-view-option is-selected" : "library-view-option"} type="button" onClick={() => selectView("list")} aria-pressed={view === "list"}>
+                <List size={21} /><span><strong>Lista</strong><small>Más información de cada película</small></span>{view === "list" && <span className="library-view-check" aria-hidden="true">✓</span>}
+              </button>
+              <button className={view === "grid" ? "library-view-option is-selected" : "library-view-option"} type="button" onClick={() => selectView("grid")} aria-pressed={view === "grid"}>
+                <Grid2X2 size={21} /><span><strong>Cuadrícula</strong><small>Enfoque visual en los pósteres</small></span>{view === "grid" && <span className="library-view-check" aria-hidden="true">✓</span>}
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </div>

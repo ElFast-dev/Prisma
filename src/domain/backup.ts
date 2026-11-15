@@ -82,6 +82,14 @@ const preferencesSchema = z.object({
   language: z.literal("es"),
   region: z.string().regex(/^[A-Z]{2}$/),
   libraryView: z.enum(["grid", "list"]),
+  libraryFilters: z.object({
+    status: z.enum(["all", "watched", "pending", "favorites"]),
+    query: z.string().max(200),
+    genre: z.string().max(100),
+    yearFrom: z.string().refine((value) => value === "" || (/^\d{4}$/.test(value) && Number(value) >= 1880 && Number(value) <= 3000)),
+    yearTo: z.string().refine((value) => value === "" || (/^\d{4}$/.test(value) && Number(value) >= 1880 && Number(value) <= 3000)),
+    sort: z.enum(["added-desc", "title-asc", "year-desc", "year-asc"])
+  }).strict().optional(),
   updatedAt: timestamp
 }).strict();
 

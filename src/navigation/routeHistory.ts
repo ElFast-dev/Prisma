@@ -61,3 +61,8 @@ export function navigateBack(fallback = "/discover"): void {
     window.location.replace("#" + fallback);
   }
 }
+
+/** Indica si la ruta representa una de las tres secciones principales. */
+export function isPrimaryRoute(path: string): boolean {
+  return path === "/personal" || path === "/discover" || path === "/spectro";
+}
