@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   ArrowLeft, Clock3, Folders, Grid2X2, Library, List, Search,
   UserRound, ChevronRight, Plus, Star, Heart, CalendarDays,
-  ChevronLeft, Trash2, Pencil
+  ChevronLeft, Trash2, Pencil, X
 } from "lucide-react";
-import type { MovieRecord, LibraryEntry, Viewing } from "../../domain/types";
+import type { Collection, MovieRecord, LibraryEntry, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { ViewingForm } from "../../components/ViewingForm";
@@ -13,15 +13,23 @@ import { getPersonalStats } from "../../infrastructure/database/statisticsReposi
 import { prismaDb } from "../../infrastructure/database/database";
 import { deleteViewing } from "../../infrastructure/database/viewingService";
 import { getLibraryEntry } from "../../infrastructure/database/libraryService";
+import {
+  createCollection,
+  deleteCollection,
+  getCollectionMovies,
+  getCollectionSummaries,
+  removeMovieFromCollection,
+  type CollectionSummary
+} from "../../infrastructure/database/collectionService";
 import { getTmdbImageUrl } from "../../infrastructure/tmdb/TmdbService";
 import { toLocalDateString } from "../../domain/viewingRules";
 import type { PersonalStats } from "../../domain/statistics";
 
-function PageBack({ title, eyebrow = "PERSONAL" }: { title: string; eyebrow?: string }) {
+function PageBack({ title, eyebrow = "PERSONAL", backHref = "#/personal" }: { title: string; eyebrow?: string; backHref?: string }) {
   return (
     <header className="section-heading">
       <div className="heading-with-back">
-        <a href="#/personal" className="back-link" aria-label="Volver a Personal"><ArrowLeft size={19} /></a>
+        <a href={backHref} className="back-link" aria-label="Volver"><ArrowLeft size={19} /></a>
         <div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1></div>
       </div>
     </header>
@@ -348,11 +356,184 @@ export function HistoryPage() {
 }
 
 export function CollectionsPage() {
+  const routeParts = window.location.hash.replace(/^#\/?/, "").split("/");
+  const collectionId = routeParts.length > 2 && routeParts[1] === "collections" ? decodeURIComponent(routeParts[2]) : null;
+  const [collections, setCollections] = useState<CollectionSummary[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [movies, setMovies] = useState<MovieRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadCollections = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const nextCollections = await getCollectionSummaries();
+      setCollections(nextCollections);
+      if (collectionId) {
+        const selected = nextCollections.find((item) => item.collection.id === collectionId)?.collection ?? null;
+        setSelectedCollection(selected);
+        setMovies(selected ? await getCollectionMovies(collectionId) : []);
+      } else {
+        setSelectedCollection(null);
+        setMovies([]);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudieron cargar las colecciones.");
+    } finally {
+      setLoading(false);
+    }
+  }, [collectionId]);
+
+  useEffect(() => { void loadCollections(); }, [loadCollections]);
+
+  async function handleCreateCollection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const created = await createCollection(newCollectionName);
+      setNewCollectionName("");
+      setCreateOpen(false);
+      window.location.hash = "#/personal/collections/" + encodeURIComponent(created.id);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo crear la colección.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteCollection() {
+    if (!selectedCollection || busy) return;
+    if (!window.confirm("¿Eliminar la colección “" + selectedCollection.name + "”? Las películas no se eliminarán de tu Biblioteca.")) return;
+    setBusy(true);
+    try {
+      await deleteCollection(selectedCollection.id);
+      window.location.hash = "#/personal/collections";
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo eliminar la colección.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRemoveMovie(movie: MovieRecord) {
+    if (!selectedCollection || busy) return;
+    setBusy(true);
+    try {
+      await removeMovieFromCollection(selectedCollection.id, movie.id);
+      await loadCollections();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo quitar la película.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function posterUrl(movie: MovieRecord) {
+    return getTmdbImageUrl("https://image.tmdb.org/t/p/", movie.posterPath, "w342");
+  }
+
   return (
     <div className="page">
-      <PageBack title="Colecciones" />
-      <div className="section-intro-row"><p className="muted-copy">Organiza películas en selecciones creadas por ti.</p><button className="icon-button accent-icon-button" aria-label="Crear colección" title="Crear colección" disabled><Plus size={20} /></button></div>
-      <EmptyState icon={<Folders size={26} />} title="Tus colecciones aparecerán aquí" description="Crea selecciones como cine japonés, ciencia ficción o películas que quieras volver a ver." action={<span className="muted-copy">La creación de colecciones se habilitará en la siguiente entrega.</span>} />
+      <PageBack
+        title={selectedCollection?.name ?? "Colecciones"}
+        eyebrow={collectionId ? "COLECCIÓN" : "PERSONAL"}
+        backHref={collectionId ? "#/personal/collections" : "#/personal"}
+      />
+      {error && <p className="form-error collection-page-error" role="alert">{error}</p>}
+
+      {!collectionId ? (
+        <>
+          <div className="section-intro-row">
+            <p className="muted-copy">Organiza películas en selecciones creadas por ti.</p>
+            <button className="icon-button accent-icon-button" type="button" aria-label="Crear colección" title="Crear colección" onClick={() => setCreateOpen((open) => !open)}><Plus size={20} /></button>
+          </div>
+          {createOpen && (
+            <form className="collection-create-panel card-surface" onSubmit={(event) => void handleCreateCollection(event)}>
+              <div className="section-intro-row"><h2>Nueva colección</h2><button className="icon-button" type="button" aria-label="Cerrar formulario" onClick={() => setCreateOpen(false)}><X size={18} /></button></div>
+              <input
+                className="text-field"
+                type="text"
+                maxLength={60}
+                placeholder="Ej. Ciencia ficción esencial"
+                aria-label="Nombre de la colección"
+                value={newCollectionName}
+                onChange={(event) => setNewCollectionName(event.target.value)}
+                autoFocus
+              />
+              <div className="form-actions">
+                <button className="button button-secondary" type="button" disabled={busy} onClick={() => { setCreateOpen(false); setNewCollectionName(""); }}>Cancelar</button>
+                <button className="button button-primary" type="submit" disabled={!newCollectionName.trim() || busy}>{busy ? "Creando..." : "Crear colección"}</button>
+              </div>
+            </form>
+          )}
+          {loading ? (
+            <div className="detail-loading"><span>Cargando colecciones...</span></div>
+          ) : collections.length === 0 ? (
+            <EmptyState
+              icon={<Folders size={26} />}
+              title="Crea tu primera colección"
+              description="Agrupa películas por tema, director, país o cualquier criterio que te guste."
+              action={<button className="button button-primary" type="button" onClick={() => setCreateOpen(true)}>Crear colección</button>}
+            />
+          ) : (
+            <div className="collection-grid">
+              {collections.map(({ collection, movieCount }) => (
+                <a className="collection-card card-surface" href={"#/personal/collections/" + encodeURIComponent(collection.id)} key={collection.id}>
+                  <span className="collection-card-icon"><Folders size={21} /></span>
+                  <span className="collection-card-copy">
+                    <strong>{collection.name}</strong>
+                    <small>{movieCount} {movieCount === 1 ? "película" : "películas"}</small>
+                  </span>
+                  <ChevronRight size={19} className="subtle-icon" />
+                </a>
+              ))}
+            </div>
+          )}
+        </>
+      ) : selectedCollection ? (
+        <>
+          <div className="section-intro-row collection-detail-heading">
+            <p className="muted-copy">{movies.length} {movies.length === 1 ? "película" : "películas"} en esta colección</p>
+            <button className="icon-button history-delete-button" type="button" aria-label="Eliminar colección" title="Eliminar colección" disabled={busy} onClick={() => void handleDeleteCollection()}><Trash2 size={18} /></button>
+          </div>
+          {loading ? (
+            <div className="detail-loading"><span>Cargando películas...</span></div>
+          ) : movies.length === 0 ? (
+            <EmptyState
+              icon={<Folders size={26} />}
+              title="Esta colección está vacía"
+              description="Abre la ficha de una película, toca los tres puntos y elige “Agregar a colección”."
+              action={<a className="button button-secondary" href="#/discover">Descubrir películas</a>}
+            />
+          ) : (
+            <div className="collection-movie-grid">
+              {movies.map((movie) => (
+                <div className="collection-movie-card" key={movie.id}>
+                  <MoviePosterCard
+                    title={movie.title}
+                    imageUrl={posterUrl(movie)}
+                    onClick={() => { window.location.hash = "#/movie/" + movie.tmdbId; }}
+                  />
+                  <button className="button button-quiet collection-movie-remove" type="button" disabled={busy} onClick={() => void handleRemoveMovie(movie)}>Quitar</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <EmptyState
+          icon={<Folders size={26} />}
+          title="No se encontró esta colección"
+          description="Puede que haya sido eliminada."
+          action={<a className="button button-secondary" href="#/personal/collections">Ver colecciones</a>}
+        />
+      )}
     </div>
   );
 }

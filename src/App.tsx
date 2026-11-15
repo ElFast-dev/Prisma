@@ -72,7 +72,7 @@ export default function App() {
       page = <SettingsPage />;
       break;
     default:
-      page = isMovie ? <MovieDetailPage /> : <DiscoverPage />;
+      page = path.startsWith("/personal/collections/") ? <CollectionsPage /> : isMovie ? <MovieDetailPage /> : <DiscoverPage />;
   }
 
   return (

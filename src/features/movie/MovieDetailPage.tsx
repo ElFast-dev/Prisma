@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, EllipsisVertical, Star, LoaderCircle, WifiOff, ChevronDown, ChevronUp, ExternalLink, Plus,
-  UserRound, Clapperboard, X
+  UserRound, Clapperboard, X, FolderPlus, Folder, Check
 } from "lucide-react";
 import type { MovieRecord, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
@@ -11,7 +11,14 @@ import { getMovieBundle, getImageConfiguration, getTmdbImageUrl, type TmdbMovieB
 import { getCatalogRegion, getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
 import { saveTmdbMovie } from "../../infrastructure/database/movieRepository";
 import { getLibraryEntry, getMovieViewings } from "../../infrastructure/database/libraryService";
-import type { LibraryEntry } from "../../domain/types";
+import {
+  addMovieToCollection,
+  createCollection,
+  getCollections,
+  getMovieCollectionIds,
+  removeMovieFromCollection
+} from "../../infrastructure/database/collectionService";
+import type { Collection, LibraryEntry } from "../../domain/types";
 import { moveMovieToPending, undoMoveToPending, type LibraryStatusUndoToken } from "../../infrastructure/database/viewingService";
 import { prismaDb } from "../../infrastructure/database/database";
 import { navigateBack } from "../../navigation/routeHistory";
@@ -66,6 +73,14 @@ export function MovieDetailPage() {
   const [editingViewing, setEditingViewing] = useState<Viewing | undefined>();
   const [ratingSectionOpen, setRatingSectionOpen] = useState(false);
   const [movieMenuOpen, setMovieMenuOpen] = useState(false);
+  const [collectionPickerOpen, setCollectionPickerOpen] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [movieCollectionIds, setMovieCollectionIds] = useState<string[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [collectionBusyId, setCollectionBusyId] = useState<string | null>(null);
+  const [collectionError, setCollectionError] = useState("");
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [showCreateCollection, setShowCreateCollection] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState(false);
   const [undoToken, setUndoToken] = useState<LibraryStatusUndoToken | null>(null);
   const [undoMessage, setUndoMessage] = useState("");
@@ -170,6 +185,65 @@ export function MovieDetailPage() {
     }
   }
 
+  async function openCollectionPicker() {
+    if (!localMovie) return;
+    setMovieMenuOpen(false);
+    setCollectionPickerOpen(true);
+    setCollectionsLoading(true);
+    setCollectionError("");
+    setShowCreateCollection(false);
+    try {
+      const [nextCollections, membershipIds] = await Promise.all([
+        getCollections(),
+        getMovieCollectionIds(localMovie.id)
+      ]);
+      setCollections(nextCollections);
+      setMovieCollectionIds(membershipIds);
+    } catch (cause) {
+      setCollectionError(cause instanceof Error ? cause.message : "No se pudieron cargar las colecciones.");
+    } finally {
+      setCollectionsLoading(false);
+    }
+  }
+
+  async function toggleMovieCollection(collection: Collection) {
+    if (!localMovie || collectionBusyId) return;
+    const alreadyAdded = movieCollectionIds.includes(collection.id);
+    setCollectionBusyId(collection.id);
+    setCollectionError("");
+    try {
+      if (alreadyAdded) {
+        await removeMovieFromCollection(collection.id, localMovie.id);
+        setMovieCollectionIds((current) => current.filter((id) => id !== collection.id));
+      } else {
+        await addMovieToCollection(collection.id, localMovie.id);
+        setMovieCollectionIds((current) => [...current, collection.id]);
+      }
+    } catch (cause) {
+      setCollectionError(cause instanceof Error ? cause.message : "No se pudo actualizar la colección.");
+    } finally {
+      setCollectionBusyId(null);
+    }
+  }
+
+  async function createCollectionForMovie() {
+    if (!localMovie || collectionBusyId) return;
+    setCollectionBusyId("new");
+    setCollectionError("");
+    try {
+      const created = await createCollection(newCollectionName);
+      setCollections((current) => [created, ...current]);
+      await addMovieToCollection(created.id, localMovie.id);
+      setMovieCollectionIds((current) => [...current, created.id]);
+      setNewCollectionName("");
+      setShowCreateCollection(false);
+    } catch (cause) {
+      setCollectionError(cause instanceof Error ? cause.message : "No se pudo crear la colección.");
+    } finally {
+      setCollectionBusyId(null);
+    }
+  }
+
   if (state === "unconfigured") {
     return <div className="page"><a href="#/discover" className="back-link" aria-label="Volver" onClick={(event) => { event.preventDefault(); navigateBack(); }}><ArrowLeft size={19} /></a><EmptyState icon={<Clapperboard size={26} />} title="Conecta TMDB para consultar esta película" description="Configura tu credencial desde Ajustes y vuelve a abrir la ficha." action={<a className="button button-primary" href="#/settings">Configurar TMDB</a>} /></div>;
   }
@@ -232,31 +306,12 @@ export function MovieDetailPage() {
           <section className="bottom-sheet movie-options-sheet" role="dialog" aria-modal="true" aria-labelledby="movie-options-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
-              <div><p className="eyebrow">PRISMA</p><h2 id="movie-options-title">Opciones de película</h2></div>
+              <div><p className="eyebrow">PRISMA</p><h2 id="movie-options-title">Más opciones</h2></div>
               <button className="icon-button" type="button" aria-label="Cerrar opciones" onClick={() => setMovieMenuOpen(false)}><X size={19} /></button>
             </div>
             <div className="movie-options-list">
-              <button
-                className="button button-secondary button-full"
-                type="button"
-                onClick={() => {
-                  setEditingViewing(undefined);
-                  setMovieMenuOpen(false);
-                  setViewingForm(true);
-                }}
-              >
-                <Plus size={17} /> Registrar visionado
-              </button>
-              <button
-                className="button button-secondary button-full"
-                type="button"
-                disabled={isPending || busy}
-                onClick={() => {
-                  setMovieMenuOpen(false);
-                  setPendingConfirm(true);
-                }}
-              >
-                {isPending ? "Ya está en Pendientes" : "Agregar a Pendientes"}
+              <button className="button button-secondary button-full" type="button" onClick={() => void openCollectionPicker()}>
+                <FolderPlus size={17} /> Agregar a colección
               </button>
               <button className="button button-quiet button-full" type="button" onClick={() => setMovieMenuOpen(false)}>
                 Cerrar
@@ -266,7 +321,71 @@ export function MovieDetailPage() {
         </div>
       )}
 
-        {pendingConfirm && (
+  
+      {collectionPickerOpen && (
+        <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !collectionBusyId) setCollectionPickerOpen(false);
+        }}>
+          <section className="bottom-sheet movie-collection-sheet" role="dialog" aria-modal="true" aria-labelledby="collection-picker-title">
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div><p className="eyebrow">TU CINE</p><h2 id="collection-picker-title">Agregar a colección</h2></div>
+              <button className="icon-button" type="button" aria-label="Cerrar colecciones" onClick={() => setCollectionPickerOpen(false)} disabled={Boolean(collectionBusyId)}><X size={19} /></button>
+            </div>
+            <p className="muted-copy collection-picker-movie-title">{title}</p>
+            {collectionError && <p className="form-error" role="alert">{collectionError}</p>}
+            {collectionsLoading ? (
+              <div className="detail-loading collection-picker-loading"><LoaderCircle className="spin" size={20} /><span>Cargando colecciones...</span></div>
+            ) : collections.length > 0 ? (
+              <div className="collection-picker-list">
+                {collections.map((collection) => {
+                  const added = movieCollectionIds.includes(collection.id);
+                  return (
+                    <button
+                      className={added ? "collection-picker-item is-added" : "collection-picker-item"}
+                      type="button"
+                      key={collection.id}
+                      aria-pressed={added}
+                      aria-label={(added ? "Quitar de " : "Agregar a ") + collection.name}
+                      disabled={collectionBusyId !== null}
+                      onClick={() => void toggleMovieCollection(collection)}
+                    >
+                      <Folder size={19} />
+                      <span className="collection-picker-copy"><strong>{collection.name}</strong><small>{collection.description || "Colección personal"}</small></span>
+                      <span className="collection-picker-status">{added ? <><Check size={15} /> Agregada</> : <><Plus size={15} /> Agregar</>}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="muted-copy collection-picker-empty">Todavía no tienes colecciones. Crea una para guardar esta película.</p>
+            )}
+            {showCreateCollection ? (
+              <div className="collection-create-form">
+                <input
+                  className="text-field"
+                  type="text"
+                  maxLength={60}
+                  placeholder="Nombre de la colección"
+                  aria-label="Nombre de la colección"
+                  value={newCollectionName}
+                  onChange={(event) => setNewCollectionName(event.target.value)}
+                />
+                <div className="form-actions">
+                  <button className="button button-secondary" type="button" disabled={Boolean(collectionBusyId)} onClick={() => { setShowCreateCollection(false); setNewCollectionName(""); }}>Cancelar</button>
+                  <button className="button button-primary" type="button" disabled={!newCollectionName.trim() || Boolean(collectionBusyId)} onClick={() => void createCollectionForMovie()}>{collectionBusyId === "new" ? "Guardando..." : "Crear y agregar"}</button>
+                </div>
+              </div>
+            ) : (
+              <button className="button button-secondary button-full collection-create-trigger" type="button" disabled={Boolean(collectionBusyId)} onClick={() => setShowCreateCollection(true)}>
+                <Plus size={17} /> Crear colección
+              </button>
+            )}
+          </section>
+        </div>
+      )}
+
+      {pendingConfirm && (
           <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
             if (event.target === event.currentTarget && !busy) setPendingConfirm(false);
           }}>
