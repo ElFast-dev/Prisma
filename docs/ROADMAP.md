@@ -25,6 +25,7 @@
 - [x] 10. Copias de seguridad validadas (exportación e importación local JSON).
 - [x] 11. Preparación offline y publicación de GitHub Pages (app shell, caché limitada de imágenes, estado de conexión e iconos Android).
 - [x] 12. Prueba manual en Android completada: actualización instalada, apertura en modo avión y navegación de datos guardados verificadas en el teléfono.
+- [x] 13. Migración desde respaldo Android v2: importación exclusiva de películas, fusión por TMDB, historial/calificaciones y conservación del formato nativo de Prisma.
 
 ### Criterios offline y Android
 
@@ -42,6 +43,7 @@
 - Restauración transaccional, precedida por validación y confirmación explícita.
 - Credencial TMDB excluida y preservada al restaurar.
 - Cachés regenerables excluidas del archivo.
+- Importación externa Android v2 separada de la restauración nativa; solo películas y fusión por ID TMDB.
 
 ### Criterios de Espectro
 

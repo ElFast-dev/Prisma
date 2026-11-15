@@ -9,7 +9,9 @@ import {
 } from "../../infrastructure/tmdb/settings";
 import { testTmdbConnection } from "../../infrastructure/tmdb/TmdbService";
 import { createLocalBackup, restoreLocalBackup } from "../../infrastructure/database/backupService";
+import { importExternalMovies } from "../../infrastructure/database/externalMovieImportService";
 import { parsePrismaBackup } from "../../domain/backup";
+import { parseExternalMovieImport } from "../../domain/externalMovieImport";
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
@@ -83,7 +85,7 @@ export function SettingsPage() {
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setBackupMessage("Copia creada. Guárdala en un lugar seguro; Prisma no la sube a ningún servidor.");
+      setBackupMessage("Copia Prisma creada. Guárdala en un lugar seguro; Prisma no la sube a ningún servidor.");
     } catch (cause) {
       setBackupError(cause instanceof Error ? cause.message : "No se pudo crear la copia de seguridad.");
     } finally {
@@ -124,9 +126,68 @@ export function SettingsPage() {
       }
       await restoreLocalBackup(backup);
       setRegion(backup.catalogRegion);
-      setBackupMessage("Restauración completada. Se recuperaron tus datos locales; tu credencial TMDB se conservó.");
+      setBackupMessage("Restauración Prisma completada. Tus datos locales se recuperaron y la credencial TMDB se conservó.");
     } catch (cause) {
-      setBackupError(cause instanceof Error ? cause.message : "No se pudo restaurar la copia.");
+      setBackupError(cause instanceof Error ? cause.message : "No se pudo restaurar la copia Prisma.");
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function handleImportExternalMovies(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.name.toLocaleLowerCase().endsWith(".json")) {
+      setBackupError("Selecciona el respaldo Android en formato .json.");
+      setBackupMessage("");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setBackupError("El archivo supera el tamaño máximo permitido de 50 MB.");
+      setBackupMessage("");
+      return;
+    }
+
+    setBackupBusy(true);
+    setBackupError("");
+    setBackupMessage("");
+    try {
+      const plan = parseExternalMovieImport(await file.text());
+      if (plan.movies.length === 0) {
+        throw new Error("El archivo no contiene películas con un identificador TMDB válido.");
+      }
+      const confirmed = window.confirm(
+        "Se combinarán " + plan.summary.watchedMovies + " películas de Vistas y "
+        + plan.summary.pendingMovies + " de Pendientes. Se importarán "
+        + plan.summary.matchedRatings + " calificaciones. "
+        + "Las series, episodios y listas externas se ignorarán. "
+        + "La fecha de alta del historial se usará como fecha del visionado porque el archivo no ofrece otra fecha. "
+        + "Se conservarán tu perfil, colecciones, preferencias y datos existentes; no se reemplazarán. "
+        + (plan.summary.orphanRatings
+          ? plan.summary.orphanRatings + " calificación(es) sin película importable se omitirán. "
+          : "")
+        + (plan.summary.skippedWithoutTmdb
+          ? plan.summary.skippedWithoutTmdb + " película(s) sin ID TMDB válido se omitirán. "
+          : "")
+        + "¿Continuar?"
+      );
+      if (!confirmed) {
+        setBackupMessage("Importación cancelada. No se modificaron tus datos.");
+        return;
+      }
+
+      const result = await importExternalMovies(plan);
+      setBackupMessage(
+        "Importación completada: " + plan.movies.length + " películas procesadas; "
+        + result.newCatalogMovies + " agregadas al catálogo; "
+        + result.newLibraryEntries + " agregadas a la Biblioteca; "
+        + result.viewingsAdded + " calificaciones convertidas en visionados. "
+        + result.alreadyHadViewings + " película(s) ya tenían visionados y no se duplicaron. "
+        + "Tu perfil, colecciones, preferencias y credencial TMDB se conservaron."
+      );
+    } catch (cause) {
+      setBackupError(cause instanceof Error ? cause.message : "No se pudo importar el respaldo externo.");
     } finally {
       setBackupBusy(false);
     }
@@ -209,14 +270,15 @@ export function SettingsPage() {
         <div className="settings-section-heading">
           <div className="settings-icon"><ShieldCheck size={21} /></div>
           <div>
-            <h2>Copias de seguridad</h2>
-            <p className="muted-copy">Protege tu biblioteca y tus datos personales.</p>
+            <h2>Copias de seguridad y migración</h2>
+            <p className="muted-copy">Respalda Prisma o trae solo tus películas desde otra aplicación.</p>
           </div>
         </div>
-        <p className="muted-copy">La copia incluye películas guardadas, Biblioteca, visionados, colecciones, perfil, preferencias y región del catálogo.</p>
+        <p className="muted-copy">La copia Prisma incluye películas, Biblioteca, visionados, colecciones, perfil, preferencias y región del catálogo.</p>
         <button className="button button-primary button-full" type="button" onClick={() => void handleCreateBackup()} disabled={backupBusy}>
-          <Download size={17} /> {backupBusy ? "Procesando..." : "Crear copia de seguridad"}
+          <Download size={17} /> {backupBusy ? "Procesando..." : "Crear copia de seguridad Prisma"}
         </button>
+
         <input
           className="sr-only"
           id="prisma-backup-file"
@@ -226,14 +288,36 @@ export function SettingsPage() {
           disabled={backupBusy}
         />
         <label className="button button-secondary button-full" htmlFor="prisma-backup-file" aria-disabled={backupBusy}>
-          <Upload size={17} /> Restaurar desde una copia
+          <Upload size={17} /> Restaurar copia Prisma
         </label>
+
+        <div className="settings-subsection">
+          <h3>Importar desde otra aplicación</h3>
+          <p className="muted-copy">Compatible con el respaldo Android versión 2. Solo se importan películas de Vistas, Pendientes y sus calificaciones. Las series y los episodios se ignoran.</p>
+          <input
+            className="sr-only"
+            id="external-movie-backup-file"
+            type="file"
+            accept=".json,application/json"
+            onChange={(event) => void handleImportExternalMovies(event)}
+            disabled={backupBusy}
+          />
+          <label className="button button-secondary button-full" htmlFor="external-movie-backup-file" aria-disabled={backupBusy}>
+            <Upload size={17} /> Importar películas de otra app
+          </label>
+          <ul className="settings-bullet-list">
+            <li>La importación combina los datos: no borra películas ni datos personales existentes en Prisma.</li>
+            <li>Los identificadores TMDB permiten reconocer las películas; las que ya existen no se duplican.</li>
+            <li>La fecha de alta del historial externo se utiliza como fecha del visionado.</li>
+          </ul>
+        </div>
+
         {backupMessage && <div className="connection-message is-success" role="status"><CheckCircle2 size={17} /><span>{backupMessage}</span></div>}
         {backupError && <div className="connection-message is-error" role="alert"><CircleAlert size={17} /><span>{backupError}</span></div>}
         <ul className="settings-bullet-list">
-          <li>El archivo se crea y se guarda desde este dispositivo; Prisma no lo sube a internet.</li>
-          <li>Antes de restaurar, el archivo se valida. La restauración reemplaza los datos personales locales.</li>
-          <li>La credencial TMDB se excluye de la copia y no se modifica al restaurar.</li>
+          <li>Los archivos se procesan en este dispositivo; Prisma no los sube a ningún servidor.</li>
+          <li>Restaurar una copia Prisma reemplaza los datos respaldados. Importar desde otra app, en cambio, los combina.</li>
+          <li>La credencial TMDB se excluye de las copias y no se modifica al importar o restaurar.</li>
         </ul>
       </section>
 
