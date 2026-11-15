@@ -17,13 +17,19 @@ export interface TmdbRequestOptions {
 }
 
 export class TmdbClient {
+  private readonly fetcher: typeof fetch;
+
   constructor(
     private readonly accessToken: string,
-    private readonly fetcher: typeof fetch = fetch
+    fetcher: typeof fetch = globalThis.fetch
   ) {
     if (!accessToken.trim()) {
       throw new Error("Configura tu credencial de TMDB antes de realizar consultas.");
     }
+
+    // fetch es un método del contexto global del navegador. Al guardarlo como
+    // referencia independiente pierde su receptor y puede lanzar Illegal invocation.
+    this.fetcher = fetcher.bind(globalThis);
   }
 
   async get<T>(endpoint: string, options: TmdbRequestOptions = {}): Promise<T> {
