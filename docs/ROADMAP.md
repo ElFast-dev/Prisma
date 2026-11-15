@@ -33,6 +33,10 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
 ## Próximas etapas acordadas
 
 - [ ] 15. Evolución de Personal.
+  - [x] 15.1 Biblioteca: búsqueda por título oficial/original, director y género; filtros combinables por estado, favorito, género y año; ordenación por incorporación, título y año; conteos y limpieza de filtros.
+  - [ ] 15.2 Historial: consulta y navegación de experiencias con filtros.
+  - [ ] 15.3 Colecciones: organización y gestión mejoradas.
+  - [ ] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
 - [ ] 16. Espectro 2.0.
 - [ ] 17. Optimización integral.
 

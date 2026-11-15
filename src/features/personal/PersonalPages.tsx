@@ -28,6 +28,7 @@ import { toLocalDateString } from "../../domain/viewingRules";
 import type { PersonalStats } from "../../domain/statistics";
 import { calculateAchievements, type AchievementIcon } from "../../domain/achievements";
 import { getLocalProfile, saveLocalProfile } from "../../infrastructure/database/profileService";
+import { filterLibraryItems, getLibraryFacets, type LibrarySort } from "../../domain/libraryBrowse";
 
 function PageBack({ title, eyebrow = "PERSONAL", backHref = "#/personal" }: { title: string; eyebrow?: string; backHref?: string }) {
   return (
@@ -110,6 +111,9 @@ export function LibraryPage() {
   const [filter, setFilter] = useState<LibraryFilter>("all");
   const [view, setView] = useState<LibraryView>("grid");
   const [query, setQuery] = useState("");
+  const [genre, setGenre] = useState("");
+  const [year, setYear] = useState("");
+  const [sort, setSort] = useState<LibrarySort>("added-desc");
   const [items, setItems] = useState<LibraryItem[]>([]);
 
   useEffect(() => {
@@ -118,12 +122,29 @@ export function LibraryPage() {
     return () => { active = false; };
   }, []);
 
-  const visible = useMemo(() => items.filter(({ movie, entry }) => {
-    const matchesFilter = filter === "all"
-      || (filter === "favorites" ? entry.isFavorite : entry.status === filter);
-    const matchesQuery = movie.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
-    return matchesFilter && matchesQuery;
-  }), [items, filter, query]);
+  const facets = useMemo(() => getLibraryFacets(items), [items]);
+  const counts = useMemo(() => ({
+    all: items.length,
+    watched: items.filter(({ entry }) => entry.status === "watched").length,
+    pending: items.filter(({ entry }) => entry.status === "pending").length,
+    favorites: items.filter(({ entry }) => entry.isFavorite).length
+  }), [items]);
+  const visible = useMemo(() => filterLibraryItems(items, {
+    status: filter,
+    query,
+    genre,
+    year,
+    sort
+  }), [items, filter, query, genre, year, sort]);
+  const hasActiveFilters = filter !== "all" || Boolean(query.trim()) || Boolean(genre) || Boolean(year) || sort !== "added-desc";
+
+  function clearLibraryFilters() {
+    setFilter("all");
+    setQuery("");
+    setGenre("");
+    setYear("");
+    setSort("added-desc");
+  }
 
   function imageUrl(movie: MovieRecord) {
     return getTmdbImageUrl("https://image.tmdb.org/t/p/", movie.posterPath, "w342");
@@ -132,24 +153,56 @@ export function LibraryPage() {
   return (
     <div className="page">
       <PageBack title="Biblioteca" />
-      <div className="library-filter-row" role="group" aria-label="Filtrar biblioteca">
-        {filters.map((item) => <button className={filter === item.id ? "filter-chip is-selected" : "filter-chip"} key={item.id} onClick={() => setFilter(item.id)} aria-pressed={filter === item.id}>{item.label}</button>)}
+      <div className="library-filter-row" role="group" aria-label="Filtrar biblioteca por estado">
+        {filters.map((item) => <button className={filter === item.id ? "filter-chip is-selected" : "filter-chip"} key={item.id} onClick={() => setFilter(item.id)} aria-pressed={filter === item.id}>
+          {item.label}<span className="filter-chip-count">{counts[item.id]}</span>
+        </button>)}
       </div>
       <div className="library-tools">
-        <div className="inline-search"><Search size={17} /><input type="search" placeholder="Buscar en mi biblioteca..." aria-label="Buscar en mi biblioteca" value={query} onChange={(event) => setQuery(event.target.value)} /></div>
+        <label className="inline-search"><Search size={17} /><input type="search" placeholder="Título, título original, director o género..." aria-label="Buscar en mi biblioteca" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <div className="view-toggle" role="group" aria-label="Modo de presentación">
           <button className={view === "grid" ? "view-toggle-button is-active" : "view-toggle-button"} onClick={() => setView("grid")} aria-label="Vista de cuadrícula" aria-pressed={view === "grid"}><Grid2X2 size={18} /></button>
           <button className={view === "list" ? "view-toggle-button is-active" : "view-toggle-button"} onClick={() => setView("list")} aria-label="Vista de lista" aria-pressed={view === "list"}><List size={19} /></button>
         </div>
       </div>
-      <div className="content-caption"><h2>{filters.find((item) => item.id === filter)?.label}</h2><span className="muted-copy">{visible.length} películas</span></div>
+      <div className="library-refinement-grid" aria-label="Filtros avanzados de biblioteca">
+        <label className="library-refinement-field" htmlFor="library-genre">
+          <span>Género</span>
+          <select id="library-genre" className="library-refinement-select" value={genre} onChange={(event) => setGenre(event.target.value)}>
+            <option value="">Todos los géneros</option>
+            {facets.genres.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </label>
+        <label className="library-refinement-field" htmlFor="library-year">
+          <span>Año de estreno</span>
+          <select id="library-year" className="library-refinement-select" value={year} onChange={(event) => setYear(event.target.value)}>
+            <option value="">Todos los años</option>
+            {facets.years.map((item) => <option key={item} value={String(item)}>{item}</option>)}
+          </select>
+        </label>
+        <label className="library-refinement-field library-refinement-field-sort" htmlFor="library-sort">
+          <span>Ordenar por</span>
+          <select id="library-sort" className="library-refinement-select" value={sort} onChange={(event) => setSort(event.target.value as LibrarySort)}>
+            <option value="added-desc">Añadidas recientemente</option>
+            <option value="title-asc">Título: A–Z</option>
+            <option value="year-desc">Año: más reciente</option>
+            <option value="year-asc">Año: más antiguo</option>
+          </select>
+        </label>
+      </div>
+      <div className="content-caption">
+        <div><h2>{filters.find((item) => item.id === filter)?.label}</h2><span className="muted-copy">{visible.length} de {items.length} películas</span></div>
+        {hasActiveFilters && <button className="library-clear-filters" type="button" onClick={clearLibraryFilters}>Limpiar filtros</button>}
+      </div>
 
       {visible.length === 0 ? (
         <EmptyState
           icon={view === "grid" ? <Grid2X2 size={25} /> : <List size={25} />}
-          title={items.length ? "No hay películas en esta categoría" : "Tu biblioteca está esperando sus primeras películas"}
-          description={items.length ? "Prueba otra categoría o cambia la búsqueda." : "Añade películas desde Descubrir. Aquí podrás organizarlas como vistas, pendientes o favoritas."}
-          action={<a className="button button-primary" href="#/discover">Descubrir películas</a>}
+          title={items.length ? "No hay películas con estos filtros" : "Tu biblioteca está esperando sus primeras películas"}
+          description={items.length ? "Prueba otra combinación de búsqueda, género o año." : "Añade películas desde Descubrir. Aquí podrás organizarlas como vistas, pendientes o favoritas."}
+          action={items.length
+            ? <button className="button button-secondary" type="button" onClick={clearLibraryFilters}>Limpiar filtros</button>
+            : <a className="button button-primary" href="#/discover">Descubrir películas</a>}
         />
       ) : view === "grid" ? (
         <div className="library-poster-grid">
