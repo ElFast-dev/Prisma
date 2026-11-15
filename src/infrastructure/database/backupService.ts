@@ -30,17 +30,19 @@ export async function restoreLocalBackup(backup: PrismaBackup): Promise<void> {
 
   await prismaDb.transaction(
     "rw",
-    prismaDb.movies,
-    prismaDb.libraryEntries,
-    prismaDb.viewings,
-    prismaDb.collections,
-    prismaDb.collectionMovies,
-    prismaDb.profile,
-    prismaDb.preferences,
-    prismaDb.catalogCache,
-    prismaDb.availabilityCache,
-    prismaDb.peopleCache,
-    prismaDb.spectroSnapshots,
+    [
+      prismaDb.movies,
+      prismaDb.libraryEntries,
+      prismaDb.viewings,
+      prismaDb.collections,
+      prismaDb.collectionMovies,
+      prismaDb.profile,
+      prismaDb.preferences,
+      prismaDb.catalogCache,
+      prismaDb.availabilityCache,
+      prismaDb.peopleCache,
+      prismaDb.spectroSnapshots
+    ],
     async () => {
       await Promise.all([
         prismaDb.movies.clear(),
