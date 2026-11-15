@@ -191,6 +191,7 @@ export function MovieDetailPage() {
   const isPending = entry?.status === "pending";
   const isWatched = entry?.status === "watched";
   const hasWatchProviders = Boolean(bundle.watchProviders?.flatrate?.length || bundle.watchProviders?.rent?.length || bundle.watchProviders?.buy?.length);
+  const providersLink = bundle.watchProviders?.link;
 
   return (
     <div className="movie-detail-page">
@@ -333,7 +334,7 @@ export function MovieDetailPage() {
                   </div>
                 );
               })}
-              {bundle.watchProviders.link && <a className="text-link provider-source-link" href={bundle.watchProviders.link} target="_blank" rel="noreferrer">Consultar opciones <ExternalLink size={14} /></a>}
+              {providersLink && <a className="text-link provider-source-link" href={providersLink} target="_blank" rel="noreferrer">Consultar opciones <ExternalLink size={14} /></a>}
             </div>
           ) : (
             <p className="muted-copy">No hay información de disponibilidad para esta región en el catálogo.</p>
