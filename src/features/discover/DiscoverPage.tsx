@@ -42,7 +42,7 @@ export function DiscoverPage() {
     try {
       const [feed, imageConfig] = await Promise.all([
         searchText.trim() ? searchMovies(token, searchText, 1) : getTrendingMovies(token, 1),
-        getImageConfiguration(token)
+        getImageConfiguration(token).catch(() => ({ secure_base_url: "https://image.tmdb.org/t/p/", poster_sizes: [], backdrop_sizes: [], profile_sizes: [] }))
       ]);
       if (currentRequest !== requestId.current) return;
       setMovies(feed.movies);

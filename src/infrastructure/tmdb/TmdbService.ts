@@ -87,7 +87,7 @@ async function getCached<T>(
   token: string,
   cacheKey: string,
   endpoint: string,
-  params: Record<string, string | number | undefined> = {}
+  params: Record<string, string | number | boolean | undefined> = {}
 ): Promise<{ data: T; fetchedAt: string; stale: boolean }> {
   const cached = await prismaDb.catalogCache.get(cacheKey);
   const api = client(token);
@@ -177,23 +177,28 @@ export async function getMovieBundle(token: string, tmdbId: number, region: stri
   ]);
 
   if (details.status === "rejected") throw details.reason;
-  if (credits.status === "rejected") throw credits.reason;
-  if (recommendations.status === "rejected") throw recommendations.reason;
 
   const staleResources: string[] = [];
   if (details.value.stale) staleResources.push("details");
-  if (credits.value.stale) staleResources.push("credits");
-  if (recommendations.value.stale) staleResources.push("recommendations");
+  if (credits.status === "fulfilled" && credits.value.stale) staleResources.push("credits");
+  else if (credits.status === "rejected") staleResources.push("credits");
+  if (recommendations.status === "fulfilled" && recommendations.value.stale) staleResources.push("recommendations");
+  else if (recommendations.status === "rejected") staleResources.push("recommendations");
   if (providers.status === "fulfilled" && providers.value.stale) staleResources.push("providers");
+  else if (providers.status === "rejected") staleResources.push("providers");
 
   const watchProviders = providers.status === "fulfilled"
     ? providers.value.data.results?.[region]
     : undefined;
+  const safeCredits = credits.status === "fulfilled" ? credits.value.data : { cast: [], crew: [] };
+  const safeRecommendations = recommendations.status === "fulfilled"
+    ? recommendations.value.data.results ?? []
+    : [];
 
   return {
     details: details.value.data,
-    credits: credits.value.data,
-    recommendations: recommendations.value.data.results ?? [],
+    credits: safeCredits,
+    recommendations: safeRecommendations,
     watchProviders,
     watchFetchedAt: providers.status === "fulfilled" ? providers.value.fetchedAt : "",
     staleResources

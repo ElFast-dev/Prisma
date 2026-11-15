@@ -36,13 +36,25 @@ export function validateViewingDraft(draft: ViewingDraft, now = new Date()): Vie
   if (!Number.isInteger(draft.rating) || draft.rating < 1 || draft.rating > 10) {
     throw new Error("La calificación debe ser un número entero entre 1 y 10.");
   }
-  if (draft.watchedAtLocalTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(draft.watchedAtLocalTime)) {
-    throw new Error("La hora debe utilizar el formato HH:mm.");
+
+  const normalizedTime = draft.watchedAtLocalTime?.trim() || undefined;
+  if (normalizedTime) {
+    const parts = normalizedTime.split(":");
+    const validHour = parts.length === 2 && /^[0-9]{2}$/.test(parts[0]) && Number(parts[0]) <= 23;
+    const validMinute = parts.length === 2 && /^[0-9]{2}$/.test(parts[1]) && Number(parts[1]) <= 59;
+    if (!validHour || !validMinute) {
+      throw new Error("La hora debe utilizar el formato HH:mm.");
+    }
   }
   if (draft.review && draft.review.length > 10000) {
     throw new Error("El comentario no puede superar los 10 000 caracteres.");
   }
-  return { ...draft, review: draft.review?.trim() || undefined };
+
+  return {
+    ...draft,
+    watchedAtLocalTime: normalizedTime,
+    review: draft.review?.trim() || undefined
+  };
 }
 
 export function getNextViewingNumber(lastIssuedSequence: number): number {

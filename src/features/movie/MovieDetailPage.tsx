@@ -100,7 +100,7 @@ export function MovieDetailPage() {
       try {
         const [data, imageConfig] = await Promise.all([
           getMovieBundle(token, tmdbId, region),
-          getImageConfiguration(token)
+          getImageConfiguration(token).catch(() => ({ secure_base_url: "https://image.tmdb.org/t/p/", poster_sizes: [], backdrop_sizes: [], profile_sizes: [] }))
         ]);
         if (!active) return;
         const saved = await saveTmdbMovie(data.details);

@@ -34,9 +34,9 @@ export function ViewingForm({ movieId, movieTitle, nextNumber, initialViewing, o
       const values = {
         watchedOn: date,
         rating,
-        watchedAtLocalTime: time || undefined,
+        watchedAtLocalTime: time,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        review: review.trim() || undefined
+        review: review.trim()
       };
       if (initialViewing) {
         await updateViewing(initialViewing.id, values);

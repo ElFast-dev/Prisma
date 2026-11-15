@@ -144,9 +144,9 @@ export async function updateViewing(
       movieId: current.movieId,
       watchedOn: changes.watchedOn,
       rating: changes.rating,
-      watchedAtLocalTime: changes.watchedAtLocalTime ?? current.watchedAtLocalTime,
+      watchedAtLocalTime: changes.watchedAtLocalTime !== undefined ? changes.watchedAtLocalTime : current.watchedAtLocalTime,
       timeZone: changes.timeZone ?? current.timeZone,
-      review: changes.review ?? current.review
+      review: changes.review !== undefined ? changes.review : current.review
     });
 
     await prismaDb.viewings.update(viewingId, {
