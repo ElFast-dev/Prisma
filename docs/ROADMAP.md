@@ -24,7 +24,7 @@
 - [x] 9. Espectro por versiones (v1.0 local, afinidades, evolución y candidatas explicadas).
 - [x] 10. Copias de seguridad validadas (exportación e importación local JSON).
 - [x] 11. Preparación offline y publicación de GitHub Pages (app shell, caché limitada de imágenes, estado de conexión e iconos Android).
-- [ ] 12. Prueba manual en Android: actualización instalada, apertura en modo avión y navegación de datos guardados.
+- [x] 12. Prueba manual en Android completada: actualización instalada, apertura en modo avión y navegación de datos guardados verificadas en el teléfono.
 
 ### Criterios offline y Android
 
