@@ -9,6 +9,7 @@ export interface MovieRecord {
   releaseDate?: string;
   releaseYear?: number;
   runtimeMinutes?: number;
+  voteAverage?: number;
   status?: string;
   genres: string[];
   genreIds?: number[];
@@ -71,13 +72,27 @@ export interface LocalProfile {
   updatedAt: string;
 }
 
+export type LibrarySort =
+  | "title"
+  | "rating"
+  | "my-rating"
+  | "runtime"
+  | "release-date"
+  | "added"
+  | "random";
+
+export type LibrarySortDirection = "asc" | "desc";
+
 export interface LibraryBrowsePreferences {
   status: "all" | "watched" | "pending" | "favorites";
+  releaseStatus: "all" | "upcoming" | "released";
   query: string;
   genre: string;
   yearFrom: string;
   yearTo: string;
-  sort: "added-desc" | "title-asc" | "year-desc" | "year-asc";
+  sort: LibrarySort;
+  sortDirection: LibrarySortDirection;
+  shuffleSeed: number;
 }
 
 export interface UserPreferences {

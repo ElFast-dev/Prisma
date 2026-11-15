@@ -58,12 +58,16 @@ describe("persistencia local de preferencias de Biblioteca", () => {
 
   it("conserva filtros y orden al volver a leer las preferencias", async () => {
     const filters = {
+      ...DEFAULT_LIBRARY_FILTERS,
       status: "pending" as const,
+      releaseStatus: "upcoming" as const,
       query: "The Thing",
       genre: "Ciencia ficción",
       yearFrom: "1980",
       yearTo: "1990",
-      sort: "year-asc" as const
+      sort: "release-date" as const,
+      sortDirection: "asc" as const,
+      shuffleSeed: 42
     };
 
     await saveLibraryBrowseFilters(filters);

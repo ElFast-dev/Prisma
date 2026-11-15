@@ -22,6 +22,7 @@ export async function saveTmdbMovie(movie: TmdbMovieSummary | TmdbMovieDetails, 
     releaseDate: movie.release_date,
     releaseYear: dateYear(movie.release_date),
     runtimeMinutes: details.runtime ?? current?.runtimeMinutes,
+    voteAverage: movie.vote_average ?? current?.voteAverage,
     status: details.status ?? current?.status,
     genres: details.genres?.map((genre) => genre.name) ?? current?.genres ?? [],
     genreIds: details.genres?.map((genre) => genre.id) ?? movie.genre_ids ?? current?.genreIds ?? [],
@@ -50,11 +51,19 @@ export async function getMovieByLocalId(movieId: string): Promise<MovieRecord | 
 
 export async function getLibraryMovies(): Promise<{ movie: MovieRecord; entry: LibraryEntry }[]> {
   const entries = await prismaDb.libraryEntries.orderBy("addedAt").reverse().toArray();
-  const results = await Promise.all(entries.map(async (entry) => {
-    const movie = await prismaDb.movies.get(entry.movieId);
-    return movie ? { movie, entry } : undefined;
-  }));
-  return results.filter((value): value is { movie: MovieRecord; entry: LibraryEntry } => Boolean(value));
+  const movies = await prismaDb.movies.bulkGet(entries.map((entry) => entry.movieId));
+  const detailKeys = movies.map((movie) => movie ? "movie:details:" + movie.tmdbId : "");
+  const cachedDetails = await prismaDb.catalogCache.bulkGet(detailKeys);
+
+  return entries.flatMap((entry, index) => {
+    const movie = movies[index];
+    if (!movie) return [];
+
+    const cachedPayload = cachedDetails[index]?.payload as { vote_average?: number } | undefined;
+    const voteAverage = movie.voteAverage ?? cachedPayload?.vote_average;
+    const hydratedMovie = voteAverage === undefined ? movie : { ...movie, voteAverage };
+    return [{ movie: hydratedMovie, entry }];
+  });
 }
 
 export async function addToPending(movieId: string): Promise<void> {

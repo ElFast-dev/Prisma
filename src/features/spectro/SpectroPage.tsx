@@ -8,6 +8,7 @@ import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { getSpectroAnalysis } from "../../infrastructure/database/spectroRepository";
 import { getTmdbImageUrl } from "../../infrastructure/tmdb/TmdbService";
 import type { SpectroAffinity, SpectroAnalysis } from "../../domain/spectro";
+import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -99,7 +100,10 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
                     <MoviePosterCard
                       title={item.movie.title}
                       imageUrl={getTmdbImageUrl("https://image.tmdb.org/t/p/", item.movie.posterPath, "w342")}
-                      onClick={() => { window.location.hash = "#/movie/" + item.movie.tmdbId; }}
+                      onClick={() => {
+                        saveCurrentRouteScrollPosition();
+                        window.location.hash = "#/movie/" + item.movie.tmdbId;
+                      }}
                     />
                     <div className="spectro-recommendation-copy">
                       <strong>{item.movie.title}</strong>

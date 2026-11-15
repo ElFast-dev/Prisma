@@ -3,10 +3,13 @@ import type { LibraryBrowsePreferences, LibraryEntry, MovieRecord } from "./type
 export type LibraryStatusFilter = LibraryBrowsePreferences["status"];
 export type LibrarySort = LibraryBrowsePreferences["sort"];
 export type LibraryBrowseOptions = LibraryBrowsePreferences;
+export type MovieReleaseStatus = "upcoming" | "released";
 
 export interface LibraryBrowseItem {
   movie: MovieRecord;
   entry: LibraryEntry;
+  /** Promedio de las calificaciones personales de todos sus visionados. */
+  userRating?: number;
 }
 
 export interface LibraryFacets {
@@ -14,11 +17,28 @@ export interface LibraryFacets {
   years: number[];
 }
 
+const UPCOMING_TMDB_STATUSES = new Set(["Planned", "Rumored", "In Production", "Post Production"]);
+
 function normalizeSearchText(value: string | undefined): string {
   return (value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("es");
+}
+
+export function getMovieReleaseStatus(
+  movie: MovieRecord,
+  today = new Date().toISOString().slice(0, 10)
+): MovieReleaseStatus | null {
+  const tmdbStatus = movie.status?.trim();
+
+  if (tmdbStatus === "Canceled") return null;
+  if (tmdbStatus === "Released") return "released";
+  if (tmdbStatus && UPCOMING_TMDB_STATUSES.has(tmdbStatus)) return "upcoming";
+
+  const releaseDate = movie.releaseDate;
+  if (!releaseDate || !/^\d{4}-\d{2}-\d{2}$/.test(releaseDate)) return null;
+  return releaseDate > today ? "upcoming" : "released";
 }
 
 function compareTitles(left: LibraryBrowseItem, right: LibraryBrowseItem): number {
@@ -28,38 +48,65 @@ function compareTitles(left: LibraryBrowseItem, right: LibraryBrowseItem): numbe
   });
 }
 
-function compareReleaseYears(
-  left: LibraryBrowseItem,
-  right: LibraryBrowseItem,
+function compareOptionalNumber(
+  left: number | undefined,
+  right: number | undefined,
   direction: "asc" | "desc"
 ): number {
-  const leftYear = left.movie.releaseYear;
-  const rightYear = right.movie.releaseYear;
+  if (left === undefined && right === undefined) return 0;
+  if (left === undefined) return 1;
+  if (right === undefined) return -1;
+  return (left - right) * (direction === "asc" ? 1 : -1);
+}
 
-  if (leftYear === undefined && rightYear === undefined) return compareTitles(left, right);
-  if (leftYear === undefined) return 1;
-  if (rightYear === undefined) return -1;
+function compareOptionalDate(
+  left: string | undefined,
+  right: string | undefined,
+  direction: "asc" | "desc"
+): number {
+  if (!left && !right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+  const comparison = left.localeCompare(right);
+  return direction === "asc" ? comparison : -comparison;
+}
 
-  const yearDifference = direction === "desc"
-    ? rightYear - leftYear
-    : leftYear - rightYear;
+function createSeededRandom(seed: number): () => number {
+  let value = seed >>> 0;
+  return () => {
+    value += 0x6D2B79F5;
+    let result = value;
+    result = Math.imul(result ^ (result >>> 15), result | 1);
+    result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
+    return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
-  return yearDifference || compareTitles(left, right);
+function shuffleWithSeed<T>(items: T[], seed: number): T[] {
+  const result = [...items];
+  const random = createSeededRandom(seed);
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(random() * (index + 1));
+    [result[index], result[target]] = [result[target], result[index]];
+  }
+  return result;
 }
 
 export function filterLibraryItems(
   items: readonly LibraryBrowseItem[],
-  options: LibraryBrowseOptions
+  options: LibraryBrowseOptions,
+  today = new Date().toISOString().slice(0, 10)
 ): LibraryBrowseItem[] {
   const query = normalizeSearchText(options.query.trim());
   const selectedGenre = normalizeSearchText(options.genre);
-  const minimumYear = options.yearFrom ? Number(options.yearFrom) : undefined;
-  const maximumYear = options.yearTo ? Number(options.yearTo) : undefined;
 
   const filtered = items.filter(({ movie, entry }) => {
-    const matchesStatus = options.status === "all"
+    const matchesLibraryStatus = options.status === "all"
       || (options.status === "favorites" ? entry.isFavorite : entry.status === options.status);
-    if (!matchesStatus) return false;
+    if (!matchesLibraryStatus) return false;
+
+    if (options.releaseStatus !== "all"
+      && getMovieReleaseStatus(movie, today) !== options.releaseStatus) return false;
 
     const searchableText = normalizeSearchText([
       movie.title,
@@ -73,6 +120,8 @@ export function filterLibraryItems(
       return false;
     }
 
+    const minimumYear = options.yearFrom ? Number(options.yearFrom) : undefined;
+    const maximumYear = options.yearTo ? Number(options.yearTo) : undefined;
     if (minimumYear !== undefined && (movie.releaseYear === undefined || movie.releaseYear < minimumYear)) {
       return false;
     }
@@ -82,18 +131,40 @@ export function filterLibraryItems(
     return true;
   });
 
+  if (options.sort === "random") return shuffleWithSeed(filtered, options.shuffleSeed);
+
+  const direction = options.sortDirection;
   return filtered.sort((left, right) => {
+    let result = 0;
     switch (options.sort) {
-      case "title-asc":
-        return compareTitles(left, right);
-      case "year-desc":
-        return compareReleaseYears(left, right, "desc");
-      case "year-asc":
-        return compareReleaseYears(left, right, "asc");
-      case "added-desc":
+      case "title":
+        result = compareTitles(left, right) * (direction === "asc" ? 1 : -1);
+        break;
+      case "rating":
+        result = compareOptionalNumber(
+          left.movie.voteAverage && left.movie.voteAverage > 0 ? left.movie.voteAverage : undefined,
+          right.movie.voteAverage && right.movie.voteAverage > 0 ? right.movie.voteAverage : undefined,
+          direction
+        );
+        break;
+      case "my-rating":
+        result = compareOptionalNumber(left.userRating, right.userRating, direction);
+        break;
+      case "runtime":
+        result = compareOptionalNumber(left.movie.runtimeMinutes, right.movie.runtimeMinutes, direction);
+        break;
+      case "release-date":
+        result = compareOptionalDate(left.movie.releaseDate, right.movie.releaseDate, direction);
+        break;
+      case "added":
       default:
-        return right.entry.addedAt.localeCompare(left.entry.addedAt) || compareTitles(left, right);
+        result = direction === "asc"
+          ? left.entry.addedAt.localeCompare(right.entry.addedAt)
+          : right.entry.addedAt.localeCompare(left.entry.addedAt);
+        break;
     }
+
+    return result || compareTitles(left, right);
   });
 }
 

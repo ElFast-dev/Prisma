@@ -33,7 +33,7 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
 ## Próximas etapas acordadas
 
 - [ ] 15. Evolución de Personal.
-  - [x] 15.1 Biblioteca: búsqueda local por título oficial/original y director; filtros combinables por estado, género y rango de años; ordenación persistente; filtros y presentación conservados en Dexie; barra contextual compartida con Descubrir; navegación secundaria con retorno. Validado con 66 pruebas, TypeScript y compilación de producción.
+  - [x] 15.1 Biblioteca: búsqueda local por título oficial/original y director; filtros por estado personal, Próximamente/Estrenada, género y rango de años; orden por título, valoración TMDB, valoración personal, duración, estreno, incorporación y aleatorio con dirección reversible; preferencias persistentes en Dexie; barra contextual compartida con Descubrir; Ajustes como pantalla completa; restauración de scroll al regresar de fichas.
   - [ ] 15.2 Historial: consulta y navegación de experiencias con filtros.
   - [ ] 15.3 Colecciones: organización y gestión mejoradas.
   - [ ] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
