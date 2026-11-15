@@ -34,7 +34,7 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
 
 - [ ] 15. Evolución de Personal.
   - [x] 15.1 Biblioteca: búsqueda local por título oficial/original y director; filtros por estado personal, Próximamente/Estrenada, género y rango de años; orden por título, valoración TMDB, valoración personal, duración, estreno, incorporación y aleatorio con dirección reversible; preferencias persistentes en Dexie; barra contextual compartida con Descubrir; Ajustes como pantalla completa; restauración de scroll al regresar de fichas.
-  - [ ] 15.2 Historial: cronología global agrupada por mes, calendario mensual, búsqueda local por título oficial/original, director, género y comentario; filtros combinables por notas, calificación y fechas; orden cronológico reversible; acceso a fichas y edición/eliminación individual; conservación de revisionados y secuencias.
+  - [x] 15.2 Historial: cronología global agrupada por mes, calendario mensual, búsqueda local por título oficial/original, director, género y comentario; filtros combinables por notas, calificación y fechas; orden cronológico reversible; acceso a fichas y edición/eliminación individual; conservación de revisionados y secuencias (CI aprobada: 86 pruebas; compilación y despliegue de Pages correctos).
   - [ ] 15.3 Colecciones: organización y gestión mejoradas.
   - [ ] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
 - [ ] 16. Espectro 2.0.
@@ -43,6 +43,7 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
 Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
 
 ### Criterios offline y Android
+- La etapa 15.2 está publicada y pasó CI; queda pendiente la comprobación manual de su presentación y navegación en un dispositivo Android físico.
 
 - La aplicación y sus recursos esenciales se precargan para abrir su shell sin red.
 - Las imágenes TMDB se guardan en caché con límites para cuidar el almacenamiento.
