@@ -87,7 +87,6 @@ export function parseExternalMovieImport(content: string): ExternalMovieImportPl
   const ratingsByTraktId = new Map(source.rM.map((rating) => [rating.id, rating]));
   const importedHistory = source.cH.filter((movie) => movie.tmId > 0);
   const importedPending = source.cW.filter((movie) => movie.tmId > 0);
-  const validHistoryIds = new Set(importedHistory.map((movie) => movie.id));
   const items: ExternalMovieImportItem[] = [];
 
   for (const movie of importedHistory) {
