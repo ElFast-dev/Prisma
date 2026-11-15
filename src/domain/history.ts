@@ -50,7 +50,8 @@ export function sortHistoryItems(
     let result = right.viewing.watchedOn.localeCompare(left.viewing.watchedOn);
 
     if (!result) {
-      const sameTimeZone = (left.viewing.timeZone ?? "") === (right.viewing.timeZone ?? "");
+      const sameTimeZone = Boolean(left.viewing.timeZone)
+        && left.viewing.timeZone === right.viewing.timeZone;
       const leftTime = left.viewing.watchedAtLocalTime;
       const rightTime = right.viewing.watchedAtLocalTime;
 

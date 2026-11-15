@@ -119,6 +119,38 @@ describe("Historial cinematográfico", () => {
       .toEqual(["view-a", "view-b"]);
   });
 
+
+  it("no compara horas locales si falta la zona horaria o si las zonas son distintas", () => {
+    const items = [
+      {
+        viewing: viewing("view-panama", "movie-1", 2, "2025-05-10", {
+          watchedAtLocalTime: "20:15",
+          timeZone: "America/Panama",
+          createdAt: "2025-05-10T23:00:00.000Z"
+        }),
+        movie: movies[0]
+      },
+      {
+        viewing: viewing("view-other-zone", "movie-2", 1, "2025-05-10", {
+          watchedAtLocalTime: "21:30",
+          timeZone: "America/Los_Angeles",
+          createdAt: "2025-05-10T22:00:00.000Z"
+        }),
+        movie: movies[1]
+      }
+    ];
+
+    expect(sortHistoryItems(items).map((item) => item.viewing.id))
+      .toEqual(["view-panama", "view-other-zone"]);
+
+    const withoutTimeZone = items.map((item) => ({
+      ...item,
+      viewing: { ...item.viewing, timeZone: undefined }
+    }));
+    expect(sortHistoryItems(withoutTimeZone).map((item) => item.viewing.id))
+      .toEqual(["view-panama", "view-other-zone"]);
+  });
+
   it("busca títulos, títulos originales, directores, géneros y comentarios sin distinguir acentos", () => {
     const items = buildHistoryItems([
       viewing("view-1", "movie-1", 1, "2024-02-01", { review: "Una película cálida" }),
