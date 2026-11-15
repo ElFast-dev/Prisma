@@ -22,6 +22,7 @@ import type { Collection, LibraryEntry } from "../../domain/types";
 import { moveMovieToPending, undoMoveToPending, type LibraryStatusUndoToken } from "../../infrastructure/database/viewingService";
 import { prismaDb } from "../../infrastructure/database/database";
 import { navigateBack } from "../../navigation/routeHistory";
+import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 
 type CrewTab = "Dirección" | "Escritores" | "Música";
 type PageState = "loading" | "ready" | "error" | "unconfigured";
@@ -515,7 +516,10 @@ export function MovieDetailPage() {
                 key={item.id}
                 title={item.title}
                 imageUrl={getTmdbImageUrl(imageBase, item.poster_path, "w342")}
-                onClick={() => { window.location.hash = "#/movie/" + item.id; }}
+                onClick={() => {
+                  saveCurrentRouteScrollPosition();
+                  window.location.hash = "#/movie/" + item.id;
+                }}
               />
             ))}
           </div>

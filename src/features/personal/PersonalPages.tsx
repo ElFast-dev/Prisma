@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
-  ArrowLeft, Clock3, Folders, Grid2X2, Library, List,
+  ArrowLeft, ArrowDown, ArrowUp, Clock3, Folders, Grid2X2, Library, List,
   UserRound, ChevronRight, Plus, Star, Heart, CalendarDays,
   ChevronLeft, Trash2, Pencil, X, Award, Flame, ImagePlus,
   Film, Clapperboard, Clock3 as AchievementClock,
   SlidersHorizontal
 } from "lucide-react";
-import type { Collection, LocalProfile, MovieRecord, LibraryEntry, Viewing } from "../../domain/types";
+import type { Collection, LocalProfile, MovieRecord, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { ViewingForm } from "../../components/ViewingForm";
@@ -29,11 +29,12 @@ import { toLocalDateString } from "../../domain/viewingRules";
 import type { PersonalStats } from "../../domain/statistics";
 import { calculateAchievements, type AchievementIcon } from "../../domain/achievements";
 import { getLocalProfile, saveLocalProfile } from "../../infrastructure/database/profileService";
-import { filterLibraryItems, getLibraryFacets, type LibraryBrowseOptions } from "../../domain/libraryBrowse";
-import { DEFAULT_LIBRARY_FILTERS, normalizeLibraryFilters } from "../../domain/libraryPreferences";
-import { getUserPreferences, saveLibraryBrowseFilters, saveLibraryView } from "../../infrastructure/database/preferencesService";
+import { filterLibraryItems, getLibraryFacets, getMovieReleaseStatus, type LibraryBrowseItem, type LibraryBrowseOptions, type LibrarySort } from "../../domain/libraryBrowse";
+import { DEFAULT_LIBRARY_FILTERS, normalizeLibraryFilters, selectLibrarySort } from "../../domain/libraryPreferences";
+import { getUserPreferences, saveLibraryBrowseFilters } from "../../infrastructure/database/preferencesService";
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { navigateBack } from "../../navigation/routeHistory";
+import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 
 function PageBack({ title, eyebrow = "PERSONAL", backHref = "#/personal" }: { title: string; eyebrow?: string; backHref?: string }) {
   const fallback = backHref.replace(/^#/, "") || "/personal";
@@ -106,29 +107,82 @@ export function PersonalPage() {
 }
 
 type LibraryView = "grid" | "list";
-type LibraryItem = { movie: MovieRecord; entry: LibraryEntry };
-const filters: { id: LibraryBrowseOptions["status"]; label: string }[] = [
+type LibraryItem = LibraryBrowseItem;
+
+const libraryStatusOptions: { id: LibraryBrowseOptions["status"]; label: string }[] = [
   { id: "all", label: "Todas" },
   { id: "watched", label: "Vistas" },
   { id: "pending", label: "Pendientes" },
   { id: "favorites", label: "Favoritas" }
 ];
 
+const releaseStatusOptions: { id: LibraryBrowseOptions["releaseStatus"]; label: string }[] = [
+  { id: "all", label: "Todas" },
+  { id: "upcoming", label: "Próximamente" },
+  { id: "released", label: "Estrenada" }
+];
+
+const sortOptions: { id: LibrarySort; label: string }[] = [
+  { id: "title", label: "Título" },
+  { id: "rating", label: "Mejor valorados" },
+  { id: "my-rating", label: "Mi valoración" },
+  { id: "runtime", label: "Duración" },
+  { id: "release-date", label: "Más reciente" },
+  { id: "added", label: "Añadidos recientemente" },
+  { id: "random", label: "Aleatorio" }
+];
+
+function nextShuffleSeed(): number {
+  return (Math.floor(Math.random() * 0xFFFFFFFF) ^ Date.now()) >>> 0;
+}
+
+function librarySortDirectionLabel(sort: LibrarySort, direction: "asc" | "desc"): string {
+  if (sort === "random") return "Orden aleatorio";
+  if (sort === "title") return direction === "asc" ? "A–Z" : "Z–A";
+  if (sort === "runtime") return direction === "asc" ? "Más cortas primero" : "Más largas primero";
+  if (sort === "release-date") return direction === "asc" ? "Más antiguas primero" : "Más recientes primero";
+  if (sort === "added") return direction === "asc" ? "Más antiguos primero" : "Más recientes primero";
+  return direction === "asc" ? "Menor a mayor" : "Mayor a menor";
+}
+
 export function LibraryPage() {
   const [filtersState, setFiltersState] = useState<LibraryBrowseOptions>({ ...DEFAULT_LIBRARY_FILTERS });
   const [view, setView] = useState<LibraryView>("list");
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [preferencesError, setPreferencesError] = useState("");
 
   useEffect(() => {
     let active = true;
-    void Promise.all([getLibraryMovies(), getUserPreferences()])
-      .then(([libraryItems, preferences]) => {
+    void Promise.all([
+      getLibraryMovies(),
+      getUserPreferences(),
+      prismaDb.viewings.toArray()
+    ])
+      .then(([libraryItems, preferences, viewings]) => {
         if (!active) return;
-        setItems(libraryItems);
+
+        const ratingTotals = new Map<string, { total: number; count: number }>();
+        for (const viewing of viewings) {
+          const current = ratingTotals.get(viewing.movieId) ?? { total: 0, count: 0 };
+          current.total += viewing.rating;
+          current.count += 1;
+          ratingTotals.set(viewing.movieId, current);
+        }
+
+        const withRatings: LibraryItem[] = libraryItems.map(({ movie, entry }) => {
+          const ratings = ratingTotals.get(movie.id);
+          return {
+            movie,
+            entry,
+            userRating: ratings && ratings.count > 0
+              ? Math.round((ratings.total / ratings.count) * 100) / 100
+              : undefined
+          };
+        });
+
+        setItems(withRatings);
         setFiltersState(normalizeLibraryFilters(preferences.libraryFilters));
         setView(preferences.libraryView);
         setPreferencesLoaded(true);
@@ -141,6 +195,7 @@ export function LibraryPage() {
     return () => { active = false; };
   }, []);
 
+  const today = toLocalDateString(new Date());
   const facets = useMemo(() => getLibraryFacets(items), [items]);
   const counts = useMemo(() => ({
     all: items.length,
@@ -148,17 +203,25 @@ export function LibraryPage() {
     pending: items.filter(({ entry }) => entry.status === "pending").length,
     favorites: items.filter(({ entry }) => entry.isFavorite).length
   }), [items]);
+  const releaseCounts = useMemo(() => ({
+    all: items.length,
+    upcoming: items.filter(({ movie }) => getMovieReleaseStatus(movie, today) === "upcoming").length,
+    released: items.filter(({ movie }) => getMovieReleaseStatus(movie, today) === "released").length
+  }), [items, today]);
   const visible = useMemo(
-    () => filterLibraryItems(items, filtersState),
-    [items, filtersState]
+    () => filterLibraryItems(items, filtersState, today),
+    [items, filtersState, today]
   );
 
   const hasActiveFilters = filtersState.status !== "all"
+    || filtersState.releaseStatus !== "all"
     || Boolean(filtersState.query.trim())
     || Boolean(filtersState.genre)
     || Boolean(filtersState.yearFrom)
     || Boolean(filtersState.yearTo);
-  const hasNonDefaultBrowseOptions = hasActiveFilters || filtersState.sort !== "added-desc";
+  const hasNonDefaultBrowseOptions = hasActiveFilters
+    || filtersState.sort !== "added"
+    || filtersState.sortDirection !== "desc";
   const ascendingYears = useMemo(() => [...facets.years].sort((a, b) => a - b), [facets.years]);
 
   function updateFilters(patch: Partial<LibraryBrowseOptions>) {
@@ -167,6 +230,16 @@ export function LibraryPage() {
     if (preferencesLoaded) {
       void saveLibraryBrowseFilters(next).catch(() => {
         setPreferencesError("No se pudo guardar el último cambio de los filtros en este dispositivo.");
+      });
+    }
+  }
+
+  function selectSort(sort: LibrarySort) {
+    const next = selectLibrarySort(filtersState, sort, nextShuffleSeed());
+    setFiltersState(next);
+    if (preferencesLoaded) {
+      void saveLibraryBrowseFilters(next).catch(() => {
+        setPreferencesError("No se pudo guardar el orden de la Biblioteca.");
       });
     }
   }
@@ -181,19 +254,11 @@ export function LibraryPage() {
     }
   }
 
-  function selectView(nextView: LibraryView) {
-    setView(nextView);
-    setSettingsOpen(false);
-    if (preferencesLoaded) {
-      void saveLibraryView(nextView).catch(() => {
-        setPreferencesError("No se pudo guardar el modo de presentación.");
-      });
-    }
-  }
-
   function imageUrl(movie: MovieRecord) {
     return getTmdbImageUrl("https://image.tmdb.org/t/p/", movie.posterPath, "w342");
   }
+
+  const selectedSort = sortOptions.find((option) => option.id === filtersState.sort);
 
   return (
     <div className="page">
@@ -204,10 +269,9 @@ export function LibraryPage() {
         searchLabel="Buscar exclusivamente en mi Biblioteca"
         value={filtersState.query}
         onChange={(query) => updateFilters({ query })}
-        onFiltersClick={() => { setSettingsOpen(false); setFiltersOpen(true); }}
+        onFiltersClick={() => setFiltersOpen(true)}
         filtersOpen={filtersOpen}
-        onSettingsClick={() => { setFiltersOpen(false); setSettingsOpen(true); }}
-        settingsExpanded={settingsOpen}
+        settingsHref="#/settings"
         filtersActive={hasNonDefaultBrowseOptions}
         disabled={!preferencesLoaded}
       />
@@ -215,7 +279,13 @@ export function LibraryPage() {
       {preferencesLoaded && (
         <div className="library-results-heading">
           <div>
-            <h2>{filters.find((item) => item.id === filtersState.status)?.label ?? "Biblioteca"}</h2>
+            <h2>{filtersState.releaseStatus === "upcoming"
+              ? "Próximamente"
+              : filtersState.releaseStatus === "released"
+                ? "Estrenadas"
+                : filtersState.status === "all"
+                  ? "Mi Biblioteca"
+                  : libraryStatusOptions.find((item) => item.id === filtersState.status)?.label ?? "Biblioteca"}</h2>
             <span className="muted-copy">{visible.length} de {items.length} películas</span>
           </div>
           <span className="library-view-caption">{view === "list" ? "Lista" : "Cuadrícula"}</span>
@@ -235,7 +305,17 @@ export function LibraryPage() {
         />
       ) : view === "grid" ? (
         <div className="library-poster-grid">
-          {visible.map(({ movie }) => <MoviePosterCard key={movie.id} title={movie.title} imageUrl={imageUrl(movie)} onClick={() => { window.location.hash = "#/movie/" + movie.tmdbId; }} />)}
+          {visible.map(({ movie }) => (
+            <MoviePosterCard
+              key={movie.id}
+              title={movie.title}
+              imageUrl={imageUrl(movie)}
+              onClick={() => {
+                saveCurrentRouteScrollPosition();
+                window.location.hash = "#/movie/" + movie.tmdbId;
+              }}
+            />
+          ))}
         </div>
       ) : (
         <div className="library-list">
@@ -257,28 +337,47 @@ export function LibraryPage() {
         <div className="sheet-backdrop library-sheet-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setFiltersOpen(false);
         }}>
-          <section className="bottom-sheet library-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="library-filters-title">
+          <section className="bottom-sheet library-bottom-sheet library-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="library-filters-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
               <div><p className="eyebrow">MI COLECCIÓN</p><h2 id="library-filters-title">Filtros de Biblioteca</h2></div>
               <button className="icon-button" type="button" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><X size={19} /></button>
             </div>
+
             <div className="library-sheet-section">
-              <div className="library-sheet-label-row"><span>Estado</span><span>{counts[filtersState.status]} películas</span></div>
-              <div className="library-status-options" role="group" aria-label="Filtrar por estado">
-                {filters.map((item) => (
+              <div className="library-sheet-label-row"><span>Estado</span><span>{releaseCounts[filtersState.releaseStatus]} títulos</span></div>
+              <div className="library-status-options library-release-options" role="group" aria-label="Estado de estreno">
+                {releaseStatusOptions.map((option) => (
                   <button
-                    key={item.id}
+                    key={option.id}
                     type="button"
-                    className={filtersState.status === item.id ? "library-status-option is-selected" : "library-status-option"}
-                    onClick={() => updateFilters({ status: item.id })}
-                    aria-pressed={filtersState.status === item.id}
+                    className={filtersState.releaseStatus === option.id ? "library-status-option is-selected" : "library-status-option"}
+                    onClick={() => updateFilters({ releaseStatus: option.id })}
+                    aria-pressed={filtersState.releaseStatus === option.id}
                   >
-                    <span>{item.label}</span><small>{counts[item.id]}</small>
+                    <span>{option.label}</span><small>{releaseCounts[option.id]}</small>
                   </button>
                 ))}
               </div>
             </div>
+
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Estado en mi Biblioteca</span><span>{counts[filtersState.status]} películas</span></div>
+              <div className="library-status-options" role="group" aria-label="Estado personal en Biblioteca">
+                {libraryStatusOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={filtersState.status === option.id ? "library-status-option is-selected" : "library-status-option"}
+                    onClick={() => updateFilters({ status: option.id })}
+                    aria-pressed={filtersState.status === option.id}
+                  >
+                    <span>{option.label}</span><small>{counts[option.id]}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="library-sheet-section">
               <label className="library-sheet-field" htmlFor="library-genre">
                 <span>Género</span>
@@ -310,22 +409,47 @@ export function LibraryPage() {
                 </label>
               </div>
             </div>
+
             <div className="library-sheet-section">
-              <label className="library-sheet-field" htmlFor="library-sort">
-                <span>Ordenar por</span>
-                <select id="library-sort" className="library-refinement-select" value={filtersState.sort} onChange={(event) => updateFilters({ sort: event.target.value as LibraryBrowseOptions["sort"] })}>
-                  <option value="added-desc">Añadidas recientemente</option>
-                  <option value="title-asc">Título: A–Z</option>
-                  <option value="year-desc">Año: más reciente</option>
-                  <option value="year-asc">Año: más antiguo</option>
-                </select>
-              </label>
+              <div className="library-sheet-label-row"><span>Ordenar por</span><span>{selectedSort?.label ?? "Añadidos recientemente"}</span></div>
+              <div className="library-sort-options" role="group" aria-label="Ordenar Biblioteca">
+                {sortOptions.map((option) => {
+                  const selected = filtersState.sort === option.id;
+                  const DirectionIcon = filtersState.sortDirection === "asc" ? ArrowUp : ArrowDown;
+                  return (
+                    <button
+                      className={selected ? "library-sort-option is-selected" : "library-sort-option"}
+                      type="button"
+                      key={option.id}
+                      aria-pressed={selected}
+                      aria-label={selected && option.id !== "random"
+                        ? option.label + ", " + (filtersState.sortDirection === "asc" ? "ascendente" : "descendente") + ". Volver a pulsar para invertir."
+                        : option.label}
+                      onClick={() => selectSort(option.id)}
+                    >
+                      <span>{option.label}</span>
+                      {selected && (option.id === "random"
+                        ? <span className="library-sort-shuffle" aria-label="Nuevo orden aleatorio">↻</span>
+                        : <DirectionIcon size={17} aria-label={filtersState.sortDirection === "asc" ? "Ascendente" : "Descendente"} />)}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="library-sort-direction" aria-live="polite">
+                {filtersState.sort === "random"
+                  ? "Cada selección genera una distribución aleatoria nueva."
+                  : (filtersState.sortDirection === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                {librarySortDirectionLabel(filtersState.sort, filtersState.sortDirection)}
+                {filtersState.sort !== "random" && " · Toca otra vez " + (selectedSort?.label ?? "el criterio") + " para invertir"}
+              </div>
             </div>
+
             {hasActiveFilters && (
               <div className="library-active-filter-summary" aria-live="polite">
                 <SlidersHorizontal size={15} />
                 <span>
-                  {[filtersState.status !== "all" ? filters.find((item) => item.id === filtersState.status)?.label : "",
+                  {[filtersState.releaseStatus !== "all" ? releaseStatusOptions.find((option) => option.id === filtersState.releaseStatus)?.label : "",
+                    filtersState.status !== "all" ? libraryStatusOptions.find((option) => option.id === filtersState.status)?.label : "",
                     filtersState.genre,
                     filtersState.yearFrom || filtersState.yearTo
                       ? (filtersState.yearFrom || "…") + "–" + (filtersState.yearTo || "…")
@@ -335,32 +459,10 @@ export function LibraryPage() {
                 </span>
               </div>
             )}
+
             <div className="library-sheet-actions">
               <button className="button button-quiet" type="button" onClick={clearLibraryFilters} disabled={!hasNonDefaultBrowseOptions}>Restablecer</button>
               <button className="button button-primary" type="button" onClick={() => setFiltersOpen(false)}>Aplicar filtros</button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {settingsOpen && (
-        <div className="sheet-backdrop library-sheet-backdrop" role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setSettingsOpen(false);
-        }}>
-          <section className="bottom-sheet library-bottom-sheet library-view-sheet" role="dialog" aria-modal="true" aria-labelledby="library-view-title">
-            <div className="sheet-handle" />
-            <div className="sheet-header">
-              <div><p className="eyebrow">PRESENTACIÓN</p><h2 id="library-view-title">Vista de Biblioteca</h2></div>
-              <button className="icon-button" type="button" onClick={() => setSettingsOpen(false)} aria-label="Cerrar ajustes de visualización"><X size={19} /></button>
-            </div>
-            <p className="muted-copy">Elige cómo quieres ver tu colección. Esta preferencia se conserva en este dispositivo.</p>
-            <div className="library-view-options" role="group" aria-label="Modo de presentación">
-              <button className={view === "list" ? "library-view-option is-selected" : "library-view-option"} type="button" onClick={() => selectView("list")} aria-pressed={view === "list"}>
-                <List size={21} /><span><strong>Lista</strong><small>Más información de cada película</small></span>{view === "list" && <span className="library-view-check" aria-hidden="true">✓</span>}
-              </button>
-              <button className={view === "grid" ? "library-view-option is-selected" : "library-view-option"} type="button" onClick={() => selectView("grid")} aria-pressed={view === "grid"}>
-                <Grid2X2 size={21} /><span><strong>Cuadrícula</strong><small>Enfoque visual en los pósteres</small></span>{view === "grid" && <span className="library-view-check" aria-hidden="true">✓</span>}
-              </button>
             </div>
           </section>
         </div>

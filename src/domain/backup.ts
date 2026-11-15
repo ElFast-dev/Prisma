@@ -11,6 +11,7 @@ const movieSchema = z.object({
   releaseDate: z.string().max(20).optional(),
   releaseYear: z.number().int().min(1880).max(3000).optional(),
   runtimeMinutes: z.number().int().nonnegative().optional(),
+  voteAverage: z.number().min(0).max(10).optional(),
   status: z.string().max(80).optional(),
   genres: z.array(z.string().max(100)).max(100),
   genreIds: z.array(z.number().int().positive()).max(100).optional(),
@@ -84,11 +85,14 @@ const preferencesSchema = z.object({
   libraryView: z.enum(["grid", "list"]),
   libraryFilters: z.object({
     status: z.enum(["all", "watched", "pending", "favorites"]),
+    releaseStatus: z.enum(["all", "upcoming", "released"]).optional(),
     query: z.string().max(200),
     genre: z.string().max(100),
     yearFrom: z.string().refine((value) => value === "" || (/^\d{4}$/.test(value) && Number(value) >= 1880 && Number(value) <= 3000)),
     yearTo: z.string().refine((value) => value === "" || (/^\d{4}$/.test(value) && Number(value) >= 1880 && Number(value) <= 3000)),
-    sort: z.enum(["added-desc", "title-asc", "year-desc", "year-asc"])
+    sort: z.enum(["title", "rating", "my-rating", "runtime", "release-date", "added", "random", "added-desc", "title-asc", "year-desc", "year-asc"]).optional(),
+    sortDirection: z.enum(["asc", "desc"]).optional(),
+    shuffleSeed: z.number().int().nonnegative().optional()
   }).strict().optional(),
   updatedAt: timestamp
 }).strict();

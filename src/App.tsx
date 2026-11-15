@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { WifiOff } from "lucide-react";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { DiscoverPage } from "./features/discover/DiscoverPage";
@@ -13,6 +13,7 @@ import { SettingsPage } from "./features/settings/SettingsPage";
 import { SpectroPage } from "./features/spectro/SpectroPage";
 import { MovieDetailPage } from "./features/movie/MovieDetailPage";
 import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
+import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
@@ -20,28 +21,118 @@ function currentPath(): string {
 }
 
 export default function App() {
-  const [path, setPath] = useState(currentPath);
+  const initialPath = currentPath();
+  const [path, setPath] = useState(initialPath);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const activePathRef = useRef(initialPath);
+  const pendingScrollRestoreRef = useRef<{ path: string; restore: boolean } | null>({
+    path: initialPath,
+    restore: true
+  });
 
   useEffect(() => {
     initializeRouteHistory(currentPath());
     if (!window.location.hash) window.location.hash = "#/discover";
 
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    const persistScroll = () => {
+      try {
+        saveRouteScrollPosition(window.sessionStorage, activePathRef.current, window.scrollY);
+      } catch {
+        // La navegación no depende de que sessionStorage esté disponible.
+      }
+    };
+
+    const handleInternalLink = (event: MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('a[href^="#/"]')) {
+        persistScroll();
+      }
+    };
+
     const updatePath = (fromHistoryTraversal: boolean) => {
       const nextPath = currentPath();
+      if (nextPath === activePathRef.current) return;
+
+      persistScroll();
       recordRouteChange(nextPath, fromHistoryTraversal);
+      activePathRef.current = nextPath;
+      pendingScrollRestoreRef.current = {
+        path: nextPath,
+        restore: fromHistoryTraversal
+      };
       setPath(nextPath);
     };
+
     const handleHashChange = () => updatePath(false);
     const handlePopState = () => updatePath(true);
 
+    window.addEventListener("scroll", persistScroll, { passive: true });
+    window.addEventListener("pagehide", persistScroll);
+    document.addEventListener("click", handleInternalLink, true);
     window.addEventListener("hashchange", handleHashChange);
     window.addEventListener("popstate", handlePopState);
+
     return () => {
+      persistScroll();
+      window.removeEventListener("scroll", persistScroll);
+      window.removeEventListener("pagehide", persistScroll);
+      document.removeEventListener("click", handleInternalLink, true);
       window.removeEventListener("hashchange", handleHashChange);
       window.removeEventListener("popstate", handlePopState);
+      window.history.scrollRestoration = previousScrollRestoration;
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const request = pendingScrollRestoreRef.current;
+    if (!request || request.path !== path) return;
+    pendingScrollRestoreRef.current = null;
+
+    let cancelled = false;
+    let frame = 0;
+    let attempts = 0;
+
+    const restore = () => {
+      if (cancelled) return;
+      attempts += 1;
+
+      let target = 0;
+      if (request.restore) {
+        try {
+          target = readRouteScrollPosition(window.sessionStorage, path) ?? 0;
+        } catch {
+          target = 0;
+        }
+      }
+
+      const documentHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body?.scrollHeight ?? 0
+      );
+      const maxScroll = Math.max(0, documentHeight - window.innerHeight);
+      if (request.restore && target > maxScroll + 2 && attempts < 300) {
+        frame = window.requestAnimationFrame(restore);
+        return;
+      }
+
+      const root = document.documentElement;
+      const previousBehavior = root.style.scrollBehavior;
+      root.style.scrollBehavior = "auto";
+      window.scrollTo(0, Math.min(target, maxScroll));
+      window.requestAnimationFrame(() => {
+        root.style.scrollBehavior = previousBehavior;
+      });
+    };
+
+    frame = window.requestAnimationFrame(restore);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [path]);
 
   useEffect(() => {
     const updateConnection = () => setIsOnline(navigator.onLine);

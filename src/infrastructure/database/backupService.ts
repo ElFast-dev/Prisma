@@ -2,6 +2,7 @@ import type { PrismaBackup } from "../../domain/backup";
 import { parsePrismaBackup } from "../../domain/backup";
 import { getCatalogRegion, saveCatalogRegion } from "../tmdb/settings";
 import { prismaDb } from "./database";
+import { normalizeLibraryFilters } from "../../domain/libraryPreferences";
 
 export async function createLocalBackup(): Promise<string> {
   const [movies, libraryEntries, viewings, collections, collectionMovies, profile, preferences] = await Promise.all([
@@ -64,7 +65,13 @@ export async function restoreLocalBackup(backup: PrismaBackup): Promise<void> {
       if (data.collections.length) await prismaDb.collections.bulkPut(data.collections);
       if (data.collectionMovies.length) await prismaDb.collectionMovies.bulkPut(data.collectionMovies);
       if (data.profile.length) await prismaDb.profile.bulkPut(data.profile);
-      if (data.preferences.length) await prismaDb.preferences.bulkPut(data.preferences);
+      if (data.preferences.length) {
+        const preferences = data.preferences.map((preference) => ({
+          ...preference,
+          libraryFilters: normalizeLibraryFilters(preference.libraryFilters)
+        }));
+        await prismaDb.preferences.bulkPut(preferences);
+      }
     }
   );
 

@@ -1,3 +1,5 @@
+import { saveCurrentRouteScrollPosition } from "./scrollRestoration";
+
 export interface RouteHistory {
   record(path: string, fromHistoryTraversal?: boolean): void;
   hasPrevious(): boolean;
@@ -51,6 +53,7 @@ export function recordRouteChange(path: string, fromHistoryTraversal = false): v
  * directamente, reemplaza la URL por Descubrir sin abandonar Prisma.
  */
 export function navigateBack(fallback = "/discover"): void {
+  saveCurrentRouteScrollPosition();
   if (activeHistory.hasPrevious()) {
     window.history.back();
     return;

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { ArrowLeft, Eye, EyeOff, CheckCircle2, CircleAlert, LoaderCircle, Trash2, Download, Upload, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, CheckCircle2, CircleAlert, LoaderCircle, Trash2, Download, Upload, ShieldCheck, Grid2X2, List } from "lucide-react";
 import {
   clearTmdbAccessToken,
   getCatalogRegion,
@@ -14,6 +14,7 @@ import { parsePrismaBackup } from "../../domain/backup";
 import { parseExternalMovieImport } from "../../domain/externalMovieImport";
 import { EnrichmentPanel } from "./EnrichmentPanel";
 import { navigateBack } from "../../navigation/routeHistory";
+import { getUserPreferences, saveLibraryView } from "../../infrastructure/database/preferencesService";
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
@@ -27,6 +28,9 @@ export function SettingsPage() {
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupMessage, setBackupMessage] = useState("");
   const [backupError, setBackupError] = useState("");
+  const [libraryView, setLibraryView] = useState<"list" | "grid">("list");
+  const [libraryPreferencesReady, setLibraryPreferencesReady] = useState(false);
+  const [libraryPreferencesError, setLibraryPreferencesError] = useState("");
 
   useEffect(() => {
     const stored = getTmdbAccessToken();
@@ -34,6 +38,30 @@ export function SettingsPage() {
     setConfigured(Boolean(stored));
     setRegion(getCatalogRegion());
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void getUserPreferences()
+      .then((preferences) => {
+        if (!active) return;
+        setLibraryView(preferences.libraryView);
+      })
+      .catch(() => {
+        if (active) setLibraryPreferencesError("No se pudieron leer las preferencias locales de Biblioteca.");
+      })
+      .finally(() => {
+        if (active) setLibraryPreferencesReady(true);
+      });
+    return () => { active = false; };
+  }, []);
+
+  function handleLibraryViewChange(nextView: "list" | "grid") {
+    setLibraryView(nextView);
+    setLibraryPreferencesError("");
+    void saveLibraryView(nextView).catch(() => {
+      setLibraryPreferencesError("No se pudo guardar esta preferencia en el dispositivo.");
+    });
+  }
 
   async function handleTest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -271,6 +299,41 @@ export function SettingsPage() {
       </section>
 
       <EnrichmentPanel configured={configured} />
+
+      <section className="settings-section card-surface">
+        <div className="settings-section-heading">
+          <div className="settings-icon"><Grid2X2 size={21} /></div>
+          <div>
+            <h2>Presentación de Biblioteca</h2>
+            <p className="muted-copy">Elige cómo quieres ver tu colección. Esta preferencia solo afecta a Biblioteca.</p>
+          </div>
+        </div>
+        {libraryPreferencesError && <p className="form-error" role="alert">{libraryPreferencesError}</p>}
+        <div className="library-view-options" role="group" aria-label="Modo de presentación de Biblioteca">
+          <button
+            className={libraryView === "list" ? "library-view-option is-selected" : "library-view-option"}
+            type="button"
+            disabled={!libraryPreferencesReady}
+            onClick={() => handleLibraryViewChange("list")}
+            aria-pressed={libraryView === "list"}
+          >
+            <List size={21} />
+            <span><strong>Lista</strong><small>Más información de cada película</small></span>
+            {libraryView === "list" && <span className="library-view-check" aria-hidden="true">✓</span>}
+          </button>
+          <button
+            className={libraryView === "grid" ? "library-view-option is-selected" : "library-view-option"}
+            type="button"
+            disabled={!libraryPreferencesReady}
+            onClick={() => handleLibraryViewChange("grid")}
+            aria-pressed={libraryView === "grid"}
+          >
+            <Grid2X2 size={21} />
+            <span><strong>Cuadrícula</strong><small>Enfoque visual en los pósteres</small></span>
+            {libraryView === "grid" && <span className="library-view-check" aria-hidden="true">✓</span>}
+          </button>
+        </div>
+      </section>
 
       <section className="settings-section card-surface">
         <div className="settings-section-heading">

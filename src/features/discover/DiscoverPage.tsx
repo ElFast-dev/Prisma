@@ -11,6 +11,7 @@ import {
   type TmdbMovieSummary
 } from "../../infrastructure/tmdb/TmdbService";
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
+import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 
 type FeedState = "loading" | "ready" | "error" | "unconfigured";
 
@@ -113,6 +114,7 @@ export function DiscoverPage() {
   }, [state, page, totalPages, query, loadingMore]);
 
   function openMovie(movie: TmdbMovieSummary) {
+    saveCurrentRouteScrollPosition();
     window.location.hash = "#/movie/" + movie.id;
   }
 
