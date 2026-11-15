@@ -103,9 +103,9 @@ describe("viewingService: integridad de experiencias", () => {
   });
 
   it("hace idempotente una operación y conserva revisionados independientes", async () => {
-    const first = await addViewing(addInput("2024-02-01", 7, "Primera experiencia"), "operation-1");
-    const repeated = await addViewing(addInput("2024-02-02", 2, "No debe sustituir la primera"), "operation-1");
-    const second = await addViewing(addInput("2025-08-13", 10, "Segunda experiencia"), "operation-2");
+    const first = await addViewing(addInput("2024-02-01", 7, "Primera experiencia"), "00000000-0000-4000-8000-000000000001");
+    const repeated = await addViewing(addInput("2024-02-02", 2, "No debe sustituir la primera"), "00000000-0000-4000-8000-000000000001");
+    const second = await addViewing(addInput("2025-08-13", 10, "Segunda experiencia"), "00000000-0000-4000-8000-000000000002");
 
     expect(repeated.id).toBe(first.id);
     expect(state.viewings).toHaveLength(2);
@@ -125,8 +125,8 @@ describe("viewingService: integridad de experiencias", () => {
   });
 
   it("edita y elimina solo la experiencia seleccionada sin alterar las demás", async () => {
-    const first = await addViewing(addInput("2024-02-01", 7, "Nota original"), "operation-1");
-    const second = await addViewing(addInput("2025-08-13", 10, "Nota del revisionado"), "operation-2");
+    const first = await addViewing(addInput("2024-02-01", 7, "Nota original"), "00000000-0000-4000-8000-000000000001");
+    const second = await addViewing(addInput("2025-08-13", 10, "Nota del revisionado"), "00000000-0000-4000-8000-000000000002");
 
     await updateViewing(first.id, {
       watchedOn: "2024-02-03",
@@ -161,13 +161,14 @@ describe("viewingService: integridad de experiencias", () => {
   });
 
   it("no reutiliza una secuencia aunque se elimine el último visionado", async () => {
-    const first = await addViewing(addInput("2024-02-01", 7, "Primera"), "operation-1");
-    const second = await addViewing(addInput("2024-03-01", 8, "Segunda"), "operation-2");
+    const first = await addViewing(addInput("2024-02-01", 7, "Primera"), "00000000-0000-4000-8000-000000000001");
+    const second = await addViewing(addInput("2024-03-01", 8, "Segunda"), "00000000-0000-4000-8000-000000000002");
 
     await deleteViewing(second.id);
-    const third = await addViewing(addInput("2024-04-01", 9, "Tercera"), "operation-3");
+    const third = await addViewing(addInput("2024-04-01", 9, "Tercera"), "00000000-0000-4000-8000-000000000003");
 
-    expect(state.viewings.map((item: any) => item.sequenceNumber)).toEqual([first.sequenceNumber, 3]);
+    expect(third.sequenceNumber).toBe(3);
+    expect(state.viewings.map((item: any) => item.sequenceNumber)).toEqual([first.sequenceNumber, third.sequenceNumber]);
     expect(state.viewings.some((item: any) => item.id === second.id)).toBe(false);
     expect(state.movies.get("movie-7").lastViewingSequence).toBe(3);
   });
