@@ -3,7 +3,7 @@ import { e2eMovie, seedLibraryMovie } from "./support/fixtures";
 
 test("busca y filtra una película local sin consultar TMDB", async ({ page }) => {
   await page.goto("#/personal/library");
-  await expect(page.getByRole("heading", { name: "Biblioteca" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Biblioteca", exact: true })).toBeVisible();
   await expect(page.getByText("Tu biblioteca está esperando sus primeras películas")).toBeVisible();
 
   await seedLibraryMovie(page);
