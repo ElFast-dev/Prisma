@@ -14,21 +14,38 @@ concurrency:
 
 jobs:
   build:
+    name: Build production site
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
 
       - name: Install dependencies
         run: npm install
 
-      - name: Typecheck, test and build
+      - name: Typecheck, unit tests and build
         run: npm test && npm run build
+
+      - name: Smoke test production build locally
+        run: |
+          set -euo pipefail
+          npm run preview -- --host 127.0.0.1 --port 4174 --strictPort > /tmp/prisma-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:4174/Prisma/ -o /tmp/prisma-index.html; then
+              break
+            fi
+            sleep 2
+          done
+          grep -qi '<title>Prisma</title>' /tmp/prisma-index.html
+          grep -q '/Prisma/assets/.*\.js' /tmp/prisma-index.html
+          grep -q 'manifest' /tmp/prisma-index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -39,11 +56,14 @@ jobs:
           path: dist
 
   deploy:
+    name: Publish to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     permissions:
       pages: write
       id-token: write
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -51,3 +71,104 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke-test:
+    name: Verify published website
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check live HTML, JavaScript, CSS and PWA manifest
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          from html.parser import HTMLParser
+          from urllib.parse import urljoin
+          from urllib.request import urlopen
+
+          page_url = os.environ["PAGE_URL"].rstrip("/") + "/"
+
+          class Assets(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.title = False
+                  self.title_text = ""
+                  self.scripts = []
+                  self.styles = []
+                  self.manifests = []
+
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == "script" and attrs.get("src"):
+                      self.scripts.append(attrs["src"])
+                  if tag == "link":
+                      rel = attrs.get("rel", "").lower().split()
+                      href = attrs.get("href")
+                      if href and "stylesheet" in rel:
+                          self.styles.append(href)
+                      if href and "manifest" in rel:
+                          self.manifests.append(href)
+
+              def handle_startendtag(self, tag, attrs):
+                  self.handle_starttag(tag, attrs)
+
+              def handle_data(self, data):
+                  if self.title:
+                      self.title_text += data
+
+              def handle_endtag(self, tag):
+                  if tag == "title":
+                      self.title = False
+
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == "title":
+                      self.title = True
+                  elif tag == "script" and attrs.get("src"):
+                      self.scripts.append(attrs["src"])
+                  elif tag == "link":
+                      rel = attrs.get("rel", "").lower().split()
+                      href = attrs.get("href")
+                      if href and "stylesheet" in rel:
+                          self.styles.append(href)
+                      if href and "manifest" in rel:
+                          self.manifests.append(href)
+
+          last_error = None
+          for attempt in range(1, 13):
+              try:
+                  with urlopen(page_url, timeout=20) as response:
+                      html = response.read().decode("utf-8")
+                      assert response.status == 200, f"HTML: HTTP {response.status}"
+
+                  parser = Assets()
+                  parser.feed(html)
+                  assert "Prisma" in html, "El HTML publicado no contiene la marca Prisma."
+                  assert parser.scripts, "No se encontró el bundle JavaScript."
+                  assert parser.styles, "No se encontró la hoja de estilos."
+                  assert parser.manifests, "No se encontró el manifiesto PWA."
+
+                  for asset in parser.scripts + parser.styles + parser.manifests:
+                      asset_url = urljoin(page_url, asset)
+                      with urlopen(asset_url, timeout=20) as response:
+                          body = response.read()
+                          assert response.status == 200 and body, f"Recurso inválido: {asset_url}"
+
+                  manifest_url = urljoin(page_url, parser.manifests[0])
+                  with urlopen(manifest_url, timeout=20) as response:
+                      manifest = json.loads(response.read().decode("utf-8"))
+                  assert manifest.get("name") == "Prisma", "El manifiesto PWA no identifica a Prisma."
+                  assert manifest.get("scope") == "/Prisma/", "El scope de la PWA no coincide con GitHub Pages."
+
+                  print(f"OK: sitio publicado y {len(parser.scripts + parser.styles + parser.manifests)} recursos cargan correctamente.")
+                  break
+              except Exception as error:
+                  last_error = error
+                  if attempt == 12:
+                      raise
+                  print(f"Intento {attempt}/12: {error}; esperando propagación de Pages.")
+                  time.sleep(10)
+          PY
