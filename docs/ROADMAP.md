@@ -13,17 +13,23 @@
 
 ## Entregas
 
-1. Conexión TMDB personal configurada desde Ajustes.
-2. Descubrir con tendencias, búsqueda y paginación progresiva.
-3. Ficha cinematográfica con metadatos, reparto, equipo, recomendaciones y disponibilidad por región.
-4. Guardado de películas y estados en IndexedDB.
-5. Registro, edición y eliminación de visionados desde la ficha.
-6. Historial con calendario mensual, edición y eliminación de experiencias.
-7. Estadísticas personales derivadas del historial: películas, visionados, tiempo y rachas.
-8. Colecciones, perfil editable y logros.
-9. Espectro por versiones.
-10. Copias de seguridad validadas.
-11. Modo offline, pruebas Android y publicación de GitHub Pages.
+- [x] 1. Conexión TMDB personal configurada desde Ajustes.
+- [x] 2. Descubrir con tendencias, búsqueda y paginación progresiva.
+- [x] 3. Ficha cinematográfica con metadatos, reparto, equipo, recomendaciones y disponibilidad por región.
+- [x] 4. Guardado de películas y estados en IndexedDB.
+- [x] 5. Registro, edición y eliminación de visionados desde la ficha.
+- [x] 6. Historial con calendario mensual, edición y eliminación de experiencias.
+- [x] 7. Estadísticas personales derivadas del historial: películas, visionados, tiempo y rachas.
+- [x] 8. Colecciones, perfil editable y logros.
+- [ ] 9. Espectro por versiones.
+- [ ] 10. Copias de seguridad validadas.
+- [ ] 11. Modo offline, pruebas Android y publicación de GitHub Pages.
+
+### Criterios del perfil y los logros
+
+- Perfil local editable: nombre, descripción, frase personal e imagen.
+- Imagen limitada a formatos JPG, PNG o WebP y almacenada únicamente en IndexedDB.
+- Logros calculados desde estadísticas y colecciones locales, sin servicios externos.
 
 ## Regla
 

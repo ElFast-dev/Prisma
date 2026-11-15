@@ -349,3 +349,32 @@
   .history-calendar-grid { gap: 8px; }
   .history-calendar-day { max-height: 54px; }
 }
+
+/* Perfil editable y logros locales */
+.profile-summary-avatar { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.profile-avatar-image { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.profile-personal-phrase { margin: 8px 0 0; color: var(--color-accent); font-size: 12px; font-style: italic; }
+.profile-edit-panel { display: grid; gap: 10px; margin-top: 14px; padding: 16px; }
+.profile-edit-panel h2 { margin: 0; font-size: 17px; }
+.profile-edit-avatar-row { display: flex; align-items: center; gap: 15px; margin: 2px 0 5px; }
+.profile-avatar-controls { display: grid; justify-items: start; gap: 6px; }
+.profile-avatar-label { min-height: 38px; padding: 8px 12px; cursor: pointer; }
+.profile-avatar-controls small { color: var(--color-text-muted); font-size: 10px; }
+.profile-textarea { min-height: 84px; resize: vertical; }
+.profile-error { margin: 12px 0; }
+.achievement-count { color: var(--color-text-muted); font-size: 10px; }
+.achievement-grid { display: grid; gap: 9px; }
+.achievement-card { display: flex; align-items: flex-start; gap: 11px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card); padding: 12px; }
+.achievement-card.is-unlocked { border-color: rgb(217 189 145 / 32%); }
+.achievement-icon { display: grid; width: 39px; height: 39px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: var(--color-active); color: var(--color-text-muted); }
+.achievement-card.is-unlocked .achievement-icon { background: rgb(217 189 145 / 12%); color: var(--color-accent); }
+.achievement-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
+.achievement-title-row { display: flex; align-items: center; gap: 5px; }
+.achievement-title-row strong { font-size: 12px; }
+.achievement-award { flex: 0 0 auto; color: var(--color-accent); }
+.achievement-copy p { margin: 0; color: var(--color-text-muted); font-size: 10px; line-height: 1.4; }
+.achievement-progress-track { overflow: hidden; height: 4px; border-radius: 5px; background: var(--color-active); margin-top: 4px; }
+.achievement-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--color-accent); }
+.achievement-copy small { color: var(--color-text-muted); font-size: 9px; }
+.achievement-state { flex: 0 0 auto; padding-top: 2px; color: var(--color-text-muted); font-size: 9px; }
+.achievement-state.is-unlocked { color: var(--color-accent); font-weight: 700; }

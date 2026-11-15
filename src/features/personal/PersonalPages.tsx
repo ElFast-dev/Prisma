@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   ArrowLeft, Clock3, Folders, Grid2X2, Library, List, Search,
   UserRound, ChevronRight, Plus, Star, Heart, CalendarDays,
-  ChevronLeft, Trash2, Pencil, X
+  ChevronLeft, Trash2, Pencil, X, Award, Flame, ImagePlus,
+  Film, Clapperboard, Clock3 as AchievementClock,
 } from "lucide-react";
-import type { Collection, MovieRecord, LibraryEntry, Viewing } from "../../domain/types";
+import type { Collection, LocalProfile, MovieRecord, LibraryEntry, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { ViewingForm } from "../../components/ViewingForm";
@@ -24,6 +25,8 @@ import {
 import { getTmdbImageUrl } from "../../infrastructure/tmdb/TmdbService";
 import { toLocalDateString } from "../../domain/viewingRules";
 import type { PersonalStats } from "../../domain/statistics";
+import { calculateAchievements, type AchievementIcon } from "../../domain/achievements";
+import { getLocalProfile, saveLocalProfile } from "../../infrastructure/database/profileService";
 
 function PageBack({ title, eyebrow = "PERSONAL", backHref = "#/personal" }: { title: string; eyebrow?: string; backHref?: string }) {
   return (
@@ -52,10 +55,17 @@ function formatWatchTime(minutes: number): string {
 
 export function PersonalPage() {
   const [stats, setStats] = useState<PersonalStats | null>(null);
+  const [profile, setProfile] = useState<LocalProfile | undefined>();
 
   useEffect(() => {
     let active = true;
-    void getPersonalStats().then((value) => { if (active) setStats(value); }).catch(() => undefined);
+    void Promise.all([getPersonalStats(), getLocalProfile()])
+      .then(([nextStats, nextProfile]) => {
+        if (!active) return;
+        setStats(nextStats);
+        setProfile(nextProfile);
+      })
+      .catch(() => undefined);
     return () => { active = false; };
   }, []);
 
@@ -63,8 +73,8 @@ export function PersonalPage() {
     <div className="page">
       <header className="section-heading"><div><p className="eyebrow">MI ESPACIO CINEMATOGRÁFICO</p><h1>Personal</h1></div></header>
       <a href="#/personal/profile" className="profile-summary card-surface">
-        <div className="avatar-placeholder"><UserRound size={27} /></div>
-        <div className="profile-summary-copy"><span className="card-title">Mi perfil</span><span className="muted-copy">Tu identidad cinematográfica</span></div>
+        <div className="avatar-placeholder">{profile?.avatarDataUrl ? <img className="profile-summary-avatar" src={profile.avatarDataUrl} alt="" /> : <UserRound size={27} />}</div>
+        <div className="profile-summary-copy"><span className="card-title">{profile?.name || "Mi perfil"}</span><span className="muted-copy">{profile?.description || profile?.personalPhrase || "Tu identidad cinematográfica"}</span></div>
         <ChevronRight size={19} className="subtle-icon" />
         <div className="profile-metrics">
           <div><strong>{stats?.uniqueMoviesWatched ?? "—"}</strong><span>Películas vistas</span></div>
@@ -538,19 +548,148 @@ export function CollectionsPage() {
   );
 }
 
+const achievementIconComponents: Record<AchievementIcon, typeof Film> = {
+  film: Film,
+  clapperboard: Clapperboard,
+  flame: Flame,
+  calendar: CalendarDays,
+  clock: AchievementClock,
+  folders: Folders
+};
+
 export function ProfilePage() {
   const [stats, setStats] = useState<PersonalStats | null>(null);
+  const [collectionCount, setCollectionCount] = useState(0);
+  const [profile, setProfile] = useState<LocalProfile | undefined>();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [personalPhrase, setPersonalPhrase] = useState("");
+  const [avatarDataUrl, setAvatarDataUrl] = useState("");
+  const [profileError, setProfileError] = useState("");
 
   useEffect(() => {
     let active = true;
-    void getPersonalStats().then((value) => { if (active) setStats(value); }).catch(() => undefined);
+    void Promise.all([getPersonalStats(), getLocalProfile(), getCollections()])
+      .then(([nextStats, nextProfile, nextCollections]) => {
+        if (!active) return;
+        setStats(nextStats);
+        setProfile(nextProfile);
+        setCollectionCount(nextCollections.length);
+        setName(nextProfile?.name ?? "");
+        setDescription(nextProfile?.description ?? "");
+        setPersonalPhrase(nextProfile?.personalPhrase ?? "");
+        setAvatarDataUrl(nextProfile?.avatarDataUrl ?? "");
+      })
+      .catch((cause) => {
+        if (active) setProfileError(cause instanceof Error ? cause.message : "No se pudieron cargar los datos del perfil.");
+      });
     return () => { active = false; };
   }, []);
+
+  function startEditing() {
+    setName(profile?.name ?? "");
+    setDescription(profile?.description ?? "");
+    setPersonalPhrase(profile?.personalPhrase ?? "");
+    setAvatarDataUrl(profile?.avatarDataUrl ?? "");
+    setProfileError("");
+    setEditing(true);
+  }
+
+  function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setProfileError("Usa una imagen JPG, PNG o WebP.");
+      return;
+    }
+    if (file.size > 1_500_000) {
+      setProfileError("La imagen debe pesar menos de 1.5 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setAvatarDataUrl(reader.result);
+        setProfileError("");
+      } else {
+        setProfileError("No se pudo leer la imagen seleccionada.");
+      }
+    };
+    reader.onerror = () => setProfileError("No se pudo leer la imagen seleccionada.");
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSaveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setProfileError("");
+    try {
+      const saved = await saveLocalProfile({
+        name,
+        description,
+        personalPhrase,
+        avatarDataUrl
+      });
+      setProfile(saved);
+      setEditing(false);
+    } catch (cause) {
+      setProfileError(cause instanceof Error ? cause.message : "No se pudo guardar tu perfil.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const achievements = stats ? calculateAchievements(stats, collectionCount) : [];
+  const unlockedCount = achievements.filter((achievement) => achievement.unlocked).length;
 
   return (
     <div className="page">
       <PageBack title="Mi perfil" />
-      <div className="profile-hero card-surface"><div className="avatar-placeholder avatar-large"><UserRound size={34} /></div><h2>Tu identidad cinematográfica</h2><p className="muted-copy">Una historia construida película a película.</p><button className="button button-secondary" disabled>Editar perfil · Próximamente</button></div>
+      <div className="profile-hero card-surface">
+        <div className="avatar-placeholder avatar-large">
+          {profile?.avatarDataUrl
+            ? <img className="profile-avatar-image" src={profile.avatarDataUrl} alt={"Foto de " + (profile.name || "perfil")} />
+            : <UserRound size={34} />}
+        </div>
+        <h2>{profile?.name || "Tu identidad cinematográfica"}</h2>
+        <p className="muted-copy">{profile?.description || "Una historia construida película a película."}</p>
+        {profile?.personalPhrase && <p className="profile-personal-phrase">“{profile.personalPhrase}”</p>}
+        <button className="button button-secondary" type="button" onClick={startEditing}><Pencil size={15} /> Editar perfil</button>
+      </div>
+
+      {profileError && <p className="form-error profile-error" role="alert">{profileError}</p>}
+      {editing && (
+        <form className="profile-edit-panel card-surface" onSubmit={(event) => void handleSaveProfile(event)}>
+          <div className="section-intro-row"><h2>Tu identidad</h2><button className="icon-button" type="button" aria-label="Cancelar edición" disabled={saving} onClick={() => { setEditing(false); setProfileError(""); }}><X size={18} /></button></div>
+          <div className="profile-edit-avatar-row">
+            <div className="avatar-placeholder avatar-large">
+              {avatarDataUrl ? <img className="profile-avatar-image" src={avatarDataUrl} alt="Vista previa de tu foto" /> : <UserRound size={34} />}
+            </div>
+            <div className="profile-avatar-controls">
+              <label className="button button-secondary profile-avatar-label" htmlFor="profile-avatar-input"><ImagePlus size={15} /> Cambiar foto</label>
+              <input className="sr-only" id="profile-avatar-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} />
+              {avatarDataUrl && <button className="text-link" type="button" onClick={() => setAvatarDataUrl("")}>Quitar foto</button>}
+              <small>JPG, PNG o WebP · máximo 1.5 MB</small>
+            </div>
+          </div>
+          <label className="field-label" htmlFor="profile-name">Nombre</label>
+          <input className="text-field" id="profile-name" type="text" maxLength={40} required value={name} onChange={(event) => setName(event.target.value)} placeholder="¿Cómo te llamas en Prisma?" />
+          <label className="field-label" htmlFor="profile-description">Sobre mí</label>
+          <textarea className="text-field profile-textarea" id="profile-description" maxLength={160} rows={3} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Cuéntanos qué tipo de cine te gusta..." />
+          <label className="field-label" htmlFor="profile-phrase">Mi frase cinéfila</label>
+          <input className="text-field" id="profile-phrase" type="text" maxLength={100} value={personalPhrase} onChange={(event) => setPersonalPhrase(event.target.value)} placeholder="Una frase que te represente" />
+          <div className="form-actions">
+            <button className="button button-secondary" type="button" disabled={saving} onClick={() => setEditing(false)}>Cancelar</button>
+            <button className="button button-primary" type="submit" disabled={saving || !name.trim()}>{saving ? "Guardando..." : "Guardar perfil"}</button>
+          </div>
+        </form>
+      )}
+
       <div className="content-caption"><h2>Mi historia</h2></div>
       <div className="metric-grid">
         <div className="metric-card"><strong>{stats?.uniqueMoviesWatched ?? "—"}</strong><span>Películas vistas</span></div>
@@ -561,10 +700,32 @@ export function ProfilePage() {
       <div className="profile-stat-detail">
         <div><span>Visionados registrados</span><strong>{stats?.totalViewings ?? "—"}</strong></div>
         <div><span>Días con actividad</span><strong>{stats?.activeDays ?? "—"}</strong></div>
-        <div><span>Calificación promedio</span><strong>{stats?.averageRating ? stats.averageRating.toFixed(2) + "/10" : "—"}</strong></div>
+        <div><span>Calificación promedio</span><strong>{stats?.averageRating !== null && stats?.averageRating !== undefined ? stats.averageRating.toFixed(2) + "/10" : "—"}</strong></div>
       </div>
-      <div className="content-caption"><h2>Mis logros</h2><Star size={17} /></div>
-      <EmptyState icon={<Star size={24} />} title="Tus logros están por comenzar" description="Se desbloquearán a medida que registres películas y experiencias." />
+
+      <div className="content-caption"><div><p className="eyebrow">HITOS PERSONALES</p><h2>Mis logros</h2></div><span className="achievement-count">{unlockedCount}/{achievements.length} desbloqueados</span></div>
+      {achievements.length > 0 ? (
+        <div className="achievement-grid">
+          {achievements.map((achievement) => {
+            const Icon = achievementIconComponents[achievement.icon];
+            const percentage = Math.min(100, Math.round((achievement.progress / achievement.target) * 100));
+            return (
+              <article className={achievement.unlocked ? "achievement-card is-unlocked" : "achievement-card"} key={achievement.id}>
+                <span className="achievement-icon"><Icon size={20} /></span>
+                <div className="achievement-copy">
+                  <div className="achievement-title-row"><strong>{achievement.title}</strong>{achievement.unlocked && <Award size={15} className="achievement-award" />}</div>
+                  <p>{achievement.description}</p>
+                  <div className="achievement-progress-track"><span style={{ width: percentage + "%" }} /></div>
+                  <small>{Math.min(achievement.progress, achievement.target)} / {achievement.target} {achievement.unit}</small>
+                </div>
+                <span className={achievement.unlocked ? "achievement-state is-unlocked" : "achievement-state"}>{achievement.unlocked ? "Logrado" : "En progreso"}</span>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="muted-copy">Calculando tus logros a partir de tu actividad local...</p>
+      )}
     </div>
   );
 }
