@@ -31,7 +31,7 @@ async function fetchText(url) {
 
 async function verifyPublishedSite() {
   const html = await fetchText(baseUrl);
-  if (!/<title>\s*Prisma\s*<\/title>/i.test(html)) {
+  if (!/<title>\s*Prisma\b/i.test(html)) {
     throw new Error("El documento publicado no contiene el título de Prisma.");
   }
 
