@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { TmdbHttpError } from "../tmdb/TmdbClient";
-import { classifyEnrichmentError } from "./enrichmentService";
+import {
+  classifyEnrichmentError,
+  ENRICHMENT_CONCURRENCY,
+  ENRICHMENT_REQUEST_INTERVAL_MS
+} from "./enrichmentService";
+
+describe("enrichment queue throughput", () => {
+  it("uses four workers while spacing outgoing requests", () => {
+    expect(ENRICHMENT_CONCURRENCY).toBe(4);
+    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(250);
+  });
+});
 
 describe("enrichment error handling", () => {
   it("does not retry a movie that TMDB reports as missing", () => {

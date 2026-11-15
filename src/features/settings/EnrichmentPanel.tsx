@@ -26,6 +26,7 @@ const EMPTY_SNAPSHOT: EnrichmentSnapshot = {
   errorMovies: 0,
   notFoundMovies: 0,
   progressPercent: 100,
+  activeCount: 0,
   isOnline: typeof navigator === "undefined" || navigator.onLine
 };
 
@@ -36,9 +37,11 @@ interface EnrichmentPanelProps {
 function statusLabel(snapshot: EnrichmentSnapshot): string {
   switch (snapshot.status) {
     case "running":
-      return snapshot.currentTitle
-        ? "Actualizando: " + snapshot.currentTitle
-        : "Enriqueciendo la Biblioteca";
+      return snapshot.activeCount > 1
+        ? "Actualizando " + snapshot.activeCount + " películas simultáneamente"
+        : snapshot.currentTitle
+          ? "Actualizando: " + snapshot.currentTitle
+          : "Enriqueciendo la Biblioteca";
     case "waiting-connection":
       return "En pausa hasta recuperar la conexión";
     case "paused":
@@ -216,7 +219,7 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
       )}
 
       {snapshot.status === "running" && (
-        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Se procesa una película a la vez. Puedes pausar y continuar más tarde.</p>
+        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 4 películas en paralelo, con las solicitudes espaciadas para cuidar los límites de TMDB. Puedes pausar y continuar más tarde.</p>
       )}
       {snapshot.status === "completed" && !snapshot.pendingMovies && !snapshot.errorMovies && (
         <p className="enrichment-success"><CheckCircle2 size={15} /> No quedan películas pendientes de enriquecimiento.</p>

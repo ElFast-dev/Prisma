@@ -3,6 +3,7 @@ import {
   createMovieMetadataPatch,
   hasCompleteMovieMetadata
 } from "../../domain/movieMetadata";
+import { runWithConcurrency } from "../../domain/asyncPool";
 import { prismaDb } from "./database";
 import { TmdbHttpError } from "../tmdb/TmdbClient";
 import { getMovieDetailsForEnrichment } from "../tmdb/TmdbService";
@@ -10,9 +11,15 @@ import { getTmdbAccessToken } from "../tmdb/settings";
 
 const QUEUE_KEY = "library-enrichment:queue:v1";
 const ITEM_PREFIX = "library-enrichment:movie:";
-const REQUEST_INTERVAL_MS = 1100;
+
+// Cuatro trabajos simultáneos, iniciando como máximo una petición cada 250 ms.
+// Esto mantiene el ritmo cerca de 4 solicitudes/s y deja margen frente al
+// umbral operativo aproximado que publica TMDB.
+export const ENRICHMENT_CONCURRENCY = 4;
+export const ENRICHMENT_REQUEST_INTERVAL_MS = 250;
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [1500, 4000];
+const RATE_LIMIT_FALLBACK_MS = 2000;
 
 export type EnrichmentQueueStatus =
   | "idle"
@@ -50,6 +57,7 @@ export interface EnrichmentSnapshot {
   notFoundMovies: number;
   progressPercent: number;
   currentTitle?: string;
+  activeCount: number;
   lastError?: string;
   isOnline: boolean;
 }
@@ -66,8 +74,27 @@ let runner: Promise<void> | null = null;
 let starting: Promise<void> | null = null;
 let pauseRequested = false;
 let pauseReason: "paused" | "waiting-connection" = "paused";
-let activeController: AbortController | null = null;
+let fatalQueueError: string | undefined;
+const activeControllers = new Set<AbortController>();
+const activeTmdbIds = new Set<number>();
 const listeners = new Set<(snapshot: EnrichmentSnapshot) => void>();
+
+// Serializa las escrituras del resumen para que cuatro workers no sobrescriban
+// entre sí los contadores persistidos en IndexedDB.
+let queueWriteChain: Promise<void> = Promise.resolve();
+function persistQueuePatch(patch: Partial<PersistedQueueState>): Promise<void> {
+  const operation = queueWriteChain.then(async () => {
+    await saveQueueState(patch);
+  });
+  queueWriteChain = operation.catch(() => undefined);
+  return operation;
+}
+
+// Puerta global de solicitudes: separa su inicio y aplica una pausa común
+// cuando TMDB responde HTTP 429.
+let requestGateTail: Promise<void> = Promise.resolve();
+let nextRequestAt = 0;
+let retryNotBefore = 0;
 
 function isOnline(): boolean {
   return typeof navigator === "undefined" || navigator.onLine;
@@ -176,7 +203,11 @@ export function classifyEnrichmentError(
 }
 
 function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
-  if (milliseconds <= 0) return Promise.resolve();
+  if (milliseconds <= 0) {
+    if (signal.aborted) return Promise.reject(new DOMException("Operación pausada.", "AbortError"));
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       signal.removeEventListener("abort", onAbort);
@@ -199,6 +230,45 @@ function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
+function abortAllRequests(): void {
+  for (const controller of activeControllers) controller.abort();
+}
+
+function extendRetryCooldown(milliseconds?: number): void {
+  const waitMs = Math.max(1000, milliseconds ?? RATE_LIMIT_FALLBACK_MS);
+  retryNotBefore = Math.max(retryNotBefore, Date.now() + waitMs);
+}
+
+async function acquireRequestSlot(signal: AbortSignal): Promise<void> {
+  const previous = requestGateTail;
+  let release!: () => void;
+  requestGateTail = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await previous;
+  try {
+    while (true) {
+      const scheduledAt = Math.max(nextRequestAt, retryNotBefore);
+      await wait(scheduledAt - Date.now(), signal);
+
+      if (pauseRequested) {
+        throw new DOMException("Operación pausada.", "AbortError");
+      }
+      if (!isOnline()) {
+        throw new TypeError("La conexión se perdió durante el enriquecimiento.");
+      }
+
+      const now = Date.now();
+      if (now < nextRequestAt || now < retryNotBefore) continue;
+      nextRequestAt = now + ENRICHMENT_REQUEST_INTERVAL_MS;
+      return;
+    }
+  } finally {
+    release();
+  }
+}
+
 async function persistMovieMetadata(
   movieId: string,
   tmdbId: number,
@@ -210,8 +280,8 @@ async function persistMovieMetadata(
     const current = await prismaDb.movies.get(movieId);
     if (current) {
       const patch = createMovieMetadataPatch(current, details, now);
-      // Actualiza solo propiedades cinematográficas: los datos personales viven
-      // en tablas separadas y no se reescriben durante este proceso.
+      // Solo se actualizan metadatos cinematográficos. Los datos personales
+      // viven en tablas separadas y no se reescriben durante este proceso.
       await prismaDb.movies.update(movieId, patch);
     }
     await prismaDb.appMetadata.put({
@@ -231,135 +301,82 @@ async function emitSnapshot(): Promise<void> {
   for (const listener of listeners) listener(snapshot);
 }
 
-async function runQueue(token: string, candidates: MovieRecord[]): Promise<void> {
-  let processed = 0;
-  let lastRequestAt = 0;
+type MovieOutcome = "complete" | "not-found" | "error" | "interrupted";
 
-  for (const movie of candidates) {
-    if (pauseRequested) break;
-    if (!isOnline()) {
-      pauseReason = "waiting-connection";
-      await saveQueueState({ status: "waiting-connection", processed, currentTmdbId: undefined });
-      await emitSnapshot();
-      return;
-    }
+async function enrichMovie(
+  movie: MovieRecord,
+  token: string
+): Promise<MovieOutcome> {
+  const previous = (await readItemStates()).get(movie.tmdbId);
+  let attempts = previous?.attempts ?? 0;
+  let retryDelay = 0;
 
-    await saveQueueState({
-      status: "running",
-      total: candidates.length,
-      processed,
-      currentTmdbId: movie.tmdbId,
-      lastError: undefined
-    });
-    await emitSnapshot();
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    if (pauseRequested) return "interrupted";
 
-    const previous = (await readItemStates()).get(movie.tmdbId);
-    let outcome: "complete" | "not-found" | "error" | "interrupted" = "error";
-    let attempts = previous?.attempts ?? 0;
-    let retryDelay = 0;
+    const controller = new AbortController();
+    activeControllers.add(controller);
 
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-      if (pauseRequested) {
-        outcome = "interrupted";
-        break;
+    try {
+      if (retryDelay > 0) {
+        await wait(retryDelay, controller.signal);
+      }
+      await acquireRequestSlot(controller.signal);
+
+      if (pauseRequested) return "interrupted";
+      if (!isOnline()) throw new TypeError("La conexión se perdió durante el enriquecimiento.");
+
+      attempts += 1;
+      await saveItemState({
+        tmdbId: movie.tmdbId,
+        status: "pending",
+        attempts,
+        updatedAt: new Date().toISOString()
+      });
+
+      const details = await getMovieDetailsForEnrichment(token, movie.tmdbId, controller.signal);
+      await persistMovieMetadata(movie.id, movie.tmdbId, attempts, details);
+      return "complete";
+    } catch (error) {
+      if (pauseRequested || isAbortError(error)) {
+        await saveItemState({
+          tmdbId: movie.tmdbId,
+          status: "pending",
+          attempts,
+          updatedAt: new Date().toISOString(),
+          lastError: previous?.lastError
+        });
+        return "interrupted";
       }
 
-      const controller = new AbortController();
-      activeController = controller;
-      try {
-        const rateLimitWait = Math.max(0, REQUEST_INTERVAL_MS - (Date.now() - lastRequestAt));
-        await wait(Math.max(rateLimitWait, retryDelay), controller.signal);
-        if (!isOnline()) {
-          pauseReason = "waiting-connection";
-          throw new Error("La conexión se perdió durante el enriquecimiento.");
-        }
-
-        attempts += 1;
+      if (!isOnline()) {
+        pauseReason = "waiting-connection";
+        pauseRequested = true;
+        abortAllRequests();
         await saveItemState({
           tmdbId: movie.tmdbId,
           status: "pending",
           attempts,
           updatedAt: new Date().toISOString()
         });
+        return "interrupted";
+      }
 
-        lastRequestAt = Date.now();
-        const details = await getMovieDetailsForEnrichment(token, movie.tmdbId, controller.signal);
-        await persistMovieMetadata(movie.id, movie.tmdbId, attempts, details);
-        outcome = "complete";
-        break;
-      } catch (error) {
-        if (pauseRequested || isAbortError(error)) {
-          outcome = "interrupted";
-          await saveItemState({
-            tmdbId: movie.tmdbId,
-            status: "pending",
-            attempts,
-            updatedAt: new Date().toISOString()
-          });
-          break;
-        }
+      const classification = classifyEnrichmentError(error);
+      const message = error instanceof Error ? error.message : "No se pudo consultar TMDB.";
 
-        if (!isOnline()) {
-          pauseReason = "waiting-connection";
-          outcome = "interrupted";
-          await saveItemState({
-            tmdbId: movie.tmdbId,
-            status: "pending",
-            attempts,
-            updatedAt: new Date().toISOString()
-          });
-          break;
-        }
+      if (classification === "not-found") {
+        await saveItemState({
+          tmdbId: movie.tmdbId,
+          status: "not-found",
+          attempts,
+          updatedAt: new Date().toISOString(),
+          lastError: "TMDB no encontró esta película (404)."
+        });
+        return "not-found";
+      }
 
-        const classification = classifyEnrichmentError(error);
-        const message = error instanceof Error ? error.message : "No se pudo consultar TMDB.";
-
-        if (classification === "not-found") {
-          outcome = "not-found";
-          await saveItemState({
-            tmdbId: movie.tmdbId,
-            status: "not-found",
-            attempts,
-            updatedAt: new Date().toISOString(),
-            lastError: "TMDB no encontró esta película (404)."
-          });
-          break;
-        }
-
-        if (classification === "authentication") {
-          outcome = "error";
-          await saveItemState({
-            tmdbId: movie.tmdbId,
-            status: "error",
-            attempts,
-            updatedAt: new Date().toISOString(),
-            lastError: message
-          });
-          await saveQueueState({
-            status: "paused",
-            total: candidates.length,
-            processed,
-            currentTmdbId: undefined,
-            lastError: "Revisa la credencial TMDB en Ajustes. " + message
-          });
-          await emitSnapshot();
-          return;
-        }
-
-        if (classification === "retryable" && attempt < MAX_ATTEMPTS) {
-          const retryAfter = error instanceof TmdbHttpError ? error.retryAfterMs : undefined;
-          retryDelay = retryAfter ?? RETRY_DELAYS_MS[attempt - 1] ?? 4000;
-          await saveItemState({
-            tmdbId: movie.tmdbId,
-            status: "pending",
-            attempts,
-            updatedAt: new Date().toISOString(),
-            lastError: message
-          });
-          continue;
-        }
-
-        outcome = "error";
+      if (classification === "authentication") {
         await saveItemState({
           tmdbId: movie.tmdbId,
           status: "error",
@@ -367,49 +384,100 @@ async function runQueue(token: string, candidates: MovieRecord[]): Promise<void>
           updatedAt: new Date().toISOString(),
           lastError: message
         });
-        break;
-      } finally {
-        activeController = null;
+        fatalQueueError = "Revisa la credencial TMDB en Ajustes. " + message;
+        pauseReason = "paused";
+        pauseRequested = true;
+        abortAllRequests();
+        return "interrupted";
       }
-    }
 
-    if (outcome === "interrupted" || pauseRequested) {
-      await saveQueueState({
-        status: pauseReason,
+      if (classification === "retryable" && attempt < MAX_ATTEMPTS) {
+        if (error instanceof TmdbHttpError && error.status === 429) {
+          extendRetryCooldown(error.retryAfterMs);
+          retryDelay = 0;
+        } else {
+          retryDelay = RETRY_DELAYS_MS[attempt - 1] ?? 4000;
+        }
+
+        await saveItemState({
+          tmdbId: movie.tmdbId,
+          status: "pending",
+          attempts,
+          updatedAt: new Date().toISOString(),
+          lastError: message
+        });
+        continue;
+      }
+
+      await saveItemState({
+        tmdbId: movie.tmdbId,
+        status: "error",
+        attempts,
+        updatedAt: new Date().toISOString(),
+        lastError: message
+      });
+      return "error";
+    } finally {
+      activeControllers.delete(controller);
+    }
+  }
+
+  return "error";
+}
+
+async function runQueue(token: string, candidates: MovieRecord[]): Promise<void> {
+  let processed = 0;
+  requestGateTail = Promise.resolve();
+  nextRequestAt = 0;
+  retryNotBefore = 0;
+  activeControllers.clear();
+  activeTmdbIds.clear();
+  fatalQueueError = undefined;
+
+  await runWithConcurrency(
+    candidates,
+    ENRICHMENT_CONCURRENCY,
+    async (movie) => {
+      if (pauseRequested) return;
+
+      activeTmdbIds.add(movie.tmdbId);
+      await persistQueuePatch({
+        status: "running",
         total: candidates.length,
         processed,
-        currentTmdbId: undefined
+        currentTmdbId: activeTmdbIds.values().next().value,
+        lastError: undefined
       });
       await emitSnapshot();
-      return;
-    }
 
-    processed += 1;
-    await saveQueueState({
-      status: "running",
-      total: candidates.length,
-      processed,
-      currentTmdbId: undefined,
-      lastError: outcome === "error" ? "Una o más películas requieren un nuevo intento." : undefined
-    });
-    await emitSnapshot();
-  }
+      const outcome = await enrichMovie(movie, token);
+      activeTmdbIds.delete(movie.tmdbId);
 
-  if (pauseRequested) {
-    await saveQueueState({
-      status: pauseReason,
-      total: candidates.length,
-      processed,
-      currentTmdbId: undefined
-    });
-  } else {
-    await saveQueueState({
-      status: "completed",
-      total: candidates.length,
-      processed,
-      currentTmdbId: undefined
-    });
-  }
+      if (outcome !== "interrupted") processed += 1;
+      await persistQueuePatch({
+        status: pauseRequested ? pauseReason : "running",
+        total: candidates.length,
+        processed,
+        currentTmdbId: activeTmdbIds.values().next().value,
+        lastError: fatalQueueError ?? (outcome === "error"
+          ? "Una o más películas requieren un nuevo intento."
+          : undefined)
+      });
+      await emitSnapshot();
+    },
+    () => pauseRequested
+  );
+
+  const finalStatus = fatalQueueError ? "paused" : pauseRequested ? pauseReason : "completed";
+  await persistQueuePatch({
+    status: finalStatus,
+    total: candidates.length,
+    processed,
+    currentTmdbId: undefined,
+    lastError: fatalQueueError
+  });
+  activeControllers.clear();
+  activeTmdbIds.clear();
   await emitSnapshot();
 }
 
@@ -423,12 +491,13 @@ export function startEnrichmentQueue(token: string): Promise<void> {
 
   pauseRequested = false;
   pauseReason = "paused";
+  fatalQueueError = undefined;
 
   const operation = (async () => {
     const candidates = await collectCandidates();
 
     if (pauseRequested) {
-      await saveQueueState({
+      await persistQueuePatch({
         status: pauseReason,
         total: candidates.length,
         processed: 0,
@@ -439,7 +508,7 @@ export function startEnrichmentQueue(token: string): Promise<void> {
     }
 
     if (!isOnline()) {
-      await saveQueueState({
+      await persistQueuePatch({
         status: "waiting-connection",
         total: candidates.length,
         processed: 0,
@@ -450,7 +519,7 @@ export function startEnrichmentQueue(token: string): Promise<void> {
     }
 
     if (candidates.length === 0) {
-      await saveQueueState({
+      await persistQueuePatch({
         status: "completed",
         total: 0,
         processed: 0,
@@ -461,7 +530,7 @@ export function startEnrichmentQueue(token: string): Promise<void> {
       return;
     }
 
-    await saveQueueState({
+    await persistQueuePatch({
       status: "running",
       total: candidates.length,
       processed: 0,
@@ -473,7 +542,7 @@ export function startEnrichmentQueue(token: string): Promise<void> {
     runner = runQueue(normalizedToken, candidates)
       .catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : "La cola se detuvo inesperadamente.";
-        await saveQueueState({
+        await persistQueuePatch({
           status: "paused",
           currentTmdbId: undefined,
           lastError: message
@@ -482,7 +551,8 @@ export function startEnrichmentQueue(token: string): Promise<void> {
       })
       .finally(() => {
         runner = null;
-        activeController = null;
+        activeControllers.clear();
+        activeTmdbIds.clear();
       });
 
     await runner;
@@ -497,12 +567,12 @@ export function startEnrichmentQueue(token: string): Promise<void> {
 export async function pauseEnrichmentQueue(waitingForConnection = false): Promise<void> {
   pauseRequested = true;
   pauseReason = waitingForConnection ? "waiting-connection" : "paused";
-  activeController?.abort();
+  abortAllRequests();
 
   if (!runner && !starting) {
     const state = await readQueueState();
     if (state.status === "running") {
-      await saveQueueState({
+      await persistQueuePatch({
         status: pauseReason,
         currentTmdbId: undefined
       });
@@ -540,9 +610,12 @@ export async function getEnrichmentSnapshot(): Promise<EnrichmentSnapshot> {
   const progressPercent = movies.length === 0
     ? 100
     : Math.round((processedMovies / movies.length) * 100);
-  const currentMovie = queue.currentTmdbId
-    ? movies.find((movie) => movie.tmdbId === queue.currentTmdbId)
-    : undefined;
+  const firstActiveId = activeTmdbIds.values().next().value;
+  const currentMovie = firstActiveId !== undefined
+    ? movies.find((movie) => movie.tmdbId === firstActiveId)
+    : queue.currentTmdbId
+      ? movies.find((movie) => movie.tmdbId === queue.currentTmdbId)
+      : undefined;
 
   return {
     status: queue.status === "running" && !isOnline() ? "waiting-connection" : queue.status,
@@ -553,6 +626,7 @@ export async function getEnrichmentSnapshot(): Promise<EnrichmentSnapshot> {
     notFoundMovies,
     progressPercent,
     currentTitle: currentMovie?.title,
+    activeCount: activeTmdbIds.size,
     lastError: queue.lastError,
     isOnline: isOnline()
   };
@@ -572,11 +646,7 @@ async function resumeQueueAfterConnection(): Promise<void> {
   if (!isOnline()) return;
 
   const active = runner ?? starting;
-  if (active) {
-    // Si online llega antes de terminar la cancelación por offline, espera a
-    // que el ciclo anterior persista su estado antes de intentar reanudar.
-    await active.catch(() => undefined);
-  }
+  if (active) await active.catch(() => undefined);
 
   if (!isOnline()) return;
   const state = await readQueueState();
@@ -595,4 +665,3 @@ if (typeof window !== "undefined") {
     void resumeQueueAfterConnection().catch(() => undefined);
   });
 }
-

@@ -67,7 +67,7 @@ No se considera funcional una pantalla solo por existir visualmente. Cada módul
 ### Etapa 14 — criterios de aceptación
 
 - Detectar películas incompletas por ID TMDB y evitar duplicados o consultas repetidas.
-- Procesar una película a la vez, respetar una pausa entre solicitudes y atender Retry-After ante HTTP 429.
+- Procesar hasta cuatro películas simultáneamente, respetar una pausa de 250 ms entre inicios de solicitudes y aplicar Retry-After como pausa global ante HTTP 429.
 - Reintentar errores temporales, detenerse ante credenciales inválidas y registrar los 404 como no encontrados.
 - Guardar el estado en IndexedDB para continuar tras pausas, desconexiones o cierre de la aplicación.
 - Actualizar solo metadatos cinematográficos; no modificar Biblioteca, favoritos, visionados ni datos personales.
