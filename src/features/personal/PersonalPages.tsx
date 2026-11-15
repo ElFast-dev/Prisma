@@ -6,7 +6,7 @@ import {
   Film, Clapperboard, Clock3 as AchievementClock,
   SlidersHorizontal
 } from "lucide-react";
-import type { Collection, LocalProfile, MovieRecord, LibraryEntry, Viewing } from "../../domain/types";
+import type { Collection, LocalProfile, MovieRecord, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { ViewingForm } from "../../components/ViewingForm";
@@ -31,7 +31,7 @@ import { calculateAchievements, type AchievementIcon } from "../../domain/achiev
 import { getLocalProfile, saveLocalProfile } from "../../infrastructure/database/profileService";
 import { filterLibraryItems, getLibraryFacets, getMovieReleaseStatus, type LibraryBrowseItem, type LibraryBrowseOptions, type LibrarySort } from "../../domain/libraryBrowse";
 import { DEFAULT_LIBRARY_FILTERS, normalizeLibraryFilters, selectLibrarySort } from "../../domain/libraryPreferences";
-import { getUserPreferences, saveLibraryBrowseFilters, saveLibraryView } from "../../infrastructure/database/preferencesService";
+import { getUserPreferences, saveLibraryBrowseFilters } from "../../infrastructure/database/preferencesService";
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { navigateBack } from "../../navigation/routeHistory";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
