@@ -48,10 +48,10 @@ jobs:
           grep -q 'manifest' /tmp/prisma-index.html
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -70,105 +70,22 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   smoke-test:
     name: Verify published website
     needs: deploy
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
       - name: Check live HTML, JavaScript, CSS and PWA manifest
         env:
-          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import time
-          from html.parser import HTMLParser
-          from urllib.parse import urljoin
-          from urllib.request import urlopen
-
-          page_url = os.environ["PAGE_URL"].rstrip("/") + "/"
-
-          class Assets(HTMLParser):
-              def __init__(self):
-                  super().__init__()
-                  self.title = False
-                  self.title_text = ""
-                  self.scripts = []
-                  self.styles = []
-                  self.manifests = []
-
-              def handle_starttag(self, tag, attrs):
-                  attrs = dict(attrs)
-                  if tag == "script" and attrs.get("src"):
-                      self.scripts.append(attrs["src"])
-                  if tag == "link":
-                      rel = attrs.get("rel", "").lower().split()
-                      href = attrs.get("href")
-                      if href and "stylesheet" in rel:
-                          self.styles.append(href)
-                      if href and "manifest" in rel:
-                          self.manifests.append(href)
-
-              def handle_startendtag(self, tag, attrs):
-                  self.handle_starttag(tag, attrs)
-
-              def handle_data(self, data):
-                  if self.title:
-                      self.title_text += data
-
-              def handle_endtag(self, tag):
-                  if tag == "title":
-                      self.title = False
-
-              def handle_starttag(self, tag, attrs):
-                  attrs = dict(attrs)
-                  if tag == "title":
-                      self.title = True
-                  elif tag == "script" and attrs.get("src"):
-                      self.scripts.append(attrs["src"])
-                  elif tag == "link":
-                      rel = attrs.get("rel", "").lower().split()
-                      href = attrs.get("href")
-                      if href and "stylesheet" in rel:
-                          self.styles.append(href)
-                      if href and "manifest" in rel:
-                          self.manifests.append(href)
-
-          last_error = None
-          for attempt in range(1, 13):
-              try:
-                  with urlopen(page_url, timeout=20) as response:
-                      html = response.read().decode("utf-8")
-                      assert response.status == 200, f"HTML: HTTP {response.status}"
-
-                  parser = Assets()
-                  parser.feed(html)
-                  assert "Prisma" in html, "El HTML publicado no contiene la marca Prisma."
-                  assert parser.scripts, "No se encontró el bundle JavaScript."
-                  assert parser.styles, "No se encontró la hoja de estilos."
-                  assert parser.manifests, "No se encontró el manifiesto PWA."
-
-                  for asset in parser.scripts + parser.styles + parser.manifests:
-                      asset_url = urljoin(page_url, asset)
-                      with urlopen(asset_url, timeout=20) as response:
-                          body = response.read()
-                          assert response.status == 200 and body, f"Recurso inválido: {asset_url}"
-
-                  manifest_url = urljoin(page_url, parser.manifests[0])
-                  with urlopen(manifest_url, timeout=20) as response:
-                      manifest = json.loads(response.read().decode("utf-8"))
-                  assert manifest.get("name") == "Prisma", "El manifiesto PWA no identifica a Prisma."
-                  assert manifest.get("scope") == "/Prisma/", "El scope de la PWA no coincide con GitHub Pages."
-
-                  print(f"OK: sitio publicado y {len(parser.scripts + parser.styles + parser.manifests)} recursos cargan correctamente.")
-                  break
-              except Exception as error:
-                  last_error = error
-                  if attempt == 12:
-                      raise
-                  print(f"Intento {attempt}/12: {error}; esperando propagación de Pages.")
-                  time.sleep(10)
-          PY
+          PRISMA_SMOKE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: node scripts/smoke-test-pages.mjs
