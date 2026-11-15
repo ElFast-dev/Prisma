@@ -31,6 +31,19 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
+      - name: Smoke test production build
+        run: |
+          set -euo pipefail
+          npm run preview -- --host 127.0.0.1 --port 4174 --strictPort > /tmp/prisma-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:4174/Prisma/ -o /tmp/prisma-index.html; then
+              break
+            fi
+            sleep 2
+          done
+          PRISMA_SMOKE_URL=http://127.0.0.1:4174/Prisma/ PRISMA_SMOKE_ATTEMPTS=1 node scripts/smoke-test-pages.mjs
       - name: Upload generated dependency lockfile
         uses: actions/upload-artifact@v7
         with:
