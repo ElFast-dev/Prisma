@@ -53,13 +53,32 @@ export interface ExternalMovieImportPlan {
   };
 }
 
+export function utcInstantToCalendarDate(value: string, timeZone = "America/Panama"): string {
+  const instant = new Date(value);
+  if (!Number.isFinite(instant.getTime())) {
+    throw new Error("La fecha UTC de una película no es válida.");
+  }
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(instant);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return values.year + "-" + values.month + "-" + values.day;
+}
+
 function ensureUnique(values: number[], label: string): void {
   if (new Set(values).size !== values.length) {
     throw new Error("El archivo externo contiene identificadores duplicados en " + label + ".");
   }
 }
 
-export function parseExternalMovieImport(content: string): ExternalMovieImportPlan {
+export function parseExternalMovieImport(
+  content: string,
+  timeZone = "America/Panama"
+): ExternalMovieImportPlan {
   if (content.length > 50 * 1024 * 1024) {
     throw new Error("El archivo supera el tamaño máximo permitido de 50 MB.");
   }
@@ -97,7 +116,7 @@ export function parseExternalMovieImport(content: string): ExternalMovieImportPl
       title: movie.t,
       addedAt: movie.a,
       status: "watched",
-      watchedOn: movie.a.slice(0, 10),
+      watchedOn: utcInstantToCalendarDate(movie.a, timeZone),
       rating: rating?.r,
       ratingAt: rating?.rA
     });

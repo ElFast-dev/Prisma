@@ -153,7 +153,8 @@ export function SettingsPage() {
     setBackupError("");
     setBackupMessage("");
     try {
-      const plan = parseExternalMovieImport(await file.text());
+      const deviceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Panama";
+      const plan = parseExternalMovieImport(await file.text(), deviceTimeZone);
       if (plan.movies.length === 0) {
         throw new Error("El archivo no contiene películas con un identificador TMDB válido.");
       }
@@ -162,7 +163,7 @@ export function SettingsPage() {
         + plan.summary.pendingMovies + " de Pendientes. Se importarán "
         + plan.summary.matchedRatings + " calificaciones. "
         + "Las series, episodios y listas externas se ignorarán. "
-        + "La fecha de alta del historial se usará como fecha del visionado porque el archivo no ofrece otra fecha. "
+        + "La fecha de cada visionado se obtendrá convirtiendo el instante UTC del campo a a la fecha local (" + deviceTimeZone + "). El campo rA no se usa para la racha. "
         + "Se conservarán tu perfil, colecciones, preferencias y datos existentes; no se reemplazarán. "
         + (plan.summary.orphanRatings
           ? plan.summary.orphanRatings + " calificación(es) sin película importable se omitirán. "
@@ -184,6 +185,7 @@ export function SettingsPage() {
         + result.newLibraryEntries + " agregadas a la Biblioteca; "
         + result.viewingsAdded + " calificaciones convertidas en visionados. "
         + result.alreadyHadViewings + " película(s) ya tenían visionados y no se duplicaron. "
+        + result.correctedImportedDates + " fecha(s) de importaciones anteriores se corrigieron a la hora local. "
         + "Tu perfil, colecciones, preferencias y credencial TMDB se conservaron."
       );
     } catch (cause) {
@@ -308,7 +310,7 @@ export function SettingsPage() {
           <ul className="settings-bullet-list">
             <li>La importación combina los datos: no borra películas ni datos personales existentes en Prisma.</li>
             <li>Los identificadores TMDB permiten reconocer las películas; las que ya existen no se duplican.</li>
-            <li>La fecha de alta del historial externo se utiliza como fecha del visionado.</li>
+            <li>La fecha del visionado se obtiene de a, convertida desde UTC al día local del dispositivo; rA no se usa para la racha.</li>
           </ul>
         </div>
 

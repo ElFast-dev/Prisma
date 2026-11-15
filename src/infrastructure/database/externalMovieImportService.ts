@@ -10,6 +10,7 @@ export interface ExternalMovieImportResult {
   viewingsAdded: number;
   alreadyKnownMovies: number;
   alreadyHadViewings: number;
+  correctedImportedDates: number;
 }
 
 export async function importExternalMovies(plan: ExternalMovieImportPlan): Promise<ExternalMovieImportResult> {
@@ -24,7 +25,8 @@ export async function importExternalMovies(plan: ExternalMovieImportPlan): Promi
     newPendingEntries: 0,
     viewingsAdded: 0,
     alreadyKnownMovies: 0,
-    alreadyHadViewings: 0
+    alreadyHadViewings: 0,
+    correctedImportedDates: 0
   };
 
   await prismaDb.transaction(
@@ -46,9 +48,15 @@ export async function importExternalMovies(plan: ExternalMovieImportPlan): Promi
       const entriesByMovieId = new Map<string, LibraryEntry>(storedEntries.map((entry) => [entry.movieId, entry]));
       const viewingCounts = new Map<string, number>();
       const maxSequences = new Map<string, number>();
+      const importedViewingsByMovie = new Map<string, Viewing[]>();
 
       for (const viewing of storedViewings) {
         viewingCounts.set(viewing.movieId, (viewingCounts.get(viewing.movieId) ?? 0) + 1);
+        if (viewing.operationId.startsWith("external-import-")) {
+          const imported = importedViewingsByMovie.get(viewing.movieId) ?? [];
+          imported.push(viewing);
+          importedViewingsByMovie.set(viewing.movieId, imported);
+        }
         maxSequences.set(
           viewing.movieId,
           Math.max(maxSequences.get(viewing.movieId) ?? 0, viewing.sequenceNumber)
@@ -87,6 +95,15 @@ export async function importExternalMovies(plan: ExternalMovieImportPlan): Promi
 
         if (source.status === "watched" && existingViewingCount > 0) {
           result.alreadyHadViewings += 1;
+          const previousImport = importedViewingsByMovie.get(movie.id)?.[0];
+          if (previousImport && source.watchedOn && previousImport.watchedOn !== source.watchedOn) {
+            viewingsToWrite.push({
+              ...previousImport,
+              watchedOn: source.watchedOn,
+              updatedAt: now
+            });
+            result.correctedImportedDates += 1;
+          }
         } else if (source.status === "watched" && source.rating !== undefined && source.watchedOn) {
           const sequenceNumber = Math.max(
             movie.lastViewingSequence,
@@ -139,7 +156,7 @@ export async function importExternalMovies(plan: ExternalMovieImportPlan): Promi
 
       if (moviesToWrite.size) await prismaDb.movies.bulkPut([...moviesToWrite.values()]);
       if (entriesToWrite.size) await prismaDb.libraryEntries.bulkPut([...entriesToWrite.values()]);
-      if (viewingsToWrite.length) await prismaDb.viewings.bulkAdd(viewingsToWrite);
+      if (viewingsToWrite.length) await prismaDb.viewings.bulkPut(viewingsToWrite);
       if (moviesToWrite.size || entriesToWrite.size || viewingsToWrite.length) {
         await prismaDb.spectroSnapshots.clear();
       }

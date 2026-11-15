@@ -41,16 +41,36 @@ describe("parseExternalMovieImport", () => {
       tmdbId: 15421,
       title: "Becket",
       status: "watched",
-      watchedOn: "2025-11-06",
+      watchedOn: "2025-11-05",
       rating: 6
     });
     expect(result.movies[2]).toMatchObject({ tmdbId: 936075, status: "pending" });
   });
 
-  it("accepts ISO UTC dates both with and without milliseconds", () => {
+  it("converts UTC instants to the Panama calendar date, including the previous evening", () => {
+    const result = parseExternalMovieImport(JSON.stringify(sourceBackup()));
+    expect(result.movies[0].watchedOn).toBe("2025-11-05");
+    expect(result.movies[1].watchedOn).toBe("2025-11-05");
+  });
+
+  it("accepts ISO UTC dates with and without milliseconds and keeps the a date instead of rA", () => {
     const result = parseExternalMovieImport(JSON.stringify(sourceBackup()));
     expect(result.movies[0].addedAt).toBe("2025-11-06T00:22:23.302Z");
     expect(result.movies[1].addedAt).toBe("2025-11-06T00:22:39Z");
+    expect(result.movies[0].watchedOn).toBe("2025-11-05");
+    expect(result.movies[0].ratingAt).toBe("2026-11-15T06:33:31.920Z");
+  });
+
+  it("keeps midnight at 05:00 UTC on the same Panama date", () => {
+    const backup = sourceBackup();
+    backup.movies.cH[0].a = "2026-01-27T05:00:00Z";
+    const result = parseExternalMovieImport(JSON.stringify(backup));
+    expect(result.movies[0].watchedOn).toBe("2026-01-27");
+  });
+
+  it("supports an explicitly supplied device timezone", () => {
+    const result = parseExternalMovieImport(JSON.stringify(sourceBackup()), "UTC");
+    expect(result.movies[0].watchedOn).toBe("2025-11-06");
   });
 
   it("strips a UTF-8 BOM before parsing", () => {
