@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   verify:
+    name: TypeScript · Unit tests · Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,3 +29,36 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
+      - name: Upload generated dependency lockfile
+        uses: actions/upload-artifact@v5
+        with:
+          name: ci-generated-package-lock
+          path: package-lock.json
+          retention-days: 1
+
+  e2e:
+    name: Browser E2E · Playwright
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Run end-to-end browser tests
+        run: npm run test:e2e
+      - name: Upload Playwright report and failure evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
