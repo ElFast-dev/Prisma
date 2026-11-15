@@ -40,7 +40,11 @@ test("exporta y restaura una copia Prisma ficticia en el navegador aislado", asy
     expect(dialog.message()).toContain("1 películas");
     await dialog.accept();
   });
-  await page.locator("#prisma-backup-file").setInputFiles(downloadPath!);
+  await page.locator("#prisma-backup-file").setInputFiles({
+    name: download.suggestedFilename(),
+    mimeType: "application/json",
+    buffer: await readFile(downloadPath!)
+  });
 
   await expect(page.getByRole("status").getByText(/Restauración Prisma completada/)).toBeVisible();
   await page.goto("#/personal/library");
