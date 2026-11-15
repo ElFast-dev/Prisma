@@ -7,9 +7,10 @@ import {
 } from "./enrichmentService";
 
 describe("enrichment queue throughput", () => {
-  it("uses a higher parallelism and a controlled 20-requests-per-second pace", () => {
-    expect(ENRICHMENT_CONCURRENCY).toBe(16);
-    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(50);
+  it("uses 24 parallel workers and a controlled pace below 30 requests per second", () => {
+    expect(ENRICHMENT_CONCURRENCY).toBe(24);
+    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(35);
+    expect(1000 / ENRICHMENT_REQUEST_INTERVAL_MS).toBeLessThan(30);
   });
 });
 

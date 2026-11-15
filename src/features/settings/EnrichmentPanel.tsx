@@ -219,7 +219,7 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
       )}
 
       {snapshot.status === "running" && (
-        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 16 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes; puedes pausar y continuar más tarde.</p>
+        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 24 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes; puedes pausar y continuar más tarde.</p>
       )}
       {snapshot.status === "completed" && !snapshot.pendingMovies && !snapshot.errorMovies && (
         <p className="enrichment-success"><CheckCircle2 size={15} /> No quedan películas pendientes de enriquecimiento.</p>

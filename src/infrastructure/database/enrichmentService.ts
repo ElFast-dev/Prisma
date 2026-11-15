@@ -12,11 +12,11 @@ import { getTmdbAccessToken } from "../tmdb/settings";
 const QUEUE_KEY = "library-enrichment:queue:v1";
 const ITEM_PREFIX = "library-enrichment:movie:";
 
-// Dieciséis trabajos simultáneos con un máximo inicial de 20 solicitudes/s.
-// Se deja margen frente al límite superior aproximado de TMDB y se reduce el
-// ritmo automáticamente cuando el servicio responde HTTP 429.
-export const ENRICHMENT_CONCURRENCY = 16;
-export const ENRICHMENT_REQUEST_INTERVAL_MS = 50;
+// Veinticuatro trabajos simultáneos con un máximo inicial cercano a 28 solicitudes/s.
+// Se mantiene margen frente al límite superior aproximado de TMDB y se reduce
+// automáticamente el ritmo cuando el servicio responde HTTP 429.
+export const ENRICHMENT_CONCURRENCY = 24;
+export const ENRICHMENT_REQUEST_INTERVAL_MS = 35;
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [1500, 4000];
 const RATE_LIMIT_FALLBACK_MS = 2000;
