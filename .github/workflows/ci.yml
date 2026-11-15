@@ -23,6 +23,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
       - name: TypeScript check
         run: npm run typecheck
       - name: Unit tests
