@@ -86,15 +86,15 @@ const preferencesSchema = z.object({
   historyBrowse: z.object({
     viewMode: z.enum(["timeline", "calendar"]),
     sortOrder: z.enum(["newest", "oldest"]),
-    month: z.string().regex(/^\\d{4}-(0[1-9]|1[0-2])$/),
-    selectedDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).nullable()
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    selectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()
   }).strict().optional(),
   historyFilters: z.object({
     query: z.string().max(200),
     notes: z.enum(["all", "with-notes", "without-notes"]),
     rating: z.enum(["all", "9-10", "7-8", "1-6"]),
-    fromDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).or(z.literal("")),
-    toDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).or(z.literal(""))
+    fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")),
+    toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal(""))
   }).strict().optional(),
   libraryFilters: z.object({
     status: z.enum(["all", "watched", "pending", "favorites"]),
