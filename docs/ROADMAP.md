@@ -17,11 +17,13 @@
 2. Descubrir con tendencias, búsqueda y paginación progresiva.
 3. Ficha cinematográfica con metadatos, reparto, equipo, recomendaciones y disponibilidad por región.
 4. Guardado de películas y estados en IndexedDB.
-5. Historial, calificaciones individuales, confirmaciones y Deshacer.
-6. Colecciones, perfil y logros.
-7. Espectro por versiones.
-8. Copias de seguridad validadas.
-9. Modo offline, pruebas Android y publicación de GitHub Pages.
+5. Registro, edición y eliminación de visionados desde la ficha.
+6. Historial con calendario mensual, edición y eliminación de experiencias.
+7. Estadísticas personales derivadas del historial: películas, visionados, tiempo y rachas.
+8. Colecciones, perfil editable y logros.
+9. Espectro por versiones.
+10. Copias de seguridad validadas.
+11. Modo offline, pruebas Android y publicación de GitHub Pages.
 
 ## Regla
 
