@@ -46,7 +46,7 @@ Un error de TMDB no equivale a una película inexistente. Se reutiliza informaci
 
 ## Caché
 
-Los intervalos de revalidación serán decisiones internas de Prisma, no límites contractuales de TMDB. Los metadatos e imágenes no se eliminarán solo por superar una fecha de revalidación.
+Los intervalos de revalidación implementados son: búsquedas y tendencias 6 horas; detalles 30 días; créditos 90 días; recomendaciones 7 días; disponibilidad 24 horas; configuración de imágenes 30 días. Son decisiones internas de Prisma, no límites contractuales de TMDB. Los metadatos no se eliminan al vencer; se revalidan cuando vuelve a haber conexión. Las imágenes permanecen en Cache Storage hasta limpieza manual o presión de almacenamiento del navegador.
 
 ## No enviar datos personales
 

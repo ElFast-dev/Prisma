@@ -31,8 +31,7 @@ export default defineConfig({
             handler: "CacheFirst",
             options: {
               cacheName: "prisma-tmdb-images",
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 2500 }
+              cacheableResponse: { statuses: [0, 200] }
             }
           }
         ]

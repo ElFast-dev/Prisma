@@ -83,6 +83,18 @@ function client(token?: string): TmdbClient {
   return new TmdbClient(token);
 }
 
+function cacheTtlMs(cacheKey: string): number {
+  const hours = 60 * 60 * 1000;
+  const days = 24 * hours;
+  if (cacheKey.startsWith("search:") || cacheKey.startsWith("trending:")) return 6 * hours;
+  if (cacheKey.startsWith("movie:details:")) return 30 * days;
+  if (cacheKey.startsWith("movie:credits:")) return 90 * days;
+  if (cacheKey.startsWith("movie:recommendations:")) return 7 * days;
+  if (cacheKey.startsWith("movie:providers:")) return 24 * hours;
+  if (cacheKey.startsWith("configuration:")) return 30 * days;
+  return 24 * hours;
+}
+
 async function getCached<T>(
   token: string,
   cacheKey: string,
@@ -90,10 +102,18 @@ async function getCached<T>(
   params: Record<string, string | number | boolean | undefined> = {}
 ): Promise<{ data: T; fetchedAt: string; stale: boolean }> {
   const cached = await prismaDb.catalogCache.get(cacheKey);
-  const api = client(token);
+  const cachedTimestamp = cached ? Date.parse(cached.fetchedAt) : Number.NaN;
+  const cacheIsFresh = Boolean(
+    cached && Number.isFinite(cachedTimestamp)
+    && Date.now() - cachedTimestamp < cacheTtlMs(cacheKey)
+  );
+
+  if (cached && cacheIsFresh) {
+    return { data: cached.payload as T, fetchedAt: cached.fetchedAt, stale: false };
+  }
 
   try {
-    const data = await api.get<T>(endpoint, { params });
+    const data = await client(token).get<T>(endpoint, { params });
     const now = new Date().toISOString();
     const entry: CatalogCacheEntry = {
       cacheKey,
@@ -102,15 +122,18 @@ async function getCached<T>(
       fetchedAt: now,
       lastValidatedAt: now
     };
-    await prismaDb.catalogCache.put(entry);
+
+    // Una cuota local agotada no debe impedir mostrar el resultado recién obtenido.
+    try {
+      await prismaDb.catalogCache.put(entry);
+    } catch {
+      // El resultado sigue disponible en memoria para esta consulta.
+    }
+
     return { data, fetchedAt: now, stale: false };
   } catch (error) {
     if (cached) {
-      return {
-        data: cached.payload as T,
-        fetchedAt: cached.fetchedAt,
-        stale: true
-      };
+      return { data: cached.payload as T, fetchedAt: cached.fetchedAt, stale: true };
     }
     throw error;
   }
