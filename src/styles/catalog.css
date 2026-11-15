@@ -123,6 +123,9 @@
 }
 .hero-back { left: 16px; }
 .hero-menu { right: 16px; cursor: pointer; }
+.movie-options-list { display: grid; gap: 9px; }
+.movie-options-list .button { justify-content: flex-start; min-height: 48px; padding-left: 15px; }
+.button-quiet { background: transparent; color: var(--color-text-muted); }
 .movie-hero-title { position: absolute; z-index: 2; right: 22px; bottom: 25px; left: 22px; }
 .movie-hero-title h1 { margin: 0; color: white; font-size: clamp(27px, 7vw, 42px); line-height: 1.06; letter-spacing: -.04em; text-shadow: 0 2px 18px rgb(0 0 0 / 40%); }
 .movie-hero-title p { margin: 7px 0 0; color: rgb(255 255 255 / 78%); font-size: 12px; }

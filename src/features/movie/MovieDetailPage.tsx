@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, EllipsisVertical, Star, LoaderCircle, WifiOff, ChevronDown, ChevronUp, ExternalLink, Plus,
-  UserRound, Clapperboard
+  UserRound, Clapperboard, X
 } from "lucide-react";
 import type { MovieRecord, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
@@ -65,6 +65,7 @@ export function MovieDetailPage() {
   const [viewingForm, setViewingForm] = useState(false);
   const [editingViewing, setEditingViewing] = useState<Viewing | undefined>();
   const [ratingSectionOpen, setRatingSectionOpen] = useState(false);
+  const [movieMenuOpen, setMovieMenuOpen] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState(false);
   const [undoToken, setUndoToken] = useState<LibraryStatusUndoToken | null>(null);
   const [undoMessage, setUndoMessage] = useState("");
@@ -202,7 +203,7 @@ export function MovieDetailPage() {
         {heroImage ? <img src={heroImage} alt={(backdrop ? "Fondo cinematográfico de " : "Carátula de ") + title} className={backdrop ? undefined : "movie-hero-poster-fallback"} /> : <div className="movie-hero-placeholder"><Clapperboard size={44} /></div>}
         <div className="movie-hero-shade" />
         <a href="#/discover" className="movie-hero-control hero-back" aria-label="Volver a la pantalla anterior" onClick={(event) => { event.preventDefault(); navigateBack(); }}><ArrowLeft size={21} /></a>
-        <button className="movie-hero-control hero-menu" aria-label="Más opciones" onClick={() => setRatingSectionOpen((open) => !open)}><EllipsisVertical size={22} /></button>
+        <button className="movie-hero-control hero-menu" type="button" aria-label="Más opciones" aria-haspopup="dialog" aria-expanded={movieMenuOpen} onClick={() => setMovieMenuOpen(true)}><EllipsisVertical size={22} /></button>
         <div className="movie-hero-title">
           <h1>{title}</h1>
           {movie.original_title && movie.original_title !== title && <p>{movie.original_title}</p>}
@@ -223,6 +224,47 @@ export function MovieDetailPage() {
             {isPending ? "En Pendientes ✓" : "Agregar a Pendientes"}
           </button>
         </div>
+
+      {movieMenuOpen && (
+        <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setMovieMenuOpen(false);
+        }}>
+          <section className="bottom-sheet movie-options-sheet" role="dialog" aria-modal="true" aria-labelledby="movie-options-title">
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div><p className="eyebrow">PRISMA</p><h2 id="movie-options-title">Opciones de película</h2></div>
+              <button className="icon-button" type="button" aria-label="Cerrar opciones" onClick={() => setMovieMenuOpen(false)}><X size={19} /></button>
+            </div>
+            <div className="movie-options-list">
+              <button
+                className="button button-secondary button-full"
+                type="button"
+                onClick={() => {
+                  setEditingViewing(undefined);
+                  setMovieMenuOpen(false);
+                  setViewingForm(true);
+                }}
+              >
+                <Plus size={17} /> Registrar visionado
+              </button>
+              <button
+                className="button button-secondary button-full"
+                type="button"
+                disabled={isPending || busy}
+                onClick={() => {
+                  setMovieMenuOpen(false);
+                  setPendingConfirm(true);
+                }}
+              >
+                {isPending ? "Ya está en Pendientes" : "Agregar a Pendientes"}
+              </button>
+              <button className="button button-quiet button-full" type="button" onClick={() => setMovieMenuOpen(false)}>
+                Cerrar
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
         {pendingConfirm && (
           <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
