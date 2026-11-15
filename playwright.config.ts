@@ -28,6 +28,20 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         viewport: { width: 390, height: 844 }
       }
+    },
+    {
+      name: "firefox-mobile",
+      use: {
+        ...devices["Desktop Firefox"],
+        viewport: { width: 390, height: 844 }
+      }
+    },
+    {
+      name: "webkit-mobile",
+      use: {
+        ...devices["Desktop Safari"],
+        viewport: { width: 390, height: 844 }
+      }
     }
   ],
   webServer: {
