@@ -16,11 +16,11 @@ function normalizeHistoryBrowse(
   current?: Partial<HistoryBrowsePreferences> | null
 ): HistoryBrowsePreferences {
   const candidateMonth = typeof current?.month === "string" ? current.month : "";
-  const month = /^\\d{4}-(0[1-9]|1[0-2])$/.test(candidateMonth)
+  const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(candidateMonth)
     ? candidateMonth
     : currentLocalMonth();
   const candidateDate = typeof current?.selectedDate === "string" ? current.selectedDate : "";
-  const selectedDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(candidateDate)
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(candidateDate)
     && candidateDate.startsWith(month + "-")
     ? candidateDate
     : null;
@@ -37,9 +37,9 @@ function normalizeHistoryFilters(
   current?: Partial<HistoryFiltersPreferences> | null
 ): HistoryFiltersPreferences {
   const fromDate = typeof current?.fromDate === "string"
-    && /^\\d{4}-\\d{2}-\\d{2}$/.test(current.fromDate) ? current.fromDate : "";
+    && /^\d{4}-\d{2}-\d{2}$/.test(current.fromDate) ? current.fromDate : "";
   let toDate = typeof current?.toDate === "string"
-    && /^\\d{4}-\\d{2}-\\d{2}$/.test(current.toDate) ? current.toDate : "";
+    && /^\d{4}-\d{2}-\d{2}$/.test(current.toDate) ? current.toDate : "";
   if (fromDate && toDate && fromDate > toDate) toDate = "";
 
   return {
