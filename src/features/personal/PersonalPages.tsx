@@ -487,11 +487,6 @@ function FilmPlaceholder() {
   return <span className="list-poster-placeholder">PRISMA</span>;
 }
 
-interface CalendarCell {
-  date: string;
-  day: number;
-}
-
 type HistoryViewMode = "timeline" | "calendar";
 
 export function HistoryPage() {

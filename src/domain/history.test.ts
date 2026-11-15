@@ -7,8 +7,7 @@ import {
   groupHistoryItemsByMonth,
   shiftHistoryMonth,
   sortHistoryItems,
-  type HistoryFilters,
-  type HistoryItem
+  type HistoryFilters
 } from "./history";
 
 function movie(id: string, title: string, options: Partial<MovieRecord> = {}): MovieRecord {
