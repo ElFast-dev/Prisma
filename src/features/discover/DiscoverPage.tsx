@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Search, Film, LoaderCircle, WifiOff } from "lucide-react";
+import { Search, X, Film, LoaderCircle, WifiOff } from "lucide-react";
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";

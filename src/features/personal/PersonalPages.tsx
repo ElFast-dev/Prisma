@@ -206,7 +206,6 @@ export function LibraryPage() {
         onChange={(query) => updateFilters({ query })}
         onFiltersClick={() => { setSettingsOpen(false); setFiltersOpen(true); }}
         filtersOpen={filtersOpen}
-        filtersActive={hasActiveFilters}
         onSettingsClick={() => { setFiltersOpen(false); setSettingsOpen(true); }}
         settingsExpanded={settingsOpen}
         filtersActive={hasNonDefaultBrowseOptions}
