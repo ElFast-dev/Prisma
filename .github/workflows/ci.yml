@@ -50,7 +50,7 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Install Chromium Firefox WebKit and system dependencies
+      - name: Install browser engines and system dependencies
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Run end-to-end browser tests
         run: npm run test:e2e
