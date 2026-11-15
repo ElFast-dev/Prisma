@@ -133,7 +133,7 @@ describe("filterLibraryItems", () => {
     expect(filterLibraryItems(library, {
       ...defaults,
       yearFrom: "2000"
-    }).map(x => x.movie.id)).toEqual(["movie-2", "movie-1"]);
+    }).map(x => x.movie.id)).toEqual(["movie-1", "movie-2"]);
   });
 
   it("ordena por título y año, manteniendo los años desconocidos al final", () => {

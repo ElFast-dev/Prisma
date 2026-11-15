@@ -1,6 +1,8 @@
 name: Prisma CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -20,7 +22,9 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: TypeScript check
+        run: npm run typecheck
       - name: Unit tests
         run: npm test
-      - name: TypeScript and production build
+      - name: Production build
         run: npm run build
