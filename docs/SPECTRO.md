@@ -1,45 +1,65 @@
 # Espectro
 
-Espectro es el algoritmo cinematográfico propio de Prisma. La versión 1.0 se ejecuta enteramente en el dispositivo y mantiene sus resultados en IndexedDB.
+Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el dispositivo, utiliza únicamente datos locales ya guardados y conserva sus resultados en IndexedDB.
 
-## Datos de entrada locales
+## Versión del algoritmo
 
+La versión activa es **2.0.0** (`SPECTRO_ALGORITHM_VERSION`). Cada cambio de lógica que altere el resultado debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; una instantánea 1.1.0 nunca sustituye un cálculo 2.0.0.
+
+## Datos de entrada
+
+Se utilizan los visionados y las películas que ya existen en Prisma:
+
+- Calificaciones, fechas y repeticiones de visionado.
 - Géneros TMDB (identificadores y nombres).
-- Directores y hasta doce integrantes principales del reparto, guardados al abrir una ficha.
+- Directores y reparto principal almacenados al abrir una ficha.
 - Países de producción y década de estreno.
-- Cada calificación individual, fecha y repetición de visionado.
-- Películas candidatas almacenadas desde recomendaciones relacionadas de fichas que ya se consultaron.
+- Idioma original y duración, cuando esos metadatos están disponibles localmente.
+- Candidatas guardadas previamente en el catálogo local desde fichas consultadas.
 
-## Versión 1.0
+Espectro no solicita datos nuevos a TMDB para construir el perfil, ni envía el historial o sus inferencias a servicios externos.
 
-- Calcula el promedio general usando todas las valoraciones individuales.
-- Para cada afinidad, promedia primero las valoraciones de cada película; así una repetición no cuenta como varias películas distintas.
-- Solo muestra afinidades respaldadas por al menos dos películas y activa el análisis con tres películas distintas valoradas.
-- Ordena géneros, directores, reparto, países y décadas por diferencia frente al promedio personal.
-- Construye evolución mensual solo con meses que tienen visionados reales.
-- Puntúa candidatas locales por afinidades positivas de género y explica cada coincidencia.
-- Excluye de las candidatas todas las películas con visionados registrados.
-- Guarda instantáneas identificadas por versión y huella de entrada para no mezclar cálculos con los datos originales.
+## Afinidades y respaldo
+
+- El promedio personal utilizado para comparar rasgos se calcula primero por película; los revisionados se promedian dentro de su título y no multiplican su peso.
+- Una afinidad necesita al menos dos películas distintas para aparecer. Con dos títulos se etiqueta como inicial y no se utiliza para recomendar.
+- La diferencia observada se reduce hacia el promedio personal mediante un encogimiento conservador: `diferencia × n / (n + 3)`. Es una regularización explícita, no una probabilidad ni un intervalo de confianza.
+- El respaldo combina el número de películas distintas y la dispersión de sus valoraciones. Las señales variables se muestran, pero no alimentan recomendaciones.
+- Se analizan géneros, directores, reparto, países, décadas, idioma original y franjas de duración.
+- Las señales ausentes no se inventan ni se completan por inferencia.
+
+## Recomendaciones
+
+- Las candidatas proceden exclusivamente de películas ya almacenadas en el dispositivo.
+- Se excluye cualquier película con un visionado registrado.
+- Se utilizan señales positivas con respaldo moderado o sólido; una señal inicial no basta.
+- La puntuación combina siete familias de rasgos con pesos limitados por categoría. Varios actores o géneros de una misma familia no multiplican artificialmente su influencia.
+- Cada coincidencia explica el rasgo, la diferencia ajustada y el número de títulos distintos que la respaldan.
+- La puntuación es un orden relativo dentro de las candidatas locales, no una probabilidad de que guste al propietario.
+
+## Evolución temporal
+
+- La evolución mensual conserva las calificaciones de visionados reales y muestra solo meses con actividad.
+- Los cambios de afinidad comparan los últimos doce meses disponibles con los doce anteriores, tomando como referencia la fecha de calificación más reciente.
+- Cada película aporta como máximo una observación por periodo; sus revisionados se promedian dentro de ese periodo.
+- Solo se muestra un cambio para un rasgo con al menos tres películas distintas en cada periodo.
+- Si no existe muestra suficiente, Espectro indica que no hay periodos comparables en vez de dibujar una tendencia ficticia.
+
+## Huella e instantáneas
+
+La huella incluye los campos que intervienen en el cálculo: visionados, calificaciones, fechas y los metadatos usados por las señales. Si cambia el idioma o la duración de una película, la entrada se considera distinta. La versión 2.0.0 utiliza un identificador de instantánea separado de las versiones anteriores sin necesidad de migrar ni eliminar registros Dexie.
+
+## Límites conocidos
+
+- La precisión depende de los metadatos disponibles localmente y de la diversidad del historial.
+- Las etiquetas de respaldo son niveles descriptivos basados en soporte y dispersión; no son intervalos de confianza estadísticos ni garantías.
+- Las recomendaciones no buscan películas en la red. Si el catálogo local de candidatas es pequeño, el resultado también lo será.
+- Una afinidad representa una asociación en las valoraciones registradas, no una relación causal ni una preferencia permanente.
 
 ## Principios
 
-- No inventar preferencias con datos insuficientes.
-- Diferenciar una preferencia declarada de una inferencia estadística.
-- Explicar las recomendaciones con los rasgos que coinciden.
-- No presentar datos de directores o reparto si no están disponibles localmente.
-- No enviar el historial ni el perfil derivado a servicios externos de IA.
-- Cambiar `SPECTRO_ALGORITHM_VERSION` cuando cambie la lógica para preservar la trazabilidad de resultados.
-
-## Límites de esta versión
-
-- Las recomendaciones se extraen de películas sugeridas por fichas abiertas anteriormente y guardadas en el catálogo local; no consulta ni envía preferencias a un servicio externo.
-- El análisis de afinidades de directores y reparto aparece cuando hay al menos dos películas valoradas con esos nombres disponibles.
-- La evolución muestra el promedio de las calificaciones por mes, no supone tendencias en meses sin actividad.
-
-## Evolución prevista
-
-1. Perfil cinematográfico y afinidades: versión 1.0.
-2. Puntuación de candidatos con más señales verificadas y controles de validación.
-3. Comparación temporal de afinidades y versiones futuras.
-
-Los gráficos representan únicamente relaciones respaldadas por datos reales.
+- Local-first y privacidad por diseño.
+- Diferenciar observaciones de inferencias.
+- No presentar preferencias concluyentes con muestras pequeñas.
+- Explicar cada recomendación con datos verificables.
+- Preservar compatibilidad de datos e instantáneas mediante versionado.

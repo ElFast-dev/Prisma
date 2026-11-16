@@ -1,8 +1,8 @@
 # Hoja de ruta
 
-## Estado actual: etapas 1–14 completadas
+## Estado actual: etapas 1–15 completadas
 
-La siguiente etapa planificada es la 15 — Evolución de Personal.
+La siguiente etapa planificada es la 16 — Espectro 2.0.
 
 - [x] Repositorio público inicializado.
 - [x] Configuración React, TypeScript y Vite.
@@ -32,14 +32,18 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
 
 ## Próximas etapas acordadas
 
-- [ ] 15. Evolución de Personal.
+- [x] 15. Evolución de Personal.
   - [x] 15.1 Biblioteca: búsqueda local por título oficial/original y director; filtros por estado personal, Próximamente/Estrenada, género y rango de años; orden por título, valoración TMDB, valoración personal, duración, estreno, incorporación y aleatorio con dirección reversible; preferencias persistentes en Dexie; barra contextual compartida con Descubrir; Ajustes como pantalla completa; restauración de scroll al regresar de fichas.
   - [x] 15.2 Historial: cronología global agrupada por mes, calendario mensual, búsqueda local por título oficial/original, director, género y comentario; filtros combinables por notas, calificación y fechas; orden cronológico reversible; acceso a fichas y edición/eliminación individual; conservación de revisionados y secuencias (CI aprobada: 86 pruebas; compilación y despliegue de Pages correctos).
   - [x] 15.3 Colecciones: organización y gestión mejoradas.
-  - [ ] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
+  - [x] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
     - [x] 15.4.1 Huella cinematográfica: distribución local por géneros y décadas, actividad de seis meses y progresión ampliada de logros.
     - [x] 15.4.2 Firmas y cine del mundo: directores y países de producción más frecuentes, contados por películas distintas.
 - [ ] 16. Espectro 2.0.
+  - [x] 16.1 Base estadística: afinidades por películas distintas, ajuste por soporte y dispersión, señales locales de idioma y duración, y versión de instantáneas 2.0.0.
+  - [x] 16.2 Recomendaciones combinadas: puntuación por familias de rasgos con límites por categoría y explicaciones respaldadas.
+  - [x] 16.3 Evolución de afinidades: comparación entre dos periodos con mínimo de tres títulos distintos por rasgo y periodo.
+  - [ ] 16.4 Experiencia final, accesibilidad, pruebas completas y verificación del despliegue.
 - [ ] 17. Optimización integral.
 
 Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
@@ -66,9 +70,13 @@ Este es el orden acordado para continuar Prisma. El alcance y los criterios de a
 ### Criterios de Espectro
 
 - Algoritmo local versionado con huella de entrada e instantáneas separadas.
-- Afinidades con soporte mínimo y explicaciones visibles.
-- Evolución mensual respaldada por visionados reales.
-- Candidatas no vistas puntuadas por coincidencias de género.
+- Afinidades con soporte mínimo, dispersión y diferencia ajustada frente al promedio personal.
+- Señales de idioma y duración únicamente cuando existen metadatos reales.
+- Candidatas locales no vistas puntuadas por varias familias de señales verificadas y explicadas.
+- Las señales iniciales o variables no sostienen por sí solas una recomendación.
+- Comparación temporal anclada en fechas reales y con soporte mínimo por rasgo y periodo.
+- Repeticiones agregadas por título para las afinidades; no aumentan la muestra de películas distintas.
+- Las instantáneas 1.1.0 no se reutilizan para cálculos 2.0.0.
 
 ### Criterios del perfil y los logros
 
