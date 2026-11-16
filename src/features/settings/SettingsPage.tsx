@@ -9,9 +9,9 @@ import {
 } from "../../infrastructure/tmdb/settings";
 import { testTmdbConnection } from "../../infrastructure/tmdb/TmdbService";
 import { createLocalBackup, restoreLocalBackup } from "../../infrastructure/database/backupService";
-import { importExternalMovies } from "../../infrastructure/database/externalMovieImportService";
+import { importExternalMovies, type ExternalMovieImportPriority } from "../../infrastructure/database/externalMovieImportService";
 import { parsePrismaBackup } from "../../domain/backup";
-import { parseExternalMovieImport } from "../../domain/externalMovieImport";
+import { parseExternalMovieImport, type ExternalMovieImportPlan } from "../../domain/externalMovieImport";
 import { EnrichmentPanel } from "./EnrichmentPanel";
 import { navigateBack } from "../../navigation/routeHistory";
 import { getUserPreferences, saveLibraryView } from "../../infrastructure/database/preferencesService";
@@ -39,6 +39,8 @@ export function SettingsPage() {
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupMessage, setBackupMessage] = useState("");
   const [backupError, setBackupError] = useState("");
+  const [externalImportPlan, setExternalImportPlan] = useState<ExternalMovieImportPlan | null>(null);
+  const [externalImportFileName, setExternalImportFileName] = useState("");
   const [libraryView, setLibraryView] = useState<"list" | "grid">("list");
   const [libraryPreferencesReady, setLibraryPreferencesReady] = useState(false);
   const [libraryPreferencesError, setLibraryPreferencesError] = useState("");
@@ -199,41 +201,47 @@ export function SettingsPage() {
       if (plan.movies.length === 0) {
         throw new Error("El archivo no contiene películas con un identificador TMDB válido.");
       }
-      const confirmed = window.confirm(
-        "Se combinarán " + plan.summary.watchedMovies + " películas de Vistas y "
-        + plan.summary.pendingMovies + " de Pendientes. Se importarán "
-        + plan.summary.matchedRatings + " calificaciones. "
-        + "Las series, episodios y listas externas se ignorarán. "
-        + "La fecha de cada visionado se obtendrá convirtiendo el instante UTC del campo a a la fecha local (" + deviceTimeZone + "). El campo rA no se usa para la racha. "
-        + "Se conservarán tu perfil, colecciones, preferencias y datos existentes; no se reemplazarán. "
-        + (plan.summary.orphanRatings
-          ? plan.summary.orphanRatings + " calificación(es) sin película importable se omitirán. "
-          : "")
-        + (plan.summary.skippedWithoutTmdb
-          ? plan.summary.skippedWithoutTmdb + " película(s) sin ID TMDB válido se omitirán. "
-          : "")
-        + "¿Continuar?"
-      );
-      if (!confirmed) {
-        setBackupMessage("Importación cancelada. No se modificaron tus datos.");
-        return;
-      }
+      setExternalImportFileName(file.name);
+      setExternalImportPlan(plan);
+    } catch (cause) {
+      setBackupError(cause instanceof Error ? cause.message : "No se pudo leer el respaldo externo.");
+    } finally {
+      setBackupBusy(false);
+    }
+  }
 
-      const result = await importExternalMovies(plan);
+  async function confirmExternalImport(priority: ExternalMovieImportPriority) {
+    if (!externalImportPlan) return;
+    setBackupBusy(true);
+    setBackupError("");
+    setBackupMessage("");
+    try {
+      const plan = externalImportPlan;
+      const result = await importExternalMovies(plan, priority);
       setBackupMessage(
         "Importación completada: " + plan.movies.length + " películas procesadas; "
         + result.newCatalogMovies + " agregadas al catálogo; "
-        + result.newLibraryEntries + " agregadas a la Biblioteca; "
-        + result.viewingsAdded + " calificaciones convertidas en visionados. "
-        + result.alreadyHadViewings + " película(s) ya tenían visionados y no se duplicaron. "
-        + result.correctedImportedDates + " fecha(s) de importaciones anteriores se corrigieron a la hora local. "
-        + "Tu perfil, colecciones, preferencias y credencial TMDB se conservaron."
+        + result.viewingsAdded + " experiencias nuevas; "
+        + result.matchedExistingViewings + " experiencias locales vinculadas; "
+        + result.updatedImportedViewings + " experiencias importadas actualizadas. "
+        + (priority === "external"
+          ? "El archivo tuvo prioridad en los conflictos de estado y calificación. "
+          : "Se conservaron los estados y calificaciones locales en los conflictos. ")
+        + "No se eliminaron tus visionados manuales, perfil, colecciones ni preferencias."
       );
+      setExternalImportPlan(null);
+      setExternalImportFileName("");
     } catch (cause) {
       setBackupError(cause instanceof Error ? cause.message : "No se pudo importar el respaldo externo.");
     } finally {
       setBackupBusy(false);
     }
+  }
+
+  function cancelExternalImport() {
+    setExternalImportPlan(null);
+    setExternalImportFileName("");
+    setBackupMessage("Importación cancelada. No se modificaron tus datos.");
   }
 
   return (
@@ -409,12 +417,48 @@ export function SettingsPage() {
             <Upload size={17} /> Importar películas de otra app
           </label>
           <ul className="settings-bullet-list">
-            <li>La importación combina los datos: no borra películas ni datos personales existentes en Prisma.</li>
-            <li>Los identificadores TMDB permiten reconocer las películas; las que ya existen no se duplican.</li>
-            <li>La fecha del visionado se obtiene de a, convertida desde UTC al día local del dispositivo; rA no se usa para la racha.</li>
+            <li>Antes de importar puedes elegir si prevalecen los estados y calificaciones de Prisma o los del archivo.</li>
+            <li>Las experiencias se reconocen por su identificador externo y fecha; reimportar el mismo archivo no crea duplicados.</li>
+            <li>Las películas vistas sin calificación también se registran en Historial. La fecha se convierte desde UTC al día local; rA no determina el día.</li>
           </ul>
         </div>
 
+        {externalImportPlan && (
+          <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !backupBusy) cancelExternalImport();
+          }}>
+            <section className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="external-import-title">
+              <div className="sheet-handle" />
+              <div className="sheet-header">
+                <div>
+                  <h2 id="external-import-title">Prioridad de importación</h2>
+                  <p className="muted-copy">{externalImportFileName}</p>
+                </div>
+              </div>
+              <div className="external-import-summary">
+                <div><strong>{externalImportPlan.summary.watchedMovies}</strong><span>Vistas</span></div>
+                <div><strong>{externalImportPlan.summary.pendingMovies}</strong><span>Pendientes</span></div>
+                <div><strong>{externalImportPlan.summary.matchedRatings}</strong><span>Con nota</span></div>
+                <div><strong>{externalImportPlan.summary.watchedWithoutRating}</strong><span>Sin nota</span></div>
+              </div>
+              <p className="muted-copy">
+                Elige qué datos prevalecen cuando el archivo y Prisma contienen información distinta.
+                Las experiencias manuales de otras fechas se conservan en ambos modos.
+              </p>
+              <div className="external-import-priority">
+                <button className="button button-secondary button-full" type="button" disabled={backupBusy} onClick={() => void confirmExternalImport("local")}>
+                  Conservar Prisma
+                </button>
+                <p className="muted-copy">Mantiene los estados y las calificaciones locales cuando coinciden con una experiencia importada.</p>
+                <button className="button button-primary button-full" type="button" disabled={backupBusy} onClick={() => void confirmExternalImport("external")}>
+                  {backupBusy ? "Importando..." : "Priorizar archivo JSON"}
+                </button>
+                <p className="muted-copy">El archivo decide Vistas/Pendientes y su calificación prevalece cuando coincide la misma fecha. No borra otras experiencias manuales.</p>
+                <button className="button button-quiet button-full" type="button" disabled={backupBusy} onClick={cancelExternalImport}>Cancelar</button>
+              </div>
+            </section>
+          </div>
+        )}
         {backupMessage && <div className="connection-message is-success" role="status"><CheckCircle2 size={17} /><span>{backupMessage}</span></div>}
         {backupError && <div className="connection-message is-error" role="alert"><CircleAlert size={17} /><span>{backupError}</span></div>}
         <ul className="settings-bullet-list">

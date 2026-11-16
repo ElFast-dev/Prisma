@@ -19,7 +19,7 @@ import {
   removeMovieFromCollection
 } from "../../infrastructure/database/collectionService";
 import type { Collection, LibraryEntry } from "../../domain/types";
-import { moveMovieToPending, undoMoveToPending, type LibraryStatusUndoToken } from "../../infrastructure/database/viewingService";
+import { moveMovieToPending, removeMovieFromPending, undoMoveToPending, type LibraryStatusUndoToken } from "../../infrastructure/database/viewingService";
 import { prismaDb } from "../../infrastructure/database/database";
 import { navigateBack } from "../../navigation/routeHistory";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
@@ -175,6 +175,21 @@ export function MovieDetailPage() {
     }
   }
 
+  async function handleRemovePending() {
+    if (!localMovie) return;
+    setBusy(true);
+    try {
+      await removeMovieFromPending(localMovie.id);
+      await refreshLocalState(localMovie.id);
+      setUndoToken(null);
+      setUndoMessage("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo retirar de Pendientes.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleUndo() {
     if (!undoToken) return;
     try {
@@ -296,7 +311,12 @@ export function MovieDetailPage() {
           <button className="button button-primary" type="button" onClick={() => { setEditingViewing(undefined); setViewingForm(true); }}>
             {watchedCount === 0 ? "Agregar a Vistas" : "Agregar visionado #" + nextViewingNumber}
           </button>
-          <button className={isPending ? "button button-selected" : "button button-secondary"} type="button" onClick={() => setPendingConfirm(true)} disabled={isPending || busy}>
+          <button
+            className={isPending ? "button button-selected" : "button button-secondary"}
+            type="button"
+            onClick={() => isPending ? void handleRemovePending() : setPendingConfirm(true)}
+            disabled={busy}
+          >
             {isPending ? "En Pendientes ✓" : "Agregar a Pendientes"}
           </button>
         </div>
@@ -430,7 +450,9 @@ export function MovieDetailPage() {
               ) : viewings.map((viewing) => (
                 <button className="viewing-history-row" key={viewing.id} onClick={() => { setEditingViewing(viewing); setViewingForm(true); }}>
                   <span><strong>Visionado #{viewing.sequenceNumber}</strong><small>{viewing.watchedOn}</small></span>
-                  <span className="viewing-history-rating"><Star size={15} fill="currentColor" /> {viewing.rating}/10</span>
+                  <span className="viewing-history-rating">
+                    {viewing.rating !== undefined ? <><Star size={15} fill="currentColor" /> {viewing.rating}/10</> : "Sin calificar"}
+                  </span>
                 </button>
               ))}
               <button className="button button-primary button-full" onClick={() => { setEditingViewing(undefined); setViewingForm(true); }}>
@@ -439,7 +461,13 @@ export function MovieDetailPage() {
             </div>
           )}
           {!ratingSectionOpen && watchedCount > 0 && (
-            <p className="muted-copy">{watchedCount} {watchedCount === 1 ? "visionado registrado" : "visionados registrados"} · Promedio personal { (viewings.reduce((sum, item) => sum + item.rating, 0) / watchedCount).toFixed(1) }/10</p>
+            <p className="muted-copy">
+              {watchedCount} {watchedCount === 1 ? "visionado registrado" : "visionados registrados"}
+              {viewings.some((item) => item.rating !== undefined) && (
+                <> · Promedio personal {(viewings.reduce((sum, item) => sum + (item.rating ?? 0), 0)
+                  / viewings.filter((item) => item.rating !== undefined).length).toFixed(1)}/10</>
+              )}
+            </p>
           )}
         </section>
 

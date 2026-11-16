@@ -93,6 +93,12 @@ export async function removeFromLibrary(movieId: string): Promise<void> {
 export async function setFavorite(movieId: string, favorite: boolean): Promise<void> {
   const current = await prismaDb.libraryEntries.get(movieId);
   if (!current) throw new Error("La película todavía no está en tu Biblioteca.");
+
+  if (!favorite && !current.status) {
+    await prismaDb.libraryEntries.delete(movieId);
+    return;
+  }
+
   await prismaDb.libraryEntries.update(movieId, {
     isFavorite: favorite,
     updatedAt: new Date().toISOString()

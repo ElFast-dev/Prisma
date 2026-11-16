@@ -32,7 +32,6 @@ import { getLibraryMovies } from "../../infrastructure/database/movieRepository"
 import { getPersonalStats } from "../../infrastructure/database/statisticsRepository";
 import { prismaDb } from "../../infrastructure/database/database";
 import { deleteViewing } from "../../infrastructure/database/viewingService";
-import { getLibraryEntry } from "../../infrastructure/database/libraryService";
 import {
   addMovieToCollection,
   createCollection,
@@ -195,6 +194,7 @@ export function LibraryPage() {
 
         const ratingTotals = new Map<string, { total: number; count: number }>();
         for (const viewing of viewings) {
+          if (viewing.rating === undefined) continue;
           const current = ratingTotals.get(viewing.movieId) ?? { total: 0, count: 0 };
           current.total += viewing.rating;
           current.count += 1;
@@ -355,7 +355,7 @@ export function LibraryPage() {
               <div className="library-list-info">
                 <strong>{movie.title}</strong>
                 <span>{[movie.releaseYear, ...movie.genres.slice(0, 2)].filter(Boolean).join(" · ")}</span>
-                <small>{entry.status === "watched" ? "Vista" : "Pendiente"}{entry.isFavorite ? " · Favorita" : ""}</small>
+                <small>{entry.status === "watched" ? "Vista" : entry.status === "pending" ? "Pendiente" : "Solo favorita"}{entry.isFavorite && entry.status ? " · Favorita" : ""}</small>
               </div>
               {entry.isFavorite && <Heart size={16} fill="currentColor" className="favorite-mark" />}
             </a>
@@ -648,8 +648,9 @@ export function HistoryPage() {
     () => new Set(items.map((item) => item.viewing.movieId)).size,
     [items]
   );
-  const averageRating = items.length
-    ? (items.reduce((total, item) => total + item.viewing.rating, 0) / items.length).toFixed(1)
+  const ratedItems = items.filter((item) => item.viewing.rating !== undefined);
+  const averageRating = ratedItems.length
+    ? (ratedItems.reduce((total, item) => total + (item.viewing.rating ?? 0), 0) / ratedItems.length).toFixed(1)
     : "—";
   const activeFilterCount = Number(notesFilter !== "all")
     + Number(ratingFilter !== "all")
@@ -677,12 +678,7 @@ export function HistoryPage() {
   }
 
   async function handleDelete(item: HistoryItem) {
-    const countForMovie = items.filter((entry) => entry.viewing.movieId === item.viewing.movieId).length;
-    const libraryEntry = await getLibraryEntry(item.viewing.movieId);
-    const willMoveToPending = countForMovie === 1 && libraryEntry?.status === "watched";
-    const message = willMoveToPending
-      ? "Este es el último visionado registrado. Al eliminarlo, la película pasará a Pendientes. ¿Continuar?"
-      : "¿Eliminar únicamente este visionado? Las demás experiencias se conservarán.";
+    const message = "¿Eliminar este visionado? No pasará automáticamente a Pendientes.";
     if (!window.confirm(message)) return;
 
     try {
@@ -913,8 +909,9 @@ export function HistoryPage() {
                           </small>
                         )}
                         <span className="history-entry-rating">
-                          <Star size={14} fill="currentColor" aria-hidden="true" />
-                          {item.viewing.rating}/10
+                          {item.viewing.rating !== undefined ? (
+                            <><Star size={14} fill="currentColor" aria-hidden="true" /> {item.viewing.rating}/10</>
+                          ) : "Sin calificar"}
                         </span>
                         {item.viewing.review && (
                           <details className="history-entry-review">
@@ -1581,7 +1578,7 @@ export function CollectionsPage() {
                       <div className="collection-library-option-copy">
                         <strong>{movie.title}</strong>
                         <small>
-                          {[movie.releaseYear?.toString(), entry.status === "watched" ? "Vista" : "Pendiente", entry.isFavorite ? "Favorita" : ""]
+                          {[movie.releaseYear?.toString(), entry.status === "watched" ? "Vista" : entry.status === "pending" ? "Pendiente" : "Solo favorita", entry.isFavorite && entry.status ? "Favorita" : ""]
                             .filter(Boolean)
                             .join(" · ")}
                         </small>

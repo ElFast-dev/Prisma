@@ -23,17 +23,12 @@ export function ViewingForm({ movieId, movieTitle, nextNumber, initialViewing, o
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!rating) {
-      setError("Selecciona una calificación de 1 a 10 estrellas.");
-      return;
-    }
-
     setSaving(true);
     setError("");
     try {
       const values = {
         watchedOn: date,
-        rating,
+        rating: rating || undefined,
         watchedAtLocalTime: time,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         review: review.trim()
@@ -75,7 +70,7 @@ export function ViewingForm({ movieId, movieTitle, nextNumber, initialViewing, o
           <input className="text-field" id="viewing-date" type="date" value={date} max={today} onChange={(event) => setDate(event.target.value)} required />
 
           <div className="field-label rating-label">
-            <span>Tu calificación</span>
+            <span>Calificación (opcional)</span>
             <span className="rating-value">{rating ? rating + "/10" : "Sin calificar"}</span>
           </div>
           <div className="rating-star-grid" role="group" aria-label="Calificación de 1 a 10 estrellas">
@@ -95,6 +90,9 @@ export function ViewingForm({ movieId, movieTitle, nextNumber, initialViewing, o
               );
             })}
           </div>
+          {rating > 0 && (
+            <button className="text-link" type="button" onClick={() => setRating(0)}>Quitar calificación</button>
+          )}
           <label className="field-label" htmlFor="viewing-time">Hora (opcional)</label>
           <input className="text-field" id="viewing-time" type="time" value={time} onChange={(event) => setTime(event.target.value)} />
           <label className="field-label" htmlFor="viewing-review">Comentario (opcional)</label>

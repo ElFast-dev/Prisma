@@ -30,6 +30,12 @@ describe("viewing rules", () => {
     expect(() => validateViewingDraft(future, new Date(2026, 10, 14))).toThrow(/futura/i);
   });
 
+  it("permite registrar una experiencia sin calificación", () => {
+    const unRated = { movieId: "movie-1", watchedOn: "2024-02-18" };
+    expect(validateViewingDraft(unRated, new Date(2026, 10, 14))).toMatchObject(unRated);
+    expect(() => validateViewingDraft({ ...unRated, rating: 11 }, new Date(2026, 10, 14))).toThrow();
+  });
+
   it("calculates the average without modifying individual ratings", () => {
     expect(calculateAverageRating([8, 10])).toBe(9);
     expect(calculateAverageRating([])).toBeNull();

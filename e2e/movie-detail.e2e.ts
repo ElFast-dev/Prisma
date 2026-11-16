@@ -88,6 +88,22 @@ test("abre una ficha, registra un visionado y crea una colección local", async 
   await expect(page.getByText("Visionado #1")).toBeVisible();
   await expect(page.getByText("8/10")).toBeVisible();
 
+  await page.getByRole("button", { name: "Agregar a Pendientes" }).click();
+  const pendingDialog = page.getByRole("dialog", { name: "¿Mover a Pendientes?" });
+  await pendingDialog.getByRole("button", { name: "Confirmar" }).click();
+  const pendingButton = page.getByRole("button", { name: "En Pendientes ✓" });
+  await expect(pendingButton).toBeVisible();
+  await pendingButton.click();
+  await expect(page.getByRole("button", { name: "Agregar a Pendientes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "En Pendientes ✓" })).toHaveCount(0);
+
+  await page.locator(".movie-status-actions")
+    .getByRole("button", { name: "Agregar visionado #2" }).click();
+  const unRatedDialog = page.getByRole("dialog", { name: "Registrar visionado" });
+  await unRatedDialog.getByLabel("Fecha del visionado").fill("2024-05-02");
+  await unRatedDialog.getByRole("button", { name: "Guardar visionado" }).click();
+  await expect(page.getByText("Sin calificar")).toBeVisible();
+
   await page.getByRole("button", { name: "Más opciones" }).click();
   const optionsDialog = page.getByRole("dialog", { name: "Más opciones" });
   await optionsDialog.getByRole("button", { name: "Agregar a colección" }).click();

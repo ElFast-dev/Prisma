@@ -1,6 +1,6 @@
 import type { MovieRecord, Viewing } from "./types";
 
-export const SPECTRO_ALGORITHM_VERSION = "1.0.0";
+export const SPECTRO_ALGORITHM_VERSION = "1.1.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 
 export interface SpectroAffinity { key: string; label: string; averageRating: number; difference: number; sampleSize: number; }
@@ -89,7 +89,7 @@ function buildAffinities(
 
 function fingerprintInput(input: SpectroInput): string {
   const viewings = [...input.viewings].sort((a, b) => a.id.localeCompare(b.id))
-    .map((v) => [v.id, v.movieId, v.watchedOn, v.rating, v.sequenceNumber]);
+    .map((v) => [v.id, v.movieId, v.watchedOn, v.rating ?? null, v.sequenceNumber]);
   const movies = [...input.movies, ...input.candidates].sort((a, b) => a.id.localeCompare(b.id))
     .map((m) => [m.id, m.title, m.genres, m.genreIds, m.countries, m.directors, m.castMembers, m.releaseYear]);
   return hashFingerprint(JSON.stringify({ viewings, movies }));
@@ -100,6 +100,7 @@ function buildEvolution(viewings: Viewing[]): SpectroMonth[] {
   for (const viewing of viewings) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(viewing.watchedOn)) continue;
     const month = viewing.watchedOn.slice(0, 7);
+    if (viewing.rating === undefined) continue;
     const ratings = groups.get(month) ?? [];
     ratings.push(viewing.rating);
     groups.set(month, ratings);
@@ -138,6 +139,7 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
   const movieById = new Map(input.movies.map((movie) => [movie.id, movie]));
   const ratingsByMovie = new Map<string, number[]>();
   for (const viewing of input.viewings) {
+    if (viewing.rating === undefined) continue;
     const ratings = ratingsByMovie.get(viewing.movieId) ?? [];
     ratings.push(viewing.rating);
     ratingsByMovie.set(viewing.movieId, ratings);
@@ -149,8 +151,9 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
     } : undefined;
   }).filter((item): item is RatedMovie => Boolean(item));
 
-  const overall = input.viewings.length
-    ? input.viewings.reduce((sum, viewing) => sum + viewing.rating, 0) / input.viewings.length
+  const ratedViewings = input.viewings.filter((viewing) => viewing.rating !== undefined);
+  const overall = ratedViewings.length
+    ? ratedViewings.reduce((sum, viewing) => sum + (viewing.rating ?? 0), 0) / ratedViewings.length
     : null;
   const enough = ratedMovies.length >= SPECTRO_MINIMUM_MOVIES;
   const affinities = (selector: (movie: MovieRecord) => { key: string; label: string }[]) => {
@@ -167,7 +170,7 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
   const countryAffinities = affinities((movie) => [...new Set(movie.countries)]
     .map((name) => ({ key: "country:" + normalize(name), label: name })));
   const decadeAffinities = affinities(decadeFeature);
-  const watchedIds = new Set(ratingsByMovie.keys());
+  const watchedIds = new Set(input.viewings.map((viewing) => viewing.movieId));
   return {
     algorithmVersion: SPECTRO_ALGORITHM_VERSION,
     inputFingerprint: fingerprintInput(input),
