@@ -238,8 +238,9 @@ async function persistItem(
   movie: MovieRecord,
   metadata: TmdbMovieAnalysisMetadata,
   attempts: number
-): Promise<void> {
+): Promise<boolean> {
   const now = new Date().toISOString();
+  let complete = true;
   await prismaDb.transaction("rw", [prismaDb.movies, prismaDb.appMetadata], async () => {
     const current = await prismaDb.movies.get(movie.id);
     if (current) {
@@ -255,6 +256,8 @@ async function persistItem(
       )];
       if (directors.length) patch.directors = directors;
       if (castMembers.length) patch.castMembers = castMembers;
+      const enriched = { ...current, ...patch };
+      complete = !isSpectroMetadataIncomplete(enriched);
       // Este parche solo contiene metadatos cinematográficos. No escribe visionados,
       // calificaciones, favoritos, colecciones, perfil ni preferencias.
       await prismaDb.movies.update(movie.id, patch);
@@ -263,12 +266,14 @@ async function persistItem(
       key: itemKey(movie.tmdbId),
       value: JSON.stringify({
         tmdbId: movie.tmdbId,
-        status: "complete",
+        status: complete ? "complete" : "error",
         attempts,
-        updatedAt: now
+        updatedAt: now,
+        lastError: complete ? undefined : "TMDB no devolvió todos los metadatos requeridos. Se reintentará más adelante."
       } satisfies SpectroMetadataItem)
     });
   });
+  return complete;
 }
 
 async function persistItemState(
@@ -290,18 +295,20 @@ async function persistItemState(
   });
 }
 
-async function enrichOne(target: SpectroMetadataTarget): Promise<"updated" | "not-found" | "failed" | "authentication"> {
+async function enrichOne(target: SpectroMetadataTarget): Promise<"updated" | "incomplete" | "not-found" | "failed" | "authentication" | "interrupted"> {
   let attempts = target.previous?.attempts ?? 0;
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (!isOnline()) return "interrupted";
     attempts += 1;
     try {
       const metadata = await getMovieAnalysisMetadata(
         getTmdbAccessToken(),
         target.movie.tmdbId
       );
-      await persistItem(target.movie, metadata, attempts);
-      return "updated";
+      const complete = await persistItem(target.movie, metadata, attempts);
+      return complete ? "updated" : "incomplete";
     } catch (error) {
+      if (!isOnline()) return "interrupted";
       const classification = classifySpectroMetadataError(error);
       const message = error instanceof Error ? error.message : "No se pudo consultar TMDB.";
 
@@ -406,14 +413,31 @@ export function startSpectroMetadataEnrichment(): Promise<void> {
       });
 
       const outcome = await enrichOne(target);
+      if (outcome === "interrupted") {
+        publish({
+          status: "waiting-connection",
+          totalMovies: candidates.length,
+          processedMovies,
+          updatedMovies,
+          pendingMovies: candidates.length - processedMovies,
+          failedMovies,
+          notFoundMovies,
+          progressPercent: Math.round((processedMovies / candidates.length) * 100),
+          currentTitle: target.movie.title,
+          lastError
+        });
+        return;
+      }
       processedMovies += 1;
-      if (outcome === "updated") updatedMovies += 1;
+      if (outcome === "updated" || outcome === "incomplete") updatedMovies += 1;
       if (outcome === "not-found") notFoundMovies += 1;
-      if (outcome === "failed" || outcome === "authentication") {
+      if (outcome === "failed" || outcome === "incomplete" || outcome === "authentication") {
         failedMovies += 1;
         lastError = outcome === "authentication"
           ? "TMDB rechazó la credencial. Revisa la conexión en Ajustes."
-          : "Una o más películas no pudieron completar sus metadatos; se podrán reintentar más adelante.";
+          : outcome === "incomplete"
+            ? "TMDB no devolvió todos los campos cinematográficos. Prisma conservará lo disponible y volverá a intentarlo más adelante."
+            : "Una o más películas no pudieron completar sus metadatos; se podrán reintentar más adelante.";
       }
 
       const progress: SpectroMetadataSnapshot = {
@@ -430,7 +454,10 @@ export function startSpectroMetadataEnrichment(): Promise<void> {
       };
       publish(progress);
 
-      if (outcome === "authentication") return;
+      if (outcome === "authentication") {
+        publish({ ...snapshot, status: "error" });
+        return;
+      }
       await wait(REQUEST_GAP_MS);
     }
 
