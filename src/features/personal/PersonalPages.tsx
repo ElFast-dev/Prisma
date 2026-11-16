@@ -38,7 +38,9 @@ import {
   getCollections,
   getCollectionMovies,
   getCollectionSummaries,
+  reorderCollectionMovies,
   removeMovieFromCollection,
+  updateCollection,
   type CollectionSummary
 } from "../../infrastructure/database/collectionService";
 import { getTmdbImageUrl } from "../../infrastructure/tmdb/TmdbService";
