@@ -170,12 +170,13 @@ function textFeatures(
 }
 
 function genreFeatures(movie: MovieRecord): MovieFeature[] {
-  if (movie.genreIds?.length) {
-    const unique = [...new Set(movie.genreIds)]
+  const genreIds = movie.genreIds;
+  if (genreIds?.length) {
+    const unique = [...new Set(genreIds)]
       .filter((id) => Number.isSafeInteger(id) && id > 0);
     return unique.map((id) => ({
       key: "genre:" + id,
-      label: movie.genres.find((name, index) => movie.genreIds?.[index] === id) ?? "Género " + id,
+      label: movie.genres[genreIds.indexOf(id)] ?? "Género " + id,
       kind: "genre",
       weight: FAMILY_WEIGHTS.genre
     }));
@@ -375,7 +376,6 @@ function buildClusters(
   const cellSize = 380;
   const margin = 55;
   const columns = Math.max(1, Math.ceil(Math.sqrt(ordered.length)));
-  const rows = Math.ceil(ordered.length / columns);
   const clusters: SpectroNetworkCluster[] = [];
 
   ordered.forEach((group, clusterIndex) => {
