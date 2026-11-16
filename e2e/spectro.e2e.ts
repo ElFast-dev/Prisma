@@ -242,3 +242,81 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
   await expect(page.getByText("Dirección automática", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Reparto automático", { exact: true }).first()).toBeVisible();
 });
+
+test("Espectro pregunta por una calificación pendiente sin abrir la ficha", async ({ page }) => {
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const now = "2026-11-16T12:00:00.000Z";
+    try {
+      const transaction = db.transaction(["movies", "viewings"], "readwrite");
+      transaction.objectStore("movies").put({
+        id: "tmdb-987300",
+        tmdbId: 987300,
+        title: "Una película sin nota",
+        genres: ["Drama"],
+        genreIds: [18],
+        countries: ["Panamá"],
+        lastViewingSequence: 1,
+        createdAt: now,
+        updatedAt: now
+      });
+      transaction.objectStore("viewings").put({
+        id: "spectro-unrated-viewing",
+        movieId: "tmdb-987300",
+        sequenceNumber: 1,
+        watchedOn: "2026-11-01",
+        review: "Una experiencia que quiero conservar.",
+        watchedAtLocalTime: "20:15",
+        timeZone: "America/Panama",
+        createdAt: now,
+        updatedAt: now,
+        operationId: "spectro-unrated-operation"
+      });
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error ?? new Error("No se pudo preparar el visionado sin calificación."));
+      });
+    } finally {
+      db.close();
+    }
+  });
+
+  await page.goto("#/spectro");
+  await expect(page.getByRole("heading", { name: "¿Qué nota le darías a Una película sin nota?" })).toBeVisible();
+  await page.getByRole("button", { name: "Calificar con 8 de 10" }).click();
+  await page.getByRole("button", { name: "Guardar nota" }).click();
+  await expect(page.getByRole("heading", { name: "¿Qué nota le darías a Una película sin nota?" })).toHaveCount(0);
+
+  const saved = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<Record<string, unknown> | undefined>((resolve, reject) => {
+        const transaction = db.transaction("viewings", "readonly");
+        const request = transaction.objectStore("viewings").get("spectro-unrated-viewing");
+        request.onsuccess = () => resolve(request.result as Record<string, unknown> | undefined);
+        request.onerror = () => reject(request.error);
+      });
+    } finally {
+      db.close();
+    }
+  });
+  expect(saved).toMatchObject({
+    id: "spectro-unrated-viewing",
+    watchedOn: "2026-11-01",
+    rating: 8,
+    review: "Una experiencia que quiero conservar.",
+    watchedAtLocalTime: "20:15",
+    timeZone: "America/Panama"
+  });
+});
