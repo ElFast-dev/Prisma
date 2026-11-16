@@ -565,8 +565,15 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
     );
   });
 
+  const featureInfluenceByKey = new Map(
+    [...featureRecords.values()].map((feature) => [
+      feature.key,
+      (featureRawInfluence.get(feature.key) ?? 0)
+        + (recommendationIdsByFeature.get(feature.key)?.size ?? 0) * 0.12
+    ])
+  );
   const maxMovieInfluence = Math.max(0, ...movieRawInfluence.values());
-  const maxFeatureInfluence = Math.max(0, ...featureRawInfluence.values());
+  const maxFeatureInfluence = Math.max(0, ...featureInfluenceByKey.values());
   const favoriteMovieIdSet = new Set(input.favoriteMovieIds);
   const movieNodes: SpectroNetworkNode[] = movies.map((movie, movieIndex) => {
     const id = "movie:" + movie.id;
@@ -626,7 +633,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
     const exploredConnections = featureExploredCount.get(feature.key) ?? 0;
     const recommendationCount = recommendationIdsByFeature.get(feature.key)?.size ?? 0;
     const influence = maxFeatureInfluence > 0
-      ? clamp((featureRawInfluence.get(feature.key) ?? 0) / maxFeatureInfluence, 0.05, 1)
+      ? clamp((featureInfluenceByKey.get(feature.key) ?? 0) / maxFeatureInfluence, 0.05, 1)
       : 0.05;
     const kindLabel = feature.kind === "genre" ? "Género"
       : feature.kind === "director" ? "Director"
