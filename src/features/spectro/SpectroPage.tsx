@@ -226,7 +226,7 @@ function SpectroDecisionGraph({ analysis }: { analysis: SpectroAnalysis }) {
       <div className="content-caption">
         <div>
           <h2 id="spectro-graph-title">Cómo piensa Espectro</h2>
-          <p className="muted-copy">Las conexiones muestran las señales reales que explican cada encaje.</p>
+          <p className="muted-copy">Perfil → señales → las cinco candidatas mejor posicionadas. Cada conexión procede de datos locales verificables.</p>
         </div>
         <Network size={19} className="accent-icon" />
       </div>
@@ -268,7 +268,9 @@ function SpectroDecisionGraph({ analysis }: { analysis: SpectroAnalysis }) {
                   markerEnd={positive ? "url(#spectro-arrow-positive)" : "url(#spectro-arrow-negative)"}
                   strokeWidth={Math.max(1.4, Math.min(4.5, 1.4 + Math.abs(edge.value) * 1.3))}
                 />
-                <title>{edge.kind === "preference" ? "Preferencia del perfil" : "Contribución al encaje"}: {signed(edge.value)}</title>
+                <title>{edge.kind === "preference"
+                  ? "Diferencia ajustada de la señal: " + signed(edge.value)
+                  : "Contribución al encaje: " + signed(edge.value) + " puntos porcentuales"}</title>
               </g>
             );
           })}
