@@ -111,13 +111,13 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await page.locator('a[href="#/spectro/map"]').click();
   await expect(page.getByRole("heading", { name: "Mapa cinematográfico" })).toBeVisible();
   await expect(page.locator(".spectro-network-svg")).toBeVisible();
-  await expect(page.getByText("Línea más gruesa y brillante = vínculo más fuerte")).toBeVisible();
+  await expect(page.getByText("Grosor y brillo = fuerza del vínculo · Tamaño = influencia en recomendaciones")).toBeVisible();
   await expect(page.locator(".spectro-network-node.is-movie")).toHaveCount(13);
   await expect(page.locator(".spectro-network-node.is-genre").first()).toBeVisible();
   await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("Candidata Prisma ficticia");
   await expect(page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]')).toHaveAttribute("opacity", "1");
   await page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]').click();
-  await expect(page.getByText("Influence")).toHaveCount(0);
+  await expect(page.getByText(/influencia/).first()).toBeVisible();
   await expect(page.getByText("Por explorar")).toBeVisible();
   await page.getByRole("button", { name: "Cerrar detalle" }).click();
   await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("");
