@@ -1578,7 +1578,7 @@ export function CollectionsPage() {
                       <div className="collection-library-option-copy">
                         <strong>{movie.title}</strong>
                         <small>
-                          {[movie.releaseYear?.toString(), entry.status === "watched" ? "Vista" : "Pendiente", entry.isFavorite ? "Favorita" : ""]
+                          {[movie.releaseYear?.toString(), entry.status === "watched" ? "Vista" : entry.status === "pending" ? "Pendiente" : "Solo favorita", entry.isFavorite && entry.status ? "Favorita" : ""]
                             .filter(Boolean)
                             .join(" · ")}
                         </small>
