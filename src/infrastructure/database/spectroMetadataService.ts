@@ -134,7 +134,7 @@ export function classifySpectroMetadataError(
   return "permanent";
 }
 
-async function collectTargets(): Promise<SpectroMetadataTarget[]> {
+async function collectTargets(forceRetry = false): Promise<SpectroMetadataTarget[]> {
   const [movies, viewings, libraryEntries, collectionMovies, states] = await Promise.all([
     prismaDb.movies.toArray(),
     prismaDb.viewings.toArray(),
@@ -173,7 +173,8 @@ async function collectTargets(): Promise<SpectroMetadataTarget[]> {
       const previous = states.get(movie.tmdbId);
       if (previous?.status === "complete" || previous?.status === "not-found") return [];
       if (
-        previous?.status === "error"
+        !forceRetry
+        && previous?.status === "error"
         && Date.parse(previous.updatedAt) + ERROR_RETRY_AFTER_MS > now
       ) return [];
       return [{ movie, previous }];
@@ -342,12 +343,12 @@ async function enrichOne(target: SpectroMetadataTarget): Promise<"updated" | "in
  * Completa en segundo plano únicamente los metadatos que faltan para el perfil
  * y las candidatas locales. Continúa desde los títulos ya procesados.
  */
-export function startSpectroMetadataEnrichment(): Promise<void> {
+export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void> {
   if (runner) return runner;
 
   const operation = (async () => {
     const token = getTmdbAccessToken();
-    const candidates = await collectTargets();
+    const candidates = await collectTargets(forceRetry);
 
     if (!token) {
       publish({
