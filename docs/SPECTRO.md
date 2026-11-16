@@ -4,7 +4,7 @@ Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el d
 
 ## Versión del algoritmo
 
-La versión activa es **2.1.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; una instantánea 1.1.0 o 2.0.0 nunca sustituye un cálculo 2.1.0.
+La versión activa es **2.2.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.2.0.
 
 ## Información que utiliza
 
@@ -13,6 +13,7 @@ Espectro combina señales que Prisma puede verificar:
 - Calificaciones, fechas y revisionados de visionados.
 - Géneros TMDB (identificadores y nombres).
 - Directores y reparto principal.
+- Palabras clave temáticas de TMDB, como memoria, identidad o viajes en el tiempo.
 - Países de producción y década de estreno.
 - Idioma original y duración.
 - Favoritos marcados explícitamente en Biblioteca.
@@ -24,10 +25,10 @@ Cuando existen visionados sin calificación, Espectro puede hacer una pregunta c
 
 ## Obtención automática de metadatos
 
-Cuando Espectro detecta campos cinematográficos que faltan, puede solicitar a TMDB los detalles y créditos usando el identificador TMDB local. No es necesario abrir la ficha.
+Cuando Espectro detecta campos cinematográficos que faltan, solicita a TMDB los detalles, créditos y palabras clave temáticas usando el identificador TMDB local. Los tres recursos se guardan en la caché local; no es necesario abrir la ficha.
 
 - Prioriza películas con visionados y favoritos, además de candidatas locales no vistas.
-- Consulta detalles y créditos; no descarga proveedores ni recomendaciones solo para construir el perfil.
+- Consulta detalles, créditos y palabras clave; no descarga proveedores ni recomendaciones solo para construir el perfil.
 - Reutiliza la caché local de TMDB antes de hacer una solicitud nueva.
 - Limita el ritmo de consultas, reintenta errores temporales y respeta el tiempo indicado por TMDB ante HTTP 429.
 - Los errores repetidos quedan en pausa automática durante 12 horas, pero Espectro mantiene visibles esas películas pendientes y permite forzar un reintento manual desde la misma vista.
@@ -36,7 +37,7 @@ Cuando Espectro detecta campos cinematográficos que faltan, puede solicitar a T
 - Si se pierde la conexión, conserva el progreso y continúa cuando vuelve la conexión.
 - La cola no borra datos ni crea películas duplicadas: solo completa metadatos de registros que ya existen.
 
-El proceso actualiza exclusivamente campos cinematográficos del registro de película: títulos, sinopsis, estreno, duración, géneros, países, idioma, póster, fondo, dirección y reparto. No modifica visionados, secuencias, calificaciones, fechas, comentarios, favoritos, estados de Biblioteca, colecciones, perfil ni preferencias.
+El proceso actualiza exclusivamente campos cinematográficos del registro de película: títulos, sinopsis, estreno, duración, géneros, países, idioma, palabras clave, póster, fondo, dirección y reparto. No modifica visionados, secuencias, calificaciones, fechas, comentarios, favoritos, estados de Biblioteca, colecciones, perfil ni preferencias.
 
 ## Afinidades y respaldo
 
@@ -52,7 +53,7 @@ El proceso actualiza exclusivamente campos cinematográficos del registro de pel
 
 Cada candidata local puede mostrar dos estimaciones distintas:
 
-**Encaje (0–100 %).** Es una puntuación relativa que resume señales positivas y negativas de siete familias: género, dirección, reparto, país, época, idioma y duración. Las coincidencias se limitan dentro de cada familia para que muchos actores o géneros no multipliquen artificialmente su peso. Las afinidades negativas restan encaje. Los favoritos añaden un refuerzo explícito moderado a las familias coincidentes.
+**Encaje (0–100 %).** Es una puntuación relativa que resume señales positivas y negativas de ocho familias: género, dirección, reparto, temas, país, época, idioma y duración. Las coincidencias se limitan dentro de cada familia para que muchos actores, géneros o palabras clave no multipliquen artificialmente su peso. Las afinidades negativas restan encaje. Los favoritos añaden un refuerzo explícito moderado a las familias coincidentes.
 
 La escala se centra en 50 y transforma la diferencia ponderada mediante `50 + 12,5 × diferencia`, limitada al intervalo 0–100. Un valor superior a 50 indica un encaje neto positivo. **No es una probabilidad de que la película guste ni una garantía.**
 
@@ -72,6 +73,23 @@ Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) son 
 
 El grafo no inventa conexiones con películas no evaluadas. Cuando no existen candidatas con coincidencias suficientes, muestra las señales respaldadas disponibles. El ancho de las conexiones representa la magnitud de la contribución; el color distingue su dirección.
 
+## Mapa cinematográfico
+
+La vista principal «Mapa cinematográfico» construye una red con las películas ya almacenadas en Prisma. No es una ilustración fija: nodos y vínculos salen de metadatos y del historial local.
+
+- Cada película es un nodo circular con su póster cuando existe. Géneros, directores, actores y temas también son nodos y se conectan a las películas que comparten ese rasgo.
+- El grosor y el brillo de una línea representan la fuerza relativa del vínculo. La dirección del color distingue señales positivas, negativas, favoritas explícitas y conexiones neutrales.
+- El radio de cada nodo representa su influencia relativa dentro de la red: combina vínculos ponderados, respaldo de las afinidades y alcance en las recomendaciones locales. Es una escala comparativa del mapa, no un porcentaje de probabilidad.
+- Las películas se agrupan mediante similitud ponderada entre las cuatro familias de rasgos del mapa (géneros, dirección, actores y temas). El cálculo utiliza solapamiento tipo Jaccard y unión de componentes con un límite por grupo para que una cadena larga de coincidencias no absorba todo el catálogo.
+- Películas aún no vistas y rasgos conectados únicamente a ellas aparecen atenuados. Así se distingue el catálogo por explorar de las conexiones que ya has experimentado.
+- El buscador resalta nodos y vínculos relacionados; al seleccionar un nodo se muestran sus conexiones, influencia y películas relacionadas. El mapa dispone de zoom y desplazamiento aptos para pantallas táctiles.
+
+La red solo representa títulos locales. Una zona atenuada significa «todavía no explorado en tu Prisma», no que TMDB no tenga películas de ese tipo. Si un registro aún no tiene palabras clave descargadas, no se inventan temas para completarlo.
+
+## Organización de Espectro
+
+La portada de Espectro sigue el patrón de Personal y enlaza a cuatro apartados: Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. Cada apartado tiene su propio encabezado de regreso. La navegación principal permanece en las tres secciones de Prisma; las subsecciones de Espectro se recorren desde su portada.
+
 ## Evolución temporal
 
 - La evolución mensual conserva las calificaciones de visionados reales y muestra solo meses con actividad.
@@ -82,7 +100,7 @@ El grafo no inventa conexiones con películas no evaluadas. Cuando no existen ca
 
 ## Huella e instantáneas
 
-La huella incluye visionados, calificaciones, fechas, metadatos utilizados, identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.1.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie.
+La huella incluye visionados, calificaciones, fechas, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.2.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie.
 
 Antes de calcular, el repositorio comprueba si ya existe una instantánea de la versión y huella actuales. Así evita repetir el análisis cuando la entrada no ha cambiado.
 
