@@ -119,6 +119,29 @@ describe("analyzeSpectro 2.2", () => {
     expect(graph.stats.connections).toBe(graph.edges.length);
   });
 
+  it("distribuye películas aisladas en zonas pequeñas sin superponer todo el catálogo", () => {
+    const movies = Array.from({ length: 25 }, (_, index) => {
+      const id = index + 1;
+      return movie("movie-" + id, "Género " + id, 5000 + id, 1980 + id, {
+        directors: ["Dirección " + id],
+        castMembers: ["Actor " + id],
+        keywords: ["Tema " + id]
+      });
+    });
+    const graph = analyzeSpectro({
+      movies,
+      viewings: [],
+      candidates: []
+    }).networkGraph;
+    const isolatedZones = graph.clusters.filter((cluster) => cluster.similarity === 0);
+    const memberCount = isolatedZones.reduce((sum, cluster) => sum + cluster.movieIds.length, 0);
+
+    expect(isolatedZones.length).toBe(4);
+    expect(Math.max(...isolatedZones.map((cluster) => cluster.movieIds.length))).toBeLessThanOrEqual(8);
+    expect(memberCount).toBe(movies.length);
+    expect(new Set(isolatedZones.map((cluster) => cluster.id)).size).toBe(isolatedZones.length);
+  });
+
   it("no infiere afinidades antes de tres películas distintas calificadas", () => {
     const result = analyzeSpectro({
       movies: [movie("movie-1", "Drama", 18, 1995), movie("movie-2", "Drama", 18, 2005)],
