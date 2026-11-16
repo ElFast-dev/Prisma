@@ -107,6 +107,7 @@ test("restaura modo, orden, fecha y filtros del Historial después de recargar",
   const calendarLabel = await calendar.getAttribute("aria-label");
   const selectedDay = calendar.getByRole("button").first();
   const selectedDayLabel = await selectedDay.getAttribute("aria-label");
+  const selectedDate = selectedDayLabel?.split(",")[0];
   await selectedDay.click();
   await expect(selectedDay).toHaveAttribute("aria-pressed", "true");
 
@@ -135,7 +136,7 @@ test("restaura modo, orden, fecha y filtros del Historial después de recargar",
     viewMode: "calendar",
     sortOrder: "oldest",
     month: selectedDayLabel?.slice(0, 7),
-    selectedDate: selectedDayLabel,
+    selectedDate,
     query: "Prueba de persistencia",
     notes: "with-notes"
   });
