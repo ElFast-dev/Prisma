@@ -108,6 +108,7 @@ test("presenta afinidades respaldadas, cambios temporales y recomendaciones expl
   await expect(page.getByRole("heading", { name: "Idioma original" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Duración" })).toBeVisible();
   await expect(page.getByText("Cambios recientes")).toBeVisible();
+  await expect(page.locator(".spectro-trend-row").first()).toBeVisible();
   await expect(page.getByText("Drama", { exact: true }).first()).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "Podrían gustarte" })).toBeVisible();

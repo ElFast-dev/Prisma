@@ -413,6 +413,10 @@ function buildAffinityTrends(
   const recentAverage = mean(recentMovies.map((item) => item.averageRating));
   const previousFeatures = groupFeatureRatings(previousMovies);
   const recentFeatures = groupFeatureRatings(recentMovies);
+  console.log("SPECTRO_FEATURE_DEBUG", JSON.stringify({
+    previous: [...previousFeatures.entries()].map(([key, value]) => [key, value.ratings.length]),
+    recent: [...recentFeatures.entries()].map(([key, value]) => [key, value.ratings.length])
+  }));
   const trends: SpectroAffinityTrend[] = [];
 
   for (const [key, recent] of recentFeatures.entries()) {
@@ -510,7 +514,6 @@ function buildRecommendations(
         .sort((a, b) => (
           b.reason.difference * b.weight - a.reason.difference * a.weight
         ))
-        .slice(0, 4)
         .map((item) => item.reason);
 
       return {

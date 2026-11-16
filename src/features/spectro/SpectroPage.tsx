@@ -49,7 +49,7 @@ function AffinityPanel({
           </div>
           <div className="spectro-affinity-evidence">
             <small>
-              +{item.adjustedDifference.toFixed(1)} ajustado · {item.sampleSize} títulos
+              +{item.difference.toFixed(1)} observado · +{item.adjustedDifference.toFixed(1)} ajustado · variación {item.dispersion.toFixed(1)} · {item.sampleSize} títulos
             </small>
             <span className={"spectro-confidence is-" + item.confidence}>{confidenceLabel(item.confidence)}</span>
           </div>
