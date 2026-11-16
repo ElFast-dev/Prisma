@@ -1,65 +1,102 @@
 # Espectro
 
-Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el dispositivo, utiliza únicamente datos locales ya guardados y conserva sus resultados en IndexedDB.
+Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el dispositivo, utiliza datos locales ya guardados y conserva sus instantáneas en IndexedDB. La información cinematográfica que falta se puede consultar directamente a TMDB por identificador, sin tener que abrir una ficha.
 
 ## Versión del algoritmo
 
-La versión activa es **2.0.0** (`SPECTRO_ALGORITHM_VERSION`). Cada cambio de lógica que altere el resultado debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; una instantánea 1.1.0 nunca sustituye un cálculo 2.0.0.
+La versión activa es **2.1.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; una instantánea 1.1.0 o 2.0.0 nunca sustituye un cálculo 2.1.0.
 
-## Datos de entrada
+## Información que utiliza
 
-Se utilizan los visionados y las películas que ya existen en Prisma:
+Espectro combina señales que Prisma puede verificar:
 
-- Calificaciones, fechas y repeticiones de visionado.
+- Calificaciones, fechas y revisionados de visionados.
 - Géneros TMDB (identificadores y nombres).
-- Directores y reparto principal almacenados al abrir una ficha.
+- Directores y reparto principal.
 - Países de producción y década de estreno.
-- Idioma original y duración, cuando esos metadatos están disponibles localmente.
-- Candidatas guardadas previamente en el catálogo local desde fichas consultadas.
+- Idioma original y duración.
+- Favoritos marcados explícitamente en Biblioteca.
+- Películas candidatas que ya están guardadas en el catálogo local.
 
-Espectro no solicita datos nuevos a TMDB para construir el perfil, ni envía el historial o sus inferencias a servicios externos.
+Los comentarios y textos libres no se interpretan mediante un modelo lingüístico: no se les atribuye un sentimiento o preferencia que Prisma no pueda verificar. Tampoco se envían el historial, el perfil o sus inferencias a terceros.
+
+## Obtención automática de metadatos
+
+Cuando Espectro detecta campos cinematográficos que faltan, puede solicitar a TMDB los detalles y créditos usando el identificador TMDB local. No es necesario abrir la ficha.
+
+- Prioriza películas con visionados y favoritos, además de candidatas locales no vistas.
+- Consulta detalles y créditos; no descarga proveedores ni recomendaciones solo para construir el perfil.
+- Reutiliza la caché local de TMDB antes de hacer una solicitud nueva.
+- Limita el ritmo de consultas, reintenta errores temporales y respeta el tiempo indicado por TMDB ante HTTP 429.
+- Registra películas no encontradas (404) para no repetir consultas inútiles.
+- Si falta la credencial TMDB, no hace solicitudes y muestra cómo configurarla.
+- Si se pierde la conexión, conserva el progreso y continúa cuando vuelve la conexión.
+- La cola no borra datos ni crea películas duplicadas: solo completa metadatos de registros que ya existen.
+
+El proceso actualiza exclusivamente campos cinematográficos del registro de película: títulos, sinopsis, estreno, duración, géneros, países, idioma, póster, fondo, dirección y reparto. No modifica visionados, secuencias, calificaciones, fechas, comentarios, favoritos, estados de Biblioteca, colecciones, perfil ni preferencias.
 
 ## Afinidades y respaldo
 
-- El promedio personal utilizado para comparar rasgos se calcula primero por película; los revisionados se promedian dentro de su título y no multiplican su peso.
-- Una afinidad necesita al menos dos películas distintas para aparecer. Con dos títulos se etiqueta como inicial y no se utiliza para recomendar.
-- La diferencia observada se reduce hacia el promedio personal mediante un encogimiento conservador: `diferencia × n / (n + 3)`. Es una regularización explícita, no una probabilidad ni un intervalo de confianza.
-- El respaldo combina el número de películas distintas y la dispersión de sus valoraciones. Las señales variables se muestran, pero no alimentan recomendaciones.
-- Se analizan géneros, directores, reparto, países, décadas, idioma original y franjas de duración.
-- Las señales ausentes no se inventan ni se completan por inferencia.
+- El promedio personal y cada afinidad se calculan por película distinta. Los revisionados se promedian dentro de cada título y no multiplican la muestra.
+- Una afinidad aparece con un mínimo de dos películas distintas. Con dos títulos se etiqueta como inicial y no se usa para recomendar.
+- La diferencia observada se reduce hacia el promedio personal mediante `diferencia × n / (n + 3)`. Es una regularización explícita, no una probabilidad ni un intervalo de confianza.
+- El respaldo combina cantidad de títulos distintos y dispersión de sus valoraciones.
+- Las afinidades moderadas y sólidas pueden intervenir en recomendaciones. Las señales iniciales o variables no sostienen por sí solas una recomendación.
+- Un favorito es una señal declarada explícitamente. No se transforma en una calificación ni aumenta el promedio de notas.
+- Las señales ausentes no se inventan.
 
-## Recomendaciones
+## Encaje y nota prevista
 
-- Las candidatas proceden exclusivamente de películas ya almacenadas en el dispositivo.
-- Se excluye cualquier película con un visionado registrado.
-- Se utilizan señales positivas con respaldo moderado o sólido; una señal inicial no basta.
-- La puntuación combina siete familias de rasgos con pesos limitados por categoría. Varios actores o géneros de una misma familia no multiplican artificialmente su influencia.
-- Cada coincidencia explica el rasgo, la diferencia ajustada y el número de títulos distintos que la respaldan.
-- La puntuación es un orden relativo dentro de las candidatas locales, no una probabilidad de que guste al propietario.
+Cada candidata local puede mostrar dos estimaciones distintas:
+
+**Encaje (0–100 %).** Es una puntuación relativa que resume señales positivas y negativas de siete familias: género, dirección, reparto, país, época, idioma y duración. Las coincidencias se limitan dentro de cada familia para que muchos actores o géneros no multipliquen artificialmente su peso. Las afinidades negativas restan encaje. Los favoritos añaden un refuerzo explícito moderado a las familias coincidentes.
+
+La escala se centra en 50 y transforma la diferencia ponderada mediante `50 + 12,5 × diferencia`, limitada al intervalo 0–100. Un valor superior a 50 indica un encaje neto positivo. **No es una probabilidad de que la película guste ni una garantía.**
+
+**Nota prevista (0–10).** Parte del promedio personal por película y suma la diferencia ajustada ponderada de las señales que proceden de calificaciones. Se limita al intervalo 0–10. Los favoritos no cambian esta predicción. Cuando no hay respaldo suficiente para proyectar una diferencia, la estimación se mantiene en el promedio personal.
+
+Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) son etiquetas descriptivas; no son probabilidades ni intervalos de confianza estadísticos.
+
+## Grafo de decisiones
+
+«Cómo piensa Espectro» representa el recorrido usado por el cálculo:
+
+1. El perfil aporta el promedio y las valoraciones registradas.
+2. Las señales muestran qué rasgos reciben notas por encima o por debajo del promedio, cuántos títulos los respaldan y su dispersión.
+3. Los favoritos aparecen separados como señales explícitas, sin calificaciones inventadas.
+4. Las conexiones hacia cada candidata muestran contribuciones positivas o negativas al encaje.
+5. Cada señal expone los títulos que la respaldan y, cuando procede, su calificación individual.
+
+El grafo no inventa conexiones con películas no evaluadas. Cuando no existen candidatas con coincidencias suficientes, muestra las señales respaldadas disponibles. El ancho de las conexiones representa la magnitud de la contribución; el color distingue su dirección.
 
 ## Evolución temporal
 
 - La evolución mensual conserva las calificaciones de visionados reales y muestra solo meses con actividad.
 - Los cambios de afinidad comparan los últimos doce meses disponibles con los doce anteriores, tomando como referencia la fecha de calificación más reciente.
-- Cada película aporta como máximo una observación por periodo; sus revisionados se promedian dentro de ese periodo.
+- Cada película aporta como máximo una observación por periodo; los revisionados se promedian dentro de ese periodo.
 - Solo se muestra un cambio para un rasgo con al menos tres películas distintas en cada periodo.
-- Si no existe muestra suficiente, Espectro indica que no hay periodos comparables en vez de dibujar una tendencia ficticia.
+- Si no existe muestra suficiente, Espectro indica que no hay periodos comparables en lugar de dibujar una tendencia ficticia.
 
 ## Huella e instantáneas
 
-La huella incluye los campos que intervienen en el cálculo: visionados, calificaciones, fechas y los metadatos usados por las señales. Si cambia el idioma o la duración de una película, la entrada se considera distinta. La versión 2.0.0 utiliza un identificador de instantánea separado de las versiones anteriores sin necesidad de migrar ni eliminar registros Dexie.
+La huella incluye visionados, calificaciones, fechas, metadatos utilizados, identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.1.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie.
+
+Antes de calcular, el repositorio comprueba si ya existe una instantánea de la versión y huella actuales. Así evita repetir el análisis cuando la entrada no ha cambiado.
 
 ## Límites conocidos
 
-- La precisión depende de los metadatos disponibles localmente y de la diversidad del historial.
-- Las etiquetas de respaldo son niveles descriptivos basados en soporte y dispersión; no son intervalos de confianza estadísticos ni garantías.
-- Las recomendaciones no buscan películas en la red. Si el catálogo local de candidatas es pequeño, el resultado también lo será.
-- Una afinidad representa una asociación en las valoraciones registradas, no una relación causal ni una preferencia permanente.
+- La precisión depende de la diversidad de las valoraciones y de los metadatos disponibles en el dispositivo.
+- El encaje es un orden relativo, no una probabilidad calibrada.
+- La nota prevista es una proyección de las valoraciones conocidas, no una promesa sobre la reacción futura del usuario.
+- Las recomendaciones solo pueden salir de candidatas que Prisma ya tenga localmente. Espectro no realiza búsquedas ilimitadas por su cuenta.
+- Una afinidad es una asociación en los datos registrados, no una relación causal ni una preferencia permanente.
+- Los comentarios escritos todavía no se interpretan como señales semánticas.
 
 ## Principios
 
 - Local-first y privacidad por diseño.
-- Diferenciar observaciones de inferencias.
+- Diferenciar observaciones, preferencias declaradas e inferencias.
 - No presentar preferencias concluyentes con muestras pequeñas.
-- Explicar cada recomendación con datos verificables.
-- Preservar compatibilidad de datos e instantáneas mediante versionado.
+- Explicar recomendaciones con datos verificables y evidencia visible.
+- Preservar compatibilidad mediante versionado y huellas.
+- Enriquecer solo metadatos cinematográficos; no alterar experiencias personales.
