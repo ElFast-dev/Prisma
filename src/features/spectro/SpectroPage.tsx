@@ -699,20 +699,54 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
             <span><strong>{selectedNode.recommendationCount}</strong> recomendaciones relacionadas</span>
           </div>
           {selectedNode.kind === "movie" ? (
-            <button className="button button-secondary" type="button" onClick={() => openMovie(selectedNode)}>
-              Abrir ficha de la película
-            </button>
+            <>
+              <div className="spectro-network-selection-movie-stats">
+                {selectedNode.rating !== undefined && (
+                  <span><strong>{selectedNode.rating.toFixed(1)}/10</strong> tu nota</span>
+                )}
+                {selectedNode.fitPercentage !== undefined && (
+                  <span><strong>{selectedNode.fitPercentage}%</strong> encaje calculado</span>
+                )}
+                {selectedNode.predictedRating !== undefined && (
+                  <span><strong>{selectedNode.predictedRating.toFixed(1)}/10</strong> nota prevista</span>
+                )}
+              </div>
+              <div className="spectro-network-related">
+                <strong>Rasgos conectados</strong>
+                {relatedNodes.filter((node) => node.kind !== "movie").length ? (
+                  <div>
+                    {selectedEdges.map((edge) => {
+                      const node = nodeById.get(edge.source === selectedNode.id ? edge.target : edge.source);
+                      if (!node || node.kind === "movie") return null;
+                      return (
+                        <button type="button" key={node.id} onClick={() => setSelectedNodeId(node.id)}>
+                          <span>{networkNodeTypeLabel(node.kind)} · {node.label}</span>
+                          <small>Vínculo {Math.round(edge.strength * 100)}%</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : <p className="muted-copy">Esta película todavía no tiene metadatos suficientes para dibujar sus conexiones.</p>}
+              </div>
+              <button className="button button-secondary" type="button" onClick={() => openMovie(selectedNode)}>
+                Abrir ficha de la película
+              </button>
+            </>
           ) : (
             <div className="spectro-network-related">
               <strong>Películas conectadas</strong>
-              {relatedNodes.filter((node) => node.kind === "movie").length ? (
+              {selectedEdges.length ? (
                 <div>
-                  {relatedNodes.filter((node) => node.kind === "movie").slice(0, 10).map((node) => (
-                    <button type="button" key={node.id} onClick={() => setSelectedNodeId(node.id)}>
-                      <span>{node.label}</span>
-                      <small>{node.state === "explored" ? "Vista" : "Por explorar"}</small>
-                    </button>
-                  ))}
+                  {selectedEdges.map((edge) => {
+                    const node = nodeById.get(edge.source === selectedNode.id ? edge.target : edge.source);
+                    if (!node || node.kind !== "movie") return null;
+                    return (
+                      <button type="button" key={node.id} onClick={() => setSelectedNodeId(node.id)}>
+                        <span>{node.label}</span>
+                        <small>{node.state === "explored" ? "Vista" : "Por explorar"} · {Math.round(edge.strength * 100)}%</small>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : <p className="muted-copy">No hay películas conectadas a este rasgo.</p>}
             </div>
