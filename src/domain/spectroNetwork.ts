@@ -585,6 +585,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
     const status = state === "explored" ? "Explorada" : "Por explorar";
     const detail = [
       status,
+      favoriteMovieIdSet.has(movie.id) ? "Favorita" : "",
       rating === undefined ? "Sin calificación" : "Tu nota " + round(rating).toFixed(1) + "/10",
       recommendation ? "Encaje " + recommendation.fitPercentage + "%" : "",
       reach ? "Conecta con " + reach + " recomendaciones" : connectionCount + " conexiones"
