@@ -16,7 +16,7 @@ test("publica un manifiesto instalable y activa el Service Worker", async ({ pag
   expect(manifest).toMatchObject({
     name: "Prisma",
     short_name: "Prisma",
-    start_url: "/Prisma/#/discover",
+    start_url: "/Prisma/#/",
     scope: "/Prisma/",
     display: "standalone"
   });
