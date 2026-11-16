@@ -143,10 +143,6 @@ function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function mean(values: number[]): number {
-  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
-}
-
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
