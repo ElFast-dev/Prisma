@@ -48,6 +48,7 @@ Las etapas 1–15 están completadas. Espectro 2.0 tiene integradas las subetapa
     - [x] Enriquecimiento local de metadatos de películas vistas, favoritas y candidatas, usando TMDB sin abrir cada ficha y sin reescribir datos personales.
     - [x] Encaje relativo de 0–100 %, nota prevista de 0–10 y separación entre señales derivadas de valoraciones y favoritos declarados.
     - [x] Grafo de decisiones con señales positivas y negativas, contribuciones por candidata y títulos de respaldo visibles.
+    - [x] Preguntas contextuales en Espectro para completar calificaciones de visionados sin abrir fichas; respuesta ligada al visionado existente y opción de posponer.
     - [ ] Validar pruebas unitarias, persistencia, E2E y PWA; verificar visualmente el despliegue público.
 - [ ] 17. Optimización integral.
 
