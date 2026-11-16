@@ -153,7 +153,7 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await page.getByRole("button", { name: "Volver a Espectro" }).click();
   await expect(page.locator('a[href="#/spectro/evolution"]')).toBeVisible();
   await page.locator('a[href="#/spectro/evolution"]').click();
-  await expect(page.getByRole("heading", { name: "Evolución" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Evolución", exact: true })).toBeVisible();
   await expect(page.getByText("Cambios recientes")).toBeVisible();
   await expect(page.locator(".spectro-trend-row").first()).toBeVisible();
 
