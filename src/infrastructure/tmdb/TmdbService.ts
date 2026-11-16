@@ -241,8 +241,8 @@ interface TmdbMovieKeywordsResponse {
 }
 
 /**
- * Recupera solo los recursos que Espectro necesita para conocer una película.
- * Reutiliza la caché de detalles y créditos sin descargar recomendaciones ni proveedores.
+ * Recupera los detalles, créditos y palabras clave temáticas que Espectro necesita.
+ * Reutiliza la caché local sin descargar recomendaciones ni proveedores.
  */
 export async function getMovieAnalysisMetadata(
   token: string,
