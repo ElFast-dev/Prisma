@@ -6,6 +6,13 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
 });
 
+async function openHistory(page: import("@playwright/test").Page) {
+  await page.getByRole("link", { name: /Historial/ }).click();
+  await expect(page.getByRole("group", {
+    name: "Modo de exploración del Historial"
+  })).toBeVisible();
+}
+
 test("permite entrar a Historial y consultar su estado inicial", async ({ page }) => {
   await openHistory(page);
 
