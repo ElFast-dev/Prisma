@@ -363,15 +363,24 @@ function buildClusters(
 
   const groups = [...components.values()].filter((members) => members.length >= 2);
   const isolated = [...components.values()].filter((members) => members.length === 1).flat();
-  const ordered = [
-    ...groups.map((members) => ({
-      members,
-      similarity: mean(acceptedPairs
-        .filter((pair) => members.includes(pair.left) && members.includes(pair.right))
-        .map((pair) => pair.similarity))
-    })).sort((a, b) => b.members.length - a.members.length),
-    ...(isolated.length ? [{ members: isolated, similarity: 0 }] : [])
-  ];
+  const clustered = groups.map((members) => ({
+    members,
+    similarity: mean(acceptedPairs
+      .filter((pair) => members.includes(pair.left) && members.includes(pair.right))
+      .map((pair) => pair.similarity))
+  })).sort((a, b) => b.members.length - a.members.length);
+
+  // Los títulos aislados no comparten suficientes rasgos para formar un grupo.
+  // Se distribuyen en zonas pequeñas para evitar amontonarlos en un único círculo.
+  const isolatedZones = [];
+  for (let index = 0; index < isolated.length; index += 8) {
+    isolatedZones.push({
+      members: isolated.slice(index, index + 8),
+      similarity: 0,
+      unconnectedBatch: Math.floor(index / 8) + 1
+    });
+  }
+  const ordered = [...clustered, ...isolatedZones];
 
   const cellSize = 380;
   const margin = 55;
@@ -393,7 +402,7 @@ function buildClusters(
 
     clusters.push({
       id: isIsolatedZone
-        ? "cluster:unconnected"
+        ? "cluster:unconnected:" + String("unconnectedBatch" in group ? group.unconnectedBatch : clusterIndex)
         : "cluster:" + movies[members[0]]?.id,
       label: isIsolatedZone
         ? "Sin conexiones similares suficientes"
