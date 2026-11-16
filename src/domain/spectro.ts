@@ -1019,6 +1019,7 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
     decadeAffinities,
     languageAffinities,
     durationAffinities,
+    themeAffinities,
     favoriteSignals,
     evolution: buildEvolution(input.viewings),
     affinityTrends: buildAffinityTrends(input.viewings, movieById),
