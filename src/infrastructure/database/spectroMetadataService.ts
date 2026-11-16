@@ -119,6 +119,7 @@ export function isSpectroMetadataIncomplete(movie: MovieRecord): boolean {
     || !movie.countries.length
     || !movie.directors?.length
     || !movie.castMembers?.length
+    || movie.keywords === undefined
     || !movie.posterPath
     || !movie.backdropPath
   );
@@ -272,7 +273,10 @@ async function persistItem(
   await prismaDb.transaction("rw", [prismaDb.movies, prismaDb.appMetadata], async () => {
     const current = await prismaDb.movies.get(movie.id);
     if (current) {
-      const patch = createMovieMetadataPatch(current, metadata.details, now);
+      const patch = createMovieMetadataPatch(current, {
+        ...metadata.details,
+        keywords: metadata.keywords
+      }, now);
       const directors = [...new Set(
         metadata.credits.crew
           .filter((person) => person.job === "Director" || person.department === "Directing")
