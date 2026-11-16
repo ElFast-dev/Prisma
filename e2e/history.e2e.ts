@@ -29,7 +29,7 @@ test("permite entrar a Historial y consultar su estado inicial", async ({ page }
 });
 
 test("abre, cambia y restablece los filtros del Historial", async ({ page }) => {
-  await page.getByRole("link", { name: /Historial/ }).click();
+  await openHistory(page);
 
   await page.getByRole("button", { name: "Abrir filtros" }).click();
   const dialog = page.getByRole("dialog", { name: "Filtros del historial" });
@@ -48,7 +48,7 @@ test("abre, cambia y restablece los filtros del Historial", async ({ page }) => 
 });
 
 test("permite cambiar a Calendario y seleccionar un día", async ({ page }) => {
-  await page.getByRole("link", { name: /Historial/ }).click();
+  await openHistory(page);
 
   const inlineExplorer = page.getByRole("group", {
     name: "Modo de exploración del Historial"
@@ -85,7 +85,7 @@ async function readTemporaryPreferences(page: import("@playwright/test").Page) {
 }
 
 test("restaura modo, orden, fecha y filtros del Historial después de recargar", async ({ page }) => {
-  await page.getByRole("link", { name: /Historial/ }).click();
+  await openHistory(page);
 
   const inlineExplorer = page.getByRole("group", {
     name: "Modo de exploración del Historial"
