@@ -417,7 +417,9 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
     let updatedMovies = 0;
     let failedMovies = deferredMovies;
     let notFoundMovies = 0;
-    let lastError: string | undefined;
+    let lastError: string | undefined = deferredMovies
+      ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+      : undefined;
 
     publish({
       ...EMPTY_SNAPSHOT,
