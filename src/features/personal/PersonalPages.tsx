@@ -9,6 +9,7 @@ import {
 import type {
   Collection,
   HistoryBrowsePreferences,
+  LibraryEntry,
   LocalProfile,
   MovieRecord
 } from "../../domain/types";
@@ -33,6 +34,7 @@ import { prismaDb } from "../../infrastructure/database/database";
 import { deleteViewing } from "../../infrastructure/database/viewingService";
 import { getLibraryEntry } from "../../infrastructure/database/libraryService";
 import {
+  addMovieToCollection,
   createCollection,
   deleteCollection,
   getCollections,
@@ -1142,6 +1144,11 @@ export function CollectionsPage() {
   const [editDescription, setEditDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [addMoviesOpen, setAddMoviesOpen] = useState(false);
+  const [libraryCandidates, setLibraryCandidates] = useState<{ movie: MovieRecord; entry: LibraryEntry }[]>([]);
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [addingMovieId, setAddingMovieId] = useState<string | null>(null);
 
   const loadCollections = useCallback(async () => {
     setLoading(true);
@@ -1175,6 +1182,26 @@ export function CollectionsPage() {
       || collection.description?.toLocaleLowerCase().includes(query)
     );
   }, [collections, search]);
+
+  const matchingLibraryCandidates = useMemo(() => {
+    const query = librarySearch.trim().toLocaleLowerCase();
+    if (!query) return libraryCandidates;
+    return libraryCandidates.filter(({ movie }) => [
+      movie.title,
+      movie.originalTitle,
+      movie.releaseYear?.toString(),
+      ...movie.genres
+    ].filter(Boolean).some((value) => value!.toLocaleLowerCase().includes(query)));
+  }, [libraryCandidates, librarySearch]);
+
+  const currentCollectionMovieIds = useMemo(
+    () => new Set(movies.map((movie) => movie.id)),
+    [movies]
+  );
+  const availableLibraryCandidates = useMemo(
+    () => matchingLibraryCandidates.filter(({ movie }) => !currentCollectionMovieIds.has(movie.id)),
+    [matchingLibraryCandidates, currentCollectionMovieIds]
+  );
 
   async function handleCreateCollection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1291,6 +1318,42 @@ export function CollectionsPage() {
 
   function posterUrl(movie: MovieRecord) {
     return getTmdbImageUrl("https://image.tmdb.org/t/p/", movie.posterPath, "w342");
+  }
+
+  async function openLibraryPicker() {
+    if (!selectedCollection) return;
+    setAddMoviesOpen(true);
+    setLibrarySearch("");
+    setLibraryLoading(true);
+    setError("");
+    try {
+      setLibraryCandidates(await getLibraryMovies());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo consultar tu Biblioteca local.");
+    } finally {
+      setLibraryLoading(false);
+    }
+  }
+
+  async function handleAddLibraryMovie(movie: MovieRecord) {
+    if (!selectedCollection || addingMovieId) return;
+    setAddingMovieId(movie.id);
+    setError("");
+    try {
+      await addMovieToCollection(selectedCollection.id, movie.id);
+      const [nextMovies, nextCollections] = await Promise.all([
+        getCollectionMovies(selectedCollection.id),
+        getCollectionSummaries()
+      ]);
+      setMovies(nextMovies);
+      setCollections(nextCollections);
+      const refreshed = nextCollections.find((item) => item.collection.id === selectedCollection.id);
+      if (refreshed) setSelectedCollection(refreshed.collection);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo añadir la película a la colección.");
+    } finally {
+      setAddingMovieId(null);
+    }
   }
 
   const selectedCover = movies.find((movie) => movie.id === selectedCollection?.coverMovieId) ?? movies[0];
