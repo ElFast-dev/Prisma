@@ -88,15 +88,15 @@ test("presenta la huella cinematográfica a partir de visionados y películas lo
 
   await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
   await expect(page.locator(".metric-card").first()).toContainText("2");
-  await expect(page.getByRole("heading", { name: "Tu mapa de cine" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Afinidades" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Géneros más vistos" })).toBeVisible();
   await expect(page.getByText("Drama", { exact: true })).toBeVisible();
   await expect(page.getByText("Años 1990", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Directores que te acompañan" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Directores más vistos" })).toBeVisible();
   await expect(page.getByText("Directora ficticia", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Países de producción" })).toBeVisible();
   await expect(page.getByText("Panamá", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Tu ritmo reciente" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Actividad reciente" })).toBeVisible();
   await expect(page.getByRole("img", { name: /Actividad de los últimos seis meses/ })).toBeVisible();
   await expect(page.locator(".achievement-count")).toHaveText("1/13 desbloqueados");
 });

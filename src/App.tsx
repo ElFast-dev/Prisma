@@ -175,7 +175,13 @@ export default function App() {
       page = <SettingsPage />;
       break;
     default:
-      page = path.startsWith("/personal/collections/") ? <CollectionsPage /> : isMovie ? <MovieDetailPage /> : <DiscoverPage />;
+      page = path.startsWith("/settings/")
+        ? <SettingsPage />
+        : path.startsWith("/personal/collections/")
+          ? <CollectionsPage />
+          : isMovie
+            ? <MovieDetailPage />
+            : <DiscoverPage />;
   }
 
   return (

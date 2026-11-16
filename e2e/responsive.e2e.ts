@@ -15,7 +15,11 @@ for (const viewport of viewports) {
       ["#/personal", "Personal"],
       ["#/personal/library", "Biblioteca"],
       ["#/personal/collections", "Colecciones"],
-      ["#/settings", "Ajustes"]
+      ["#/settings", "Ajustes"],
+      ["#/settings/catalog", "Catálogo"],
+      ["#/settings/library", "Biblioteca"],
+      ["#/settings/data", "Datos"],
+      ["#/settings/privacy", "Privacidad"]
     ]) {
       await page.goto(path);
       await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();

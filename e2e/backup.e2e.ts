@@ -9,6 +9,8 @@ test("exporta y restaura una copia Prisma ficticia en el navegador aislado", asy
 
   await page.goto("#/settings");
   await expect(page.getByRole("heading", { name: "Ajustes" })).toBeVisible();
+  await page.getByRole("link", { name: /Datos/ }).click();
+  await expect(page.getByRole("heading", { name: "Datos", exact: true })).toBeVisible();
 
   const [download] = await Promise.all([
     page.waitForEvent("download"),
