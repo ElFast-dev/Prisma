@@ -438,6 +438,7 @@ export function SettingsPage() {
       )}
 
       {activeSection?.id === "data" && (
+      <>
       <section className="settings-section card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><ShieldCheck size={21} /></div>
@@ -624,6 +625,7 @@ export function SettingsPage() {
           </section>
         </div>
       )}
+      </>
       )}
 
       {activeSection?.id === "privacy" && (
