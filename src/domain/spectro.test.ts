@@ -119,6 +119,65 @@ describe("analyzeSpectro 2.2", () => {
     expect(graph.stats.connections).toBe(graph.edges.length);
   });
 
+  it("mantiene alineadas las claves de afinidad y los vínculos del mapa", () => {
+    const shared = {
+      directors: ["Directora Prisma"],
+      castMembers: ["Actor Prisma"],
+      keywords: ["Memoria"]
+    };
+    const movies = [
+      movie("movie-9001", "Drama", 18, 2019, shared),
+      movie("movie-9002", "Drama", 18, 2020, shared),
+      movie("movie-9003", "Drama", 18, 2021, shared)
+    ];
+    const viewings = movies.map((item, index) => viewing(
+      "key-view-" + index,
+      item.id,
+      "2026-01-0" + (index + 1),
+      8 + index
+    ));
+    const result = analyzeSpectro({ movies, viewings, candidates: [] });
+    const affinityKeys = [
+      ...result.genreAffinities,
+      ...result.directorAffinities,
+      ...result.castAffinities,
+      ...result.themeAffinities
+    ].map((affinity) => affinity.key);
+
+    for (const key of ["genre:18", "director:directora prisma", "cast:actor prisma", "theme:memoria"]) {
+      expect(affinityKeys).toContain(key);
+      expect(result.networkGraph.nodes.some((node) => node.id === "feature:" + key)).toBe(true);
+      expect(result.networkGraph.edges.some((edge) => edge.target === "feature:" + key)).toBe(true);
+    }
+  });
+
+  it("mantiene el mapa distribuido con un catálogo ficticio de 821 películas", () => {
+    const catalogueSize = 821;
+    const movies = Array.from({ length: catalogueSize }, (_, index) => {
+      const id = 10000 + index;
+      return movie("movie-" + id, "Drama", 18, 1980 + (index % 40), {
+        directors: ["Dirección " + index],
+        castMembers: ["Actor " + index],
+        keywords: ["Tema " + index]
+      });
+    });
+    const graph = analyzeSpectro({
+      movies,
+      viewings: [],
+      candidates: []
+    }).networkGraph;
+    const isolatedZones = graph.clusters.filter((cluster) => cluster.similarity === 0);
+
+    expect(graph.stats.movies).toBe(catalogueSize);
+    expect(graph.stats.features).toBe(catalogueSize * 3 + 1);
+    expect(graph.stats.connections).toBe(catalogueSize * 4);
+    expect(graph.stats.clusters).toBe(0);
+    expect(isolatedZones).toHaveLength(Math.ceil(catalogueSize / 8));
+    expect(isolatedZones.every((cluster) => cluster.movieIds.length <= 8)).toBe(true);
+    expect(isolatedZones.reduce((total, cluster) => total + cluster.movieIds.length, 0))
+      .toBe(catalogueSize);
+  });
+
   it("distribuye películas aisladas en zonas pequeñas sin superponer todo el catálogo", () => {
     const movies = Array.from({ length: 25 }, (_, index) => {
       const id = index + 1;

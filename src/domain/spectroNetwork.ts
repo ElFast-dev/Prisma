@@ -143,10 +143,6 @@ function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function mean(values: number[]): number {
-  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
-}
-
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
@@ -361,14 +357,26 @@ function buildClusters(
     components.set(root, members);
   }
 
+  // Agrega la similitud aceptada por componente en una sola pasada.
+  // Evita volver a recorrer todas las parejas por cada grupo del catálogo.
+  const similarityByComponent = new Map<number, { total: number; count: number }>();
+  for (const pair of acceptedPairs) {
+    const root = unionFind.find(pair.left);
+    const current = similarityByComponent.get(root) ?? { total: 0, count: 0 };
+    current.total += pair.similarity;
+    current.count += 1;
+    similarityByComponent.set(root, current);
+  }
+
   const groups = [...components.values()].filter((members) => members.length >= 2);
   const isolated = [...components.values()].filter((members) => members.length === 1).flat();
-  const clustered = groups.map((members) => ({
-    members,
-    similarity: mean(acceptedPairs
-      .filter((pair) => members.includes(pair.left) && members.includes(pair.right))
-      .map((pair) => pair.similarity))
-  })).sort((a, b) => b.members.length - a.members.length);
+  const clustered = groups.map((members) => {
+    const aggregate = similarityByComponent.get(unionFind.find(members[0]));
+    return {
+      members,
+      similarity: aggregate ? aggregate.total / aggregate.count : 0
+    };
+  }).sort((a, b) => b.members.length - a.members.length);
 
   // Los títulos aislados no comparten suficientes rasgos para formar un grupo.
   // Se distribuyen en zonas pequeñas para evitar amontonarlos en un único círculo.
