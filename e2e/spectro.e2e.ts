@@ -244,6 +244,112 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
   await expect(page.getByText("Reparto automático", { exact: true }).first()).toBeVisible();
 });
 
+test("muestra errores de metadatos al volver y permite forzar el reintento sin abrir la ficha", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("prisma.tmdb.accessToken", "fixture-token");
+  });
+
+  const requestedPaths: string[] = [];
+  await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    requestedPaths.push(pathname);
+    if (pathname.endsWith("/credits")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 987401,
+          cast: [{ id: 8101, name: "Reparto reintentado", character: "Protagonista" }],
+          crew: [{ id: 8102, name: "Dirección reintentada", job: "Director", department: "Directing" }]
+        })
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: 987401,
+        title: "Error diferido Prisma",
+        original_title: "Deferred Prisma",
+        overview: "Metadatos ficticios recuperados mediante reintento.",
+        release_date: "2021-05-01",
+        runtime: 108,
+        status: "Released",
+        genres: [{ id: 18, name: "Drama" }],
+        production_countries: [{ iso_3166_1: "JP", name: "Japón" }],
+        original_language: "ja",
+        poster_path: "/retry-poster.jpg",
+        backdrop_path: "/retry-backdrop.jpg"
+      })
+    });
+  });
+
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tmdbId = 987401;
+    const now = new Date().toISOString();
+    try {
+      const transaction = db.transaction(["movies", "viewings", "appMetadata"], "readwrite");
+      transaction.objectStore("movies").put({
+        id: "tmdb-" + tmdbId,
+        tmdbId,
+        title: "Error diferido Prisma",
+        genres: ["Drama"],
+        genreIds: [18],
+        countries: [],
+        directors: [],
+        castMembers: [],
+        lastViewingSequence: 1,
+        createdAt: now,
+        updatedAt: now
+      });
+      transaction.objectStore("viewings").put({
+        id: "tmdb-" + tmdbId + "-view",
+        movieId: "tmdb-" + tmdbId,
+        sequenceNumber: 1,
+        watchedOn: "2026-11-15",
+        rating: 8,
+        createdAt: now,
+        updatedAt: now,
+        operationId: "retry-fixture-operation"
+      });
+      transaction.objectStore("appMetadata").put({
+        key: "spectro:metadata:v1:" + tmdbId,
+        value: JSON.stringify({
+          tmdbId,
+          status: "error",
+          attempts: 1,
+          updatedAt: now,
+          lastError: "Error temporal simulado."
+        })
+      });
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error ?? new Error("No se pudo preparar el fallo diferido de metadatos."));
+      });
+    } finally {
+      db.close();
+    }
+  });
+
+  await page.goto("#/spectro");
+  await expect(page.getByText("Quedaron 1 películas con datos incompletos")).toBeVisible();
+  await expect(page.getByText(/pausa temporal/)).toBeVisible();
+  await page.getByRole("button", { name: "Reintentar metadatos" }).click();
+  await expect(page.getByText("Espectro está completando información")).toBeVisible();
+  await expect(page.getByText("Espectro incorporó metadatos de 1 películas.")).toBeVisible();
+  expect(requestedPaths).toContain("/3/movie/987401");
+  expect(requestedPaths).toContain("/3/movie/987401/credits");
+});
+
 test("Espectro pregunta por una calificación pendiente sin abrir la ficha", async ({ page }) => {
   await page.goto("#/personal");
   await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
