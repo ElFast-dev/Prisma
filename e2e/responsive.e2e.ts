@@ -14,6 +14,7 @@ for (const viewport of viewports) {
     for (const [path, heading] of [
       ["#/personal", "Personal"],
       ["#/personal/library", "Biblioteca"],
+      ["#/personal/collections", "Colecciones"],
       ["#/settings", "Ajustes"]
     ]) {
       await page.goto(path);
