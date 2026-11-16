@@ -1257,3 +1257,293 @@
 @media (prefers-reduced-motion: reduce) {
   .spectro-affinity-track span { transition: none; }
 }
+
+
+/* Espectro 2.1 — visualización de afinidades y trazabilidad del grafo */
+.spectro-affinity-row { gap: 6px; }
+.spectro-diverging-chart {
+  display: block;
+  width: 100%;
+  height: 28px;
+  overflow: visible;
+}
+.spectro-diverging-track {
+  stroke: rgb(110 126 146 / 28%);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.spectro-diverging-axis {
+  stroke: rgb(184 194 207 / 48%);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.spectro-diverging-value {
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.spectro-diverging-value.is-positive { stroke: var(--color-success); }
+.spectro-diverging-value.is-negative { stroke: var(--color-warning); }
+.spectro-diverging-dot {
+  stroke: #0E1117;
+  stroke-width: 2;
+}
+.spectro-diverging-dot.is-positive { fill: var(--color-success); }
+.spectro-diverging-dot.is-negative { fill: var(--color-warning); }
+
+.spectro-evolution-chart {
+  display: grid;
+  gap: 3px;
+  overflow: hidden;
+  padding: 12px 10px 10px;
+}
+.spectro-evolution-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.spectro-chart-grid {
+  stroke: rgb(110 126 146 / 22%);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+.spectro-chart-axis-label,
+.spectro-chart-month-label {
+  fill: var(--color-text-muted);
+  font-size: 10px;
+}
+.spectro-chart-month-label { font-size: 9px; }
+.spectro-evolution-line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.spectro-evolution-point {
+  fill: var(--color-accent);
+  stroke: #111821;
+  stroke-width: 2.5;
+}
+.spectro-chart-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 7px 2px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.spectro-graph-section { display: grid; gap: 12px; margin-top: 18px; }
+.spectro-graph-section .content-caption { margin-bottom: 0; }
+.spectro-graph-section .content-caption > div { min-width: 0; }
+.spectro-graph-section .content-caption p { margin: 4px 0 0; font-size: 10px; line-height: 1.5; }
+.spectro-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 15px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+.spectro-graph-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.spectro-graph-legend i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.spectro-graph-legend .is-positive { background: var(--color-success); }
+.spectro-graph-legend .is-negative { background: var(--color-warning); }
+.spectro-graph-legend .is-explicit { background: var(--color-accent); }
+.spectro-graph-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid rgb(75 91 111 / 38%);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(44 57 73 / 20%), transparent 68%),
+    #111821;
+  scrollbar-color: #465366 transparent;
+  scrollbar-width: thin;
+}
+.spectro-decision-graph {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+  height: auto;
+}
+.spectro-graph-edge {
+  fill: none;
+  opacity: .72;
+}
+.spectro-graph-edge.is-positive { stroke: var(--color-success); }
+.spectro-graph-edge.is-negative { stroke: var(--color-warning); }
+.spectro-arrow-positive { fill: var(--color-success); }
+.spectro-arrow-negative { fill: var(--color-warning); }
+.spectro-graph-node rect {
+  stroke-width: 1.2;
+}
+.spectro-graph-node.is-profile rect {
+  fill: #202B39;
+  stroke: rgb(217 189 145 / 60%);
+}
+.spectro-graph-node.is-signal rect {
+  fill: #172431;
+  stroke: rgb(113 150 127 / 55%);
+}
+.spectro-graph-node.is-signal.is-explicit rect {
+  fill: #272419;
+  stroke: rgb(217 189 145 / 65%);
+}
+.spectro-graph-node.is-candidate rect {
+  fill: #1D2B2B;
+  stroke: rgb(129 168 141 / 62%);
+}
+.spectro-graph-node-label {
+  fill: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.spectro-graph-node-detail {
+  fill: var(--color-text-muted);
+  font-size: 10px;
+}
+.spectro-graph-note,
+.spectro-graph-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.spectro-graph-evidence {
+  border-top: 1px solid var(--color-border);
+  padding-top: 9px;
+}
+.spectro-graph-evidence summary {
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+}
+.spectro-graph-evidence-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.spectro-graph-evidence-item {
+  display: grid;
+  gap: 3px;
+  border-left: 2px solid rgb(217 189 145 / 48%);
+  padding: 3px 0 3px 9px;
+}
+.spectro-graph-evidence-item strong { font-size: 10px; }
+.spectro-graph-evidence-item small,
+.spectro-graph-evidence-item p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.spectro-metadata-status {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 13px;
+}
+.spectro-metadata-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.spectro-metadata-heading strong {
+  min-width: 0;
+  flex: 1;
+  font-size: 11px;
+}
+.spectro-metadata-heading > span {
+  color: var(--color-accent);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.spectro-metadata-status p { margin: 0; font-size: 10px; line-height: 1.5; }
+.spectro-metadata-progress {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(110 126 146 / 22%);
+}
+.spectro-metadata-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width 180ms ease;
+}
+.spectro-metadata-spin { animation: spectro-spin 1.6s linear infinite; }
+@keyframes spectro-spin { to { transform: rotate(360deg); } }
+.spectro-metadata-complete {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  color: var(--color-success);
+  font-size: 10px;
+}
+
+.spectro-recommendation-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 5px;
+}
+.spectro-recommendation-metrics > div {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: rgb(10 15 21 / 34%);
+  padding: 7px 8px;
+}
+.spectro-recommendation-metrics > div span {
+  color: var(--color-text-muted);
+  font-size: 8px;
+}
+.spectro-recommendation-metrics > div strong {
+  color: var(--color-text);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.spectro-recommendation-metrics > div strong small {
+  margin-left: 2px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+.spectro-recommendation-metrics > .spectro-confidence {
+  align-self: center;
+  justify-self: start;
+}
+.spectro-recommendation-reasons li > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.spectro-recommendation-reasons li small.is-positive { color: var(--color-success); }
+.spectro-recommendation-reasons li small.is-negative { color: var(--color-warning); }
+.spectro-confidence.is-declarada {
+  border-color: rgb(217 189 145 / 45%);
+  color: var(--color-accent);
+}
+@media (max-width: 380px) {
+  .spectro-recommendation-metrics { gap: 5px; }
+  .spectro-recommendation-metrics > div { padding: 6px; }
+  .spectro-recommendation-metrics > div strong { font-size: 15px; }
+  .spectro-graph-section .content-caption { align-items: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spectro-metadata-spin { animation: none; }
+  .spectro-metadata-progress span { transition: none; }
+}
