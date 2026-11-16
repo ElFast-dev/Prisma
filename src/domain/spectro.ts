@@ -313,7 +313,8 @@ export function getSpectroInputFingerprint(input: SpectroInput): string {
     ]);
 
   const favoriteMovieIds = [...new Set(input.favoriteMovieIds ?? [])].sort();
-  const serialized = JSON.stringify({ viewings, movies, favoriteMovieIds });
+  const candidateMovieIds = [...new Set(input.candidates.map((movie) => movie.id))].sort();
+  const serialized = JSON.stringify({ viewings, movies, favoriteMovieIds, candidateMovieIds });
   // Dos hashes independientes amplían a 64 bits el identificador ligero de caché.
   return fnvHash(serialized, 2166136261) + fnvHash(serialized, 2246822519);
 }
@@ -857,7 +858,7 @@ function buildRecommendations(
     const reasons = accumulators
       .map((item) => ({
         ...item.reason,
-        contribution: round(item.rawContribution / totalFitWeight)
+        contribution: round((item.rawContribution / totalFitWeight) * 12.5)
       }))
       .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
 
