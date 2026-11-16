@@ -210,6 +210,53 @@ describe("analyzeSpectro 2.0", () => {
     expect(result.decisionGraph.nodes.some((node) => node.source === "favoritos")).toBe(true);
   });
 
+  it("no eleva la confianza por varias coincidencias dentro de una sola familia", () => {
+    const movies: MovieRecord[] = [];
+    const viewings: Viewing[] = [];
+    const groups = [
+      { genre: "Drama", genreId: 18, rating: 10, prefix: "drama" },
+      { genre: "Documental", genreId: 99, rating: 10, prefix: "documentary" },
+      { genre: "Comedia", genreId: 35, rating: 5, prefix: "comedy" }
+    ];
+
+    for (const group of groups) {
+      for (let index = 0; index < 5; index += 1) {
+        const item = movie(group.prefix + "-" + index, group.genre, group.genreId, 0, {
+          countries: [],
+          directors: [],
+          castMembers: [],
+          originalLanguage: "",
+          runtimeMinutes: 0,
+          releaseYear: 0
+        });
+        movies.push(item);
+        viewings.push(viewing(
+          "view-" + group.prefix + "-" + index,
+          item.id,
+          "2026-01-" + String(index + 1).padStart(2, "0"),
+          group.rating
+        ));
+      }
+    }
+
+    const candidate = movie("candidate-multiple-genres", "Drama", 18, 0, {
+      genres: ["Drama", "Documental"],
+      genreIds: [18, 99],
+      countries: [],
+      directors: [],
+      castMembers: [],
+      originalLanguage: "",
+      runtimeMinutes: 0,
+      releaseYear: 0
+    });
+    const result = analyzeSpectro({ movies, viewings, candidates: [candidate] });
+    const recommendation = result.recommendations[0];
+
+    expect(recommendation).toBeDefined();
+    expect(recommendation?.reasons.map((reason) => reason.category)).toEqual(["Género", "Género"]);
+    expect(recommendation?.confidence).toBe("inicial");
+  });
+
   it("no recomienda una afinidad respaldada solo por dos películas", () => {
     const movies = [
       movie("movie-1", "Drama", 18, 1995),
