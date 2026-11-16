@@ -2,7 +2,7 @@
 
 ## Estado actual: etapas 1–15 completadas
 
-Las etapas 1–15 están completadas. Espectro 2.2 incorpora el mapa cinematográfico y la organización por apartados; la etapa 16.4 continúa abierta hasta completar CI, validación visual y publicación.
+Las etapas 1–15 están completadas. Espectro 2.2 incorpora el mapa cinematográfico y la organización por apartados. CI, E2E móvil, PWA/offline y publicación en GitHub Pages están verificados; la etapa 16.4 permanece abierta únicamente para la revisión visual en un Android físico.
 
 - [x] Repositorio público inicializado.
 - [x] Configuración React, TypeScript y Vite.
@@ -53,7 +53,9 @@ Las etapas 1–15 están completadas. Espectro 2.2 incorpora el mapa cinematogr�
     - [x] Zonas atenuadas para películas locales por explorar; selección, búsqueda y zoom del mapa táctil.
     - [x] Portada de Espectro organizada como Personal, con páginas separadas de mapa, afinidades, evolución y recomendaciones.
     - [x] Palabras clave temáticas consultadas y guardadas con caché TMDB local, sin abrir fichas ni inventar etiquetas.
-    - [ ] Validar pruebas unitarias, persistencia, E2E y PWA; verificar visualmente el despliegue público.
+    - [x] Validar pruebas unitarias, TypeScript, build, smoke test, Playwright móvil y PWA/offline en CI.
+    - [x] Publicar en GitHub Pages y verificar en remoto el HTML, JavaScript, CSS y manifiesto PWA.
+    - [ ] Revisar manualmente el mapa en un Android físico: legibilidad, contraste, zoom, desplazamiento táctil y actualización de la PWA instalada.
 - [ ] 17. Optimización integral.
 
 Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
