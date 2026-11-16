@@ -20,6 +20,8 @@ Espectro combina señales que Prisma puede verificar:
 
 Los comentarios y textos libres no se interpretan mediante un modelo lingüístico: no se les atribuye un sentimiento o preferencia que Prisma no pueda verificar. Tampoco se envían el historial, el perfil o sus inferencias a terceros.
 
+Cuando existen visionados sin calificación, Espectro puede hacer una pregunta contextual en la propia vista: pide una nota del 1 al 10 para una experiencia registrada, sin abrir la ficha. La respuesta actualiza solo el campo de calificación de ese visionado y vuelve a calcular el perfil. Se formula como máximo una pregunta cada 24 horas y se puede posponer; no se crean experiencias nuevas ni se alteran fechas, revisionados o comentarios.
+
 ## Obtención automática de metadatos
 
 Cuando Espectro detecta campos cinematográficos que faltan, puede solicitar a TMDB los detalles y créditos usando el identificador TMDB local. No es necesario abrir la ficha.
