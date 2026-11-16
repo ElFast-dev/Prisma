@@ -127,6 +127,14 @@ const FAMILY_ORDER = ["genre", "director", "actor", "theme"] as const;
 const MAX_SIMILAR_CLUSTER_SIZE = 24;
 const MIN_CLUSTER_SIMILARITY = 0.31;
 
+const GENRE_IDS_BY_NAME = new Map([
+  ["acción", 28], ["aventura", 12], ["animación", 16], ["comedia", 35],
+  ["crimen", 80], ["documental", 99], ["drama", 18], ["familia", 10751],
+  ["fantasía", 14], ["historia", 36], ["terror", 27], ["música", 10402],
+  ["misterio", 9648], ["romance", 10749], ["ciencia ficción", 878],
+  ["película de tv", 10770], ["suspenso", 53], ["bélica", 10752], ["western", 37]
+]);
+
 function normalize(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
@@ -161,10 +169,31 @@ function textFeatures(
   return [...unique.values()];
 }
 
+function genreFeatures(movie: MovieRecord): MovieFeature[] {
+  if (movie.genreIds?.length) {
+    const unique = [...new Set(movie.genreIds)]
+      .filter((id) => Number.isSafeInteger(id) && id > 0);
+    return unique.map((id) => ({
+      key: "genre:" + id,
+      label: movie.genres.find((name, index) => movie.genreIds?.[index] === id) ?? "Género " + id,
+      kind: "genre",
+      weight: FAMILY_WEIGHTS.genre
+    }));
+  }
+
+  return textFeatures(movie.genres, "genre", "genre-name:", FAMILY_WEIGHTS.genre, 8)
+    .map((feature) => ({
+      ...feature,
+      key: GENRE_IDS_BY_NAME.has(normalize(feature.label))
+        ? "genre:" + GENRE_IDS_BY_NAME.get(normalize(feature.label))
+        : feature.key
+    }));
+}
+
 function featuresForMovie(movie: MovieRecord): MovieFeatures {
-  const genres = textFeatures(movie.genres, "genre", "genre:", FAMILY_WEIGHTS.genre, 8);
+  const genres = genreFeatures(movie);
   const directors = textFeatures(movie.directors, "director", "director:", FAMILY_WEIGHTS.director, 5);
-  const actors = textFeatures(movie.castMembers, "actor", "actor:", FAMILY_WEIGHTS.actor, 12);
+  const actors = textFeatures(movie.castMembers, "actor", "cast:", FAMILY_WEIGHTS.actor, 12);
   const themes = textFeatures(movie.keywords, "theme", "theme:", FAMILY_WEIGHTS.theme, 12);
   const all = [...genres, ...directors, ...actors, ...themes];
   return {
