@@ -2038,3 +2038,25 @@
     gap: 11px 8px;
   }
 }
+
+.spectro-network-selection-movie-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.spectro-network-selection-movie-stats span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 3%);
+  padding: 5px 7px;
+  color: var(--color-text-muted);
+  font-size: 8px;
+}
+.spectro-network-selection-movie-stats strong {
+  color: var(--color-text);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
