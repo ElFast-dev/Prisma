@@ -463,13 +463,17 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
 
   const activeNodeIds = useMemo(() => {
     const active = new Set<string>();
+    const matching = new Set<string>();
     const normalizedQuery = query.trim().toLocaleLowerCase();
     if (normalizedQuery) {
       for (const node of graph.nodes) {
-        if (node.label.toLocaleLowerCase().includes(normalizedQuery)) active.add(node.id);
+        if (node.label.toLocaleLowerCase().includes(normalizedQuery)) {
+          matching.add(node.id);
+          active.add(node.id);
+        }
       }
       for (const edge of graph.edges) {
-        if (active.has(edge.source) || active.has(edge.target)) {
+        if (matching.has(edge.source) || matching.has(edge.target)) {
           active.add(edge.source);
           active.add(edge.target);
         }
@@ -547,7 +551,7 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
         <span><i className="is-director" /> Director</span>
         <span><i className="is-actor" /> Actor</span>
         <span><i className="is-theme" /> Tema</span>
-        <span className="spectro-network-legend-line">Línea más gruesa y brillante = vínculo más fuerte</span>
+        <span className="spectro-network-legend-line">Grosor y brillo = fuerza del vínculo · Tamaño = influencia en recomendaciones</span>
       </div>
 
       <div className="spectro-network-viewport" aria-label="Mapa interactivo; desplázate para explorar y selecciona una bolita para ver sus conexiones">
@@ -758,6 +762,7 @@ function SpectroHome({
           <span className="card-title">Espectro</span>
           <span className="muted-copy">Tu mapa personal de conexiones cinematográficas.</span>
         </div>
+        <Sparkles size={20} className="subtle-icon" />
         <div className="profile-metrics">
           <div><strong>{graph.stats.movies}</strong><span>Películas en el mapa</span></div>
           <div><strong>{graph.stats.explored}</strong><span>Exploradas</span></div>
