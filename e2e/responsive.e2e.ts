@@ -12,7 +12,7 @@ for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
     const routes: { path: string; heading?: string; activeNavigation?: string }[] = [
-      { path: "#/personal", activeNavigation: "Mi cine" },
+      { path: "#/personal", activeNavigation: "Personal" },
       { path: "#/spectro", activeNavigation: "Espectro" },
       { path: "#/personal/library", heading: "Biblioteca" },
       { path: "#/personal/collections", heading: "Colecciones" },

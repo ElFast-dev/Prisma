@@ -21,7 +21,7 @@ export default defineConfig({
         short_name: "Prisma",
         description: "Tu espacio cinematográfico personal.",
         lang: "es",
-        start_url: "/Prisma/#/",
+        start_url: "/Prisma/#/discover",
         scope: "/Prisma/",
         display: "standalone",
         orientation: "portrait",
