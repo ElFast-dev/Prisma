@@ -937,3 +937,7 @@
   .collection-detail-art { width: 78px; height: 116px; flex-basis: 78px; }
   .collection-detail-hero { gap: 11px; }
 }
+
+@media (max-width: 699px) {
+  .collection-movie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
