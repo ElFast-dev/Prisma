@@ -18,6 +18,7 @@ const movieSchema = z.object({
   countries: z.array(z.string().max(100)).max(100),
   directors: z.array(z.string().max(200)).max(100).optional(),
   castMembers: z.array(z.string().max(200)).max(100).optional(),
+  keywords: z.array(z.string().max(120)).max(100).optional(),
   originalLanguage: z.string().max(20).optional(),
   posterPath: z.string().max(300).optional(),
   backdropPath: z.string().max(300).optional(),
