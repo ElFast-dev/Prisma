@@ -102,7 +102,11 @@ test("presenta afinidades respaldadas, cambios temporales y recomendaciones expl
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro" })).toBeAttached();
-  await expect(page.getByText("Versión 2.0.0")).toBeVisible();
+  await expect(page.getByText("Versión 2.1.0")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cómo piensa Espectro" })).toBeVisible();
+  await expect(page.locator(".spectro-decision-graph")).toBeVisible();
+  await expect(page.getByText("Encaje estimado").first()).toBeVisible();
+  await expect(page.getByText("Nota estimada").first()).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "Afinidades" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Idioma original" })).toBeVisible();
