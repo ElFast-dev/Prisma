@@ -2,11 +2,13 @@
 
 Aplicación cinematográfica personal, local-first y gratuita, diseñada como PWA para Android.
 
-Prisma se organiza en tres espacios:
+Actualmente Prisma cuenta con tres espacios publicados:
 
 - **Personal:** biblioteca, historial, colecciones, perfil y logros.
 - **Descubrir:** exploración cinematográfica mediante un feed de carátulas.
 - **Espectro:** análisis local de preferencias y recomendaciones propias.
+
+El rediseño objetivo de cuatro espacios —Inicio, Descubrir, Mi cine y Espectro— está documentado en [Diseño de producto y arquitectura](docs/PRODUCT-ARCHITECTURE.md). Ese documento describe el plan, no una versión ya publicada.
 
 ## Estado del proyecto
 
@@ -61,7 +63,7 @@ El flujo `.github/workflows/deploy.yml` construye la PWA y la publica mediante G
 
 ## Documentación
 
-La documentación técnica y funcional se encuentra en `docs/`.
+La documentación técnica y funcional se encuentra en `docs/`. La nueva arquitectura de producto está descrita en [PRODUCT-ARCHITECTURE.md](docs/PRODUCT-ARCHITECTURE.md).
 
 ## Conexión con TMDB
 
