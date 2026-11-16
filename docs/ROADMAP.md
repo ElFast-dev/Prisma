@@ -35,8 +35,9 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
 - [ ] 15. Evolución de Personal.
   - [x] 15.1 Biblioteca: búsqueda local por título oficial/original y director; filtros por estado personal, Próximamente/Estrenada, género y rango de años; orden por título, valoración TMDB, valoración personal, duración, estreno, incorporación y aleatorio con dirección reversible; preferencias persistentes en Dexie; barra contextual compartida con Descubrir; Ajustes como pantalla completa; restauración de scroll al regresar de fichas.
   - [x] 15.2 Historial: cronología global agrupada por mes, calendario mensual, búsqueda local por título oficial/original, director, género y comentario; filtros combinables por notas, calificación y fechas; orden cronológico reversible; acceso a fichas y edición/eliminación individual; conservación de revisionados y secuencias (CI aprobada: 86 pruebas; compilación y despliegue de Pages correctos).
-  - [ ] 15.3 Colecciones: organización y gestión mejoradas.
+  - [x] 15.3 Colecciones: organización y gestión mejoradas.
   - [ ] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
+    - [x] 15.4.1 Huella cinematográfica: distribución local por géneros y décadas, actividad de seis meses y progresión ampliada de logros.
 - [ ] 16. Espectro 2.0.
 - [ ] 17. Optimización integral.
 
@@ -73,6 +74,9 @@ Este es el orden acordado para continuar Prisma. El alcance y los criterios de a
 - Perfil local editable: nombre, descripción, frase personal e imagen.
 - Imagen limitada a formatos JPG, PNG o WebP y almacenada únicamente en IndexedDB.
 - Logros calculados desde estadísticas y colecciones locales, sin servicios externos.
+- Resumen de géneros y décadas basado en películas distintas realmente vistas; los revisionados cuentan en visionados y tiempo, no duplican títulos en la huella.
+- Actividad mensual de los últimos seis meses derivada de fechas locales de visionado.
+- Progresión de logros escalonada, calculada de nuevo desde la actividad local y sin guardar estados duplicados.
 
 ## Regla
 

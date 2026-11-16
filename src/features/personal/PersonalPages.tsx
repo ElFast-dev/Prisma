@@ -1822,6 +1822,7 @@ export function ProfilePage() {
 
   const achievements = stats ? calculateAchievements(stats, collectionCount) : [];
   const unlockedCount = achievements.filter((achievement) => achievement.unlocked).length;
+  const recentActivityPeak = Math.max(1, ...(stats?.recentActivity.map((month) => month.viewings) ?? []));
 
   return (
     <div className="page">
@@ -1875,9 +1876,86 @@ export function ProfilePage() {
       </div>
       <div className="profile-stat-detail">
         <div><span>Visionados registrados</span><strong>{stats?.totalViewings ?? "—"}</strong></div>
+        <div><span>Visionados adicionales</span><strong>{stats?.additionalViewings ?? "—"}</strong></div>
         <div><span>Días con actividad</span><strong>{stats?.activeDays ?? "—"}</strong></div>
         <div><span>Calificación promedio</span><strong>{stats?.averageRating !== null && stats?.averageRating !== undefined ? stats.averageRating.toFixed(2) + "/10" : "—"}</strong></div>
       </div>
+
+      <section className="profile-insights card-surface" aria-labelledby="profile-insights-title">
+        <div className="profile-insights-heading">
+          <p className="eyebrow">HUELLA CINEMATOGRÁFICA</p>
+          <h2 id="profile-insights-title">Tu mapa de cine</h2>
+          <p className="muted-copy">Los géneros y las épocas que forman tu historia, a partir de las películas que has visto.</p>
+        </div>
+        <div className="profile-insights-grid">
+          <section className="profile-insight-block" aria-labelledby="profile-genres-title">
+            <h3 id="profile-genres-title">Géneros más vistos</h3>
+            {stats?.genreHighlights.length ? (
+              <ol className="profile-distribution-list">
+                {stats.genreHighlights.map((highlight) => (
+                  <li className="profile-distribution-item" key={highlight.label}>
+                    <div className="profile-distribution-meta">
+                      <span>{highlight.label}</span>
+                      <strong>{highlight.count} {highlight.count === 1 ? "película" : "películas"}</strong>
+                    </div>
+                    <div className="profile-distribution-track" role="img" aria-label={highlight.label + ": " + highlight.count + " películas"}>
+                      <span style={{ width: highlight.percentage + "%" }} />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="profile-insight-empty">Cuando registres películas vistas, aquí aparecerán los géneros que más te acompañan.</p>
+            )}
+          </section>
+          <section className="profile-insight-block" aria-labelledby="profile-decades-title">
+            <h3 id="profile-decades-title">Décadas que has recorrido</h3>
+            {stats?.decadeHighlights.length ? (
+              <ol className="profile-distribution-list">
+                {stats.decadeHighlights.map((highlight) => (
+                  <li className="profile-distribution-item" key={highlight.label}>
+                    <div className="profile-distribution-meta">
+                      <span>{highlight.label}</span>
+                      <strong>{highlight.count} {highlight.count === 1 ? "película" : "películas"}</strong>
+                    </div>
+                    <div className="profile-distribution-track" role="img" aria-label={highlight.label + ": " + highlight.count + " películas"}>
+                      <span style={{ width: highlight.percentage + "%" }} />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="profile-insight-empty">Las décadas aparecerán cuando tus películas vistas incluyan su año de estreno.</p>
+            )}
+          </section>
+        </div>
+      </section>
+
+      <section className="profile-activity card-surface" aria-labelledby="profile-activity-title">
+        <div className="profile-activity-heading">
+          <div><p className="eyebrow">SEIS MESES</p><h3 id="profile-activity-title">Tu ritmo reciente</h3></div>
+          <span>{stats?.totalViewings ?? 0} visionados en total</span>
+        </div>
+        {stats && stats.totalViewings > 0 ? (
+          <div
+            className="profile-month-chart"
+            role="img"
+            aria-label={"Actividad de los últimos seis meses: " + stats.recentActivity.map((month) => month.label + ": " + month.viewings + " visionados").join("; ")}
+          >
+            {stats.recentActivity.map((month) => (
+              <div className="profile-month-column" key={month.key}>
+                <strong>{month.viewings}</strong>
+                <span className="profile-month-bar-track">
+                  <span style={{ height: month.viewings ? Math.max(8, Math.round((month.viewings / recentActivityPeak) * 100)) + "%" : "0%" }} />
+                </span>
+                <span className="profile-month-label">{month.label}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="profile-insight-empty">Tu actividad de los últimos seis meses aparecerá aquí cuando registres tu próximo visionado.</p>
+        )}
+      </section>
 
       <div className="content-caption"><div><p className="eyebrow">HITOS PERSONALES</p><h2>Mis logros</h2></div><span className="achievement-count">{unlockedCount}/{achievements.length} desbloqueados</span></div>
       {achievements.length > 0 ? (
