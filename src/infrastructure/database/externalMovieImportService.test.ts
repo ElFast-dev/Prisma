@@ -6,6 +6,7 @@ const { database, state } = vi.hoisted(() => {
     movies: new Map<string, any>(),
     entries: new Map<string, any>(),
     viewings: [] as any[],
+    preferences: new Map<string, any>(),
     snapshotsCleared: 0
   };
   const database = {
@@ -30,6 +31,15 @@ const { database, state } = vi.hoisted(() => {
           if (index >= 0) state.viewings[index] = { ...record };
           else state.viewings.push({ ...record });
         }
+      }
+    },
+    preferences: {
+      get: async (id: string) => state.preferences.get(id),
+      update: async (id: string, changes: Record<string, unknown>) => {
+        const current = state.preferences.get(id);
+        if (!current) return 0;
+        state.preferences.set(id, { ...current, ...changes });
+        return 1;
       }
     },
     spectroSnapshots: {
@@ -91,7 +101,23 @@ describe("external movie import reconciliation", () => {
     state.movies.clear();
     state.entries.clear();
     state.viewings.length = 0;
+    state.preferences.clear();
     state.snapshotsCleared = 0;
+    state.preferences.set("local", {
+      id: "local",
+      theme: "dark",
+      reducedMotion: false,
+      language: "es",
+      region: "PA",
+      libraryView: "list",
+      historyBrowse: {
+        viewMode: "calendar",
+        sortOrder: "oldest",
+        month: "2026-11",
+        selectedDate: "2026-11-01"
+      },
+      updatedAt: "2026-11-01T00:00:00.000Z"
+    });
   });
 
   it("creates visible History entries for watched movies even without a rating", async () => {
@@ -118,6 +144,16 @@ describe("external movie import reconciliation", () => {
     expect(state.entries.get("tmdb-1001").status).toBe("watched");
     expect(state.entries.get("tmdb-1003").status).toBe("pending");
     expect(state.viewings.some((item: any) => item.movieId === "tmdb-1003")).toBe(false);
+  });
+
+  it("abre Historial en cronología después de importar experiencias antiguas", async () => {
+    await importExternalMovies(plan([watched(151, 1501)]), "external");
+    expect(state.preferences.get("local").historyBrowse).toMatchObject({
+      viewMode: "timeline",
+      sortOrder: "oldest",
+      selectedDate: null,
+      month: "2025-11"
+    });
   });
 
   it("is idempotent and updates the same imported experience on a later import", async () => {

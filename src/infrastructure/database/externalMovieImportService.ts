@@ -48,13 +48,15 @@ export async function importExternalMovies(
       prismaDb.movies,
       prismaDb.libraryEntries,
       prismaDb.viewings,
+      prismaDb.preferences,
       prismaDb.spectroSnapshots
     ],
     async () => {
-      const [storedMovies, storedEntries, storedViewings] = await Promise.all([
+      const [storedMovies, storedEntries, storedViewings, storedPreferences] = await Promise.all([
         prismaDb.movies.toArray(),
         prismaDb.libraryEntries.toArray(),
-        prismaDb.viewings.toArray()
+        prismaDb.viewings.toArray(),
+        prismaDb.preferences.get("local")
       ]);
 
       const moviesByTmdbId = new Map<number, MovieRecord>(storedMovies.map((movie) => [movie.tmdbId, movie]));
@@ -210,6 +212,27 @@ export async function importExternalMovies(
       if (viewingsToWrite.size) await prismaDb.viewings.bulkPut([...viewingsToWrite.values()]);
       if (moviesToWrite.size || entriesToWrite.size || viewingsToWrite.size) {
         await prismaDb.spectroSnapshots.clear();
+      }
+
+      const importedExperienceChanges = result.viewingsAdded
+        + result.updatedImportedViewings
+        + result.matchedExistingViewings;
+      if (storedPreferences && importedExperienceChanges > 0) {
+        const latestImportedMonth = plan.movies
+          .filter((item) => item.status === "watched" && item.watchedOn)
+          .map((item) => item.watchedOn!.slice(0, 7))
+          .sort()
+          .at(-1);
+        const previousBrowse = storedPreferences.historyBrowse;
+        await prismaDb.preferences.update("local", {
+          historyBrowse: {
+            viewMode: "timeline",
+            sortOrder: previousBrowse?.sortOrder ?? "newest",
+            month: latestImportedMonth ?? previousBrowse?.month ?? now.slice(0, 7),
+            selectedDate: null
+          },
+          updatedAt: now
+        });
       }
     }
   );

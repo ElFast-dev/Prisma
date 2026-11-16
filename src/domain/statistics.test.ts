@@ -79,6 +79,21 @@ describe("statistics", () => {
     expect(stats.recentActivity.at(-1)).toMatchObject({ key: "2026-11", viewings: 3, uniqueMovies: 2 });
   });
 
+  it("excludes unrated experiences from the average without excluding them from total activity", () => {
+    const unrated = {
+      ...viewing("2", "movie-2", "2026-11-14", 0),
+      rating: undefined
+    };
+    const stats = calculatePersonalStats(
+      [viewing("1", "movie-1", "2026-11-13", 8), unrated],
+      [movie("movie-1", 100), movie("movie-2", 90)],
+      "2026-11-15"
+    );
+    expect(stats.totalViewings).toBe(2);
+    expect(stats.uniqueMoviesWatched).toBe(2);
+    expect(stats.averageRating).toBe(8);
+  });
+
   it("counts each genre and film once when deriving the cinematic signature", () => {
     const stats = calculatePersonalStats(
       [

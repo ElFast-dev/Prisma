@@ -32,7 +32,6 @@ import { getLibraryMovies } from "../../infrastructure/database/movieRepository"
 import { getPersonalStats } from "../../infrastructure/database/statisticsRepository";
 import { prismaDb } from "../../infrastructure/database/database";
 import { deleteViewing } from "../../infrastructure/database/viewingService";
-import { getLibraryEntry } from "../../infrastructure/database/libraryService";
 import {
   addMovieToCollection,
   createCollection,
