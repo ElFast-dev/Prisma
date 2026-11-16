@@ -3,7 +3,8 @@ import type { MovieRecord } from "../../domain/types";
 import { TmdbHttpError } from "../tmdb/TmdbClient";
 import {
   classifySpectroMetadataError,
-  isSpectroMetadataIncomplete
+  isSpectroMetadataIncomplete,
+  isSpectroMetadataRetryDeferred
 } from "./spectroMetadataService";
 
 const completeMovie: MovieRecord = {
@@ -77,5 +78,39 @@ describe("Espectro · errores de TMDB", () => {
     expect(classifySpectroMetadataError(
       new TmdbHttpError("server", 503, "movie/42")
     )).toBe("retryable");
+  });
+});
+
+
+describe("Espectro · pausa de reintentos", () => {
+  const now = Date.parse("2026-11-16T12:00:00.000Z");
+
+  it("mantiene visible un error reciente durante la ventana de espera", () => {
+    expect(isSpectroMetadataRetryDeferred({
+      status: "error",
+      updatedAt: new Date(now - 60 * 60 * 1000).toISOString()
+    }, now)).toBe(true);
+  });
+
+  it("permite el reintento automático al cumplir las 12 horas", () => {
+    expect(isSpectroMetadataRetryDeferred({
+      status: "error",
+      updatedAt: new Date(now - 12 * 60 * 60 * 1000).toISOString()
+    }, now)).toBe(false);
+  });
+
+  it("no difiere registros completos, no encontrados ni fechas inválidas", () => {
+    expect(isSpectroMetadataRetryDeferred({
+      status: "complete",
+      updatedAt: new Date(now).toISOString()
+    }, now)).toBe(false);
+    expect(isSpectroMetadataRetryDeferred({
+      status: "not-found",
+      updatedAt: new Date(now).toISOString()
+    }, now)).toBe(false);
+    expect(isSpectroMetadataRetryDeferred({
+      status: "error",
+      updatedAt: "fecha inválida"
+    }, now)).toBe(false);
   });
 });
