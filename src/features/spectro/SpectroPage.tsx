@@ -151,10 +151,7 @@ export function SpectroPage() {
 
   return (
     <div className="page">
-      <header className="section-heading">
-        <h1 className="spectro-wordmark">Espectro</h1>
-        <BrainCircuit size={26} className="accent-icon" />
-      </header>
+      <h1 className="sr-only">Espectro</h1>
       {state === "loading" ? (
         <div className="detail-loading"><span>Analizando…</span></div>
       ) : state === "error" ? (

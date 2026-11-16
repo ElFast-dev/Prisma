@@ -3,7 +3,10 @@ import { expect, test } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   // Cada prueba usa un contexto nuevo con IndexedDB aislada.
   await page.goto("#/personal");
-  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  const navigation = page.getByRole("navigation", { name: "Navegación principal" });
+  await expect(navigation.getByRole("link", { name: "Personal", exact: true }))
+    .toHaveAttribute("aria-current", "page");
+  await expect(page.locator(".section-heading")).toHaveCount(0);
 });
 
 async function seedCinematicHistory(page: import("@playwright/test").Page) {
@@ -116,4 +119,24 @@ test("permite editar la identidad local y conservarla al recargar", async ({ pag
   await page.reload();
   await expect(page.getByRole("heading", { name: "Cinéfilo de Prisma" })).toBeVisible();
   await expect(page.getByText("Una vida entre historias y grandes películas.")).toBeVisible();
+});
+
+
+test("separa el resumen de perfil de los accesos de Biblioteca", async ({ page }) => {
+  const profile = await page.locator(".profile-summary").boundingBox();
+  const firstNavigationCard = await page.locator(".navigation-cards .navigation-card").first().boundingBox();
+
+  expect(profile).not.toBeNull();
+  expect(firstNavigationCard).not.toBeNull();
+  expect(firstNavigationCard!.y - (profile!.y + profile!.height)).toBeGreaterThanOrEqual(18);
+});
+
+test("Personal y Espectro se identifican desde la navegación inferior sin cabeceras duplicadas", async ({ page }) => {
+  for (const [path, activeLabel] of [["#/personal", "Personal"], ["#/spectro", "Espectro"]]) {
+    await page.goto(path);
+    const navigation = page.getByRole("navigation", { name: "Navegación principal" });
+    await expect(navigation.getByRole("link", { name: activeLabel, exact: true }))
+      .toHaveAttribute("aria-current", "page");
+    await expect(page.locator(".section-heading")).toHaveCount(0);
+  }
 });

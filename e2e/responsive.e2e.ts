@@ -11,18 +11,29 @@ for (const viewport of viewports) {
   test("no genera desbordamiento horizontal en " + viewport.label, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
-    for (const [path, heading] of [
-      ["#/personal", "Personal"],
-      ["#/personal/library", "Biblioteca"],
-      ["#/personal/collections", "Colecciones"],
-      ["#/settings", "Ajustes"],
-      ["#/settings/catalog", "Catálogo"],
-      ["#/settings/library", "Biblioteca"],
-      ["#/settings/data", "Datos"],
-      ["#/settings/privacy", "Privacidad"]
-    ]) {
-      await page.goto(path);
-      await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+    const routes: { path: string; heading?: string; activeNavigation?: string }[] = [
+      { path: "#/personal", activeNavigation: "Personal" },
+      { path: "#/spectro", activeNavigation: "Espectro" },
+      { path: "#/personal/library", heading: "Biblioteca" },
+      { path: "#/personal/collections", heading: "Colecciones" },
+      { path: "#/settings", heading: "Ajustes" },
+      { path: "#/settings/catalog", heading: "Catálogo" },
+      { path: "#/settings/library", heading: "Biblioteca" },
+      { path: "#/settings/data", heading: "Datos" },
+      { path: "#/settings/privacy", heading: "Privacidad" }
+    ];
+
+    for (const route of routes) {
+      await page.goto(route.path);
+
+      if (route.activeNavigation) {
+        const navigation = page.getByRole("navigation", { name: "Navegación principal" });
+        await expect(navigation.getByRole("link", { name: route.activeNavigation, exact: true }))
+          .toHaveAttribute("aria-current", "page");
+        await expect(page.locator(".section-heading")).toHaveCount(0);
+      } else if (route.heading) {
+        await expect(page.getByRole("heading", { name: route.heading, exact: true })).toBeVisible();
+      }
 
       const dimensions = await page.evaluate(() => ({
         documentWidth: document.documentElement.scrollWidth,
@@ -30,7 +41,7 @@ for (const viewport of viewports) {
       }));
       expect(
         dimensions.documentWidth,
-        "La página " + path + " desborda el ancho de " + viewport.width + " px."
+        "La página " + route.path + " desborda el ancho de " + viewport.width + " px."
       ).toBeLessThanOrEqual(dimensions.viewportWidth + 1);
     }
   });
