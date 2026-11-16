@@ -206,13 +206,35 @@ async function seedIncompleteSpectroHistory(page: import("@playwright/test").Pag
         operationId: id + "-operation"
       });
     }
+    const pendingId = "tmdb-987103";
+    movies.push({
+      id: pendingId,
+      tmdbId: 987103,
+      title: "Película pendiente sin completar",
+      genres: [],
+      genreIds: [],
+      countries: [],
+      directors: [],
+      castMembers: [],
+      releaseYear: 2022,
+      lastViewingSequence: 0,
+      createdAt: now,
+      updatedAt: now
+    });
 
     try {
-      const transaction = db.transaction(["movies", "viewings"], "readwrite");
+      const transaction = db.transaction(["movies", "viewings", "libraryEntries"], "readwrite");
       const movieStore = transaction.objectStore("movies");
       const viewingStore = transaction.objectStore("viewings");
       for (const movie of movies) movieStore.put(movie);
       for (const viewing of viewings) viewingStore.put(viewing);
+      transaction.objectStore("libraryEntries").put({
+        movieId: pendingId,
+        status: "pending",
+        isFavorite: false,
+        addedAt: now,
+        updatedAt: now
+      });
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => reject(transaction.error);
@@ -296,8 +318,8 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
-  await expect.poll(() => requestedPaths.filter((path) => path.endsWith("/keywords")).length).toBe(3);
-  await expect(page.getByText("Espectro incorporó metadatos de 3 películas.")).toBeVisible();
+  await expect.poll(() => requestedPaths.filter((path) => path.endsWith("/keywords")).length).toBe(4);
+  await expect(page.getByText("Espectro incorporó metadatos de 4 películas.")).toBeVisible();
 
   await page.goto("#/spectro/affinities");
   await expect(page.getByRole("heading", { name: "Directores" })).toBeVisible();
@@ -319,7 +341,7 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
-      return records.filter((movie) => movie.tmdbId >= 987100 && movie.tmdbId <= 987102)
+      return records.filter((movie) => movie.tmdbId >= 987100 && movie.tmdbId <= 987103)
         .map((movie) => movie.keywords ?? []);
     } finally {
       db.close();
@@ -327,7 +349,43 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
   });
   expect(storedKeywords).toContainEqual(["memoria", "identidad"]);
   expect(storedKeywords).toContainEqual(["aventura espacial"]);
+  expect(storedKeywords).toHaveLength(4);
   expect(requestedPaths).toContain("/3/movie/987100/keywords");
+  expect(requestedPaths).toContain("/3/movie/987103/keywords");
+  expect(requestedPaths.slice(0, 3).every((path) => path.includes("/987103"))).toBe(true);
+
+  const preservedPersonalState = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      const transaction = db.transaction(["libraryEntries", "viewings"], "readonly");
+      const pendingRequest = transaction.objectStore("libraryEntries").get("tmdb-987103");
+      const viewingsRequest = transaction.objectStore("viewings").getAll();
+      const [pending, viewings] = await Promise.all([
+        new Promise<{ status?: string } | undefined>((resolve, reject) => {
+          pendingRequest.onsuccess = () => resolve(pendingRequest.result);
+          pendingRequest.onerror = () => reject(pendingRequest.error);
+        }),
+        new Promise<Array<{ movieId: string; rating?: number }>>((resolve, reject) => {
+          viewingsRequest.onsuccess = () => resolve(viewingsRequest.result);
+          viewingsRequest.onerror = () => reject(viewingsRequest.error);
+        })
+      ]);
+      return {
+        pendingStatus: pending?.status,
+        viewingRatings: viewings
+          .filter((viewing) => viewing.movieId.startsWith("tmdb-98710"))
+          .map((viewing) => viewing.rating)
+      };
+    } finally {
+      db.close();
+    }
+  });
+  expect(preservedPersonalState.pendingStatus).toBe("pending");
+  expect(preservedPersonalState.viewingRatings).toEqual([9, 9, 5]);
 });
 
 test("muestra errores de metadatos al volver y permite forzar el reintento sin abrir la ficha", async ({ page }) => {

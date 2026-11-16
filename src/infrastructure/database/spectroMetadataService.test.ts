@@ -3,6 +3,7 @@ import type { MovieRecord } from "../../domain/types";
 import { TmdbHttpError } from "../tmdb/TmdbClient";
 import {
   classifySpectroMetadataError,
+  getSpectroMetadataPriority,
   isSpectroMetadataIncomplete,
   isSpectroMetadataRetryDeferred
 } from "./spectroMetadataService";
@@ -124,5 +125,22 @@ describe("Espectro · pausa de reintentos", () => {
       status: "error",
       updatedAt: "fecha inválida"
     }, now)).toBe(false);
+  });
+});
+
+describe("Espectro · prioridad de enriquecimiento", () => {
+  const pending = new Set(["pending", "also-favorite"]);
+  const favorites = new Set(["favorite", "also-favorite"]);
+  const viewed = new Set(["viewed"]);
+
+  it("enriquece primero los títulos Pendientes para mejorar las propuestas de Inicio", () => {
+    expect(getSpectroMetadataPriority("pending", pending, favorites, viewed)).toBe(0);
+    expect(getSpectroMetadataPriority("also-favorite", pending, favorites, viewed)).toBe(0);
+  });
+
+  it("mantiene después favoritos, visionados y otros títulos del catálogo local", () => {
+    expect(getSpectroMetadataPriority("favorite", pending, favorites, viewed)).toBe(1);
+    expect(getSpectroMetadataPriority("viewed", pending, favorites, viewed)).toBe(2);
+    expect(getSpectroMetadataPriority("catalog", pending, favorites, viewed)).toBe(3);
   });
 });
