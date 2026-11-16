@@ -568,7 +568,7 @@ function recommendationConfidence(reasons: SpectroRecommendationReason[]): Spect
     && ratedReasons.every((reason) => reason.confidence === "sólida")
   ) return "sólida";
   if (
-    ratedReasons.length >= 2
+    ratedFamilies.size >= 2
     && minimumSupport >= 3
     && ratedReasons.every((reason) => reason.confidence === "moderada" || reason.confidence === "sólida")
   ) return "moderada";
