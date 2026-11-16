@@ -95,21 +95,6 @@ export interface LibraryBrowsePreferences {
   shuffleSeed: number;
 }
 
-export interface HistoryBrowsePreferences {
-  viewMode: "timeline" | "calendar";
-  sortOrder: "newest" | "oldest";
-  month: string;
-  selectedDate: string | null;
-}
-
-export interface HistoryFiltersPreferences {
-  query: string;
-  notes: "all" | "with-notes" | "without-notes";
-  rating: "all" | "9-10" | "7-8" | "1-6";
-  fromDate: string;
-  toDate: string;
-}
-
 export interface UserPreferences {
   id: "local";
   theme: "dark";
@@ -117,12 +102,8 @@ export interface UserPreferences {
   language: "es";
   region: string;
   libraryView: "grid" | "list";
-  /** Filtros activos de Biblioteca, separados de su presentación. */
+  /** Filtros activos de Biblioteca, separados de la presentación y los ajustes generales. */
   libraryFilters?: LibraryBrowsePreferences;
-  /** Estado de exploración del diario, independiente de Biblioteca. */
-  historyBrowse?: HistoryBrowsePreferences;
-  /** Búsqueda y filtros del diario, independientes de su modo de presentación. */
-  historyFilters?: HistoryFiltersPreferences;
   updatedAt: string;
 }
 

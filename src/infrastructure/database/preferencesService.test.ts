@@ -33,14 +33,12 @@ vi.mock("./database", () => ({
 
 import {
   getUserPreferences,
-  saveHistoryBrowsePreferences,
-  saveHistoryFilters,
   saveLibraryBrowseFilters,
   saveLibraryView
 } from "./preferencesService";
 import { DEFAULT_LIBRARY_FILTERS } from "../../domain/libraryPreferences";
 
-describe("persistencia local de preferencias", () => {
+describe("persistencia local de preferencias de Biblioteca", () => {
   beforeEach(() => {
     fakeDatabase.reset();
     vi.clearAllMocks();
@@ -87,44 +85,15 @@ describe("persistencia local de preferencias", () => {
     expect((await getUserPreferences()).libraryView).toBe("list");
   });
 
-  it("conserva Calendario, mes, día seleccionado y orden tras recargar preferencias", async () => {
-    const historyBrowse = {
-      viewMode: "calendar" as const,
-      sortOrder: "oldest" as const,
-      month: "2025-08",
-      selectedDate: "2025-08-13"
-    };
-
-    await saveHistoryBrowsePreferences(historyBrowse);
-    const afterReload = await getUserPreferences();
-
-    expect(afterReload.historyBrowse).toEqual(historyBrowse);
-    expect(fakeDatabase.read()).toMatchObject({ historyBrowse });
-  });
-
-  it("mantiene separados los filtros de Historial y Biblioteca", async () => {
-    const libraryFilters = { ...DEFAULT_LIBRARY_FILTERS, status: "pending" as const, query: "Alien" };
-    const historyFilters = {
-      query: "Amélie",
-      notes: "with-notes" as const,
-      rating: "9-10" as const,
-      fromDate: "2024-01-01",
-      toDate: "2025-12-31"
-    };
-
-    await saveLibraryBrowseFilters(libraryFilters);
-    await saveHistoryFilters(historyFilters);
-    const afterReload = await getUserPreferences();
-
-    expect(afterReload.libraryFilters).toEqual(libraryFilters);
-    expect(afterReload.historyFilters).toEqual(historyFilters);
-    expect(fakeDatabase.read()).toMatchObject({ libraryFilters, historyFilters });
-  });
-
-  it("normaliza filas antiguas sin perder región, movimiento reducido ni vista de Biblioteca", async () => {
+  it("migra en lectura los registros antiguos sin alterar otros ajustes existentes", async () => {
     fakeDatabase.seed({
-      id: "local", theme: "dark", reducedMotion: true, language: "es", region: "MX",
-      libraryView: "grid", updatedAt: "2026-10-01T00:00:00.000Z"
+      id: "local",
+      theme: "dark",
+      reducedMotion: true,
+      language: "es",
+      region: "MX",
+      libraryView: "grid",
+      updatedAt: "2026-10-01T00:00:00.000Z"
     });
 
     const migrated = await getUserPreferences();
@@ -133,13 +102,10 @@ describe("persistencia local de preferencias", () => {
     expect(migrated.libraryFilters).toEqual(DEFAULT_LIBRARY_FILTERS);
     expect(migrated.region).toBe("MX");
     expect(migrated.reducedMotion).toBe(true);
-    expect(migrated.historyBrowse?.viewMode).toBe("timeline");
-    expect(migrated.historyBrowse?.selectedDate).toBeNull();
-    expect(migrated.historyFilters).toEqual({
-      query: "", notes: "all", rating: "all", fromDate: "", toDate: ""
-    });
     expect(fakeDatabase.read()).toMatchObject({
-      region: "MX", reducedMotion: true, libraryFilters: DEFAULT_LIBRARY_FILTERS
+      region: "MX",
+      reducedMotion: true,
+      libraryFilters: DEFAULT_LIBRARY_FILTERS
     });
   });
 });

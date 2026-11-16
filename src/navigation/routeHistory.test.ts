@@ -33,17 +33,6 @@ describe("historial de navegación de Prisma", () => {
     expect(history.hasPrevious()).toBe(true);
   });
 
-  it("vuelve a Historial al cerrar una ficha abierta desde esa sección", () => {
-    const history = createRouteHistory("/personal/history");
-    history.record("/movie/123");
-    expect(history.current()).toBe("/movie/123");
-    expect(history.hasPrevious()).toBe(true);
-
-    history.record("/personal/history", true);
-    expect(history.current()).toBe("/personal/history");
-    expect(history.hasPrevious()).toBe(false);
-  });
-
   it("no inventa una ruta anterior cuando la ficha se abre directamente", () => {
     const history = createRouteHistory("/movie/555");
     expect(history.current()).toBe("/movie/555");

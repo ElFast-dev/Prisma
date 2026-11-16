@@ -57,44 +57,4 @@ describe("parsePrismaBackup", () => {
     backup.data.viewings.push({ ...backup.data.viewings[0], id: "viewing-2", operationId: "operation-2" });
     expect(() => parsePrismaBackup(JSON.stringify(backup))).toThrow("secuencias de visionado");
   });
-
-  it("incluye preferencias de Historial y acepta preferencias antiguas", () => {
-    const preferences = {
-      id: "local",
-      theme: "dark",
-      reducedMotion: false,
-      language: "es",
-      region: "PA",
-      libraryView: "list",
-      historyBrowse: {
-        viewMode: "calendar",
-        sortOrder: "oldest",
-        month: "2025-08",
-        selectedDate: "2025-08-13"
-      },
-      historyFilters: {
-        query: "Amélie",
-        notes: "with-notes",
-        rating: "9-10",
-        fromDate: "2024-01-01",
-        toDate: "2025-12-31"
-      },
-      updatedAt: "2026-11-15T00:00:00.000Z"
-    };
-    const backup = validBackup();
-    const withHistory = { ...backup, data: { ...backup.data, preferences: [preferences] } };
-    expect(parsePrismaBackup(JSON.stringify(withHistory)).data.preferences[0]).toMatchObject(preferences);
-
-    const legacyPreferences = {
-      id: "local",
-      theme: "dark",
-      reducedMotion: true,
-      language: "es",
-      region: "MX",
-      libraryView: "grid",
-      updatedAt: "2026-10-01T00:00:00.000Z"
-    };
-    const legacy = { ...backup, data: { ...backup.data, preferences: [legacyPreferences] } };
-    expect(parsePrismaBackup(JSON.stringify(legacy)).data.preferences[0]).toMatchObject(legacyPreferences);
-  });
 });

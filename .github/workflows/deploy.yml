@@ -14,40 +14,74 @@ concurrency:
 
 jobs:
   build:
+    name: Build production site
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Typecheck, test and build
+      - name: Typecheck, unit tests and build
         run: npm test && npm run build
 
+      - name: Smoke test production build locally
+        run: |
+          set -euo pipefail
+          npm run preview -- --host 127.0.0.1 --port 4174 --strictPort > /tmp/prisma-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
+          PRISMA_SMOKE_URL=http://127.0.0.1:4174/Prisma/ PRISMA_SMOKE_ATTEMPTS=20 PRISMA_SMOKE_RETRY_DELAY_MS=1000 node scripts/smoke-test-pages.mjs
+
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
   deploy:
+    name: Publish to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     permissions:
       pages: write
       id-token: write
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
+
+  smoke-test:
+    name: Verify published website
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Check live HTML, JavaScript, CSS and PWA manifest
+        env:
+          PRISMA_SMOKE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: node scripts/smoke-test-pages.mjs
