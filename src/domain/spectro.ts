@@ -432,7 +432,7 @@ function buildFavoriteSignals(
       label: group.label,
       category: group.category,
       sampleSize: group.titles.length,
-      supportingTitles: group.titles.slice(0, 4)
+      supportingTitles: group.titles
     }))
     .sort((a, b) => b.sampleSize - a.sampleSize || a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
 }
@@ -640,8 +640,7 @@ function graphFromRecommendations(
           const affinity = affinityByKey.get(reason.key);
           if (!affinity) continue;
           const supportingEvidence = (evidenceByKey.get(reason.key) ?? [])
-            .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-            .slice(0, 4);
+            .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
           nodes.set(signalId, {
             id: signalId,
             kind: "signal",
@@ -692,8 +691,7 @@ function graphFromRecommendations(
     for (const affinity of reliable) {
       const signalId = "signal:valoraciones:" + affinity.key;
       const evidence = (evidenceByKey.get(affinity.key) ?? [])
-        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-        .slice(0, 4);
+        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
       nodes.set(signalId, {
         id: signalId,
         kind: "signal",
