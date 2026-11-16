@@ -154,7 +154,7 @@ async function seedIncompleteSpectroHistory(page: import("@playwright/test").Pag
         movieId: id,
         sequenceNumber: 1,
         watchedOn: "2026-01-0" + (index + 1),
-        rating: 8 + (index % 2),
+        rating: index < 2 ? 9 : 5,
         createdAt: now,
         updatedAt: now,
         operationId: id + "-operation"
@@ -192,8 +192,17 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
         contentType: "application/json",
         body: JSON.stringify({
           id: tmdbId,
-          cast: [{ id: 8001, name: "Reparto automático", character: "Protagonista" }],
-          crew: [{ id: 8002, name: "Dirección automática", job: "Director", department: "Directing" }]
+          cast: [{
+            id: 8001,
+            name: tmdbId === 987102 ? "Otro reparto" : "Reparto automático",
+            character: "Protagonista"
+          }],
+          crew: [{
+            id: 8002,
+            name: tmdbId === 987102 ? "Otra dirección" : "Dirección automática",
+            job: "Director",
+            department: "Directing"
+          }]
         })
       });
       return;
@@ -225,7 +234,7 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro" })).toBeAttached();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Dirección" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Directores" })).toBeVisible();
   await expect(page.getByText("Dirección automática", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Reparto automático", { exact: true }).first()).toBeVisible();
 });
