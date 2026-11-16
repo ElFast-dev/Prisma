@@ -13,13 +13,19 @@ const viewing = (id: string, movieId: string, watchedOn: string, rating: number)
   operationId: "op-" + id
 });
 
-const movie = (id: string, runtimeMinutes: number): MovieRecord => ({
+const movie = (
+  id: string,
+  runtimeMinutes: number,
+  genres: string[] = [],
+  releaseYear?: number
+): MovieRecord => ({
   id,
   tmdbId: Number(id.replace("movie-", "")),
   title: "Película " + id,
-  genres: [],
+  genres,
   countries: [],
   runtimeMinutes,
+  ...(releaseYear ? { releaseYear } : {}),
   lastViewingSequence: 0,
   createdAt: "2024-01-01T00:00:00.000Z",
   updatedAt: "2024-01-01T00:00:00.000Z"
@@ -49,12 +55,59 @@ describe("statistics", () => {
       viewing("2", "movie-1", "2026-11-13", 10),
       viewing("3", "movie-2", "2026-11-14", 7)
     ];
-    const stats = calculatePersonalStats(viewings, [movie("movie-1", 100), movie("movie-2", 90)], "2026-11-15");
+    const stats = calculatePersonalStats(
+      viewings,
+      [
+        movie("movie-1", 100, ["Drama"], 1994),
+        movie("movie-2", 90, ["Drama", "Ciencia ficción"], 2008)
+      ],
+      "2026-11-15"
+    );
 
     expect(stats.uniqueMoviesWatched).toBe(2);
     expect(stats.totalViewings).toBe(3);
+    expect(stats.additionalViewings).toBe(1);
     expect(stats.watchedMinutes).toBe(290);
     expect(stats.averageRating).toBe(8.33);
     expect(stats.activeDays).toBe(2);
+    expect(stats.genreHighlights[0]).toEqual({ label: "Drama", count: 2, percentage: 100 });
+    expect(stats.decadeHighlights.map((item) => item.label)).toEqual(["Años 1990", "Años 2000"]);
+    expect(stats.recentActivity).toHaveLength(6);
+    expect(stats.recentActivity.at(-1)).toMatchObject({ key: "2026-11", viewings: 3, uniqueMovies: 2 });
+  });
+
+  it("counts each genre and film once when deriving the cinematic signature", () => {
+    const stats = calculatePersonalStats(
+      [
+        viewing("1", "movie-1", "2026-11-10", 9),
+        viewing("2", "movie-1", "2026-11-10", 10),
+        viewing("3", "movie-2", "2026-10-05", 8),
+        viewing("4", "movie-3", "2026-07-02", 7)
+      ],
+      [
+        movie("movie-1", 100, ["Drama", "Drama", " Thriller "], 1988),
+        movie("movie-2", 110, ["Drama", "Comedia"], 2005),
+        movie("movie-3", 90, [], undefined)
+      ],
+      "2026-11-15"
+    );
+
+    expect(stats.genreHighlights.map(({ label, count }) => [label, count])).toEqual([
+      ["Drama", 2],
+      ["Comedia", 1],
+      ["Thriller", 1]
+    ]);
+    expect(stats.decadeHighlights.map(({ label, count }) => [label, count])).toEqual([
+      ["Años 1980", 1],
+      ["Años 2000", 1]
+    ]);
+    expect(stats.recentActivity.map(({ key, viewings, uniqueMovies }) => [key, viewings, uniqueMovies])).toEqual([
+      ["2026-06", 0, 0],
+      ["2026-07", 1, 1],
+      ["2026-08", 0, 0],
+      ["2026-09", 0, 0],
+      ["2026-10", 1, 1],
+      ["2026-11", 2, 1]
+    ]);
   });
 });

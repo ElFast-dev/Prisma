@@ -1142,3 +1142,47 @@
   .collection-library-option { gap: 8px; padding: 7px; }
   .collection-library-add-button { min-width: 58px; }
 }
+
+
+/* Etapa 15.4 — huella cinematográfica y actividad local */
+.profile-insights {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 17px;
+}
+.profile-insights-heading { display: grid; gap: 5px; }
+.profile-insights-heading .eyebrow,
+.profile-activity-heading .eyebrow { margin: 0; }
+.profile-insights-heading h2 { margin: 0; font-size: 18px; letter-spacing: -.025em; }
+.profile-insights-heading .muted-copy { margin: 0; font-size: 11px; line-height: 1.5; }
+.profile-insights-grid { display: grid; gap: 18px; }
+.profile-insight-block { display: grid; min-width: 0; gap: 11px; }
+.profile-insight-block h3,
+.profile-activity-heading h3 { margin: 0; font-size: 13px; font-weight: 650; }
+.profile-distribution-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.profile-distribution-item { display: grid; min-width: 0; gap: 6px; }
+.profile-distribution-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 9px; color: var(--color-text); font-size: 11px; }
+.profile-distribution-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-distribution-meta strong { flex: 0 0 auto; color: var(--color-text-muted); font-size: 10px; font-weight: 550; font-variant-numeric: tabular-nums; }
+.profile-distribution-track { overflow: hidden; height: 6px; border-radius: var(--radius-pill); background: var(--color-active); }
+.profile-distribution-track span { display: block; height: 100%; border-radius: inherit; background: var(--color-accent); }
+.profile-insight-empty { margin: 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.55; }
+.profile-activity { display: grid; gap: 12px; margin-top: 12px; padding: 16px 17px; }
+.profile-activity-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.profile-activity-heading > div { display: grid; gap: 4px; }
+.profile-activity-heading .eyebrow { font-size: 9px; }
+.profile-activity-heading > span { color: var(--color-text-muted); font-size: 10px; text-align: right; }
+.profile-month-chart { display: grid; min-width: 0; height: 116px; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: end; gap: 10px; }
+.profile-month-column { display: flex; min-width: 0; height: 100%; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; }
+.profile-month-column > strong { color: var(--color-text); font-size: 10px; font-variant-numeric: tabular-nums; }
+.profile-month-bar-track { display: flex; width: 100%; height: 72px; align-items: flex-end; overflow: hidden; border-radius: 5px; background: var(--color-active); }
+.profile-month-bar-track > span { display: block; width: 100%; min-height: 0; border-radius: 5px 5px 2px 2px; background: var(--color-accent); transition: height var(--transition-normal); }
+.profile-month-label { color: var(--color-text-muted); font-size: 10px; text-transform: capitalize; }
+@media (min-width: 700px) {
+  .profile-insights-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .achievement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-month-bar-track > span { transition: none; }
+}
