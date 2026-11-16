@@ -90,6 +90,9 @@ export function ViewingForm({ movieId, movieTitle, nextNumber, initialViewing, o
               );
             })}
           </div>
+          {rating > 0 && (
+            <button className="text-link" type="button" onClick={() => setRating(0)}>Quitar calificación</button>
+          )}
           <label className="field-label" htmlFor="viewing-time">Hora (opcional)</label>
           <input className="text-field" id="viewing-time" type="time" value={time} onChange={(event) => setTime(event.target.value)} />
           <label className="field-label" htmlFor="viewing-review">Comentario (opcional)</label>

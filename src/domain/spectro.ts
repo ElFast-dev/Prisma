@@ -1,6 +1,6 @@
 import type { MovieRecord, Viewing } from "./types";
 
-export const SPECTRO_ALGORITHM_VERSION = "1.0.0";
+export const SPECTRO_ALGORITHM_VERSION = "1.1.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 
 export interface SpectroAffinity { key: string; label: string; averageRating: number; difference: number; sampleSize: number; }

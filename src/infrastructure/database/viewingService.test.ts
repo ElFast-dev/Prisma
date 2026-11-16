@@ -125,6 +125,17 @@ describe("viewingService: integridad de experiencias", () => {
     });
   });
 
+  it("registra una experiencia aunque no tenga calificación", async () => {
+    const viewing = await addViewing({
+      movieId: "movie-7",
+      watchedOn: "2025-08-13"
+    }, "00000000-0000-4000-8000-000000000099");
+
+    expect(viewing.rating).toBeUndefined();
+    expect(state.viewings).toHaveLength(1);
+    expect(state.libraryEntries.get("movie-7").status).toBe("watched");
+  });
+
   it("edita y elimina solo la experiencia seleccionada sin alterar las demás", async () => {
     const first = await addViewing(addInput("2024-02-01", 7, "Nota original"), "00000000-0000-4000-8000-000000000001");
     const second = await addViewing(addInput("2025-08-13", 10, "Nota del revisionado"), "00000000-0000-4000-8000-000000000002");
