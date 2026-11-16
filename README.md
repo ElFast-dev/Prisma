@@ -14,6 +14,8 @@ Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, per
 
 Las etapas 1–15 están completadas. Espectro 2.0 tiene integradas las entregas 16.1–16.3. La experiencia final 16.4 está en desarrollo: gráficos analíticos, enriquecimiento automático de metadatos locales, encaje 0–100 %, nota prevista y un grafo explicable de decisiones.
 
+Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película.
+
 La etapa 17 — Optimización integral — sigue pendiente de autorización y no se inicia automáticamente.
 
 ## Tecnologías previstas
