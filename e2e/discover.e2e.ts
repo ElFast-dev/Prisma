@@ -116,7 +116,7 @@ test("Descubrir aplica filtros reales de género, fecha, duración, país e idio
   expect(params.get("with_origin_country")).toBe("PA");
   expect(params.get("with_original_language")).toBe("ja");
   expect(params.get("sort_by")).toBe("vote_average.desc");
-  await expect(page.getByText(/Géneros: Drama \/ Ciencia ficción/)).toBeVisible();
+  await expect(page.getByText(/Géneros: Ciencia ficción \/ Drama/)).toBeVisible();
 });
 
 test("la búsqueda por título sustituye los filtros avanzados con un aviso visible", async ({ page }) => {
