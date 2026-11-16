@@ -134,7 +134,21 @@ export function classifySpectroMetadataError(
   return "permanent";
 }
 
-async function collectTargets(forceRetry = false): Promise<SpectroMetadataTarget[]> {
+export function isSpectroMetadataRetryDeferred(
+  previous: Pick<SpectroMetadataItem, "status" | "updatedAt"> | undefined,
+  now = Date.now()
+): boolean {
+  if (previous?.status !== "error") return false;
+  const updatedAt = Date.parse(previous.updatedAt);
+  return Number.isFinite(updatedAt) && updatedAt + ERROR_RETRY_AFTER_MS > now;
+}
+
+interface SpectroMetadataQueue {
+  targets: SpectroMetadataTarget[];
+  deferredMovies: number;
+}
+
+async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue> {
   const [movies, viewings, libraryEntries, collectionMovies, states] = await Promise.all([
     prismaDb.movies.toArray(),
     prismaDb.viewings.toArray(),
@@ -164,19 +178,18 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataTarget
     }
   }
 
-  const now = Date.now();
-  return [...relevantIds]
+  let deferredMovies = 0;
+  const targets = [...relevantIds]
     .flatMap((movieId) => {
       const movie = movieById.get(movieId);
       if (!movie || !Number.isSafeInteger(movie.tmdbId) || movie.tmdbId <= 0) return [];
       if (!isSpectroMetadataIncomplete(movie)) return [];
       const previous = states.get(movie.tmdbId);
       if (previous?.status === "complete" || previous?.status === "not-found") return [];
-      if (
-        !forceRetry
-        && previous?.status === "error"
-        && Date.parse(previous.updatedAt) + ERROR_RETRY_AFTER_MS > now
-      ) return [];
+      if (!forceRetry && isSpectroMetadataRetryDeferred(previous)) {
+        deferredMovies += 1;
+        return [];
+      }
       return [{ movie, previous }];
     })
     .sort((a, b) => (
@@ -184,6 +197,8 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataTarget
       || Number(viewedIds.has(b.movie.id)) - Number(viewedIds.has(a.movie.id))
       || a.movie.title.localeCompare(b.movie.title)
     ));
+
+  return { targets, deferredMovies };
 }
 
 function publish(next: SpectroMetadataSnapshot): void {
@@ -201,32 +216,44 @@ export function subscribeSpectroMetadata(
 
 export async function getSpectroMetadataSnapshot(): Promise<SpectroMetadataSnapshot> {
   if (snapshot.status === "running") return snapshot;
-  const candidates = await collectTargets();
+  const { targets, deferredMovies } = await collectTargets();
+  const outstandingMovies = targets.length + deferredMovies;
   const token = getTmdbAccessToken();
   if (!token) {
     const next = {
       ...EMPTY_SNAPSHOT,
       status: "unconfigured" as const,
-      totalMovies: candidates.length,
-      pendingMovies: candidates.length,
-      progressPercent: candidates.length ? 0 : 100
+      totalMovies: outstandingMovies,
+      pendingMovies: outstandingMovies,
+      failedMovies: deferredMovies,
+      progressPercent: outstandingMovies ? 0 : 100
     };
     publish(next);
     return next;
   }
-  if (!isOnline() && candidates.length > 0) {
+  if (!isOnline() && outstandingMovies > 0) {
     const next = {
       ...EMPTY_SNAPSHOT,
       status: "waiting-connection" as const,
-      totalMovies: candidates.length,
-      pendingMovies: candidates.length,
+      totalMovies: outstandingMovies,
+      pendingMovies: outstandingMovies,
+      failedMovies: deferredMovies,
       progressPercent: 0
     };
     publish(next);
     return next;
   }
-  if (candidates.length === 0 && snapshot.status !== "completed") {
-    publish({ ...EMPTY_SNAPSHOT, status: "completed" });
+  if (targets.length === 0) {
+    const next = {
+      ...EMPTY_SNAPSHOT,
+      status: "completed" as const,
+      failedMovies: deferredMovies,
+      lastError: deferredMovies
+        ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+        : undefined
+    };
+    publish(next);
+    return next;
   }
   return snapshot;
 }
@@ -348,36 +375,47 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
 
   const operation = (async () => {
     const token = getTmdbAccessToken();
-    const candidates = await collectTargets(forceRetry);
+    const { targets, deferredMovies } = await collectTargets(forceRetry);
+    const outstandingMovies = targets.length + deferredMovies;
 
     if (!token) {
       publish({
         ...EMPTY_SNAPSHOT,
         status: "unconfigured",
-        totalMovies: candidates.length,
-        pendingMovies: candidates.length,
-        progressPercent: candidates.length ? 0 : 100
+        totalMovies: outstandingMovies,
+        pendingMovies: outstandingMovies,
+        failedMovies: deferredMovies,
+        progressPercent: outstandingMovies ? 0 : 100
       });
       return;
     }
-    if (!isOnline() && candidates.length > 0) {
+    if (!isOnline() && outstandingMovies > 0) {
       publish({
         ...EMPTY_SNAPSHOT,
         status: "waiting-connection",
-        totalMovies: candidates.length,
-        pendingMovies: candidates.length,
+        totalMovies: outstandingMovies,
+        pendingMovies: outstandingMovies,
+        failedMovies: deferredMovies,
         progressPercent: 0
       });
       return;
     }
-    if (candidates.length === 0) {
-      publish({ ...EMPTY_SNAPSHOT, status: "completed" });
+    if (targets.length === 0) {
+      publish({
+        ...EMPTY_SNAPSHOT,
+        status: "completed",
+        failedMovies: deferredMovies,
+        lastError: deferredMovies
+          ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+          : undefined
+      });
       return;
     }
 
+    const candidates = targets;
     let processedMovies = 0;
     let updatedMovies = 0;
-    let failedMovies = 0;
+    let failedMovies = deferredMovies;
     let notFoundMovies = 0;
     let lastError: string | undefined;
 
@@ -387,7 +425,11 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
       totalMovies: candidates.length,
       pendingMovies: candidates.length,
       progressPercent: 0,
-      currentTitle: candidates[0]?.movie.title
+      currentTitle: candidates[0]?.movie.title,
+      failedMovies,
+      lastError: deferredMovies
+        ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+        : undefined
     });
 
     for (const target of candidates) {
