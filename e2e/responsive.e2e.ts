@@ -11,7 +11,7 @@ for (const viewport of viewports) {
   test("no genera desbordamiento horizontal en " + viewport.label, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
-    const routes = [
+    const routes: { path: string; heading?: string; activeNavigation?: string }[] = [
       { path: "#/personal", activeNavigation: "Personal" },
       { path: "#/spectro", activeNavigation: "Espectro" },
       { path: "#/personal/library", heading: "Biblioteca" },
