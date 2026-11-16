@@ -6,7 +6,7 @@ import { prismaDb } from "./database";
 const viewingSchema = z.object({
   movieId: z.string().min(1),
   watchedOn: z.string(),
-  rating: z.number().int().min(1).max(10),
+  rating: z.number().int().min(1).max(10).optional(),
   watchedAtLocalTime: z.string().optional(),
   timeZone: z.string().optional(),
   review: z.string().max(10000).optional()
@@ -110,6 +110,23 @@ export async function moveMovieToPending(movieId: string): Promise<LibraryStatus
   });
 }
 
+export async function removeMovieFromPending(movieId: string): Promise<boolean> {
+  return prismaDb.transaction("rw", prismaDb.libraryEntries, async () => {
+    const current = await prismaDb.libraryEntries.get(movieId);
+    if (!current || current.status !== "pending") return false;
+
+    if (current.isFavorite) {
+      await prismaDb.libraryEntries.update(movieId, {
+        status: undefined,
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      await prismaDb.libraryEntries.delete(movieId);
+    }
+    return true;
+  });
+}
+
 export async function undoMoveToPending(token: LibraryStatusUndoToken): Promise<void> {
   await prismaDb.transaction("rw", prismaDb.libraryEntries, async () => {
     const current = await prismaDb.libraryEntries.get(token.movieId);
@@ -123,7 +140,6 @@ export async function undoMoveToPending(token: LibraryStatusUndoToken): Promise<
       return;
     }
 
-    if (!token.previousStatus) throw new Error("No hay un estado anterior que restaurar.");
     await prismaDb.libraryEntries.update(token.movieId, {
       status: token.previousStatus,
       isFavorite: token.previousIsFavorite ?? false,
@@ -134,7 +150,7 @@ export async function undoMoveToPending(token: LibraryStatusUndoToken): Promise<
 
 export async function updateViewing(
   viewingId: string,
-  changes: Pick<ViewingDraft, "watchedOn" | "rating"> & Partial<Pick<ViewingDraft, "watchedAtLocalTime" | "timeZone" | "review">>
+  changes: Pick<ViewingDraft, "watchedOn"> & Partial<Omit<ViewingDraft, "movieId" | "watchedOn">>
 ): Promise<void> {
   await prismaDb.transaction("rw", prismaDb.viewings, async () => {
     const current = await prismaDb.viewings.get(viewingId);
@@ -143,7 +159,7 @@ export async function updateViewing(
     const validated = validateViewingDraft({
       movieId: current.movieId,
       watchedOn: changes.watchedOn,
-      rating: changes.rating,
+      rating: Object.prototype.hasOwnProperty.call(changes, "rating") ? changes.rating : current.rating,
       watchedAtLocalTime: changes.watchedAtLocalTime !== undefined ? changes.watchedAtLocalTime : current.watchedAtLocalTime,
       timeZone: changes.timeZone ?? current.timeZone,
       review: changes.review !== undefined ? changes.review : current.review
@@ -171,10 +187,14 @@ export async function deleteViewing(viewingId: string): Promise<void> {
     if (remaining === 0) {
       const entry = await prismaDb.libraryEntries.get(viewing.movieId);
       if (entry?.status === "watched") {
-        await prismaDb.libraryEntries.update(viewing.movieId, {
-          status: "pending",
-          updatedAt: new Date().toISOString()
-        });
+        if (entry.isFavorite) {
+          await prismaDb.libraryEntries.update(viewing.movieId, {
+            status: undefined,
+            updatedAt: new Date().toISOString()
+          });
+        } else {
+          await prismaDb.libraryEntries.delete(viewing.movieId);
+        }
       }
     }
   });

@@ -26,7 +26,7 @@ export interface MovieRecord {
 
 export interface LibraryEntry {
   movieId: string;
-  status: LibraryStatus;
+  status?: LibraryStatus;
   isFavorite: boolean;
   addedAt: string;
   updatedAt: string;
@@ -39,7 +39,7 @@ export interface Viewing {
   watchedOn: string;
   watchedAtLocalTime?: string;
   timeZone?: string;
-  rating: number;
+  rating?: number;
   review?: string;
   createdAt: string;
   updatedAt: string;

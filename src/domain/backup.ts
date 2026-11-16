@@ -28,7 +28,7 @@ const movieSchema = z.object({
 
 const libraryEntrySchema = z.object({
   movieId: text,
-  status: z.enum(["watched", "pending"]),
+  status: z.enum(["watched", "pending"]).optional(),
   isFavorite: z.boolean(),
   addedAt: timestamp,
   updatedAt: timestamp
@@ -41,7 +41,7 @@ const viewingSchema = z.object({
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   watchedAtLocalTime: z.string().max(20).optional(),
   timeZone: z.string().max(100).optional(),
-  rating: z.number().int().min(1).max(10),
+  rating: z.number().int().min(1).max(10).optional(),
   review: z.string().max(10000).optional(),
   createdAt: timestamp,
   updatedAt: timestamp,

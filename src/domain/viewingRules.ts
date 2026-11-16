@@ -1,7 +1,7 @@
 export interface ViewingDraft {
   movieId: string;
   watchedOn: string;
-  rating: number;
+  rating?: number;
   watchedAtLocalTime?: string;
   timeZone?: string;
   review?: string;
@@ -33,7 +33,8 @@ export function validateViewingDraft(draft: ViewingDraft, now = new Date()): Vie
   if (draft.watchedOn > toLocalDateString(now)) {
     throw new Error("No puedes registrar un visionado en una fecha futura.");
   }
-  if (!Number.isInteger(draft.rating) || draft.rating < 1 || draft.rating > 10) {
+  if (draft.rating !== undefined
+    && (!Number.isInteger(draft.rating) || draft.rating < 1 || draft.rating > 10)) {
     throw new Error("La calificación debe ser un número entero entre 1 y 10.");
   }
 
