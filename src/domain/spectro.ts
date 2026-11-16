@@ -974,7 +974,7 @@ export function rankSpectroCandidates(
     viewings.map((viewing) => viewing.movieId).filter((movieId) => !candidateIds.has(movieId))
   );
 
-  return buildRecommendations(
+  const ranking = buildRecommendations(
     candidates,
     affinities,
     analysis.favoriteSignals,
@@ -982,6 +982,10 @@ export function rankSpectroCandidates(
     analysis.averageRating,
     ratedMovies
   );
+  return {
+    recommendations: ranking.recommendations,
+    decisionGraph: ranking.graph
+  };
 }
 
 export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
