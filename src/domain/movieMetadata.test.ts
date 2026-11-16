@@ -56,6 +56,7 @@ describe("movie metadata enrichment", () => {
       genres: [{ id: 18, name: "Drama" }],
       production_countries: [{ iso_3166_1: "US", name: "Estados Unidos" }],
       original_language: "en",
+      keywords: ["memoria", "viajes en el tiempo"],
       poster_path: null,
       backdrop_path: "/backdrop.jpg"
     }, "2026-11-15T12:00:00.000Z");
@@ -70,6 +71,7 @@ describe("movie metadata enrichment", () => {
       genreIds: [18],
       countries: ["Estados Unidos"],
       originalLanguage: "en",
+      keywords: ["memoria", "viajes en el tiempo"],
       posterPath: "/poster-local.jpg",
       backdropPath: "/backdrop.jpg",
       status: "Released"
