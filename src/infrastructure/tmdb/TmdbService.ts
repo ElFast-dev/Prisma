@@ -89,6 +89,7 @@ function cacheTtlMs(cacheKey: string): number {
   if (cacheKey.startsWith("search:") || cacheKey.startsWith("trending:")) return 6 * hours;
   if (cacheKey.startsWith("movie:details:")) return 30 * days;
   if (cacheKey.startsWith("movie:credits:")) return 90 * days;
+  if (cacheKey.startsWith("movie:keywords:")) return 90 * days;
   if (cacheKey.startsWith("movie:recommendations:")) return 7 * days;
   if (cacheKey.startsWith("movie:providers:")) return 24 * hours;
   if (cacheKey.startsWith("configuration:")) return 30 * days;
@@ -232,6 +233,11 @@ export async function getMovieBundle(token: string, tmdbId: number, region: stri
 export interface TmdbMovieAnalysisMetadata {
   details: TmdbMovieDetails;
   credits: TmdbCredits;
+  keywords: string[];
+}
+
+interface TmdbMovieKeywordsResponse {
+  keywords?: { id: number; name: string }[];
 }
 
 /**
@@ -247,7 +253,7 @@ export async function getMovieAnalysisMetadata(
     throw new Error("El identificador TMDB de la película no es válido.");
   }
 
-  const [details, credits] = await Promise.all([
+  const [details, credits, keywords] = await Promise.all([
     getCached<TmdbMovieDetails>(
       token,
       "movie:details:" + tmdbId,
@@ -261,10 +267,23 @@ export async function getMovieAnalysisMetadata(
       "movie/" + tmdbId + "/credits",
       { language: LANGUAGE },
       { signal }
+    ),
+    getCached<TmdbMovieKeywordsResponse>(
+      token,
+      "movie:keywords:" + tmdbId,
+      "movie/" + tmdbId + "/keywords",
+      {},
+      { signal }
     )
   ]);
 
-  return { details: details.data, credits: credits.data };
+  const themeKeywords = [...new Set(
+    (keywords.data.keywords ?? [])
+      .map((item) => item.name.trim().replace(/\\s+/g, " "))
+      .filter(Boolean)
+  )].slice(0, 16);
+
+  return { details: details.data, credits: credits.data, keywords: themeKeywords };
 }
 
 export async function getMovieDetailsForEnrichment(
