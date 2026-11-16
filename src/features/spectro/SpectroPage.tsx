@@ -410,10 +410,27 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
     );
   }
 
+  if (snapshot.status === "completed" && snapshot.failedMovies > 0) {
+    return (
+      <section className="spectro-metadata-status card-surface" role="status">
+        <div className="spectro-metadata-heading">
+          <Fingerprint size={17} className="accent-icon" />
+          <strong>Quedaron {snapshot.failedMovies} películas con datos incompletos</strong>
+        </div>
+        <p className="muted-copy">
+          Prisma conserva los metadatos obtenidos y no modifica tus visionados ni calificaciones.
+          Puedes volver a intentar las consultas pendientes.
+        </p>
+        <button className="button button-secondary" type="button" onClick={onRetry}>Reintentar metadatos</button>
+      </section>
+    );
+  }
+
   if (snapshot.status === "completed" && snapshot.updatedMovies > 0) {
     return (
       <p className="spectro-metadata-complete" role="status">
         <CheckCircle2 size={15} /> Espectro incorporó metadatos de {snapshot.updatedMovies} películas.
+        {snapshot.notFoundMovies > 0 ? " " + snapshot.notFoundMovies + " no aparecen en TMDB." : ""}
       </p>
     );
   }
@@ -673,7 +690,7 @@ export function SpectroPage() {
         <SpectroContent
           analysis={analysis}
           metadata={metadata}
-          onRetryMetadata={() => void startSpectroMetadataEnrichment()}
+          onRetryMetadata={() => void startSpectroMetadataEnrichment(true)}
         />
       ) : null}
     </div>
