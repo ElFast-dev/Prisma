@@ -118,9 +118,10 @@ export function filterHistoryItems(
     if (filters.notes === "with-notes" && !note) return false;
     if (filters.notes === "without-notes" && note) return false;
 
-    if (filters.rating === "9-10" && viewing.rating < 9) return false;
-    if (filters.rating === "7-8" && (viewing.rating < 7 || viewing.rating > 8)) return false;
-    if (filters.rating === "1-6" && viewing.rating > 6) return false;
+    if (filters.rating !== "all" && viewing.rating === undefined) return false;
+    if (filters.rating === "9-10" && viewing.rating! < 9) return false;
+    if (filters.rating === "7-8" && (viewing.rating! < 7 || viewing.rating! > 8)) return false;
+    if (filters.rating === "1-6" && viewing.rating! > 6) return false;
 
     if (filters.fromDate && viewing.watchedOn < filters.fromDate) return false;
     if (filters.toDate && viewing.watchedOn > filters.toDate) return false;

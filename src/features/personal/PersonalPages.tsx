@@ -195,6 +195,7 @@ export function LibraryPage() {
 
         const ratingTotals = new Map<string, { total: number; count: number }>();
         for (const viewing of viewings) {
+          if (viewing.rating === undefined) continue;
           const current = ratingTotals.get(viewing.movieId) ?? { total: 0, count: 0 };
           current.total += viewing.rating;
           current.count += 1;
@@ -648,8 +649,9 @@ export function HistoryPage() {
     () => new Set(items.map((item) => item.viewing.movieId)).size,
     [items]
   );
-  const averageRating = items.length
-    ? (items.reduce((total, item) => total + item.viewing.rating, 0) / items.length).toFixed(1)
+  const ratedItems = items.filter((item) => item.viewing.rating !== undefined);
+  const averageRating = ratedItems.length
+    ? (ratedItems.reduce((total, item) => total + (item.viewing.rating ?? 0), 0) / ratedItems.length).toFixed(1)
     : "—";
   const activeFilterCount = Number(notesFilter !== "all")
     + Number(ratingFilter !== "all")
@@ -677,12 +679,7 @@ export function HistoryPage() {
   }
 
   async function handleDelete(item: HistoryItem) {
-    const countForMovie = items.filter((entry) => entry.viewing.movieId === item.viewing.movieId).length;
-    const libraryEntry = await getLibraryEntry(item.viewing.movieId);
-    const willMoveToPending = countForMovie === 1 && libraryEntry?.status === "watched";
-    const message = willMoveToPending
-      ? "Este es el último visionado registrado. Al eliminarlo, la película pasará a Pendientes. ¿Continuar?"
-      : "¿Eliminar únicamente este visionado? Las demás experiencias se conservarán.";
+    const message = "¿Eliminar este visionado? No pasará automáticamente a Pendientes.";
     if (!window.confirm(message)) return;
 
     try {
@@ -913,8 +910,9 @@ export function HistoryPage() {
                           </small>
                         )}
                         <span className="history-entry-rating">
-                          <Star size={14} fill="currentColor" aria-hidden="true" />
-                          {item.viewing.rating}/10
+                          {item.viewing.rating !== undefined ? (
+                            <><Star size={14} fill="currentColor" aria-hidden="true" /> {item.viewing.rating}/10</>
+                          ) : "Sin calificar"}
                         </span>
                         {item.viewing.review && (
                           <details className="history-entry-review">

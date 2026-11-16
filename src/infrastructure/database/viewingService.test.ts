@@ -32,7 +32,8 @@ const { database, state } = vi.hoisted(() => {
         if (!current) return 0;
         state.libraryEntries.set(id, { ...current, ...changes });
         return 1;
-      }
+      },
+      delete: async (id: string) => { state.libraryEntries.delete(id); }
     },
     viewings: {
       where: (field: string) => ({
@@ -64,7 +65,7 @@ const { database, state } = vi.hoisted(() => {
 
 vi.mock("./database", () => ({ prismaDb: database }));
 
-import { addViewing, deleteViewing, updateViewing } from "./viewingService";
+import { addViewing, deleteViewing, removeMovieFromPending, updateViewing } from "./viewingService";
 
 function addInput(watchedOn: string, rating: number, review: string) {
   return {
@@ -156,7 +157,10 @@ describe("viewingService: integridad de experiencias", () => {
 
     await deleteViewing(second.id);
     expect(state.viewings).toHaveLength(0);
-    expect(state.libraryEntries.get("movie-7").status).toBe("pending");
+    expect(state.libraryEntries.get("movie-7")).toMatchObject({
+      status: undefined,
+      isFavorite: true
+    });
     expect(state.movies.get("movie-7").lastViewingSequence).toBe(2);
   });
 
@@ -172,4 +176,54 @@ describe("viewingService: integridad de experiencias", () => {
     expect(state.viewings.some((item: any) => item.id === second.id)).toBe(false);
     expect(state.movies.get("movie-7").lastViewingSequence).toBe(3);
   });
+  
+  it("no convierte el último visionado eliminado en Pendientes", async () => {
+    state.libraryEntries.set("movie-7", {
+      movieId: "movie-7",
+      status: "watched",
+      isFavorite: false,
+      addedAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z"
+    });
+    const viewing = await addViewing({
+      movieId: "movie-7",
+      watchedOn: "2024-02-01",
+      rating: 8
+    }, "00000000-0000-4000-8000-000000000077");
+
+    await deleteViewing(viewing.id);
+
+    expect(state.viewings).toHaveLength(0);
+    expect(state.libraryEntries.has("movie-7")).toBe(false);
+  });
+
+  it("permite quitar Pendientes conservando una película favorita sin clasificación", async () => {
+    state.libraryEntries.set("movie-7", {
+      movieId: "movie-7",
+      status: "pending",
+      isFavorite: true,
+      addedAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z"
+    });
+
+    await expect(removeMovieFromPending("movie-7")).resolves.toBe(true);
+    expect(state.libraryEntries.get("movie-7")).toMatchObject({
+      status: undefined,
+      isFavorite: true
+    });
+  });
+
+  it("elimina una entrada Pendiente al quitarla si no es favorita", async () => {
+    state.libraryEntries.set("movie-7", {
+      movieId: "movie-7",
+      status: "pending",
+      isFavorite: false,
+      addedAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z"
+    });
+
+    await expect(removeMovieFromPending("movie-7")).resolves.toBe(true);
+    expect(state.libraryEntries.has("movie-7")).toBe(false);
+  });
+
 });

@@ -208,7 +208,7 @@ export function calculatePersonalStats(
   const watchedMinutes = viewings.reduce((total, viewing) => {
     return total + (movieById.get(viewing.movieId)?.runtimeMinutes ?? 0);
   }, 0);
-  const ratings = viewings.map((viewing) => viewing.rating);
+  const ratings = viewings.flatMap((viewing) => viewing.rating === undefined ? [] : [viewing.rating]);
   const averageRating = ratings.length
     ? Math.round((ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length) * 100) / 100
     : null;
