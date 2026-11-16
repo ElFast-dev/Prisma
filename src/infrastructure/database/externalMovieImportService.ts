@@ -141,11 +141,14 @@ export async function importExternalMovies(
           ?? importedViewings[0];
 
         if (previousImport) {
+          const externalWins = priority === "external";
           const updated: Viewing = {
             ...previousImport,
             operationId: stableOperationId,
-            watchedOn: source.watchedOn,
-            rating: source.rating ?? previousImport.rating,
+            watchedOn: externalWins ? source.watchedOn : previousImport.watchedOn,
+            rating: externalWins && source.rating !== undefined
+              ? source.rating
+              : previousImport.rating,
             updatedAt: now
           };
           if (
@@ -155,7 +158,9 @@ export async function importExternalMovies(
           ) {
             viewingsToWrite.set(updated.id, updated);
             result.updatedImportedViewings += 1;
-            if (previousImport.watchedOn !== updated.watchedOn) result.correctedImportedDates += 1;
+            if (externalWins && previousImport.watchedOn !== updated.watchedOn) {
+              result.correctedImportedDates += 1;
+            }
           }
           continue;
         }

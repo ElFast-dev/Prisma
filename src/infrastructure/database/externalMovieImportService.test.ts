@@ -161,7 +161,7 @@ describe("external movie import reconciliation", () => {
     const first = state.viewings[0];
     const changedPlan = plan([watched(201, 2001, 9, "2025-11-08")]);
 
-    const result = await importExternalMovies(changedPlan);
+    const result = await importExternalMovies(changedPlan, "external");
 
     expect(result.viewingsAdded).toBe(0);
     expect(result.updatedImportedViewings).toBe(1);
@@ -173,6 +173,29 @@ describe("external movie import reconciliation", () => {
       watchedOn: "2025-11-08",
       rating: 9,
       operationId: "external-import-trakt-201"
+    });
+  });
+
+  it("keeps manual edits on an imported experience when Prisma has priority on reimport", async () => {
+    await importExternalMovies(plan([watched(251, 2501, 7)]), "external");
+    const imported = state.viewings[0];
+    state.viewings[0] = {
+      ...state.viewings[0],
+      watchedOn: "2025-11-09",
+      rating: 4,
+      review: "Edición manual posterior"
+    };
+
+    const result = await importExternalMovies(plan([watched(251, 2501, 9, "2025-11-08")]), "local");
+
+    expect(result.viewingsAdded).toBe(0);
+    expect(result.updatedImportedViewings).toBe(0);
+    expect(state.viewings).toHaveLength(1);
+    expect(state.viewings[0]).toMatchObject({
+      id: imported.id,
+      watchedOn: "2025-11-09",
+      rating: 4,
+      review: "Edición manual posterior"
     });
   });
 
