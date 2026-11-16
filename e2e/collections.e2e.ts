@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { e2eMovie, seedLibraryMovie } from "./support/fixtures";
 
 async function seedCollectionWithMovies(page: Page): Promise<void> {
   await page.evaluate(async () => {
@@ -202,4 +203,72 @@ test("edita la selección, cambia portada y ordena películas sin alterar el cat
     "collection-movie-alpha",
     "collection-movie-beta"
   ]);
+});
+
+
+test("añade una película guardada desde Biblioteca sin cambiar sus estados personales", async ({ page }) => {
+  // El navegador y su IndexedDB son desechables; se inserta una película ficticia.
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await seedLibraryMovie(page);
+
+  await page.goto("#/personal/collections");
+  await page.getByRole("button", { name: "Crear colección" }).click();
+  const createForm = page.locator("form.collection-create-panel");
+  await expect(createForm).toBeVisible();
+  await page.getByRole("textbox", { name: "Nombre de la colección" })
+    .fill("Selección desde Biblioteca E2E");
+  await createForm.getByRole("button", { name: "Crear colección" }).click();
+
+  await expect(page.getByRole("heading", { name: "Selección desde Biblioteca E2E" })).toBeVisible();
+  await page.getByRole("button", { name: "Añadir películas desde Biblioteca" }).click();
+
+  const picker = page.getByRole("region", { name: "Añadir desde tu Biblioteca" });
+  await expect(picker).toBeVisible();
+  await picker.getByRole("searchbox", { name: "Buscar en mi Biblioteca" }).fill(e2eMovie.title);
+
+  const libraryOption = picker.locator(".collection-library-option").filter({
+    hasText: e2eMovie.title
+  });
+  await expect(libraryOption).toContainText("Pendiente");
+  await expect(libraryOption).toContainText("Favorita");
+  await libraryOption.getByRole("button", {
+    name: "Añadir " + e2eMovie.title + " a la colección"
+  }).click();
+
+  await expect(page.locator(".collection-movie-card").filter({
+    has: page.getByRole("button", { name: "Abrir ficha de " + e2eMovie.title })
+  })).toBeVisible();
+  await expect(picker.getByText("Las películas encontradas ya pertenecen a esta colección.")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Selección desde Biblioteca E2E" })).toBeVisible();
+  await expect(page.locator(".collection-movie-card").filter({
+    has: page.getByRole("button", { name: "Abrir ficha de " + e2eMovie.title })
+  })).toBeVisible();
+
+  const storedEntry = await page.evaluate(async (movieId) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<Record<string, unknown> | undefined>((resolve, reject) => {
+        const request = db.transaction("libraryEntries", "readonly")
+          .objectStore("libraryEntries")
+          .get(movieId);
+        request.onsuccess = () => resolve(request.result as Record<string, unknown> | undefined);
+        request.onerror = () => reject(request.error);
+      });
+    } finally {
+      db.close();
+    }
+  }, e2eMovie.id);
+
+  expect(storedEntry).toMatchObject({
+    movieId: e2eMovie.id,
+    status: "pending",
+    isFavorite: true
+  });
 });

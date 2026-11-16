@@ -9,6 +9,7 @@ import {
 import type {
   Collection,
   HistoryBrowsePreferences,
+  LibraryEntry,
   LocalProfile,
   MovieRecord
 } from "../../domain/types";
@@ -33,6 +34,7 @@ import { prismaDb } from "../../infrastructure/database/database";
 import { deleteViewing } from "../../infrastructure/database/viewingService";
 import { getLibraryEntry } from "../../infrastructure/database/libraryService";
 import {
+  addMovieToCollection,
   createCollection,
   deleteCollection,
   getCollections,
@@ -1142,6 +1144,11 @@ export function CollectionsPage() {
   const [editDescription, setEditDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [addMoviesOpen, setAddMoviesOpen] = useState(false);
+  const [libraryCandidates, setLibraryCandidates] = useState<{ movie: MovieRecord; entry: LibraryEntry }[]>([]);
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [addingMovieId, setAddingMovieId] = useState<string | null>(null);
 
   const loadCollections = useCallback(async () => {
     setLoading(true);
@@ -1175,6 +1182,26 @@ export function CollectionsPage() {
       || collection.description?.toLocaleLowerCase().includes(query)
     );
   }, [collections, search]);
+
+  const matchingLibraryCandidates = useMemo(() => {
+    const query = librarySearch.trim().toLocaleLowerCase();
+    if (!query) return libraryCandidates;
+    return libraryCandidates.filter(({ movie }) => [
+      movie.title,
+      movie.originalTitle,
+      movie.releaseYear?.toString(),
+      ...movie.genres
+    ].filter(Boolean).some((value) => value!.toLocaleLowerCase().includes(query)));
+  }, [libraryCandidates, librarySearch]);
+
+  const currentCollectionMovieIds = useMemo(
+    () => new Set(movies.map((movie) => movie.id)),
+    [movies]
+  );
+  const availableLibraryCandidates = useMemo(
+    () => matchingLibraryCandidates.filter(({ movie }) => !currentCollectionMovieIds.has(movie.id)),
+    [matchingLibraryCandidates, currentCollectionMovieIds]
+  );
 
   async function handleCreateCollection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1291,6 +1318,42 @@ export function CollectionsPage() {
 
   function posterUrl(movie: MovieRecord) {
     return getTmdbImageUrl("https://image.tmdb.org/t/p/", movie.posterPath, "w342");
+  }
+
+  async function openLibraryPicker() {
+    if (!selectedCollection) return;
+    setAddMoviesOpen(true);
+    setLibrarySearch("");
+    setLibraryLoading(true);
+    setError("");
+    try {
+      setLibraryCandidates(await getLibraryMovies());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo consultar tu Biblioteca local.");
+    } finally {
+      setLibraryLoading(false);
+    }
+  }
+
+  async function handleAddLibraryMovie(movie: MovieRecord) {
+    if (!selectedCollection || addingMovieId) return;
+    setAddingMovieId(movie.id);
+    setError("");
+    try {
+      await addMovieToCollection(selectedCollection.id, movie.id);
+      const [nextMovies, nextCollections] = await Promise.all([
+        getCollectionMovies(selectedCollection.id),
+        getCollectionSummaries()
+      ]);
+      setMovies(nextMovies);
+      setCollections(nextCollections);
+      const refreshed = nextCollections.find((item) => item.collection.id === selectedCollection.id);
+      if (refreshed) setSelectedCollection(refreshed.collection);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo añadir la película a la colección.");
+    } finally {
+      setAddingMovieId(null);
+    }
   }
 
   const selectedCover = movies.find((movie) => movie.id === selectedCollection?.coverMovieId) ?? movies[0];
@@ -1443,6 +1506,17 @@ export function CollectionsPage() {
             <p className="muted-copy">El orden y la portada son tuyos.</p>
             <div className="collection-detail-actions">
               <button
+                className="button button-secondary collection-add-library-trigger"
+                type="button"
+                aria-label="Añadir películas desde Biblioteca"
+                aria-expanded={addMoviesOpen}
+                disabled={busy}
+                onClick={() => addMoviesOpen ? setAddMoviesOpen(false) : void openLibraryPicker()}
+              >
+                <Plus size={15} />
+                Añadir desde Biblioteca
+              </button>
+              <button
                 className="icon-button"
                 type="button"
                 aria-label="Editar colección"
@@ -1464,6 +1538,77 @@ export function CollectionsPage() {
               </button>
             </div>
           </div>
+
+          {addMoviesOpen && (
+            <section className="collection-library-picker card-surface" aria-labelledby="collection-library-picker-title">
+              <div className="section-intro-row">
+                <div>
+                  <p className="eyebrow">TU CATÁLOGO LOCAL</p>
+                  <h2 id="collection-library-picker-title">Añadir desde tu Biblioteca</h2>
+                </div>
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label="Cerrar selector de Biblioteca"
+                  onClick={() => setAddMoviesOpen(false)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <label className="collection-library-search">
+                <span className="sr-only">Buscar en mi Biblioteca</span>
+                <input
+                  className="text-field"
+                  type="search"
+                  aria-label="Buscar en mi Biblioteca"
+                  placeholder="Título, año o género..."
+                  value={librarySearch}
+                  onChange={(event) => setLibrarySearch(event.target.value)}
+                />
+              </label>
+
+              {libraryLoading ? (
+                <p className="muted-copy" role="status">Consultando tu Biblioteca local...</p>
+              ) : libraryCandidates.length === 0 ? (
+                <p className="muted-copy collection-library-empty">Todavía no hay películas en tu Biblioteca. También puedes añadirlas desde sus fichas cinematográficas.</p>
+              ) : matchingLibraryCandidates.length === 0 ? (
+                <p className="muted-copy collection-library-empty">No encontramos películas con esa búsqueda.</p>
+              ) : availableLibraryCandidates.length === 0 ? (
+                <p className="muted-copy collection-library-empty">Las películas encontradas ya pertenecen a esta colección.</p>
+              ) : (
+                <div className="collection-library-options">
+                  {availableLibraryCandidates.map(({ movie, entry }) => (
+                    <article className="collection-library-option" key={movie.id}>
+                      <div className="collection-library-option-poster">
+                        {posterUrl(movie)
+                          ? <img src={posterUrl(movie) ?? ""} alt="" loading="lazy" />
+                          : <Film size={17} aria-hidden="true" />}
+                      </div>
+                      <div className="collection-library-option-copy">
+                        <strong>{movie.title}</strong>
+                        <small>
+                          {[movie.releaseYear?.toString(), entry.status === "watched" ? "Vista" : "Pendiente", entry.isFavorite ? "Favorita" : ""]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </small>
+                      </div>
+                      <button
+                        className="button button-secondary collection-library-add-button"
+                        type="button"
+                        aria-label={"Añadir " + movie.title + " a la colección"}
+                        disabled={Boolean(addingMovieId)}
+                        onClick={() => void handleAddLibraryMovie(movie)}
+                      >
+                        {addingMovieId === movie.id ? "Añadiendo..." : "Añadir"}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <p className="collection-library-footnote">Solo se añaden a la selección; tus estados y datos de Biblioteca no cambian.</p>
+            </section>
+          )}
 
           {editingCollection && (
             <form className="collection-create-panel card-surface" onSubmit={(event) => void handleSaveCollection(event)}>
@@ -1512,7 +1657,7 @@ export function CollectionsPage() {
             <EmptyState
               icon={<Folders size={26} />}
               title="Una historia por comenzar"
-              description="Abre la ficha de una película, toca los tres puntos y elige “Agregar a colección”. Después podrás ordenar la selección y escoger su portada."
+              description="Añade películas desde tu Biblioteca o desde el menú de una ficha cinematográfica. Después podrás ordenar la selección y escoger su portada."
               action={<a className="button button-secondary" href="#/discover">Descubrir películas</a>}
             />
           ) : (
