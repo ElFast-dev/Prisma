@@ -139,6 +139,13 @@ test("crea una colección ficticia y conserva su descripción al recargar", asyn
   await expect(page.getByRole("heading", { name: "Prisma E2E: colección ficticia" })).toBeVisible();
   await expect(page.getByText("Una selección de prueba con identidad propia.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Una historia por comenzar" })).toBeVisible();
+
+  await page.goto("#/personal/collections");
+  const search = page.getByRole("searchbox", { name: "Buscar colecciones" });
+  await search.fill("identidad propia");
+  await expect(page.getByRole("link", { name: /Prisma E2E: colección ficticia/ })).toBeVisible();
+  await search.fill("ninguna selección con este nombre");
+  await expect(page.getByRole("heading", { name: "No encontramos esa selección" })).toBeVisible();
 });
 
 test("edita la selección, cambia portada y ordena películas sin alterar el catálogo", async ({ page }) => {
