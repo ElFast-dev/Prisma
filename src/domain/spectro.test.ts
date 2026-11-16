@@ -44,7 +44,7 @@ const viewing = (
 
 describe("analyzeSpectro 2.0", () => {
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.0.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.1.0");
   });
 
   it("no infiere afinidades antes de tres películas distintas calificadas", () => {
@@ -123,6 +123,85 @@ describe("analyzeSpectro 2.0", () => {
     expect(result.durationAffinities.find((item) => item.key === "duration:medium")?.sampleSize).toBe(3);
     expect(result.recommendations[0].confidence).toBe("moderada");
     expect(result.recommendations[0].reasons.every((reason) => reason.sampleSize === 3)).toBe(true);
+    expect(result.recommendations[0].fitPercentage).toBeGreaterThan(50);
+    expect(result.recommendations[0].fitPercentage).toBeLessThanOrEqual(100);
+    expect(result.recommendations[0].predictedRating).toBeGreaterThan(7.5);
+    expect(result.recommendations[0].predictedRating).toBeLessThanOrEqual(10);
+    expect(result.decisionGraph.candidateCount).toBe(1);
+    expect(result.decisionGraph.signalCount).toBeGreaterThan(0);
+  });
+
+  it("resta puntos por señales negativas y muestra su contribución en el grafo", () => {
+    const movies = [
+      movie("movie-1", "Drama", 18, 2015),
+      movie("movie-2", "Drama", 18, 2016),
+      movie("movie-3", "Drama", 18, 2017),
+      movie("movie-4", "Comedia", 35, 2005, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 85
+      }),
+      movie("movie-5", "Comedia", 35, 2006, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 88
+      }),
+      movie("movie-6", "Comedia", 35, 2007, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 90
+      })
+    ];
+    const ratings = [10, 9, 10, 5, 6, 5];
+    const viewings = movies.map((item, index) => viewing(
+      "v" + (index + 1), item.id, "2026-01-" + String(index + 1).padStart(2, "0"), ratings[index]
+    ));
+    const positive = movie("movie-7", "Drama", 18, 2024);
+    const mixed = movie("movie-8", "Drama", 18, 2024, { directors: ["Director B"] });
+    const negative = movie("movie-9", "Comedia", 35, 2024, {
+      countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+      originalLanguage: "es", runtimeMinutes: 85
+    });
+    const result = analyzeSpectro({
+      movies,
+      viewings,
+      candidates: [positive, mixed, negative]
+    });
+    const positiveMatch = result.recommendations.find((item) => item.movie.id === positive.id);
+    const mixedMatch = result.recommendations.find((item) => item.movie.id === mixed.id);
+
+    expect(positiveMatch).toBeDefined();
+    expect(mixedMatch).toBeDefined();
+    expect(mixedMatch?.fitPercentage).toBeLessThan(positiveMatch?.fitPercentage ?? 100);
+    expect(result.recommendations.some((item) => item.movie.id === negative.id)).toBe(false);
+    expect(mixedMatch?.reasons.some((reason) => reason.difference < 0)).toBe(true);
+    expect(result.decisionGraph.edges.some((edge) => edge.polarity === "negative")).toBe(true);
+  });
+
+  it("usa favoritos como señales explícitas sin inventar una calificación", () => {
+    const movies = [
+      movie("movie-1", "Drama", 18, 2015),
+      movie("movie-2", "Drama", 18, 2016),
+      movie("movie-3", "Drama", 18, 2017),
+      movie("movie-4", "Terror", 27, 2020)
+    ];
+    const viewings = [
+      viewing("v1", "movie-1", "2026-01-01", 8),
+      viewing("v2", "movie-2", "2026-01-02", 8),
+      viewing("v3", "movie-3", "2026-01-03", 8)
+    ];
+    const candidate = movie("movie-5", "Terror", 27, 2024);
+    const result = analyzeSpectro({
+      movies,
+      viewings,
+      candidates: [candidate],
+      favoriteMovieIds: ["movie-4"]
+    });
+    const recommendation = result.recommendations[0];
+
+    expect(result.favoriteSignals.find((signal) => signal.key === "genre:27")?.sampleSize).toBe(1);
+    expect(recommendation?.fitPercentage).toBeGreaterThan(50);
+    expect(recommendation?.predictedRating).toBe(8);
+    expect(recommendation?.confidence).toBe("declarada");
+    expect(recommendation?.reasons.some((reason) => reason.source === "favoritos")).toBe(true);
+    expect(result.decisionGraph.nodes.some((node) => node.source === "favoritos")).toBe(true);
   });
 
   it("no recomienda una afinidad respaldada solo por dos películas", () => {
