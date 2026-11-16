@@ -94,36 +94,49 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
   });
 }
 
-test("presenta afinidades respaldadas, cambios temporales y recomendaciones explicables", async ({ page }) => {
-  // Cada prueba usa un navegador temporal e IndexedDB aislada.
+test("organiza Espectro como Personal y ofrece un mapa interactivo de películas y rasgos", async ({ page }) => {
   await page.goto("#/personal");
   await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
   await seedSpectroHistory(page);
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
-  await expect(page.getByText("Versión 2.1.0")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Cómo piensa Espectro" })).toBeVisible();
-  await expect(page.locator(".spectro-decision-graph")).toBeVisible();
-  await expect(page.getByText("Encaje estimado").first()).toBeVisible();
-  await expect(page.getByText("Nota estimada").first()).toBeVisible();
+  await expect(page.getByText("Versión 2.2.0")).toBeVisible();
+  await expect(page.getByText("Películas en el mapa")).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/map"]')).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/affinities"]')).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/evolution"]')).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/recommendations"]')).toBeVisible();
 
+  await page.locator('a[href="#/spectro/map"]').click();
+  await expect(page.getByRole("heading", { name: "Mapa cinematográfico" })).toBeVisible();
+  await expect(page.locator(".spectro-network-svg")).toBeVisible();
+  await expect(page.getByText("Línea más gruesa y brillante = vínculo más fuerte")).toBeVisible();
+  await expect(page.locator(".spectro-network-node.is-movie")).toHaveCount(13);
+  await expect(page.locator(".spectro-network-node.is-genre").first()).toBeVisible();
+  await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("Candidata Prisma ficticia");
+  await expect(page.locator(".spectro-network-node.is-movie").first()).toHaveAttribute("opacity", "1");
+  await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("");
+  await page.getByRole("button", { name: "Acercar mapa" }).click();
+  await expect(page.getByText("115%")).toBeVisible();
+
+  await page.locator('a[href="#/spectro/affinities"]').click();
   await expect(page.getByRole("heading", { name: "Afinidades" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Idioma original" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Duración" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
+
+  await page.locator('a[href="#/spectro/evolution"]').click();
+  await expect(page.getByRole("heading", { name: "Evolución" })).toBeVisible();
   await expect(page.getByText("Cambios recientes")).toBeVisible();
   await expect(page.locator(".spectro-trend-row").first()).toBeVisible();
-  await expect(page.getByText("Drama", { exact: true }).first()).toBeVisible();
 
-  await expect(page.getByRole("heading", { name: "Podrían gustarte" })).toBeVisible();
+  await page.locator('a[href="#/spectro/recommendations"]').click();
+  await expect(page.getByRole("heading", { name: "Recomendaciones" })).toBeVisible();
   await expect(page.locator(".spectro-recommendation-copy > strong").filter({ hasText: "Candidata Prisma ficticia" })).toBeVisible();
   const recommendationReasons = page.locator(".spectro-recommendation-reasons");
   await expect(recommendationReasons.getByText("Género: Drama", { exact: true })).toBeVisible();
   await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true })).toBeVisible();
-
-  await expect(page.getByRole("navigation", { name: "Navegación principal" })
-    .getByRole("link", { name: "Espectro", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(page.locator(".section-heading")).toHaveCount(0);
 });
 
 async function seedIncompleteSpectroHistory(page: import("@playwright/test").Page): Promise<void> {
