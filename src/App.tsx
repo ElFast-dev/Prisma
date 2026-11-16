@@ -169,7 +169,19 @@ export default function App() {
       page = <DiscoverPage />;
       break;
     case "/spectro":
-      page = <SpectroPage />;
+      page = <SpectroPage section="home" />;
+      break;
+    case "/spectro/map":
+      page = <SpectroPage section="map" />;
+      break;
+    case "/spectro/affinities":
+      page = <SpectroPage section="affinities" />;
+      break;
+    case "/spectro/evolution":
+      page = <SpectroPage section="evolution" />;
+      break;
+    case "/spectro/recommendations":
+      page = <SpectroPage section="recommendations" />;
       break;
     case "/settings":
       page = <SettingsPage />;
@@ -197,7 +209,7 @@ export default function App() {
       </main>
       {showNavigation && (
         <BottomNavigation
-          active={path.startsWith("/personal") ? "personal" : path === "/spectro" ? "spectro" : "discover"}
+          active={path.startsWith("/personal") ? "personal" : path.startsWith("/spectro") ? "spectro" : "discover"}
         />
       )}
     </div>
