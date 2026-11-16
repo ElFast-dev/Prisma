@@ -21,6 +21,7 @@ const completeMovie: MovieRecord = {
   countries: ["Japón"],
   directors: ["Directora de prueba"],
   castMembers: ["Actor de prueba"],
+  keywords: [],
   originalLanguage: "ja",
   posterPath: "/poster.jpg",
   backdropPath: "/backdrop.jpg",
@@ -49,6 +50,17 @@ describe("Espectro · detección de metadatos pendientes", () => {
       runtimeMinutes: undefined,
       countries: []
     })).toBe(true);
+  });
+
+  it("vuelve a consultar temas solo cuando aún no se han descargado", () => {
+    expect(isSpectroMetadataIncomplete({
+      ...completeMovie,
+      keywords: undefined
+    })).toBe(true);
+    expect(isSpectroMetadataIncomplete({
+      ...completeMovie,
+      keywords: []
+    })).toBe(false);
   });
 });
 
