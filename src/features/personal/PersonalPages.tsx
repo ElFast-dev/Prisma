@@ -105,7 +105,7 @@ export function PersonalPage() {
 
   return (
     <div className="page">
-      <header className="section-heading"><h1>Personal</h1></header>
+      <h1 className="sr-only">Personal</h1>
       <a href="#/personal/profile" className="profile-summary card-surface">
         <div className="avatar-placeholder">{profile?.avatarDataUrl ? <img className="profile-summary-avatar" src={profile.avatarDataUrl} alt="" /> : <UserRound size={27} />}</div>
         <div className="profile-summary-copy">
