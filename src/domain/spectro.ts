@@ -398,11 +398,6 @@ function buildAffinityTrends(
   const previousEnd = shiftDate(recentStart, -1);
   const previousMovies = ratedMoviesInPeriod(viewings, movieById, previousStart, previousEnd);
   const recentMovies = ratedMoviesInPeriod(viewings, movieById, recentStart, lastDate);
-  console.log("SPECTRO_TREND_DEBUG", JSON.stringify({
-    lastDate, previousStart, previousEnd, recentStart,
-    previousMovieIds: previousMovies.map((item) => item.movie.id),
-    recentMovieIds: recentMovies.map((item) => item.movie.id)
-  }));
 
   if (
     previousMovies.length < SPECTRO_MINIMUM_TREND_MOVIES
@@ -413,10 +408,6 @@ function buildAffinityTrends(
   const recentAverage = mean(recentMovies.map((item) => item.averageRating));
   const previousFeatures = groupFeatureRatings(previousMovies);
   const recentFeatures = groupFeatureRatings(recentMovies);
-  console.log("SPECTRO_FEATURE_DEBUG", JSON.stringify({
-    previous: [...previousFeatures.entries()].map(([key, value]) => [key, value.ratings.length]),
-    recent: [...recentFeatures.entries()].map(([key, value]) => [key, value.ratings.length])
-  }));
   const trends: SpectroAffinityTrend[] = [];
 
   for (const [key, recent] of recentFeatures.entries()) {

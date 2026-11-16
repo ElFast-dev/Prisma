@@ -167,14 +167,15 @@ describe("analyzeSpectro 2.0", () => {
     const viewings: Viewing[] = [];
     const addPeriod = (prefix: string, date: string, dramaRatings: number[], comedyRatings: number[]) => {
       dramaRatings.forEach((rating, index) => {
-        const item = movie(prefix + "-drama-" + index, "Drama", 18, 2010 + index);
+        const item = movie(prefix + "-drama-" + index, "Drama", 18, 2010 + index * 10, {
+          countries: [], directors: [], castMembers: [], originalLanguage: "", runtimeMinutes: 0
+        });
         movies.push(item);
         viewings.push(viewing(prefix + "-drama-view-" + index, item.id, date, rating));
       });
       comedyRatings.forEach((rating, index) => {
-        const item = movie(prefix + "-comedy-" + index, "Comedia", 35, 2000 + index, {
-          directors: ["Director B"], castMembers: ["Actor B"], countries: ["México"],
-          originalLanguage: "es", runtimeMinutes: 85
+        const item = movie(prefix + "-comedy-" + index, "Comedia", 35, 1980 + index * 10, {
+          countries: [], directors: [], castMembers: [], originalLanguage: "", runtimeMinutes: 0
         });
         movies.push(item);
         viewings.push(viewing(prefix + "-comedy-view-" + index, item.id, date, rating));
