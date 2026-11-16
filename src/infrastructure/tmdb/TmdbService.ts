@@ -279,7 +279,7 @@ export async function getMovieAnalysisMetadata(
 
   const themeKeywords = [...new Set(
     (keywords.data.keywords ?? [])
-      .map((item) => item.name.trim().replace(/\\s+/g, " "))
+      .map((item) => item.name.trim().replace(/\s+/g, " "))
       .filter(Boolean)
   )].slice(0, 16);
 
