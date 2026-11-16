@@ -809,3 +809,135 @@
 @media (prefers-reduced-motion: reduce) {
   .history-view-option, .history-entry-poster { transition: none; }
 }
+
+
+/* Colecciones 15.3 — selecciones editoriales */
+.collection-library-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 2px 0 14px;
+}
+.collection-library-intro p { margin: 4px 0 0; }
+.collection-search { display: block; margin: 0 0 15px; }
+.collection-search input { width: 100%; }
+.collection-grid { grid-template-columns: 1fr; gap: 11px; margin-top: 13px; }
+.collection-card {
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr) 18px;
+  min-height: 112px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+.collection-card:hover {
+  border-color: rgb(217 189 145 / 32%);
+  background: #1B222D;
+  transform: translateY(-1px);
+}
+.collection-card-art {
+  display: block;
+  width: 66px;
+  height: 98px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: linear-gradient(145deg, #283342, #171D26 68%);
+}
+.collection-card-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.collection-card-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: var(--color-accent);
+}
+.collection-card-copy { align-content: center; gap: 5px; }
+.collection-card-kicker { color: var(--color-accent) !important; font-size: 8px !important; font-weight: 750; letter-spacing: .12em; }
+.collection-card-copy strong { font-size: 14px; line-height: 1.3; }
+.collection-card-description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.collection-card-copy small:last-child { margin-top: 2px; }
+.collection-create-panel { gap: 9px; }
+.collection-create-panel .section-intro-row { align-items: center; }
+.collection-create-panel .section-intro-row h2 { margin: 2px 0 0; }
+.collection-description-input { min-height: 82px; resize: vertical; line-height: 1.5; }
+.collection-detail-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin: 3px 0 16px;
+}
+.collection-detail-art {
+  display: grid;
+  width: 94px;
+  height: 139px;
+  flex: 0 0 94px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: linear-gradient(145deg, #283342, #171D26 68%);
+  color: var(--color-accent);
+}
+.collection-detail-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.collection-detail-art > span { display: grid; place-items: center; }
+.collection-detail-copy { display: grid; min-width: 0; gap: 5px; padding-top: 5px; }
+.collection-detail-copy p { margin: 0; }
+.collection-detail-description {
+  margin-top: 5px !important;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.collection-detail-actions { display: flex; align-items: center; gap: 4px; }
+.collection-detail-heading { align-items: center; }
+.collection-movie-cover-label {
+  justify-self: center;
+  color: var(--color-accent);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.collection-movie-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.collection-movie-controls .icon-button {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 8px;
+}
+.collection-movie-controls .icon-button:disabled { opacity: .28; cursor: not-allowed; }
+.collection-movie-remove { min-height: 32px; }
+@media (min-width: 700px) {
+  .collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+  .collection-card { min-height: 126px; grid-template-columns: 76px minmax(0, 1fr) 18px; }
+  .collection-card-art { width: 76px; height: 112px; }
+  .collection-detail-art { width: 112px; height: 166px; flex-basis: 112px; }
+  .collection-movie-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 14px; }
+}
+@media (max-width: 360px) {
+  .collection-card { grid-template-columns: 58px minmax(0, 1fr) 14px; gap: 9px; padding: 9px; }
+  .collection-card-art { width: 58px; height: 86px; }
+  .collection-card-copy strong { font-size: 12px; }
+  .collection-detail-art { width: 78px; height: 116px; flex-basis: 78px; }
+  .collection-detail-hero { gap: 11px; }
+}
+
+@media (max-width: 699px) {
+  .collection-movie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
