@@ -330,9 +330,6 @@ function buildClusters(
     components.set(root, members);
   }
 
-  const viewedIds = new Set<string>();
-  // Se marca aquí solo para evitar recalcular el agrupamiento de actividad en cada cluster.
-  // Los IDs de visionado se añaden en buildSpectroNetworkGraph al completar los contadores.
   const groups = [...components.values()].filter((members) => members.length >= 2);
   const isolated = [...components.values()].filter((members) => members.length === 1).flat();
   const ordered = [
@@ -381,8 +378,6 @@ function buildClusters(
     });
   });
 
-  // Los contadores se calculan al construir los nodos, donde está disponible el historial.
-  void viewedIds;
   return clusters;
 }
 
@@ -404,6 +399,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
 
   const favoriteIds = new Set(input.favoriteMovieIds);
   const movieFeatures = movies.map(featuresForMovie);
+  const movieIndexById = new Map(movies.map((movie, index) => [movie.id, index]));
   const featureRecords = new Map<string, FeatureRecord>();
   movieFeatures.forEach((features, movieIndex) => {
     for (const feature of features.all) {
@@ -436,8 +432,8 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
   const moviePositions = new Map<string, { x: number; y: number }>();
   for (const cluster of clusters) {
     const members = cluster.movieIds
-      .map((movieId) => movies.findIndex((movie) => movie.id === movieId))
-      .filter((index) => index >= 0);
+      .map((movieId) => movieIndexById.get(movieId))
+      .filter((index): index is number => index !== undefined);
     members.forEach((movieIndex, index) => {
       const movie = movies[movieIndex];
       clusterByMovie.set(movie.id, cluster);
@@ -459,7 +455,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
   const featurePositions = new Map<string, { x: number; y: number; count: number }>();
   const movieRecommendationReach = new Map<string, number>();
 
-  movies.forEach((movie) => {
+  movies.forEach((movie, movieIndex) => {
     const movieId = "movie:" + movie.id;
     const recommendation = recommendationsByMovie.get(movie.id);
     const reasonsByKey = new Map(recommendation?.reasons.map((reason) => [reason.key, reason]) ?? []);
@@ -467,7 +463,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
     const isExplored = viewedIds.has(movie.id);
     const recommendationReach = new Set<string>();
 
-    for (const feature of movieFeatures[movies.indexOf(movie)].all) {
+    for (const feature of movieFeatures[movieIndex].all) {
       const affinity = affinities.get(feature.key);
       const favorite = favoriteSignals.get(feature.key);
       const reason = reasonsByKey.get(feature.key);
@@ -543,7 +539,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
   const maxMovieInfluence = Math.max(0, ...movieRawInfluence.values());
   const maxFeatureInfluence = Math.max(0, ...featureRawInfluence.values());
   const favoriteMovieIdSet = new Set(input.favoriteMovieIds);
-  const movieNodes: SpectroNetworkNode[] = movies.map((movie) => {
+  const movieNodes: SpectroNetworkNode[] = movies.map((movie, movieIndex) => {
     const id = "movie:" + movie.id;
     const averageRating = viewingsByMovie.get(movie.id);
     const rating = averageRating?.length
@@ -554,7 +550,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
       ? clamp((movieRawInfluence.get(movie.id) ?? 0) / maxMovieInfluence, 0.06, 1)
       : 0.08;
     const cluster = clusterByMovie.get(movie.id);
-    const connectionCount = movieFeatures[movies.indexOf(movie)].all.length;
+    const connectionCount = movieFeatures[movieIndex].all.length;
     const reach = movieRecommendationReach.get(movie.id) ?? 0;
     const state: SpectroNetworkMovieState = viewedIds.has(movie.id) ? "explored" : "unexplored";
     const status = state === "explored" ? "Explorada" : "Por explorar";
