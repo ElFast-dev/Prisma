@@ -14,6 +14,12 @@ import {
   type SpectroMetadataSnapshot
 } from "../../infrastructure/database/spectroMetadataService";
 import { getTmdbImageUrl } from "../../infrastructure/tmdb/TmdbService";
+import {
+  answerSpectroRatingQuestion,
+  dismissSpectroRatingQuestion,
+  getNextSpectroRatingQuestion,
+  type SpectroRatingQuestion
+} from "../../infrastructure/database/spectroQuestionService";
 import type {
   SpectroAffinity,
   SpectroAnalysis,
@@ -440,18 +446,108 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
   return null;
 }
 
+function formatQuestionDate(value: string): string {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-PA", { dateStyle: "long" })
+    .format(new Date(year, month - 1, day));
+}
+
+function SpectroRatingQuestionCard({
+  question,
+  busy,
+  error,
+  onAnswer,
+  onDismiss
+}: {
+  question: SpectroRatingQuestion;
+  busy: boolean;
+  error: string;
+  onAnswer: (rating: number) => void;
+  onDismiss: () => void;
+}) {
+  const [rating, setRating] = useState<number | null>(null);
+
+  useEffect(() => {
+    setRating(null);
+  }, [question.viewingId]);
+
+  return (
+    <section className="spectro-question-card card-surface" aria-labelledby="spectro-question-title">
+      <div className="spectro-question-heading">
+        <span className="spectro-question-icon"><BrainCircuit size={19} /></span>
+        <div>
+          <p className="spectro-question-eyebrow">Una pregunta para afinar tu perfil</p>
+          <h2 id="spectro-question-title">¿Qué nota le darías a {question.title}?</h2>
+          <p className="muted-copy">Visionado del {formatQuestionDate(question.watchedOn)} · No necesitas abrir la ficha.</p>
+        </div>
+      </div>
+      <div className="spectro-question-rating" role="group" aria-label="Calificación del 1 al 10">
+        {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
+          <button
+            className={rating === value ? "spectro-question-score is-selected" : "spectro-question-score"}
+            key={value}
+            type="button"
+            aria-pressed={rating === value}
+            aria-label={"Calificar con " + value + " de 10"}
+            disabled={busy}
+            onClick={() => setRating(value)}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+      <div className="spectro-question-actions">
+        <button
+          className="button button-primary"
+          type="button"
+          disabled={busy || rating === null}
+          onClick={() => { if (rating !== null) onAnswer(rating); }}
+        >
+          {busy ? "Guardando…" : "Guardar nota"}
+        </button>
+        <button className="button button-quiet" type="button" disabled={busy} onClick={onDismiss}>
+          Pregúntame mañana
+        </button>
+      </div>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <p className="spectro-question-footnote">
+        Tu respuesta se guarda en este visionado. No se crea otra experiencia ni se modifica su fecha o comentario.
+      </p>
+    </section>
+  );
+}
+
 function SpectroContent({
   analysis,
   metadata,
-  onRetryMetadata
+  onRetryMetadata,
+  question,
+  questionBusy,
+  questionError,
+  onQuestionAnswer,
+  onQuestionDismiss
 }: {
   analysis: SpectroAnalysis;
   metadata: SpectroMetadataSnapshot;
   onRetryMetadata: () => void;
+  question: SpectroRatingQuestion | null;
+  questionBusy: boolean;
+  questionError: string;
+  onQuestionAnswer: (rating: number) => void;
+  onQuestionDismiss: () => void;
 }) {
   if (analysis.totalViewings === 0 && analysis.favoriteSignals.length === 0) {
     return (
       <>
+        {question && (
+          <SpectroRatingQuestionCard
+            question={question}
+            busy={questionBusy}
+            error={questionError}
+            onAnswer={onQuestionAnswer}
+            onDismiss={onQuestionDismiss}
+          />
+        )}
         <SpectroMetadataStatus snapshot={metadata} onRetry={onRetryMetadata} />
         <EmptyState
           icon={<BrainCircuit size={26} />}
@@ -465,6 +561,15 @@ function SpectroContent({
 
   return (
     <>
+      {question && (
+        <SpectroRatingQuestionCard
+          question={question}
+          busy={questionBusy}
+          error={questionError}
+          onAnswer={onQuestionAnswer}
+          onDismiss={onQuestionDismiss}
+        />
+      )}
       <SpectroMetadataStatus snapshot={metadata} onRetry={onRetryMetadata} />
       <section className="spectro-summary-grid" aria-label="Resumen del análisis">
         <div className="spectro-summary-card"><span>Películas analizadas</span><strong>{analysis.movieCount}</strong></div>
@@ -628,6 +733,9 @@ export function SpectroPage() {
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState<SpectroMetadataSnapshot>(EMPTY_METADATA);
+  const [question, setQuestion] = useState<SpectroRatingQuestion | null>(null);
+  const [questionBusy, setQuestionBusy] = useState(false);
+  const [questionError, setQuestionError] = useState("");
   const lastRefreshAt = useRef(0);
 
   const refreshAnalysis = useCallback(async () => {
@@ -641,6 +749,48 @@ export function SpectroPage() {
       setState("error");
     }
   }, []);
+
+  const refreshQuestion = useCallback(async () => {
+    try {
+      setQuestion(await getNextSpectroRatingQuestion());
+    } catch {
+      setQuestion(null);
+    }
+  }, []);
+
+  const handleQuestionAnswer = useCallback(async (rating: number) => {
+    if (!question || questionBusy) return;
+    setQuestionBusy(true);
+    setQuestionError("");
+    try {
+      await answerSpectroRatingQuestion(question.viewingId, rating);
+      setQuestion(null);
+      await refreshAnalysis();
+      await refreshQuestion();
+    } catch (cause) {
+      setQuestionError(cause instanceof Error ? cause.message : "No se pudo guardar la calificación.");
+    } finally {
+      setQuestionBusy(false);
+    }
+  }, [question, questionBusy, refreshAnalysis, refreshQuestion]);
+
+  const handleQuestionDismiss = useCallback(async () => {
+    if (questionBusy) return;
+    setQuestionBusy(true);
+    setQuestionError("");
+    try {
+      await dismissSpectroRatingQuestion();
+      setQuestion(null);
+    } catch (cause) {
+      setQuestionError(cause instanceof Error ? cause.message : "No se pudo posponer la pregunta.");
+    } finally {
+      setQuestionBusy(false);
+    }
+  }, [questionBusy]);
+
+  useEffect(() => {
+    void refreshQuestion();
+  }, [refreshQuestion]);
 
   useEffect(() => {
     let active = true;
@@ -693,6 +843,11 @@ export function SpectroPage() {
           analysis={analysis}
           metadata={metadata}
           onRetryMetadata={() => void startSpectroMetadataEnrichment(true)}
+          question={question}
+          questionBusy={questionBusy}
+          questionError={questionError}
+          onQuestionAnswer={(rating) => void handleQuestionAnswer(rating)}
+          onQuestionDismiss={() => void handleQuestionDismiss()}
         />
       ) : null}
     </div>
