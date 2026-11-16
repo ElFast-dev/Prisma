@@ -144,6 +144,19 @@ export function isSpectroMetadataRetryDeferred(
   return Number.isFinite(updatedAt) && updatedAt + ERROR_RETRY_AFTER_MS > now;
 }
 
+/** Prioriza títulos elegidos para ver antes que otros registros locales. */
+export function getSpectroMetadataPriority(
+  movieId: string,
+  pendingIds: ReadonlySet<string>,
+  favoriteIds: ReadonlySet<string>,
+  viewedIds: ReadonlySet<string>
+): number {
+  if (pendingIds.has(movieId)) return 0;
+  if (favoriteIds.has(movieId)) return 1;
+  if (viewedIds.has(movieId)) return 2;
+  return 3;
+}
+
 interface SpectroMetadataQueue {
   targets: SpectroMetadataTarget[];
   deferredMovies: number;
@@ -163,7 +176,11 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue>
   const savedIds = new Set(libraryEntries.map((entry) => entry.movieId));
   const collectedIds = new Set(collectionMovies.map((entry) => entry.movieId));
   const favoriteIds = new Set(libraryEntries.filter((entry) => entry.isFavorite).map((entry) => entry.movieId));
+  const pendingIds = new Set(
+    libraryEntries.filter((entry) => entry.status === "pending").map((entry) => entry.movieId)
+  );
   const relevantIds = new Set<string>([
+    ...pendingIds,
     ...viewedIds,
     ...favoriteIds
   ]);
@@ -194,8 +211,8 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue>
       return [{ movie, previous }];
     })
     .sort((a, b) => (
-      Number(favoriteIds.has(b.movie.id)) - Number(favoriteIds.has(a.movie.id))
-      || Number(viewedIds.has(b.movie.id)) - Number(viewedIds.has(a.movie.id))
+      getSpectroMetadataPriority(a.movie.id, pendingIds, favoriteIds, viewedIds)
+        - getSpectroMetadataPriority(b.movie.id, pendingIds, favoriteIds, viewedIds)
       || a.movie.title.localeCompare(b.movie.title)
     ));
 
