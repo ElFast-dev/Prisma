@@ -78,6 +78,9 @@ Las películas se agrupan a partir de cuatro familias que existen en el mapa: g�
 
 Dos títulos se conectan cuando alcanzan similitud de 0,31 y comparten al menos dos rasgos, o cuando alcanzan 0,55 con un rasgo compartido. Los grupos se construyen uniendo componentes y se limitan a 24 películas por grupo para evitar que una cadena de similitudes arrastre todo el catálogo. Las posiciones se distribuyen de forma determinista dentro de cada zona.
 
+- Para proteger la lectura del mapa, los títulos sin conexiones similares suficientes se distribuyen en zonas deterministas de hasta ocho películas; no se les atribuye una similitud inventada.
+- La generación de parejas depende de cuántas películas comparten cada rasgo: un rasgo muy frecuente produce más combinaciones que evaluar. La prueba de escala utiliza un catálogo ficticio de 821 títulos y no sustituye una comprobación visual con datos reales.
+
 Las películas con visionados aparecen como exploradas. Los títulos locales sin visionados y los rasgos conectados únicamente con títulos no vistos se atenúan. Esto describe lo que todavía no has explorado en Prisma, no el catálogo mundial de TMDB. Cuando faltan palabras clave, el mapa no inventa temas.
 
 El buscador resalta nodos y conexiones; al seleccionar una película se muestran sus rasgos, la fuerza de cada vínculo y sus estimaciones disponibles. Al seleccionar un rasgo se enumeran las películas que lo comparten. Así es posible recorrer la red sin abrir cada ficha.
