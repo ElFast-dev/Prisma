@@ -1547,3 +1547,16 @@
   .spectro-metadata-spin { animation: none; }
   .spectro-metadata-progress span { transition: none; }
 }
+
+.spectro-graph-evidence-list {
+  max-height: 430px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 7px;
+}
+.spectro-graph-evidence-item {
+  border-bottom: 1px solid rgb(75 91 111 / 28%);
+  padding: 7px 0 8px 9px;
+}
+.spectro-graph-evidence-item:last-child { border-bottom: 0; }
+.spectro-graph-evidence-item p { overflow-wrap: anywhere; }
