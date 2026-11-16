@@ -1085,3 +1085,20 @@
 @media (prefers-reduced-motion: reduce) {
   .profile-month-bar-track > span { transition: none; }
 }
+
+/* Historial — presentación compacta dentro del panel de filtros */
+.history-presentation-group .library-status-option {
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding-right: 9px;
+  padding-left: 9px;
+}
+.history-presentation-group .library-status-option > svg {
+  flex: 0 0 auto;
+  color: var(--color-accent);
+}
+.history-presentation-group .library-status-option > span {
+  min-width: 0;
+  line-height: 1.3;
+}
