@@ -1,4 +1,6 @@
 import type { CatalogCacheEntry } from "../../domain/types";
+import type { DiscoverFilters } from "../../domain/discoverFilters";
+import { buildDiscoverMovieParams } from "../../domain/discoverFilters";
 import { prismaDb } from "../database/database";
 import { TmdbClient } from "./TmdbClient";
 
@@ -13,6 +15,33 @@ export interface TmdbMovieSummary {
   genre_ids?: number[];
   vote_average?: number;
   popularity?: number;
+}
+
+export interface TmdbMovieGenre {
+  id: number;
+  name: string;
+}
+
+export interface TmdbDiscoverCountry {
+  iso_3166_1: string;
+  english_name: string;
+  native_name?: string;
+}
+
+export interface TmdbDiscoverLanguage {
+  iso_639_1: string;
+  english_name: string;
+  name: string;
+}
+
+export interface TmdbMovieDiscoverFilterOptions {
+  genres: TmdbMovieGenre[];
+  countries: { code: string; name: string }[];
+  languages: { code: string; name: string }[];
+}
+
+interface TmdbGenresResponse {
+  genres: TmdbMovieGenre[];
 }
 
 export interface TmdbMovieDetails extends TmdbMovieSummary {
@@ -92,6 +121,7 @@ function cacheTtlMs(cacheKey: string): number {
   if (cacheKey.startsWith("movie:keywords:")) return 90 * days;
   if (cacheKey.startsWith("movie:recommendations:")) return 7 * days;
   if (cacheKey.startsWith("movie:providers:")) return 24 * hours;
+  if (cacheKey.startsWith("discover:movie:")) return 6 * hours;
   if (cacheKey.startsWith("configuration:")) return 30 * days;
   return 24 * hours;
 }
@@ -180,6 +210,68 @@ export async function searchMovies(
     "search:movie:" + normalized.toLocaleLowerCase() + ":" + page,
     "search/movie",
     { query: normalized, page, language: LANGUAGE, include_adult: false }
+  );
+  return {
+    movies: result.data.results ?? [],
+    totalPages: result.data.total_pages ?? 1,
+    stale: result.stale,
+    fetchedAt: result.fetchedAt
+  };
+}
+
+export async function getMovieDiscoverFilterOptions(
+  token: string
+): Promise<TmdbMovieDiscoverFilterOptions> {
+  const [genres, countries, languages] = await Promise.all([
+    getCached<TmdbGenresResponse>(
+      token,
+      "configuration:movie-genres:es-MX",
+      "genre/movie/list",
+      { language: LANGUAGE }
+    ),
+    getCached<TmdbDiscoverCountry[]>(
+      token,
+      "configuration:countries:es-MX",
+      "configuration/countries",
+      { language: LANGUAGE }
+    ),
+    getCached<TmdbDiscoverLanguage[]>(
+      token,
+      "configuration:languages",
+      "configuration/languages"
+    )
+  ]);
+
+  return {
+    genres: [...(genres.data.genres ?? [])].sort((a, b) => a.name.localeCompare(b.name, "es")),
+    countries: [...(countries.data ?? [])]
+      .filter((item) => /^[A-Z]{2}$/.test(item.iso_3166_1))
+      .map((item) => ({
+        code: item.iso_3166_1,
+        name: item.english_name || item.native_name || item.iso_3166_1
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "es")),
+    languages: [...(languages.data ?? [])]
+      .filter((item) => /^[a-z]{2,3}$/.test(item.iso_639_1))
+      .map((item) => ({
+        code: item.iso_639_1,
+        name: item.name || item.english_name || item.iso_639_1
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "es"))
+  };
+}
+
+export async function discoverMovies(
+  token: string,
+  filters: DiscoverFilters,
+  page = 1
+): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; stale: boolean; fetchedAt: string }> {
+  const params = buildDiscoverMovieParams(filters, page, LANGUAGE);
+  const result = await getCached<TmdbListResponse>(
+    token,
+    "discover:movie:" + JSON.stringify(params),
+    "discover/movie",
+    params
   );
   return {
     movies: result.data.results ?? [],

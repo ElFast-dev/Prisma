@@ -608,6 +608,36 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .bottom-nav-item svg { flex: 0 0 auto; }
 }
 
+/* Descubrir — filtros TMDB */
+.discover-filter-sheet { max-height: min(90vh, 780px); overflow-y: auto; }
+.discover-genre-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.discover-genre-option {
+  min-height: 36px; border: 1px solid var(--color-border); border-radius: var(--radius-pill);
+  background: transparent; padding: 0 12px; color: var(--color-text-muted); font-size: 11px; cursor: pointer;
+}
+.discover-genre-option.is-selected {
+  border-color: var(--color-accent); background: var(--color-accent); color: #252936; font-weight: 650;
+}
+.discover-filter-loading { display: flex; min-height: 150px; align-items: center; justify-content: center; gap: 9px; color: var(--color-text-muted); font-size: 12px; }
+.discover-filter-error { display: grid; gap: 12px; padding: 12px 0; }
+.discover-filter-error p { margin: 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.5; }
+.discover-active-summary, .discover-mode-note {
+  display: flex; align-items: flex-start; gap: 8px; margin: 12px 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.45;
+}
+.discover-active-summary { padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card); }
+.discover-active-summary svg { flex: 0 0 auto; margin-top: 1px; color: var(--color-accent); }
+.discover-active-summary span { flex: 1; min-width: 0; }
+.discover-active-summary button, .discover-query-conflict button {
+  border: 0; background: transparent; padding: 0; color: var(--color-accent); font-size: 11px; font-weight: 650; cursor: pointer;
+}
+.discover-mode-note { margin-top: 8px; }
+.discover-query-conflict { align-items: flex-start; }
+.discover-query-conflict button { justify-self: start; }
+
+@media (max-width: 380px) {
+  .discover-genre-option { padding: 0 10px; font-size: 10px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
