@@ -21,6 +21,7 @@ export interface SpectroNetworkNode {
   exploredConnections: number;
   recommendationCount: number;
   movieId?: string;
+  tmdbId?: number;
   state?: SpectroNetworkMovieState;
   rating?: number;
   fitPercentage?: number;
@@ -577,6 +578,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
       exploredConnections: state === "explored" ? connectionCount : 0,
       recommendationCount: reach,
       movieId: movie.id,
+      tmdbId: movie.tmdbId,
       state,
       rating: rating === undefined ? undefined : round(rating),
       fitPercentage: recommendation?.fitPercentage,
