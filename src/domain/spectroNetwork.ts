@@ -134,6 +134,10 @@ function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function mean(values: number[]): number {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
@@ -647,7 +651,7 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
       features: featureNodes.length,
       themes: featureNodes.filter((node) => node.kind === "theme").length,
       connections: movieEdges.length,
-      clusters: clusterCounted.filter((cluster) => !cluster.id.includes("unconnected")).length
+      clusters: clusterCounted.filter((cluster) => cluster.similarity > 0).length
     }
   };
 }
