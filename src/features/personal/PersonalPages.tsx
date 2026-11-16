@@ -355,7 +355,7 @@ export function LibraryPage() {
               <div className="library-list-info">
                 <strong>{movie.title}</strong>
                 <span>{[movie.releaseYear, ...movie.genres.slice(0, 2)].filter(Boolean).join(" · ")}</span>
-                <small>{entry.status === "watched" ? "Vista" : "Pendiente"}{entry.isFavorite ? " · Favorita" : ""}</small>
+                <small>{entry.status === "watched" ? "Vista" : entry.status === "pending" ? "Pendiente" : "Solo favorita"}{entry.isFavorite && entry.status ? " · Favorita" : ""}</small>
               </div>
               {entry.isFavorite && <Heart size={16} fill="currentColor" className="favorite-mark" />}
             </a>
