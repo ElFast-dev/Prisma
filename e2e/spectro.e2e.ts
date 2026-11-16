@@ -115,7 +115,11 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect(page.locator(".spectro-network-node.is-movie")).toHaveCount(13);
   await expect(page.locator(".spectro-network-node.is-genre").first()).toBeVisible();
   await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("Candidata Prisma ficticia");
-  await expect(page.locator(".spectro-network-node.is-movie").first()).toHaveAttribute("opacity", "1");
+  await expect(page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]')).toHaveAttribute("opacity", "1");
+  await page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]').click();
+  await expect(page.getByText("Influence")).toHaveCount(0);
+  await expect(page.getByText("Por explorar")).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar detalle" }).click();
   await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("");
   await page.getByRole("button", { name: "Acercar mapa" }).click();
   await expect(page.getByText("115%")).toBeVisible();
@@ -196,14 +200,17 @@ async function seedIncompleteSpectroHistory(page: import("@playwright/test").Pag
   });
 }
 
-test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page }) => {
+test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async ({ page }) => {
+  const requestedPaths: string[] = [];
   await page.addInitScript(() => {
     localStorage.setItem("prisma.tmdb.accessToken", "fixture-token");
   });
   await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
+    requestedPaths.push(pathname);
     const segments = pathname.split("/");
-    const tmdbId = Number(segments[segments.length - (pathname.endsWith("/credits") ? 2 : 1)]);
+    const idOffset = pathname.endsWith("/credits") || pathname.endsWith("/keywords") ? 2 : 1;
+    const tmdbId = Number(segments[segments.length - idOffset]);
     if (pathname.endsWith("/credits")) {
       await route.fulfill({
         status: 200,
@@ -221,6 +228,19 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
             job: "Director",
             department: "Directing"
           }]
+        })
+      });
+      return;
+    }
+    if (pathname.endsWith("/keywords")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: tmdbId,
+          keywords: tmdbId === 987102
+            ? [{ id: 9002, name: "aventura espacial" }]
+            : [{ id: 9001, name: "memoria" }, { id: 9003, name: "identidad" }]
         })
       });
       return;
@@ -252,9 +272,37 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
+  await expect.poll(() => requestedPaths.filter((path) => path.endsWith("/keywords")).length).toBe(3);
+
+  await page.goto("#/spectro/affinities");
   await expect(page.getByRole("heading", { name: "Directores" })).toBeVisible();
   await expect(page.getByText("Dirección automática", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Reparto automático", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
+
+  const storedKeywords = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      const transaction = db.transaction("movies", "readonly");
+      const store = transaction.objectStore("movies");
+      const records = await new Promise<Array<{ tmdbId: number; keywords?: string[] }>>((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return records.filter((movie) => movie.tmdbId >= 987100 && movie.tmdbId <= 987102)
+        .map((movie) => movie.keywords ?? []);
+    } finally {
+      db.close();
+    }
+  });
+  expect(storedKeywords).toContainEqual(["memoria", "identidad"]);
+  expect(storedKeywords).toContainEqual(["aventura espacial"]);
+  expect(requestedPaths).toContain("/3/movie/987100/keywords");
 });
 
 test("muestra errores de metadatos al volver y permite forzar el reintento sin abrir la ficha", async ({ page }) => {
@@ -266,6 +314,14 @@ test("muestra errores de metadatos al volver y permite forzar el reintento sin a
   await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     requestedPaths.push(pathname);
+    if (pathname.endsWith("/keywords")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: 987401, keywords: [{ id: 9004, name: "memoria" }] })
+      });
+      return;
+    }
     if (pathname.endsWith("/credits")) {
       await route.fulfill({
         status: 200,
@@ -361,6 +417,7 @@ test("muestra errores de metadatos al volver y permite forzar el reintento sin a
   await expect(page.getByText("Espectro incorporó metadatos de 1 películas.")).toBeVisible();
   expect(requestedPaths).toContain("/3/movie/987401");
   expect(requestedPaths).toContain("/3/movie/987401/credits");
+  expect(requestedPaths).toContain("/3/movie/987401/keywords");
 });
 
 test("Espectro pregunta por una calificación pendiente sin abrir la ficha", async ({ page }) => {
