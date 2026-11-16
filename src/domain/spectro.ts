@@ -176,7 +176,7 @@ const genreIdsByName = new Map(
 );
 
 function normalize(value: string): string {
-  return value.trim().replace(/\\s+/g, " ").toLocaleLowerCase();
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
 function round(value: number): number {
@@ -232,7 +232,7 @@ function movieGenreFeatures(movie: MovieRecord): Feature[] {
 function textFeatures(values: string[] | undefined, prefix: string): Feature[] {
   const features = new Map<string, Feature>();
   for (const value of values ?? []) {
-    const label = value.trim().replace(/\\s+/g, " ");
+    const label = value.trim().replace(/\s+/g, " ");
     const normalized = normalize(label);
     if (!normalized) continue;
     const key = prefix + normalized;
@@ -439,7 +439,7 @@ function buildFavoriteSignals(
 function buildEvolution(viewings: Viewing[]): SpectroMonth[] {
   const groups = new Map<string, number[]>();
   for (const viewing of viewings) {
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(viewing.watchedOn)) continue;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(viewing.watchedOn)) continue;
     const month = viewing.watchedOn.slice(0, 7);
     if (viewing.rating === undefined) continue;
     const ratings = groups.get(month) ?? [];
@@ -478,7 +478,7 @@ function ratedMoviesInPeriod(
   for (const viewing of viewings) {
     if (
       viewing.rating === undefined
-      || !/^\\d{4}-\\d{2}-\\d{2}$/.test(viewing.watchedOn)
+      || !/^\d{4}-\d{2}-\d{2}$/.test(viewing.watchedOn)
       || viewing.watchedOn < start
       || viewing.watchedOn > end
     ) continue;
@@ -500,7 +500,7 @@ function buildAffinityTrends(
   movieById: Map<string, MovieRecord>
 ): SpectroAffinityTrend[] {
   const ratedDates = viewings
-    .filter((viewing) => viewing.rating !== undefined && /^\\d{4}-\\d{2}-\\d{2}$/.test(viewing.watchedOn))
+    .filter((viewing) => viewing.rating !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(viewing.watchedOn))
     .map((viewing) => viewing.watchedOn)
     .sort();
 
