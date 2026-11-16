@@ -13,6 +13,8 @@ const emptyStats: PersonalStats = {
   averageRating: null,
   genreHighlights: [],
   decadeHighlights: [],
+  directorHighlights: [],
+  countryHighlights: [],
   recentActivity: []
 };
 
