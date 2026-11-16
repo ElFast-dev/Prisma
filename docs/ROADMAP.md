@@ -2,7 +2,7 @@
 
 ## Estado actual: etapas 1–15 completadas
 
-Las etapas 1–15 están completadas. Espectro 2.0 tiene integradas las subetapas 16.1–16.3; la experiencia final 16.4 continúa en desarrollo.
+Las etapas 1–15 están completadas. Espectro 2.2 incorpora el mapa cinematográfico y la organización por apartados; la etapa 16.4 continúa abierta hasta completar CI, validación visual y publicación.
 
 - [x] Repositorio público inicializado.
 - [x] Configuración React, TypeScript y Vite.
@@ -49,6 +49,10 @@ Las etapas 1–15 están completadas. Espectro 2.0 tiene integradas las subetapa
     - [x] Encaje relativo de 0–100 %, nota prevista de 0–10 y separación entre señales derivadas de valoraciones y favoritos declarados.
     - [x] Grafo de decisiones con señales positivas y negativas, contribuciones por candidata y títulos de respaldo visibles.
     - [x] Preguntas contextuales en Espectro para completar calificaciones de visionados sin abrir fichas; respuesta ligada al visionado existente y opción de posponer.
+    - [x] Mapa de red donde cada película y cada género, director, actor o tema son nodos; fuerza de vínculo por grosor y brillo, tamaño por influencia y agrupación automática por similitud.
+    - [x] Zonas atenuadas para películas locales por explorar; selección, búsqueda y zoom del mapa táctil.
+    - [x] Portada de Espectro organizada como Personal, con páginas separadas de mapa, afinidades, evolución y recomendaciones.
+    - [x] Palabras clave temáticas consultadas y guardadas con caché TMDB local, sin abrir fichas ni inventar etiquetas.
     - [ ] Validar pruebas unitarias, persistencia, E2E y PWA; verificar visualmente el despliegue público.
 - [ ] 17. Optimización integral.
 
@@ -81,12 +85,13 @@ Este es el orden acordado para continuar Prisma. El alcance y los criterios de a
 - Candidatas locales no vistas puntuadas por varias familias de señales verificadas y explicadas.
 - El encaje se presenta como puntuación relativa 0–100, no como probabilidad; la nota prevista se calcula aparte y solo desde señales respaldadas por valoraciones.
 - Los favoritos son señales explícitas, nunca calificaciones inventadas.
-- El grafo muestra señales positivas y negativas, contribuciones y títulos de respaldo.
-- Los metadatos que faltan se consultan desde TMDB mediante ID local y caché, sin tener que abrir fichas ni alterar experiencias personales.
+- El grafo de decisiones y el mapa cinematográfico muestran señales positivas y negativas, conexiones entre películas y rasgos, contribuciones y títulos de respaldo.
+- Ocho familias intervienen en la explicación de encaje: género, dirección, reparto, temas, país, época, idioma y duración.
+- Los metadatos que faltan se consultan desde TMDB mediante ID local y caché, incluidas las palabras clave temáticas, sin tener que abrir fichas ni alterar experiencias personales.
 - Las señales iniciales o variables no sostienen por sí solas una recomendación.
 - Comparación temporal anclada en fechas reales y con soporte mínimo por rasgo y periodo.
 - Repeticiones agregadas por título para las afinidades; no aumentan la muestra de películas distintas.
-- Las instantáneas 1.1.0 no se reutilizan para cálculos 2.0.0.
+- Las instantáneas de versiones anteriores no se reutilizan para cálculos 2.2.0.
 
 ### Criterios del perfil y los logros
 

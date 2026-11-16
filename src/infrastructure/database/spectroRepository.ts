@@ -44,6 +44,9 @@ export async function getSpectroAnalysis(): Promise<SpectroAnalysis> {
       && payload.inputFingerprint === inputFingerprint
       && Array.isArray(payload.decisionGraph?.nodes)
       && Array.isArray(payload.decisionGraph?.edges)
+      && Array.isArray(payload.networkGraph?.nodes)
+      && Array.isArray(payload.networkGraph?.edges)
+      && Array.isArray(payload.networkGraph?.clusters)
     ) {
       return payload as SpectroAnalysis;
     }

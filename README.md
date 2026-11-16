@@ -12,9 +12,9 @@ Prisma se organiza en tres espacios:
 
 Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, perfil, logros, Espectro, integración TMDB, copias de seguridad, funcionamiento offline y publicación como PWA para Android.
 
-Las etapas 1–15 están completadas. Espectro 2.0 tiene integradas las entregas 16.1–16.3. La experiencia final 16.4 está en desarrollo: gráficos analíticos, enriquecimiento automático de metadatos locales, encaje 0–100 %, nota prevista y un grafo explicable de decisiones.
+Las etapas 1–15 están completadas. Espectro 2.2 organiza su análisis en cuatro apartados: Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. El mapa conecta películas con géneros, directores, actores y temas; agrupa títulos similares y diferencia las zonas ya exploradas de las pendientes. El algoritmo calcula encaje relativo 0–100 % y nota prevista por separado, y enriquece metadatos locales mediante TMDB sin abrir fichas.
 
-Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película.
+Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película. La etapa 16.4 sigue abierta hasta completar CI y validar la nueva publicación en Android.
 
 La etapa 17 — Optimización integral — sigue pendiente de autorización y no se inicia automáticamente.
 

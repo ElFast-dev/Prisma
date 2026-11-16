@@ -18,6 +18,7 @@ const movie = (
   releaseYear: year,
   directors: ["Directora A"],
   castMembers: ["Actor A"],
+  keywords: [],
   originalLanguage: "ja",
   runtimeMinutes: 110,
   lastViewingSequence: 0,
@@ -42,9 +43,103 @@ const viewing = (
   operationId: "op-" + id
 });
 
-describe("analyzeSpectro 2.0", () => {
+describe("analyzeSpectro 2.2", () => {
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.1.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.2.0");
+  });
+
+  it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {
+    const movies = [
+      movie("theme-drama-1", "Drama", 18, 2018, { keywords: ["Memoria", "Sueños"] }),
+      movie("theme-drama-2", "Drama", 18, 2019, { keywords: ["Memoria", "Sueños"] }),
+      movie("theme-drama-3", "Drama", 18, 2020, { keywords: ["Memoria", "Sueños"] }),
+      movie("theme-comedy-1", "Comedia", 35, 2018, { keywords: ["Amistad"] }),
+      movie("theme-comedy-2", "Comedia", 35, 2019, { keywords: ["Amistad"] }),
+      movie("theme-comedy-3", "Comedia", 35, 2020, { keywords: ["Amistad"] })
+    ];
+    const ratings = [10, 9, 10, 5, 6, 5];
+    const viewings = movies.map((item, index) => viewing(
+      "theme-view-" + index,
+      item.id,
+      "2026-01-" + String(index + 1).padStart(2, "0"),
+      ratings[index]
+    ));
+    const candidate = movie("theme-candidate", "Drama", 18, 2024, {
+      keywords: ["Memoria", "Sueños"]
+    });
+    const result = analyzeSpectro({ movies, viewings, candidates: [candidate] });
+
+    expect(result.themeAffinities.find((item) => item.key === "theme:memoria")?.sampleSize).toBe(3);
+    expect(result.recommendations[0]?.movie.id).toBe(candidate.id);
+    expect(result.recommendations[0]?.reasons.some((reason) => reason.category === "Temas")).toBe(true);
+    expect(result.networkGraph.nodes.some((node) => node.kind === "theme" && node.label === "Memoria")).toBe(true);
+  });
+
+  it("construye una red con cada película local, rasgos, influencia y grupos explicables", () => {
+    const shared = {
+      directors: ["Directora Prisma"],
+      castMembers: ["Actor Prisma"],
+      keywords: ["Memoria", "Identidad"]
+    };
+    const movies = [
+      movie("network-seen-1", "Drama", 18, 2019, shared),
+      movie("network-seen-2", "Drama", 18, 2020, shared),
+      movie("network-seen-3", "Drama", 18, 2021, shared),
+      movie("network-candidate", "Drama", 18, 2024, shared),
+      movie("network-unexplored", "Terror", 27, 2024, {
+        directors: ["Otra dirección"],
+        castMembers: ["Otro actor"],
+        keywords: ["Monstruos"]
+      })
+    ];
+    const viewings = [
+      viewing("network-v1", "network-seen-1", "2026-01-01", 10),
+      viewing("network-v2", "network-seen-2", "2026-01-02", 9),
+      viewing("network-v3", "network-seen-3", "2026-01-03", 10)
+    ];
+    const result = analyzeSpectro({
+      movies,
+      viewings,
+      candidates: movies.filter((item) => !viewings.some((viewingItem) => viewingItem.movieId === item.id))
+    });
+    const graph = result.networkGraph;
+    const seenNode = graph.nodes.find((node) => node.id === "movie:network-seen-1");
+    const unexploredNode = graph.nodes.find((node) => node.id === "movie:network-unexplored");
+    const themeNode = graph.nodes.find((node) => node.id === "feature:theme:memoria");
+
+    expect(graph.nodes.filter((node) => node.kind === "movie")).toHaveLength(movies.length);
+    expect(seenNode?.state).toBe("explored");
+    expect(unexploredNode?.state).toBe("unexplored");
+    expect(themeNode?.connections).toBe(4);
+    expect(themeNode?.influence).toBeGreaterThan(0);
+    expect(graph.edges.some((edge) => edge.source === "movie:network-seen-1" && edge.target === themeNode?.id)).toBe(true);
+    expect(graph.clusters.some((cluster) => cluster.movieIds.includes("network-seen-1") && cluster.movieIds.includes("network-candidate"))).toBe(true);
+    expect(graph.stats.explored).toBe(3);
+    expect(graph.stats.unexplored).toBe(2);
+    expect(graph.stats.connections).toBe(graph.edges.length);
+  });
+
+  it("distribuye películas aisladas en zonas pequeñas sin superponer todo el catálogo", () => {
+    const movies = Array.from({ length: 25 }, (_, index) => {
+      const id = index + 1;
+      return movie("movie-" + id, "Género " + id, 5000 + id, 1980 + id, {
+        directors: ["Dirección " + id],
+        castMembers: ["Actor " + id],
+        keywords: ["Tema " + id]
+      });
+    });
+    const graph = analyzeSpectro({
+      movies,
+      viewings: [],
+      candidates: []
+    }).networkGraph;
+    const isolatedZones = graph.clusters.filter((cluster) => cluster.similarity === 0);
+    const memberCount = isolatedZones.reduce((sum, cluster) => sum + cluster.movieIds.length, 0);
+
+    expect(isolatedZones.length).toBe(4);
+    expect(Math.max(...isolatedZones.map((cluster) => cluster.movieIds.length))).toBeLessThanOrEqual(8);
+    expect(memberCount).toBe(movies.length);
+    expect(new Set(isolatedZones.map((cluster) => cluster.id)).size).toBe(isolatedZones.length);
   });
 
   it("no infiere afinidades antes de tres películas distintas calificadas", () => {

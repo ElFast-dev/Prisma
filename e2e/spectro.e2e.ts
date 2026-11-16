@@ -11,6 +11,7 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
     const now = "2026-11-16T12:00:00.000Z";
     const movies: Array<Record<string, unknown>> = [];
     const viewings: Array<Record<string, unknown>> = [];
+    const libraryEntries: Array<Record<string, unknown>> = [];
 
     const addGroup = (
       prefix: string,
@@ -58,6 +59,13 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
     addGroup("previous-comedy", "2025-01-26", "Comedia", 35, 9, "Director Alterno", "México", "es", 85);
     addGroup("recent-drama", "2026-02-01", "Drama", 18, 10, "Directora Prisma", "Japón", "ja", 115);
     addGroup("recent-comedy", "2026-02-02", "Comedia", 35, 5, "Director Alterno", "México", "es", 85);
+    libraryEntries.push({
+      movieId: "e2e-spectro-previous-drama-0",
+      status: "watched",
+      isFavorite: true,
+      addedAt: now,
+      updatedAt: now
+    });
 
     movies.push({
       id: "e2e-spectro-candidate",
@@ -77,11 +85,13 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
     });
 
     try {
-      const transaction = db.transaction(["movies", "viewings"], "readwrite");
+      const transaction = db.transaction(["movies", "viewings", "libraryEntries"], "readwrite");
       const movieStore = transaction.objectStore("movies");
       const viewingStore = transaction.objectStore("viewings");
+      const libraryStore = transaction.objectStore("libraryEntries");
       for (const movie of movies) movieStore.put(movie);
       for (const viewing of viewings) viewingStore.put(viewing);
+      for (const entry of libraryEntries) libraryStore.put(entry);
 
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => resolve();
@@ -94,36 +104,67 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
   });
 }
 
-test("presenta afinidades respaldadas, cambios temporales y recomendaciones explicables", async ({ page }) => {
-  // Cada prueba usa un navegador temporal e IndexedDB aislada.
+test("organiza Espectro como Personal y ofrece un mapa interactivo de películas y rasgos", async ({ page }) => {
   await page.goto("#/personal");
   await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
   await seedSpectroHistory(page);
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
-  await expect(page.getByText("Versión 2.1.0")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Cómo piensa Espectro" })).toBeVisible();
-  await expect(page.locator(".spectro-decision-graph")).toBeVisible();
-  await expect(page.getByText("Encaje estimado").first()).toBeVisible();
-  await expect(page.getByText("Nota estimada").first()).toBeVisible();
+  await expect(page.getByText("Espectro 2.2.0")).toBeVisible();
+  await expect(page.getByText("Películas en el mapa")).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/map"]')).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/affinities"]')).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/evolution"]')).toBeVisible();
+  await expect(page.locator('a[href="#/spectro/recommendations"]')).toBeVisible();
 
+  await page.locator('a[href="#/spectro/map"]').click();
+  await expect(page.getByRole("heading", { name: "Mapa cinematográfico" })).toBeVisible();
+  await expect(page.locator(".spectro-network-svg")).toBeVisible();
+  await expect(page.getByText("Grosor y brillo = fuerza del vínculo · Tamaño = influencia en recomendaciones")).toBeVisible();
+  await expect(page.locator(".spectro-network-node.is-movie")).toHaveCount(13);
+  await expect(page.locator(".spectro-network-node.is-genre").first()).toBeVisible();
+  await expect(page.locator(".spectro-network-favorite-marker")).toHaveCount(1);
+  await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("Candidata Prisma ficticia");
+  await expect(page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]')).toHaveAttribute("opacity", "1");
+  await page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]').click();
+  await expect(page.getByText(/influencia/).first()).toBeVisible();
+  await expect(page.locator('.spectro-network-node.is-movie.is-unexplored[aria-label^="Candidata Prisma ficticia"]')).toBeVisible();
+  await expect(page.getByText("Rasgos conectados")).toBeVisible();
+  await page.locator(".spectro-network-related button").filter({ hasText: "Género · Drama" }).click();
+  await expect(page.getByText("Películas conectadas")).toBeVisible();
+  await expect(page.locator(".spectro-network-related button").first()).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar detalle" }).click();
+  await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("");
+  const zoomLabel = page.locator(".spectro-network-zoom span");
+  const initialZoom = Number((await zoomLabel.textContent())?.replace("%", ""));
+  await page.getByRole("button", { name: "Acercar mapa" }).click();
+  await expect.poll(async () => Number((await zoomLabel.textContent())?.replace("%", "")))
+    .toBe(initialZoom + 15);
+
+  await page.getByRole("button", { name: "Volver a Espectro" }).click();
+  await expect(page.locator('a[href="#/spectro/affinities"]')).toBeVisible();
+  await page.locator('a[href="#/spectro/affinities"]').click();
   await expect(page.getByRole("heading", { name: "Afinidades" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Idioma original" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Duración" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Volver a Espectro" }).click();
+  await expect(page.locator('a[href="#/spectro/evolution"]')).toBeVisible();
+  await page.locator('a[href="#/spectro/evolution"]').click();
+  await expect(page.getByRole("heading", { name: "Evolución", exact: true })).toBeVisible();
   await expect(page.getByText("Cambios recientes")).toBeVisible();
   await expect(page.locator(".spectro-trend-row").first()).toBeVisible();
-  await expect(page.getByText("Drama", { exact: true }).first()).toBeVisible();
 
-  await expect(page.getByRole("heading", { name: "Podrían gustarte" })).toBeVisible();
+  await page.getByRole("button", { name: "Volver a Espectro" }).click();
+  await expect(page.locator('a[href="#/spectro/recommendations"]')).toBeVisible();
+  await page.locator('a[href="#/spectro/recommendations"]').click();
+  await expect(page.getByRole("heading", { name: "Recomendaciones" })).toBeVisible();
   await expect(page.locator(".spectro-recommendation-copy > strong").filter({ hasText: "Candidata Prisma ficticia" })).toBeVisible();
   const recommendationReasons = page.locator(".spectro-recommendation-reasons");
-  await expect(recommendationReasons.getByText("Género: Drama", { exact: true })).toBeVisible();
-  await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true })).toBeVisible();
-
-  await expect(page.getByRole("navigation", { name: "Navegación principal" })
-    .getByRole("link", { name: "Espectro", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(page.locator(".section-heading")).toHaveCount(0);
+  await expect(recommendationReasons.getByText("Género: Drama", { exact: true }).first()).toBeVisible();
+  await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true }).first()).toBeVisible();
 });
 
 async function seedIncompleteSpectroHistory(page: import("@playwright/test").Page): Promise<void> {
@@ -183,14 +224,17 @@ async function seedIncompleteSpectroHistory(page: import("@playwright/test").Pag
   });
 }
 
-test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page }) => {
+test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async ({ page }) => {
+  const requestedPaths: string[] = [];
   await page.addInitScript(() => {
     localStorage.setItem("prisma.tmdb.accessToken", "fixture-token");
   });
   await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
+    requestedPaths.push(pathname);
     const segments = pathname.split("/");
-    const tmdbId = Number(segments[segments.length - (pathname.endsWith("/credits") ? 2 : 1)]);
+    const idOffset = pathname.endsWith("/credits") || pathname.endsWith("/keywords") ? 2 : 1;
+    const tmdbId = Number(segments[segments.length - idOffset]);
     if (pathname.endsWith("/credits")) {
       await route.fulfill({
         status: 200,
@@ -208,6 +252,19 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
             job: "Director",
             department: "Directing"
           }]
+        })
+      });
+      return;
+    }
+    if (pathname.endsWith("/keywords")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: tmdbId,
+          keywords: tmdbId === 987102
+            ? [{ id: 9002, name: "aventura espacial" }]
+            : [{ id: 9001, name: "memoria" }, { id: 9003, name: "identidad" }]
         })
       });
       return;
@@ -239,9 +296,38 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
+  await expect.poll(() => requestedPaths.filter((path) => path.endsWith("/keywords")).length).toBe(3);
+  await expect(page.getByText("Espectro incorporó metadatos de 3 películas.")).toBeVisible();
+
+  await page.goto("#/spectro/affinities");
   await expect(page.getByRole("heading", { name: "Directores" })).toBeVisible();
   await expect(page.getByText("Dirección automática", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Reparto automático", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
+
+  const storedKeywords = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      const transaction = db.transaction("movies", "readonly");
+      const store = transaction.objectStore("movies");
+      const records = await new Promise<Array<{ tmdbId: number; keywords?: string[] }>>((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return records.filter((movie) => movie.tmdbId >= 987100 && movie.tmdbId <= 987102)
+        .map((movie) => movie.keywords ?? []);
+    } finally {
+      db.close();
+    }
+  });
+  expect(storedKeywords).toContainEqual(["memoria", "identidad"]);
+  expect(storedKeywords).toContainEqual(["aventura espacial"]);
+  expect(requestedPaths).toContain("/3/movie/987100/keywords");
 });
 
 test("muestra errores de metadatos al volver y permite forzar el reintento sin abrir la ficha", async ({ page }) => {
@@ -253,6 +339,14 @@ test("muestra errores de metadatos al volver y permite forzar el reintento sin a
   await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     requestedPaths.push(pathname);
+    if (pathname.endsWith("/keywords")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: 987401, keywords: [{ id: 9004, name: "memoria" }] })
+      });
+      return;
+    }
     if (pathname.endsWith("/credits")) {
       await route.fulfill({
         status: 200,
@@ -348,6 +442,7 @@ test("muestra errores de metadatos al volver y permite forzar el reintento sin a
   await expect(page.getByText("Espectro incorporó metadatos de 1 películas.")).toBeVisible();
   expect(requestedPaths).toContain("/3/movie/987401");
   expect(requestedPaths).toContain("/3/movie/987401/credits");
+  expect(requestedPaths).toContain("/3/movie/987401/keywords");
 });
 
 test("Espectro pregunta por una calificación pendiente sin abrir la ficha", async ({ page }) => {

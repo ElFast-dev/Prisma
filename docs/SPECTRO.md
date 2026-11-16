@@ -4,7 +4,7 @@ Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el d
 
 ## Versión del algoritmo
 
-La versión activa es **2.1.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; una instantánea 1.1.0 o 2.0.0 nunca sustituye un cálculo 2.1.0.
+La versión activa es **2.2.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.2.0.
 
 ## Información que utiliza
 
@@ -13,6 +13,7 @@ Espectro combina señales que Prisma puede verificar:
 - Calificaciones, fechas y revisionados de visionados.
 - Géneros TMDB (identificadores y nombres).
 - Directores y reparto principal.
+- Palabras clave temáticas de TMDB, como memoria, identidad o viajes en el tiempo.
 - Países de producción y década de estreno.
 - Idioma original y duración.
 - Favoritos marcados explícitamente en Biblioteca.
@@ -24,10 +25,10 @@ Cuando existen visionados sin calificación, Espectro puede hacer una pregunta c
 
 ## Obtención automática de metadatos
 
-Cuando Espectro detecta campos cinematográficos que faltan, puede solicitar a TMDB los detalles y créditos usando el identificador TMDB local. No es necesario abrir la ficha.
+Cuando Espectro detecta campos cinematográficos que faltan, solicita a TMDB los detalles, créditos y palabras clave temáticas usando el identificador TMDB local. Los tres recursos se guardan en la caché local; no es necesario abrir la ficha.
 
 - Prioriza películas con visionados y favoritos, además de candidatas locales no vistas.
-- Consulta detalles y créditos; no descarga proveedores ni recomendaciones solo para construir el perfil.
+- Consulta detalles, créditos y palabras clave; no descarga proveedores ni recomendaciones solo para construir el perfil.
 - Reutiliza la caché local de TMDB antes de hacer una solicitud nueva.
 - Limita el ritmo de consultas, reintenta errores temporales y respeta el tiempo indicado por TMDB ante HTTP 429.
 - Los errores repetidos quedan en pausa automática durante 12 horas, pero Espectro mantiene visibles esas películas pendientes y permite forzar un reintento manual desde la misma vista.
@@ -36,7 +37,7 @@ Cuando Espectro detecta campos cinematográficos que faltan, puede solicitar a T
 - Si se pierde la conexión, conserva el progreso y continúa cuando vuelve la conexión.
 - La cola no borra datos ni crea películas duplicadas: solo completa metadatos de registros que ya existen.
 
-El proceso actualiza exclusivamente campos cinematográficos del registro de película: títulos, sinopsis, estreno, duración, géneros, países, idioma, póster, fondo, dirección y reparto. No modifica visionados, secuencias, calificaciones, fechas, comentarios, favoritos, estados de Biblioteca, colecciones, perfil ni preferencias.
+El proceso actualiza exclusivamente campos cinematográficos del registro de película: títulos, sinopsis, estreno, duración, géneros, países, idioma, palabras clave, póster, fondo, dirección y reparto. No modifica visionados, secuencias, calificaciones, fechas, comentarios, favoritos, estados de Biblioteca, colecciones, perfil ni preferencias.
 
 ## Afinidades y respaldo
 
@@ -52,7 +53,7 @@ El proceso actualiza exclusivamente campos cinematográficos del registro de pel
 
 Cada candidata local puede mostrar dos estimaciones distintas:
 
-**Encaje (0–100 %).** Es una puntuación relativa que resume señales positivas y negativas de siete familias: género, dirección, reparto, país, época, idioma y duración. Las coincidencias se limitan dentro de cada familia para que muchos actores o géneros no multipliquen artificialmente su peso. Las afinidades negativas restan encaje. Los favoritos añaden un refuerzo explícito moderado a las familias coincidentes.
+**Encaje (0–100 %).** Es una puntuación relativa que resume señales positivas y negativas de ocho familias: género, dirección, reparto, temas, país, época, idioma y duración. Las coincidencias se limitan dentro de cada familia para que muchos actores, géneros o palabras clave no multipliquen artificialmente su peso. Las afinidades negativas restan encaje. Los favoritos añaden un refuerzo explícito moderado a las familias coincidentes.
 
 La escala se centra en 50 y transforma la diferencia ponderada mediante `50 + 12,5 × diferencia`, limitada al intervalo 0–100. Un valor superior a 50 indica un encaje neto positivo. **No es una probabilidad de que la película guste ni una garantía.**
 
@@ -60,17 +61,27 @@ La escala se centra en 50 y transforma la diferencia ponderada mediante `50 + 12
 
 Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) son etiquetas descriptivas; no son probabilidades ni intervalos de confianza estadísticos.
 
-## Grafo de decisiones
+## Grafo cinematográfico y trazabilidad
 
-«Cómo piensa Espectro» representa el recorrido usado por el cálculo:
+El apartado «Mapa cinematográfico» representa una red calculada desde las películas locales y sus metadatos. No es una ilustración prediseñada ni un algoritmo de recomendaciones oculto detrás de ella: cada nodo y cada vínculo corresponden a datos que Prisma puede señalar.
 
-1. El perfil aporta el promedio y las valoraciones registradas.
-2. Las señales muestran qué rasgos reciben notas por encima o por debajo del promedio, cuántos títulos los respaldan y su dispersión.
-3. Los favoritos aparecen separados como señales explícitas, sin calificaciones inventadas.
-4. Las conexiones hacia cada candidata muestran contribuciones positivas o negativas al encaje.
-5. Cada señal expone los títulos que la respaldan y, cuando procede, su calificación individual.
+- Cada película es un nodo; los otros nodos representan géneros, directores, actores y palabras clave temáticas procedentes de TMDB.
+- Cada arista conecta una película con uno de sus rasgos. Su fuerza está entre 0 y 1 y se expresa visualmente mediante grosor y brillo. Una señal positiva, negativa, explícita (favorito) o neutral determina su color.
+- El tamaño de las películas y los rasgos representa influencia relativa dentro de su tipo de nodo. Para una película combina sus conexiones ponderadas y cuántas recomendaciones locales alcanza; para un rasgo combina la fuerza de sus conexiones y cuántas recomendaciones lo utilizan. No es una probabilidad.
+- La fuerza de una conexión respaldada por una candidata utiliza la magnitud de su contribución. En una película sin motivo de recomendación directo, utiliza la diferencia ajustada de su afinidad y el tamaño de la muestra. Si todavía no hay señales aprendidas, la conexión se dibuja tenue.
+- Los favoritos permanecen como declaración explícita de Biblioteca. Se distinguen con una marca en el nodo de película y nunca se convierten en una calificación inventada.
+- Las candidatas recomendadas también aparecen como películas locales en el mapa. El apartado Recomendaciones expone por separado su encaje, nota prevista y contribuciones que explican cada resultado.
 
-El grafo no inventa conexiones con películas no evaluadas. Cuando no existen candidatas con coincidencias suficientes, muestra las señales respaldadas disponibles. El ancho de las conexiones representa la magnitud de la contribución; el color distingue su dirección.
+### Agrupación por similitud
+
+Las películas se agrupan a partir de cuatro familias que existen en el mapa: género, dirección, reparto y temas. Para cada par de películas se calcula el solapamiento Jaccard en cada familia y se combina con estos pesos: género 0,30; dirección 0,20; actores 0,18; temas 0,32.
+
+Dos títulos se conectan cuando alcanzan similitud de 0,31 y comparten al menos dos rasgos, o cuando alcanzan 0,55 con un rasgo compartido. Los grupos se construyen uniendo componentes y se limitan a 24 películas por grupo para evitar que una cadena de similitudes arrastre todo el catálogo. Las posiciones se distribuyen de forma determinista dentro de cada zona.
+
+Las películas con visionados aparecen como exploradas. Los títulos locales sin visionados y los rasgos conectados únicamente con títulos no vistos se atenúan. Esto describe lo que todavía no has explorado en Prisma, no el catálogo mundial de TMDB. Cuando faltan palabras clave, el mapa no inventa temas.
+
+El buscador resalta nodos y conexiones; al seleccionar una película se muestran sus rasgos, la fuerza de cada vínculo y sus estimaciones disponibles. Al seleccionar un rasgo se enumeran las películas que lo comparten. Así es posible recorrer la red sin abrir cada ficha.
+
 
 ## Evolución temporal
 
@@ -82,7 +93,7 @@ El grafo no inventa conexiones con películas no evaluadas. Cuando no existen ca
 
 ## Huella e instantáneas
 
-La huella incluye visionados, calificaciones, fechas, metadatos utilizados, identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.1.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie.
+La huella incluye visionados, calificaciones, fechas, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.2.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie.
 
 Antes de calcular, el repositorio comprueba si ya existe una instantánea de la versión y huella actuales. Así evita repetir el análisis cuando la entrada no ha cambiado.
 

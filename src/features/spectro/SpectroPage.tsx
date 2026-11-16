@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  ArrowDownRight, ArrowUpRight, BrainCircuit, CalendarDays, ChartLine,
-  Clapperboard, Film, Fingerprint, Languages, Network, Sparkles,
-  Star, Timer, TrendingUp, Users, RefreshCw, WifiOff, CheckCircle2
+  ArrowDownRight, ArrowLeft, ArrowUpRight, BrainCircuit, CalendarDays, ChartLine,
+  CheckCircle2, ChevronRight, Clapperboard, Film, Fingerprint, Languages,
+  Network, RefreshCw, Search, Sparkles, Star, Timer, TrendingUp, Users,
+  WifiOff, X, ZoomIn, ZoomOut
 } from "lucide-react";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
@@ -23,10 +24,13 @@ import {
 import type {
   SpectroAffinity,
   SpectroAnalysis,
-  SpectroGraphNode
+  SpectroNetworkGraph,
+  SpectroNetworkNode
 } from "../../domain/spectro";
+import { navigateBack } from "../../navigation/routeHistory";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 
+export type SpectroSection = "home" | "map" | "affinities" | "evolution" | "recommendations";
 type LoadState = "loading" | "ready" | "error";
 
 const EMPTY_METADATA: SpectroMetadataSnapshot = {
@@ -40,6 +44,33 @@ const EMPTY_METADATA: SpectroMetadataSnapshot = {
   progressPercent: 100
 };
 
+const spectroLinks = [
+  {
+    title: "Mapa cinematográfico",
+    description: "Películas, géneros, directores, actores y temas conectados.",
+    href: "#/spectro/map",
+    icon: Network
+  },
+  {
+    title: "Afinidades",
+    description: "Qué rasgos te atraen y cuáles suelen alejarte.",
+    href: "#/spectro/affinities",
+    icon: Fingerprint
+  },
+  {
+    title: "Evolución",
+    description: "Cómo cambian tus valoraciones y tus afinidades.",
+    href: "#/spectro/evolution",
+    icon: TrendingUp
+  },
+  {
+    title: "Recomendaciones",
+    description: "Encaje estimado, nota prevista y motivos verificables.",
+    href: "#/spectro/recommendations",
+    icon: Sparkles
+  }
+];
+
 function confidenceLabel(value: SpectroAffinity["confidence"] | "declarada"): string {
   if (value === "sólida") return "Consistente";
   if (value === "moderada") return "En desarrollo";
@@ -50,6 +81,24 @@ function confidenceLabel(value: SpectroAffinity["confidence"] | "declarada"): st
 
 function signed(value: number): string {
   return (value > 0 ? "+" : "") + value.toFixed(2);
+}
+
+function SpectroPageBack({ title }: { title: string }) {
+  return (
+    <header className="section-heading">
+      <div className="heading-with-back">
+        <button
+          type="button"
+          className="back-link"
+          aria-label="Volver a Espectro"
+          onClick={() => navigateBack("/spectro")}
+        >
+          <ArrowLeft size={19} />
+        </button>
+        <h1>{title}</h1>
+      </div>
+    </header>
+  );
 }
 
 function AffinityPanel({
@@ -64,7 +113,7 @@ function AffinityPanel({
   const strongest = [...items]
     .filter((item) => Math.abs(item.adjustedDifference) >= 0.05)
     .sort((a, b) => Math.abs(b.adjustedDifference) - Math.abs(a.adjustedDifference))
-    .slice(0, 5);
+    .slice(0, 6);
 
   return (
     <section className="spectro-affinity-panel card-surface">
@@ -96,17 +145,13 @@ function AffinityPanel({
               />
             </svg>
             <div className="spectro-affinity-evidence">
-              <small>
-                {signed(item.adjustedDifference)} ajustado · {item.sampleSize} títulos · variación {item.dispersion.toFixed(1)}
-              </small>
+              <small>{signed(item.adjustedDifference)} ajustado · {item.sampleSize} títulos · variación {item.dispersion.toFixed(1)}</small>
               <span className={"spectro-confidence is-" + item.confidence}>{confidenceLabel(item.confidence)}</span>
             </div>
           </div>
         );
       }) : (
-        <p className="muted-copy spectro-panel-empty">
-          Todavía no hay señales respaldadas en esta categoría.
-        </p>
+        <p className="muted-copy spectro-panel-empty">Todavía no hay señales respaldadas en esta categoría.</p>
       )}
     </section>
   );
@@ -187,167 +232,35 @@ function EvolutionChart({ analysis }: { analysis: SpectroAnalysis }) {
   );
 }
 
-function graphNodeShortLabel(node: SpectroGraphNode): string {
-  const label = node.kind === "signal" && node.source === "favoritos"
-    ? "★ " + node.label
-    : node.label;
-  return label.length > 29 ? label.slice(0, 27) + "…" : label;
-}
-
-function SpectroDecisionGraph({ analysis }: { analysis: SpectroAnalysis }) {
-  const graph = analysis.decisionGraph;
-  const signals = graph.nodes.filter((node) => node.kind === "signal");
-  const candidates = graph.nodes.filter((node) => node.kind === "candidate");
-  const profile = graph.nodes.find((node) => node.kind === "profile");
-  if (!profile) return null;
-
-  const width = 1080;
-  const signalGap = 82;
-  const graphHeight = Math.max(360, 128 + signals.length * signalGap, 120 + candidates.length * 112);
-  const profileHeight = 88;
-  const signalHeight = 64;
-  const candidateHeight = 76;
-  const profileY = graphHeight / 2 - profileHeight / 2;
-  const signalPositions = new Map(signals.map((node, index) => [
-    node.id,
-    45 + index * signalGap
-  ]));
-  const candidatePositions = new Map(candidates.map((node, index) => [
-    node.id,
-    candidates.length === 1
-      ? graphHeight / 2 - candidateHeight / 2
-      : 48 + index * ((graphHeight - 96 - candidateHeight) / (candidates.length - 1))
-  ]));
-  const positions = new Map<string, { x: number; y: number; width: number; height: number }>();
-  positions.set(profile.id, { x: 22, y: profileY, width: 190, height: profileHeight });
-  for (const node of signals) {
-    positions.set(node.id, { x: 360, y: signalPositions.get(node.id) ?? 0, width: 264, height: signalHeight });
-  }
-  for (const node of candidates) {
-    positions.set(node.id, { x: 804, y: candidatePositions.get(node.id) ?? 0, width: 254, height: candidateHeight });
-  }
-
+function SpectroTrends({ analysis }: { analysis: SpectroAnalysis }) {
   return (
-    <section className="spectro-graph-section card-surface" aria-labelledby="spectro-graph-title">
+    <section className="spectro-trends-section" aria-labelledby="spectro-trends-title">
       <div className="content-caption">
-        <div>
-          <h2 id="spectro-graph-title">Cómo piensa Espectro</h2>
-          <p className="muted-copy">Perfil → señales → las cinco candidatas mejor posicionadas. Cada conexión procede de datos locales verificables.</p>
+        <div><h2 id="spectro-trends-title">Cambios recientes</h2></div>
+        <TrendingUp size={19} className="accent-icon" />
+      </div>
+      {analysis.affinityTrends.length ? (
+        <div className="spectro-trends-list card-surface">
+          {analysis.affinityTrends.slice(0, 8).map((item) => (
+            <article className="spectro-trend-row" key={item.key}>
+              <div className="spectro-trend-copy">
+                <strong>{item.label}</strong>
+                <small>{item.category} · {item.previousSampleSize} antes · {item.recentSampleSize} recientes</small>
+              </div>
+              <div className={"spectro-trend-change is-" + item.direction}>
+                {item.direction === "sube" ? <ArrowUpRight size={16} />
+                  : item.direction === "baja" ? <ArrowDownRight size={16} /> : <span>—</span>}
+                <strong>{item.change > 0 ? "+" : ""}{item.change.toFixed(1)}</strong>
+              </div>
+            </article>
+          ))}
+          <p className="spectro-method-note">
+            Compara los últimos 12 meses disponibles con los 12 anteriores. Cada título cuenta una vez por periodo.
+          </p>
         </div>
-        <Network size={19} className="accent-icon" />
-      </div>
-      <div className="spectro-graph-legend" aria-label="Leyenda del grafo">
-        <span><i className="is-positive" /> Favorece</span>
-        <span><i className="is-negative" /> Reduce el encaje</span>
-        <span><i className="is-explicit" /> Favorito declarado</span>
-      </div>
-      <div className="spectro-graph-scroll">
-        <svg
-          className="spectro-decision-graph"
-          viewBox={"0 0 " + width + " " + graphHeight}
-          role="img"
-          aria-label={"Grafo de decisiones de Espectro con " + graph.signalCount + " señales y " + graph.candidateCount + " películas candidatas"}
-        >
-          <defs>
-            <marker id="spectro-arrow-positive" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" className="spectro-arrow-positive" />
-            </marker>
-            <marker id="spectro-arrow-negative" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" className="spectro-arrow-negative" />
-            </marker>
-          </defs>
-          {graph.edges.map((edge) => {
-            const source = positions.get(edge.source);
-            const target = positions.get(edge.target);
-            if (!source || !target) return null;
-            const startX = source.x + source.width;
-            const startY = source.y + source.height / 2;
-            const endX = target.x;
-            const endY = target.y + target.height / 2;
-            const bend = Math.max(36, (endX - startX) * 0.42);
-            const positive = edge.polarity === "positive";
-            return (
-              <g key={edge.id}>
-                <path
-                  className={positive ? "spectro-graph-edge is-positive" : "spectro-graph-edge is-negative"}
-                  d={"M " + startX + " " + startY + " C " + (startX + bend) + " " + startY + ", " + (endX - bend) + " " + endY + ", " + endX + " " + endY}
-                  markerEnd={positive ? "url(#spectro-arrow-positive)" : "url(#spectro-arrow-negative)"}
-                  strokeWidth={Math.max(1.4, Math.min(4.5, 1.4 + Math.abs(edge.value) * 1.3))}
-                />
-                <title>{edge.kind === "preference"
-                  ? "Diferencia ajustada de la señal: " + signed(edge.value)
-                  : "Contribución al encaje: " + signed(edge.value) + " puntos porcentuales"}</title>
-              </g>
-            );
-          })}
-          {graph.nodes.map((node) => {
-            const position = positions.get(node.id);
-            if (!position) return null;
-            const isSignal = node.kind === "signal";
-            const isCandidate = node.kind === "candidate";
-            const nodeClass = isSignal
-              ? node.source === "favoritos" ? "is-signal is-explicit" : "is-signal"
-              : isCandidate ? "is-candidate" : "is-profile";
-            const secondary = isCandidate
-              ? "Encaje " + node.fitPercentage + "% · Nota " + node.predictedRating?.toFixed(1) + "/10"
-              : node.detail;
-            return (
-              <g
-                key={node.id}
-                className={"spectro-graph-node " + nodeClass}
-                aria-label={node.label + ". " + node.detail}
-              >
-                <title>{node.label + " · " + node.detail}</title>
-                <rect
-                  x={position.x}
-                  y={position.y}
-                  width={position.width}
-                  height={position.height}
-                  rx="12"
-                />
-                <text
-                  className="spectro-graph-node-label"
-                  x={position.x + 14}
-                  y={position.y + 27}
-                >
-                  {graphNodeShortLabel(node)}
-                </text>
-                <text
-                  className="spectro-graph-node-detail"
-                  x={position.x + 14}
-                  y={position.y + 48}
-                >
-                  {secondary.length > 37 ? secondary.slice(0, 35) + "…" : secondary}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-      <p className="spectro-graph-note">
-        Las líneas verdes muestran señales que elevan el encaje; las rojas, rasgos que lo reducen. Los favoritos son señales explícitas y no se transforman en notas.
-      </p>
-      {signals.some((node) => node.evidence?.length) && (
-        <details className="spectro-graph-evidence" open>
-          <summary>Películas que respaldan cada conexión</summary>
-          <div className="spectro-graph-evidence-list">
-            {signals.map((node) => (
-              <article className="spectro-graph-evidence-item" key={node.id}>
-                <strong>{node.label}</strong>
-                <small>{node.detail}</small>
-                <p>
-                  {(node.evidence ?? []).map((item) => (
-                    item.title + (item.rating === null ? " · Favorita" : " · " + item.rating.toFixed(1) + "/10")
-                  )).join("  ·  ")}
-                </p>
-              </article>
-            ))}
-          </div>
-        </details>
-      )}
-      {!candidates.length && (
-        <p className="muted-copy spectro-graph-empty">
-          El grafo muestra tus señales respaldadas. Aún no hay candidatas locales con coincidencias suficientes.
+      ) : (
+        <p className="muted-copy spectro-trends-empty">
+          Aún no hay dos periodos comparables. Se necesitan al menos tres películas distintas en cada periodo y rasgo.
         </p>
       )}
     </section>
@@ -392,7 +305,7 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
           <strong>Hay metadatos que pueden completarse</strong>
         </div>
         <p className="muted-copy">
-          Conecta tu credencial TMDB en Ajustes para que Espectro complete automáticamente las señales que faltan, sin abrir cada ficha.
+          Conecta tu credencial TMDB en Ajustes para completar automáticamente géneros, equipo y temas, sin abrir cada ficha.
         </p>
         <a className="text-link" href="#/settings/catalog">Configurar TMDB ↗</a>
       </section>
@@ -426,7 +339,7 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
           <strong>Quedaron {snapshot.failedMovies} películas con datos incompletos</strong>
         </div>
         <p className="muted-copy">
-          {snapshot.lastError ?? "Prisma conserva los metadatos obtenidos y no modifica tus visionados ni calificaciones. Puedes volver a intentar las consultas pendientes."}
+          {snapshot.lastError ?? "Prisma conserva los metadatos obtenidos y no modifica tus visionados ni calificaciones."}
         </p>
         <button className="button button-secondary" type="button" onClick={onRetry}>Reintentar metadatos</button>
       </section>
@@ -465,10 +378,7 @@ function SpectroRatingQuestionCard({
   onDismiss: () => void;
 }) {
   const [rating, setRating] = useState<number | null>(null);
-
-  useEffect(() => {
-    setRating(null);
-  }, [question.viewingId]);
+  useEffect(() => setRating(null), [question.viewingId]);
 
   return (
     <section className="spectro-question-card card-surface" aria-labelledby="spectro-question-title">
@@ -516,7 +426,349 @@ function SpectroRatingQuestionCard({
   );
 }
 
-function SpectroContent({
+function nodeRadius(node: SpectroNetworkNode): number {
+  return node.kind === "movie"
+    ? 7 + node.influence * 13
+    : 4.5 + node.influence * 9;
+}
+
+function networkNodeTypeLabel(kind: SpectroNetworkNode["kind"]): string {
+  if (kind === "movie") return "Película";
+  if (kind === "genre") return "Género";
+  if (kind === "director") return "Director";
+  if (kind === "actor") return "Actor";
+  return "Tema";
+}
+
+function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [zoom, setZoom] = useState(() => Math.max(
+    0.2,
+    Math.min(1, (window.innerWidth - 48) / graph.width, (window.innerHeight * 0.66) / graph.height)
+  ));
+  const nodeById = useMemo(
+    () => new Map(graph.nodes.map((node) => [node.id, node])),
+    [graph.nodes]
+  );
+  const selectedNode = selectedNodeId ? nodeById.get(selectedNodeId) : undefined;
+  const selectedEdges = useMemo(
+    () => selectedNode
+      ? graph.edges.filter((edge) => edge.source === selectedNode.id || edge.target === selectedNode.id)
+      : [],
+    [graph.edges, selectedNode]
+  );
+  const relatedNodes = useMemo(() => selectedEdges.flatMap((edge) => {
+    const relatedId = edge.source === selectedNode?.id ? edge.target : edge.source;
+    const related = nodeById.get(relatedId);
+    return related ? [related] : [];
+  }), [nodeById, selectedEdges, selectedNode]);
+
+  const activeNodeIds = useMemo(() => {
+    const active = new Set<string>();
+    const matching = new Set<string>();
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    if (normalizedQuery) {
+      for (const node of graph.nodes) {
+        if (node.label.toLocaleLowerCase().includes(normalizedQuery)) {
+          matching.add(node.id);
+          active.add(node.id);
+        }
+      }
+      for (const edge of graph.edges) {
+        if (matching.has(edge.source) || matching.has(edge.target)) {
+          active.add(edge.source);
+          active.add(edge.target);
+        }
+      }
+    }
+    if (selectedNode) {
+      active.add(selectedNode.id);
+      for (const edge of selectedEdges) {
+        active.add(edge.source);
+        active.add(edge.target);
+      }
+    }
+    return active;
+  }, [graph.edges, graph.nodes, query, selectedEdges, selectedNode]);
+
+  const openMovie = (node: SpectroNetworkNode) => {
+    if (!node.tmdbId) return;
+    saveCurrentRouteScrollPosition();
+    window.location.hash = "#/movie/" + node.tmdbId;
+  };
+
+  if (!graph.stats.movies) {
+    return (
+      <section className="spectro-network-empty card-surface">
+        <Network size={28} className="accent-icon" />
+        <h2>Tu mapa está esperando películas</h2>
+        <p className="muted-copy">Añade películas a Prisma desde Descubrir. Cada título aparecerá como un nodo y se conectará con sus rasgos cuando haya metadatos.</p>
+        <a className="button button-primary" href="#/discover">Descubrir películas</a>
+      </section>
+    );
+  }
+
+  return (
+    <section className="spectro-network-section" aria-labelledby="spectro-network-title">
+      <div className="spectro-network-intro">
+        <div>
+          <h2 id="spectro-network-title">Cada película, una conexión</h2>
+          <p className="muted-copy">
+            Las películas y sus rasgos forman la red. Los vínculos se calculan con tus notas, favoritos y metadatos locales.
+          </p>
+        </div>
+        <div className="spectro-network-counts">
+          <span><strong>{graph.stats.movies}</strong> películas</span>
+          <span><strong>{graph.stats.features}</strong> rasgos</span>
+          <span><strong>{graph.stats.connections}</strong> vínculos</span>
+        </div>
+      </div>
+
+      <div className="spectro-network-controls">
+        <label className="spectro-network-search">
+          <Search size={16} aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar película o rasgo…"
+            aria-label="Buscar película o rasgo en el mapa"
+          />
+          {query && <button type="button" aria-label="Limpiar búsqueda" onClick={() => setQuery("")}><X size={14} /></button>}
+        </label>
+        <div className="spectro-network-zoom" aria-label="Zoom del mapa">
+          <button type="button" aria-label="Alejar mapa" onClick={() => setZoom((value) => Math.max(0.2, Math.round((value - 0.15) * 100) / 100))} disabled={zoom <= 0.2}>
+            <ZoomOut size={16} />
+          </button>
+          <span>{Math.round(zoom * 100)}%</span>
+          <button type="button" aria-label="Acercar mapa" onClick={() => setZoom((value) => Math.min(1.75, Math.round((value + 0.15) * 100) / 100))} disabled={zoom >= 1.75}>
+            <ZoomIn size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="spectro-network-legend" aria-label="Leyenda del mapa">
+        <span><i className="is-movie" /> Película</span>
+        <span><i className="is-genre" /> Género</span>
+        <span><i className="is-director" /> Director</span>
+        <span><i className="is-actor" /> Actor</span>
+        <span><i className="is-theme" /> Tema</span>
+        <span className="spectro-network-legend-line">Grosor y brillo = fuerza del vínculo · Tamaño = influencia en recomendaciones</span>
+      </div>
+
+      <div className="spectro-network-viewport" aria-label="Mapa interactivo; desplázate para explorar y selecciona una bolita para ver sus conexiones">
+        <svg
+          className="spectro-network-svg"
+          width={Math.round(graph.width * zoom)}
+          height={Math.round(graph.height * zoom)}
+          viewBox={"0 0 " + graph.width + " " + graph.height}
+          role="group"
+          aria-label={"Red de " + graph.stats.movies + " películas y " + graph.stats.features + " rasgos"}
+        >
+          <defs>
+            <filter id="spectro-network-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2.3" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+
+          {graph.clusters.map((cluster) => (
+            <g key={cluster.id} className={cluster.exploredCount === 0 ? "spectro-network-cluster is-unexplored" : "spectro-network-cluster"}>
+              <circle cx={cluster.x} cy={cluster.y} r={cluster.radius} />
+              <text x={cluster.x} y={cluster.y - cluster.radius - 9} textAnchor="middle">{cluster.label}</text>
+              <text className="spectro-network-cluster-count" x={cluster.x} y={cluster.y - cluster.radius + 8} textAnchor="middle">
+                {cluster.exploredCount} vistas · {cluster.unexploredCount} por explorar
+              </text>
+            </g>
+          ))}
+
+          {graph.edges.map((edge) => {
+            const source = nodeById.get(edge.source);
+            const target = nodeById.get(edge.target);
+            if (!source || !target) return null;
+            const hasFocus = activeNodeIds.size > 0;
+            const dim = hasFocus && (!activeNodeIds.has(edge.source) || !activeNodeIds.has(edge.target));
+            return (
+              <line
+                key={edge.id}
+                className={"spectro-network-edge is-" + edge.polarity}
+                x1={source.x}
+                y1={source.y}
+                x2={target.x}
+                y2={target.y}
+                strokeWidth={0.75 + edge.strength * 4.2}
+                opacity={dim ? 0.07 : 0.16 + edge.strength * 0.78}
+                filter={edge.strength >= 0.78 && !dim ? "url(#spectro-network-glow)" : undefined}
+              >
+                <title>
+                  {edge.category + " · vínculo " + Math.round(edge.strength * 100) + "% · " + edge.polarity}
+                </title>
+              </line>
+            );
+          })}
+
+          {graph.nodes.map((node, index) => {
+            const radius = nodeRadius(node);
+            const selected = selectedNodeId === node.id;
+            const hasFocus = activeNodeIds.size > 0;
+            const dim = hasFocus && !activeNodeIds.has(node.id);
+            const unexplored = node.kind === "movie"
+              ? node.state === "unexplored"
+              : node.exploredConnections === 0;
+            const opacity = dim ? 0.12 : unexplored && !activeNodeIds.has(node.id) ? 0.38 : 1;
+            const clipId = "spectro-movie-clip-" + index;
+            const posterUrl = node.kind === "movie"
+              ? getTmdbImageUrl("https://image.tmdb.org/t/p/", node.posterPath, "w185")
+              : null;
+            return (
+              <g
+                key={node.id}
+                className={[
+                  "spectro-network-node",
+                  "is-" + node.kind,
+                  unexplored ? "is-unexplored" : "",
+                  selected ? "is-selected" : ""
+                ].filter(Boolean).join(" ")}
+                role="button"
+                tabIndex={0}
+                aria-label={node.label + ". " + node.detail + ". Influencia " + Math.round(node.influence * 100) + "%"}
+                aria-pressed={selected}
+                opacity={opacity}
+                onClick={() => setSelectedNodeId(selected ? null : node.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedNodeId(selected ? null : node.id);
+                  }
+                }}
+              >
+                {node.kind === "movie" ? (
+                  <>
+                    <defs>
+                      <clipPath id={clipId}><circle cx={node.x} cy={node.y} r={radius} /></clipPath>
+                    </defs>
+                    {posterUrl ? (
+                      <image
+                        href={posterUrl}
+                        x={node.x - radius}
+                        y={node.y - radius}
+                        width={radius * 2}
+                        height={radius * 2}
+                        preserveAspectRatio="xMidYMid slice"
+                        clipPath={"url(#" + clipId + ")"}
+                      />
+                    ) : (
+                      <circle className="spectro-network-movie-fallback" cx={node.x} cy={node.y} r={radius} />
+                    )}
+                    <circle className="spectro-network-node-outline" cx={node.x} cy={node.y} r={radius} />
+                    {node.favorite && (
+                      <text
+                        className="spectro-network-favorite-marker"
+                        x={node.x + radius - 1}
+                        y={node.y - radius + 6}
+                        textAnchor="middle"
+                      >★</text>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <circle cx={node.x} cy={node.y} r={radius} />
+                    {(node.influence >= 0.78 || node.connections >= 8 || selected) && (
+                      <text x={node.x} y={node.y + radius + 10} textAnchor="middle">
+                        {node.label.length > 20 ? node.label.slice(0, 18) + "…" : node.label}
+                      </text>
+                    )}
+                  </>
+                )}
+                <title>
+                  {node.label + " · " + node.detail + " · influencia " + Math.round(node.influence * 100) + "%"}
+                </title>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <p className="spectro-network-explainer">
+        Las zonas apagadas representan películas de tu catálogo local que aún no tienen visionados registrados. No muestran todo TMDB, sino lo que Prisma conoce en este dispositivo.
+      </p>
+
+      {selectedNode && (
+        <section className="spectro-network-selection card-surface" aria-live="polite">
+          <div className="spectro-network-selection-heading">
+            <div>
+              <span>{networkNodeTypeLabel(selectedNode.kind)}</span>
+              <h3>{selectedNode.label}</h3>
+            </div>
+            <button type="button" aria-label="Cerrar detalle" onClick={() => setSelectedNodeId(null)}><X size={16} /></button>
+          </div>
+          <p className="muted-copy">{selectedNode.detail}</p>
+          <div className="spectro-network-selection-metrics">
+            <span><strong>{Math.round(selectedNode.influence * 100)}%</strong> influencia</span>
+            <span><strong>{selectedNode.connections}</strong> vínculos</span>
+            <span><strong>{selectedNode.recommendationCount}</strong> recomendaciones relacionadas</span>
+          </div>
+          {selectedNode.kind === "movie" ? (
+            <>
+              <div className="spectro-network-selection-movie-stats">
+                {selectedNode.rating !== undefined && (
+                  <span><strong>{selectedNode.rating.toFixed(1)}/10</strong> tu nota</span>
+                )}
+                {selectedNode.fitPercentage !== undefined && (
+                  <span><strong>{selectedNode.fitPercentage}%</strong> encaje calculado</span>
+                )}
+                {selectedNode.predictedRating !== undefined && (
+                  <span><strong>{selectedNode.predictedRating.toFixed(1)}/10</strong> nota prevista</span>
+                )}
+              </div>
+              <div className="spectro-network-related">
+                <strong>Rasgos conectados</strong>
+                {relatedNodes.filter((node) => node.kind !== "movie").length ? (
+                  <div>
+                    {[...selectedEdges].sort((a, b) => b.strength - a.strength).slice(0, 12).map((edge) => {
+                      const node = nodeById.get(edge.source === selectedNode.id ? edge.target : edge.source);
+                      if (!node || node.kind === "movie") return null;
+                      return (
+                        <button type="button" key={node.id} onClick={() => setSelectedNodeId(node.id)}>
+                          <span>{networkNodeTypeLabel(node.kind)} · {node.label}</span>
+                          <small>Vínculo {Math.round(edge.strength * 100)}%</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : <p className="muted-copy">Esta película todavía no tiene metadatos suficientes para dibujar sus conexiones.</p>}
+              </div>
+              <button className="button button-secondary" type="button" onClick={() => openMovie(selectedNode)}>
+                Abrir ficha de la película
+              </button>
+            </>
+          ) : (
+            <div className="spectro-network-related">
+              <strong>Películas conectadas</strong>
+              {selectedEdges.length ? (
+                <div>
+                  {[...selectedEdges].sort((a, b) => b.strength - a.strength).slice(0, 12).map((edge) => {
+                    const node = nodeById.get(edge.source === selectedNode.id ? edge.target : edge.source);
+                    if (!node || node.kind !== "movie") return null;
+                    return (
+                      <button type="button" key={node.id} onClick={() => setSelectedNodeId(node.id)}>
+                        <span>{node.label}</span>
+                        <small>{node.state === "explored" ? "Vista" : "Por explorar"} · {Math.round(edge.strength * 100)}%</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : <p className="muted-copy">No hay películas conectadas a este rasgo.</p>}
+            </div>
+          )}
+        </section>
+      )}
+    </section>
+  );
+}
+
+function SpectroHome({
   analysis,
   metadata,
   onRetryMetadata,
@@ -535,31 +787,10 @@ function SpectroContent({
   onQuestionAnswer: (rating: number) => void;
   onQuestionDismiss: () => void;
 }) {
-  if (analysis.totalViewings === 0 && analysis.favoriteSignals.length === 0) {
-    return (
-      <>
-        {question && (
-          <SpectroRatingQuestionCard
-            question={question}
-            busy={questionBusy}
-            error={questionError}
-            onAnswer={onQuestionAnswer}
-            onDismiss={onQuestionDismiss}
-          />
-        )}
-        <SpectroMetadataStatus snapshot={metadata} onRetry={onRetryMetadata} />
-        <EmptyState
-          icon={<BrainCircuit size={26} />}
-          title="Sin datos suficientes"
-          description="Registra películas vistas y calificaciones. Espectro también reconocerá tus favoritos como señales explícitas."
-          action={<a href="#/discover" className="button button-primary">Descubrir películas</a>}
-        />
-      </>
-    );
-  }
-
+  const graph = analysis.networkGraph;
   return (
-    <>
+    <div className="page">
+      <h1 className="sr-only">Espectro</h1>
       {question && (
         <SpectroRatingQuestionCard
           question={question}
@@ -570,51 +801,95 @@ function SpectroContent({
         />
       )}
       <SpectroMetadataStatus snapshot={metadata} onRetry={onRetryMetadata} />
-      <section className="spectro-summary-grid" aria-label="Resumen del análisis">
-        <div className="spectro-summary-card"><span>Películas analizadas</span><strong>{analysis.movieCount}</strong></div>
-        <div className="spectro-summary-card"><span>Visionados</span><strong>{analysis.totalViewings}</strong></div>
-        <div className="spectro-summary-card"><span>Promedio por película</span><strong>{analysis.averageRating?.toFixed(1) ?? "—"}<small>/10</small></strong></div>
+      <section className="profile-summary card-surface spectro-profile-summary">
+        <div className="avatar-placeholder"><BrainCircuit size={27} /></div>
+        <div className="profile-summary-copy">
+          <span className="card-title">Espectro</span>
+          <span className="muted-copy">Tu mapa personal de conexiones cinematográficas.</span>
+        </div>
+        <Sparkles size={20} className="subtle-icon" />
+        <div className="profile-metrics">
+          <div><strong>{graph.stats.movies}</strong><span>Películas en el mapa</span></div>
+          <div><strong>{graph.stats.explored}</strong><span>Exploradas</span></div>
+          <div><strong>{graph.stats.unexplored}</strong><span>Por explorar</span></div>
+          <div><strong>{analysis.averageRating?.toFixed(1) ?? "—"}</strong><span>Promedio personal</span></div>
+        </div>
       </section>
-
-      {!analysis.hasEnoughData && (
+      <div className="navigation-cards spectro-navigation-cards">
+        {spectroLinks.map((item) => {
+          const Icon = item.icon;
+          const description = item.title === "Mapa cinematográfico"
+            ? graph.stats.movies + " películas · " + graph.stats.features + " rasgos · " + graph.stats.connections + " conexiones."
+            : item.title === "Afinidades"
+              ? (analysis.genreAffinities.length + analysis.directorAffinities.length + analysis.castAffinities.length + analysis.themeAffinities.length) + " señales cinematográficas respaldadas."
+              : item.title === "Evolución"
+                ? analysis.affinityTrends.length + " cambios de afinidad detectados."
+                : analysis.recommendations.length + " películas con encaje calculado.";
+          return (
+            <a className="navigation-card card-surface" href={item.href} key={item.title}>
+              <span className="navigation-card-icon"><Icon size={22} /></span>
+              <span className="navigation-card-copy">
+                <strong>{item.title}</strong>
+                <span>{description || item.description}</span>
+              </span>
+              <ChevronRight size={19} className="subtle-icon" />
+            </a>
+          );
+        })}
+      </div>
+      {analysis.movieCount < 3 && (
         <section className="spectro-insufficient card-surface" role="status">
           <Fingerprint size={23} className="accent-icon" />
           <div>
             <h2>Perfil en desarrollo</h2>
             <p>
-              Necesitas tres películas distintas con calificación para calcular afinidades. Llevas {analysis.movieCount} de 3.
-              Los favoritos ya cuentan como señales explícitas separadas.
+              Necesitas tres películas distintas con calificación para estimar afinidades. Llevas {analysis.movieCount} de 3.
+              Tus favoritos ya aparecen como señales explícitas, sin convertirse en notas.
             </p>
           </div>
         </section>
       )}
+      <p className="spectro-version-note">
+        Espectro {analysis.algorithmVersion} · Análisis local actualizado {new Date(analysis.computedAt).toLocaleString("es-PA")}
+      </p>
+    </div>
+  );
+}
 
-      <SpectroDecisionGraph analysis={analysis} />
+function SpectroAffinitiesPage({ analysis }: { analysis: SpectroAnalysis }) {
+  return (
+    <div className="page">
+      <SpectroPageBack title="Afinidades" />
+      <section className="spectro-map card-surface" aria-labelledby="spectro-affinities-title">
+        <div className="content-caption">
+          <h2 id="spectro-affinities-title">Rasgos que definen tu gusto</h2>
+          <span className="status-pill">Versión {analysis.algorithmVersion}</span>
+        </div>
+        <p className="muted-copy spectro-section-intro">
+          Cada afinidad compara las notas de películas distintas con tu promedio. Las señales positivas y negativas participan en el encaje.
+        </p>
+        <div className="spectro-affinity-grid">
+          <AffinityPanel title="Géneros" icon={<Film size={17} />} items={analysis.genreAffinities} />
+          <AffinityPanel title="Directores" icon={<Clapperboard size={17} />} items={analysis.directorAffinities} />
+          <AffinityPanel title="Actores" icon={<Users size={17} />} items={analysis.castAffinities} />
+          <AffinityPanel title="Temas" icon={<Sparkles size={17} />} items={analysis.themeAffinities} />
+          <AffinityPanel title="Países" icon={<Network size={17} />} items={analysis.countryAffinities} />
+          <AffinityPanel title="Épocas" icon={<CalendarDays size={17} />} items={analysis.decadeAffinities} />
+          <AffinityPanel title="Idioma original" icon={<Languages size={17} />} items={analysis.languageAffinities} />
+          <AffinityPanel title="Duración" icon={<Timer size={17} />} items={analysis.durationAffinities} />
+        </div>
+        <p className="spectro-method-note">
+          Una afinidad inicial es una pista, no una preferencia confirmada. Los revisionados se promedian dentro de cada título y no aumentan la muestra.
+        </p>
+      </section>
+    </div>
+  );
+}
 
-      {analysis.hasEnoughData && (
-        <section className="spectro-map card-surface" aria-labelledby="spectro-affinities-title">
-          <div className="content-caption">
-            <h2 id="spectro-affinities-title">Afinidades</h2>
-            <span className="status-pill">Versión {analysis.algorithmVersion}</span>
-          </div>
-          <p className="muted-copy spectro-section-intro">
-            La posición de cada punto muestra cuánto se aleja el rasgo de tu promedio por película: a favor o por debajo.
-          </p>
-          <div className="spectro-affinity-grid">
-            <AffinityPanel title="Géneros" icon={<Film size={17} />} items={analysis.genreAffinities} />
-            <AffinityPanel title="Directores" icon={<Clapperboard size={17} />} items={analysis.directorAffinities} />
-            <AffinityPanel title="Reparto" icon={<Users size={17} />} items={analysis.castAffinities} />
-            <AffinityPanel title="Países" icon={<Network size={17} />} items={analysis.countryAffinities} />
-            <AffinityPanel title="Épocas" icon={<CalendarDays size={17} />} items={analysis.decadeAffinities} />
-            <AffinityPanel title="Idioma original" icon={<Languages size={17} />} items={analysis.languageAffinities} />
-            <AffinityPanel title="Duración" icon={<Timer size={17} />} items={analysis.durationAffinities} />
-          </div>
-          <p className="spectro-method-note">
-            Las señales iniciales son pistas, no preferencias confirmadas. Los revisionados se agregan dentro de cada título y no aumentan el soporte de películas distintas.
-          </p>
-        </section>
-      )}
-
+function SpectroEvolutionPage({ analysis }: { analysis: SpectroAnalysis }) {
+  return (
+    <div className="page">
+      <SpectroPageBack title="Evolución" />
       <section className="spectro-evolution-section" aria-labelledby="spectro-evolution-title">
         <div className="content-caption">
           <h2 id="spectro-evolution-title">Evolución mensual</h2>
@@ -622,112 +897,73 @@ function SpectroContent({
         </div>
         <EvolutionChart analysis={analysis} />
       </section>
-
-      {analysis.hasEnoughData && (
-        <>
-          <section className="spectro-trends-section" aria-labelledby="spectro-trends-title">
-            <div className="content-caption">
-              <div><h2 id="spectro-trends-title">Cambios recientes</h2></div>
-              <TrendingUp size={19} className="accent-icon" />
-            </div>
-            {analysis.affinityTrends.length ? (
-              <div className="spectro-trends-list card-surface">
-                {analysis.affinityTrends.slice(0, 5).map((item) => (
-                  <article className="spectro-trend-row" key={item.key}>
-                    <div className="spectro-trend-copy">
-                      <strong>{item.label}</strong>
-                      <small>{item.category} · {item.previousSampleSize} antes · {item.recentSampleSize} recientes</small>
-                    </div>
-                    <div className={"spectro-trend-change is-" + item.direction}>
-                      {item.direction === "sube" ? <ArrowUpRight size={16} />
-                        : item.direction === "baja" ? <ArrowDownRight size={16} /> : <span>—</span>}
-                      <strong>{item.change > 0 ? "+" : ""}{item.change.toFixed(1)}</strong>
-                    </div>
-                  </article>
-                ))}
-                <p className="spectro-method-note">
-                  Compara los últimos 12 meses disponibles con los 12 anteriores. Cada título cuenta una vez por periodo.
-                </p>
-              </div>
-            ) : (
-              <p className="muted-copy spectro-trends-empty">
-                Aún no hay dos periodos comparables. Se necesitan al menos tres películas distintas en cada periodo y rasgo.
-              </p>
-            )}
-          </section>
-
-          <section className="spectro-recommendations-section" aria-labelledby="spectro-recommendations-title">
-            <div className="content-caption">
-              <div><h2 id="spectro-recommendations-title">Podrían gustarte</h2></div>
-              <Sparkles size={19} className="accent-icon" />
-            </div>
-            {analysis.recommendations.length ? (
-              <>
-                <p className="spectro-method-note">
-                  Encaje: 0–100, una comparación relativa de señales, no una probabilidad. Nota estimada: proyección basada en tus calificaciones; no es una garantía.
-                </p>
-                <div className="spectro-recommendation-grid">
-                  {analysis.recommendations.map((item) => (
-                    <article className="spectro-recommendation-card" key={item.movie.id}>
-                      <MoviePosterCard
-                        title={item.movie.title}
-                        imageUrl={getTmdbImageUrl("https://image.tmdb.org/t/p/", item.movie.posterPath, "w342")}
-                        onClick={() => {
-                          saveCurrentRouteScrollPosition();
-                          window.location.hash = "#/movie/" + item.movie.tmdbId;
-                        }}
-                      />
-                      <div className="spectro-recommendation-copy">
-                        <strong>{item.movie.title}</strong>
-                        <div className="spectro-recommendation-metrics">
-                          <div>
-                            <span>Encaje estimado</span>
-                            <strong>{item.fitPercentage}%</strong>
-                          </div>
-                          <div>
-                            <span>Nota estimada</span>
-                            <strong>{item.predictedRating.toFixed(1)}<small>/10</small></strong>
-                          </div>
-                          <span className={"spectro-confidence is-" + item.confidence}>{confidenceLabel(item.confidence)}</span>
-                        </div>
-                        <ul className="spectro-recommendation-reasons">
-                          {item.reasons.slice(0, 7).map((reason) => (
-                            <li key={reason.source + ":" + reason.key}>
-                              <span>
-                                {reason.source === "favoritos" ? <Star size={11} /> : null}
-                                {reason.category}: {reason.label}
-                              </span>
-                              <small className={reason.contribution >= 0 ? "is-positive" : "is-negative"}>
-                                {reason.contribution > 0 ? "+" : ""}{reason.contribution.toFixed(2)} · {reason.sampleSize} títulos
-                              </small>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="spectro-no-recommendations card-surface">
-                <Sparkles size={20} className="accent-icon" />
-                <p>
-                  Aún no hay candidatas locales con señales positivas suficientes. El grafo muestra las preferencias que sí tienen respaldo, incluidas las declaradas mediante favoritos.
-                </p>
-              </div>
-            )}
-          </section>
-        </>
-      )}
-
-      <p className="spectro-version-note">
-        Espectro {analysis.algorithmVersion} · Análisis local actualizado {new Date(analysis.computedAt).toLocaleString("es-PA")}
-      </p>
-    </>
+      <SpectroTrends analysis={analysis} />
+    </div>
   );
 }
 
-export function SpectroPage() {
+function SpectroRecommendationsPage({ analysis }: { analysis: SpectroAnalysis }) {
+  return (
+    <div className="page">
+      <SpectroPageBack title="Recomendaciones" />
+      <section className="spectro-recommendations-section" aria-labelledby="spectro-recommendations-title">
+        <div className="content-caption">
+          <div><h2 id="spectro-recommendations-title">Podrían gustarte</h2></div>
+          <Sparkles size={19} className="accent-icon" />
+        </div>
+        <p className="spectro-method-note">
+          Encaje: 0–100, una comparación relativa de señales, no una probabilidad. Nota estimada: proyección basada en tus calificaciones; no es una garantía.
+        </p>
+        {analysis.recommendations.length ? (
+          <div className="spectro-recommendation-grid">
+            {analysis.recommendations.map((item) => (
+              <article className="spectro-recommendation-card" key={item.movie.id}>
+                <MoviePosterCard
+                  title={item.movie.title}
+                  imageUrl={getTmdbImageUrl("https://image.tmdb.org/t/p/", item.movie.posterPath, "w342")}
+                  onClick={() => {
+                    saveCurrentRouteScrollPosition();
+                    window.location.hash = "#/movie/" + item.movie.tmdbId;
+                  }}
+                />
+                <div className="spectro-recommendation-copy">
+                  <strong>{item.movie.title}</strong>
+                  <div className="spectro-recommendation-metrics">
+                    <div><span>Encaje estimado</span><strong>{item.fitPercentage}%</strong></div>
+                    <div><span>Nota estimada</span><strong>{item.predictedRating.toFixed(1)}<small>/10</small></strong></div>
+                    <span className={"spectro-confidence is-" + item.confidence}>{confidenceLabel(item.confidence)}</span>
+                  </div>
+                  <ul className="spectro-recommendation-reasons">
+                    {item.reasons.slice(0, 8).map((reason) => (
+                      <li key={reason.source + ":" + reason.key}>
+                        <span>
+                          {reason.source === "favoritos" ? <Star size={11} /> : null}
+                          {reason.category}: {reason.label}
+                        </span>
+                        <small className={reason.contribution >= 0 ? "is-positive" : "is-negative"}>
+                          {reason.contribution > 0 ? "+" : ""}{reason.contribution.toFixed(2)} · {reason.sampleSize} títulos
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="spectro-no-recommendations card-surface">
+            <Sparkles size={20} className="accent-icon" />
+            <p>
+              Aún no hay candidatas locales con señales positivas suficientes. El mapa muestra las preferencias respaldadas y las películas que todavía están por explorar.
+            </p>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+export function SpectroPage({ section = "home" }: { section?: SpectroSection }) {
   const [analysis, setAnalysis] = useState<SpectroAnalysis | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState("");
@@ -788,8 +1024,9 @@ export function SpectroPage() {
   }, [questionBusy]);
 
   useEffect(() => {
-    void refreshQuestion();
-  }, [refreshQuestion]);
+    if (section === "home") void refreshQuestion();
+    else setQuestion(null);
+  }, [refreshQuestion, section]);
 
   useEffect(() => {
     let active = true;
@@ -816,39 +1053,52 @@ export function SpectroPage() {
 
   useEffect(() => {
     if (metadata.processedMovies === 0) return;
-    const shouldRefresh = (
-      metadata.status !== "running"
-      || metadata.processedMovies % 5 === 0
-    );
+    const shouldRefresh = metadata.status !== "running" || metadata.processedMovies % 5 === 0;
     if (!shouldRefresh || metadata.processedMovies === lastRefreshAt.current) return;
     lastRefreshAt.current = metadata.processedMovies;
     void refreshAnalysis();
   }, [metadata.processedMovies, metadata.status, refreshAnalysis]);
 
-  return (
-    <div className="page">
-      <h1 className="sr-only">Espectro</h1>
-      {state === "loading" ? (
-        <div className="detail-loading"><span>Analizando…</span></div>
-      ) : state === "error" ? (
+  if (state === "loading") {
+    return <div className="page"><div className="detail-loading"><span>Analizando…</span></div></div>;
+  }
+  if (state === "error" || !analysis) {
+    return (
+      <div className="page">
+        {section !== "home" && <SpectroPageBack title="Espectro" />}
         <EmptyState
           icon={<BrainCircuit size={26} />}
           title="No se pudo calcular Espectro"
           description={error}
           action={<button className="button button-secondary" type="button" onClick={() => void refreshAnalysis()}>Reintentar</button>}
         />
-      ) : analysis ? (
-        <SpectroContent
-          analysis={analysis}
-          metadata={metadata}
-          onRetryMetadata={() => void startSpectroMetadataEnrichment(true)}
-          question={question}
-          questionBusy={questionBusy}
-          questionError={questionError}
-          onQuestionAnswer={(rating) => void handleQuestionAnswer(rating)}
-          onQuestionDismiss={() => void handleQuestionDismiss()}
-        />
-      ) : null}
-    </div>
+      </div>
+    );
+  }
+
+  if (section === "map") {
+    return (
+      <div className="page">
+        <SpectroPageBack title="Mapa cinematográfico" />
+        <SpectroMetadataStatus snapshot={metadata} onRetry={() => void startSpectroMetadataEnrichment(true)} />
+        <SpectroNetworkMap graph={analysis.networkGraph} />
+      </div>
+    );
+  }
+  if (section === "affinities") return <SpectroAffinitiesPage analysis={analysis} />;
+  if (section === "evolution") return <SpectroEvolutionPage analysis={analysis} />;
+  if (section === "recommendations") return <SpectroRecommendationsPage analysis={analysis} />;
+
+  return (
+    <SpectroHome
+      analysis={analysis}
+      metadata={metadata}
+      onRetryMetadata={() => void startSpectroMetadataEnrichment(true)}
+      question={question}
+      questionBusy={questionBusy}
+      questionError={questionError}
+      onQuestionAnswer={(rating) => void handleQuestionAnswer(rating)}
+      onQuestionDismiss={() => void handleQuestionDismiss()}
+    />
   );
 }

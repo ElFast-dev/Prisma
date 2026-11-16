@@ -11,6 +11,7 @@ export interface TmdbMovieMetadataSource {
   genre_ids?: number[];
   production_countries?: { iso_3166_1: string; name: string }[];
   original_language?: string;
+  keywords?: string[];
   poster_path?: string | null;
   backdrop_path?: string | null;
 }
@@ -68,6 +69,7 @@ export function createMovieMetadataPatch(
       ? source.production_countries.map((country) => country.name)
       : current.countries,
     originalLanguage: source.original_language ?? current.originalLanguage,
+    keywords: source.keywords ?? current.keywords,
     posterPath: source.poster_path ?? current.posterPath,
     backdropPath: source.backdrop_path ?? current.backdropPath,
     updatedAt

@@ -1,6 +1,16 @@
 import type { MovieRecord, Viewing } from "./types";
+import {
+  buildSpectroNetworkGraph,
+  type SpectroNetworkGraph
+} from "./spectroNetwork";
+export type {
+  SpectroNetworkGraph,
+  SpectroNetworkNode,
+  SpectroNetworkEdge,
+  SpectroNetworkCluster
+} from "./spectroNetwork";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.1.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.2.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;
@@ -119,11 +129,13 @@ export interface SpectroAnalysis {
   decadeAffinities: SpectroAffinity[];
   languageAffinities: SpectroAffinity[];
   durationAffinities: SpectroAffinity[];
+  themeAffinities: SpectroAffinity[];
   favoriteSignals: SpectroFavoriteSignal[];
   evolution: SpectroMonth[];
   affinityTrends: SpectroAffinityTrend[];
   recommendations: SpectroRecommendation[];
   decisionGraph: SpectroDecisionGraph;
+  networkGraph: SpectroNetworkGraph;
 }
 
 export interface SpectroInput {
@@ -269,6 +281,10 @@ function durationFeatures(movie: MovieRecord): Feature[] {
   return [{ key: "duration:extended", label: "Más de 150 min" }];
 }
 
+function themeFeatures(movie: MovieRecord): Feature[] {
+  return textFeatures(movie.keywords, "theme:");
+}
+
 function movieFeatureGroups(movie: MovieRecord): FeatureGroup[] {
   return [
     { category: "Género", weight: 1.3, features: movieGenreFeatures(movie) },
@@ -277,7 +293,8 @@ function movieFeatureGroups(movie: MovieRecord): FeatureGroup[] {
     { category: "País", weight: 0.7, features: textFeatures(movie.countries, "country:") },
     { category: "Época", weight: 0.6, features: decadeFeatures(movie) },
     { category: "Idioma original", weight: 0.5, features: languageFeatures(movie) },
-    { category: "Duración", weight: 0.45, features: durationFeatures(movie) }
+    { category: "Duración", weight: 0.45, features: durationFeatures(movie) },
+    { category: "Temas", weight: 0.65, features: themeFeatures(movie) }
   ];
 }
 
@@ -309,6 +326,7 @@ export function getSpectroInputFingerprint(input: SpectroInput): string {
       movie.releaseYear,
       movie.originalLanguage,
       movie.runtimeMinutes,
+      movie.keywords,
       movie.posterPath,
       movie.backdropPath
     ]);
@@ -950,6 +968,7 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
   const decadeAffinities = affinities(decadeFeatures, "Época", 0.6);
   const languageAffinities = affinities(languageFeatures, "Idioma original", 0.5);
   const durationAffinities = affinities(durationFeatures, "Duración", 0.45);
+  const themeAffinities = affinities(themeFeatures, "Temas", 0.65);
 
   const allAffinities = [
     ...genreAffinities,
@@ -958,7 +977,8 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
     ...countryAffinities,
     ...decadeAffinities,
     ...languageAffinities,
-    ...durationAffinities
+    ...durationAffinities,
+    ...themeAffinities
   ];
   const favoriteSignals = buildFavoriteSignals(input.movies, input.favoriteMovieIds ?? []);
   const watchedIds = new Set(input.viewings.map((viewing) => viewing.movieId));
@@ -999,10 +1019,19 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
     decadeAffinities,
     languageAffinities,
     durationAffinities,
+    themeAffinities,
     favoriteSignals,
     evolution: buildEvolution(input.viewings),
     affinityTrends: buildAffinityTrends(input.viewings, movieById),
     recommendations: recommendationResult.recommendations,
-    decisionGraph: recommendationResult.graph
+    decisionGraph: recommendationResult.graph,
+    networkGraph: buildSpectroNetworkGraph({
+      movies: input.movies,
+      viewings: input.viewings,
+      favoriteMovieIds: input.favoriteMovieIds ?? [],
+      affinities: allAffinities,
+      favoriteSignals,
+      recommendations: recommendationResult.recommendations
+    })
   };
 }
