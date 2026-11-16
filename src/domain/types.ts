@@ -16,6 +16,8 @@ export interface MovieRecord {
   countries: string[];
   directors?: string[];
   castMembers?: string[];
+  /** Palabras clave temáticas de TMDB; [] significa consultadas sin resultados. */
+  keywords?: string[];
   originalLanguage?: string;
   posterPath?: string;
   backdropPath?: string;
