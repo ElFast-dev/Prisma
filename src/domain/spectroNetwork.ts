@@ -226,10 +226,6 @@ class UnionFind {
     return root;
   }
 
-  size(value: number): number {
-    return this.sizes[this.find(value)];
-  }
-
   union(left: number, right: number, maximumSize: number): boolean {
     let a = this.find(left);
     let b = this.find(right);
@@ -431,7 +427,6 @@ export function buildSpectroNetworkGraph(input: SpectroNetworkInput): SpectroNet
     viewingsByMovie.set(viewing.movieId, ratings);
   }
 
-  const favoriteIds = new Set(input.favoriteMovieIds);
   const movieFeatures = movies.map(featuresForMovie);
   const movieIndexById = new Map(movies.map((movie, index) => [movie.id, index]));
   const featureRecords = new Map<string, FeatureRecord>();
