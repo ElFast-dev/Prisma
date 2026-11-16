@@ -101,7 +101,7 @@ test("presenta afinidades respaldadas, cambios temporales y recomendaciones expl
   await seedSpectroHistory(page);
 
   await page.goto("#/spectro");
-  await expect(page.getByRole("heading", { name: "Espectro" })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
   await expect(page.getByText("Versión 2.1.0")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Cómo piensa Espectro" })).toBeVisible();
   await expect(page.locator(".spectro-decision-graph")).toBeVisible();
@@ -116,9 +116,10 @@ test("presenta afinidades respaldadas, cambios temporales y recomendaciones expl
   await expect(page.getByText("Drama", { exact: true }).first()).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "Podrían gustarte" })).toBeVisible();
-  await expect(page.getByText("Candidata Prisma ficticia")).toBeVisible();
-  await expect(page.getByText("Género: Drama")).toBeVisible();
-  await expect(page.getByText("Dirección: Directora Prisma")).toBeVisible();
+  await expect(page.locator(".spectro-recommendation-copy > strong").filter({ hasText: "Candidata Prisma ficticia" })).toBeVisible();
+  const recommendationReasons = page.locator(".spectro-recommendation-reasons");
+  await expect(recommendationReasons.getByText("Género: Drama", { exact: true })).toBeVisible();
+  await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true })).toBeVisible();
 
   await expect(page.getByRole("navigation", { name: "Navegación principal" })
     .getByRole("link", { name: "Espectro", exact: true })).toHaveAttribute("aria-current", "page");
@@ -236,7 +237,7 @@ test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page
   await seedIncompleteSpectroHistory(page);
 
   await page.goto("#/spectro");
-  await expect(page.getByRole("heading", { name: "Espectro" })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Directores" })).toBeVisible();
   await expect(page.getByText("Dirección automática", { exact: true }).first()).toBeVisible();
