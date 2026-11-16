@@ -44,3 +44,118 @@ test("la vista de Biblioteca se puede cambiar desde sus ajustes", async ({ page 
   await grid.click();
   await expect(grid).toHaveAttribute("aria-pressed", "true");
 });
+
+
+test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("prisma.tmdb.accessToken", "token-ficticio-de-prueba");
+  });
+  await page.goto("#/settings/data");
+  await expect(page.getByRole("heading", { name: "Datos", exact: true })).toBeVisible();
+
+  await page.evaluate(async () => {
+    const request = indexedDB.open("prisma_database");
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const stores = [
+      "movies", "libraryEntries", "viewings", "collections", "collectionMovies",
+      "profile", "preferences", "catalogCache", "availabilityCache", "peopleCache",
+      "spectroSnapshots", "appMetadata"
+    ];
+    const transaction = db.transaction(stores, "readwrite");
+    const now = new Date().toISOString();
+    transaction.objectStore("movies").put({
+      id: "tmdb-987654", tmdbId: 987654, title: "Película ficticia",
+      genres: [], countries: [], lastViewingSequence: 1, createdAt: now, updatedAt: now
+    });
+    transaction.objectStore("libraryEntries").put({
+      movieId: "tmdb-987654", status: "watched", isFavorite: true, addedAt: now, updatedAt: now
+    });
+    transaction.objectStore("viewings").put({
+      id: "viewing-test", movieId: "tmdb-987654", sequenceNumber: 1, watchedOn: "2026-01-01",
+      rating: 8, createdAt: now, updatedAt: now, operationId: "manual-test"
+    });
+    transaction.objectStore("collections").put({ id: "collection-test", name: "Prueba", createdAt: now, updatedAt: now });
+    transaction.objectStore("collectionMovies").put({
+      id: "membership-test", collectionId: "collection-test", movieId: "tmdb-987654", position: 0, addedAt: now
+    });
+    transaction.objectStore("profile").put({ id: "local", name: "Perfil de prueba", updatedAt: now });
+    transaction.objectStore("preferences").put({ id: "local", theme: "dark", language: "es", region: "PA", libraryView: "grid", updatedAt: now });
+    transaction.objectStore("catalogCache").put({ cacheKey: "test-cache", resourceType: "movie", payload: {}, fetchedAt: now });
+    transaction.objectStore("availabilityCache").put({ id: "availability-test", movieId: "tmdb-987654", region: "PA", providers: [], lastFetchedAt: now });
+    transaction.objectStore("peopleCache").put({ tmdbPersonId: 654321, name: "Persona ficticia", fetchedAt: now });
+    transaction.objectStore("spectroSnapshots").put({ id: "snapshot-test", algorithmVersion: "test", inputFingerprint: "test", computedAt: now, analysisPayload: {} });
+    transaction.objectStore("appMetadata").put({ key: "internal-test", value: "preserve" });
+
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error ?? new Error("La preparación de prueba se canceló."));
+    });
+    db.close();
+  });
+
+  await page.getByRole("button", { name: "Empezar de cero" }).click();
+  const dialog = page.getByRole("dialog", { name: "Restablecer Prisma" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("1");
+  await expect(dialog.getByRole("button", { name: "Borrar definitivamente" })).toBeDisabled();
+
+  await dialog.getByLabel("Escribe BORRAR para confirmar").fill("BORRAR");
+  await dialog.getByRole("button", { name: "Borrar definitivamente" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText("Prisma está limpio");
+
+  const state = await page.evaluate(async () => {
+    const request = indexedDB.open("prisma_database");
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const stores = [
+      "movies", "libraryEntries", "viewings", "collections", "collectionMovies",
+      "profile", "preferences", "catalogCache", "availabilityCache", "peopleCache", "spectroSnapshots"
+    ];
+    const transaction = db.transaction([...stores, "appMetadata"], "readonly");
+    const counts = await Promise.all(stores.map((name) => new Promise<number>((resolve, reject) => {
+      const count = transaction.objectStore(name).count();
+      count.onsuccess = () => resolve(count.result);
+      count.onerror = () => reject(count.error);
+    })));
+    const metadataCount = await new Promise<number>((resolve, reject) => {
+      const count = transaction.objectStore("appMetadata").count();
+      count.onsuccess = () => resolve(count.result);
+      count.onerror = () => reject(count.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    db.close();
+    return { counts, metadataCount, tmdbToken: localStorage.getItem("prisma.tmdb.accessToken") };
+  });
+
+  expect(state.counts.every((count) => count === 0)).toBe(true);
+  expect(state.metadataCount).toBe(1);
+  expect(state.tmdbToken).toBe("token-ficticio-de-prueba");
+});
+
+test("el restablecimiento permite eliminar también la credencial TMDB", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("prisma.tmdb.accessToken", "token-ficticio-de-prueba");
+  });
+  await page.goto("#/settings/data");
+  await page.getByRole("button", { name: "Empezar de cero" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Restablecer Prisma" });
+  await expect(dialog.getByLabel("Eliminar también la credencial TMDB guardada en este navegador.")).toBeVisible();
+  await dialog.getByLabel("Eliminar también la credencial TMDB guardada en este navegador.").check();
+  await dialog.getByLabel("Escribe BORRAR para confirmar").fill("BORRAR");
+  await dialog.getByRole("button", { name: "Borrar definitivamente" }).click();
+
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText("También se eliminó la credencial TMDB");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("prisma.tmdb.accessToken"))).toBeNull();
+});

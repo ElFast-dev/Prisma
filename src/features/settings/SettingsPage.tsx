@@ -9,6 +9,7 @@ import {
 } from "../../infrastructure/tmdb/settings";
 import { testTmdbConnection } from "../../infrastructure/tmdb/TmdbService";
 import { createLocalBackup, restoreLocalBackup } from "../../infrastructure/database/backupService";
+import { getLocalDataSummary, resetLocalData, type LocalDataSummary } from "../../infrastructure/database/dataManagementService";
 import { importExternalMovies, type ExternalMovieImportPriority } from "../../infrastructure/database/externalMovieImportService";
 import { parsePrismaBackup } from "../../domain/backup";
 import { parseExternalMovieImport, type ExternalMovieImportPlan } from "../../domain/externalMovieImport";
@@ -44,6 +45,11 @@ export function SettingsPage() {
   const [libraryView, setLibraryView] = useState<"list" | "grid">("list");
   const [libraryPreferencesReady, setLibraryPreferencesReady] = useState(false);
   const [libraryPreferencesError, setLibraryPreferencesError] = useState("");
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetSummary, setResetSummary] = useState<LocalDataSummary | null>(null);
+  const [resetConfirmation, setResetConfirmation] = useState("");
+  const [resetAlsoDeleteTmdb, setResetAlsoDeleteTmdb] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   useEffect(() => {
     const stored = getTmdbAccessToken();
@@ -242,6 +248,61 @@ export function SettingsPage() {
     setExternalImportPlan(null);
     setExternalImportFileName("");
     setBackupMessage("Importación cancelada. No se modificaron tus datos.");
+  }
+
+  async function handleOpenResetDialog() {
+    setBackupMessage("");
+    setBackupError("");
+    setResetConfirmation("");
+    setResetAlsoDeleteTmdb(false);
+    setResetSummary(null);
+    setResetDialogOpen(true);
+    setResetBusy(true);
+    try {
+      setResetSummary(await getLocalDataSummary());
+    } catch (cause) {
+      setResetDialogOpen(false);
+      setBackupError(cause instanceof Error
+        ? cause.message
+        : "No se pudieron consultar los datos locales de Prisma.");
+    } finally {
+      setResetBusy(false);
+    }
+  }
+
+  async function handleResetLocalData() {
+    if (resetConfirmation !== "BORRAR" || resetBusy || backupBusy) return;
+
+    setResetBusy(true);
+    setBackupError("");
+    try {
+      await resetLocalData();
+      if (resetAlsoDeleteTmdb) {
+        clearTmdbAccessToken();
+        setToken("");
+        setConfigured(false);
+        setState("idle");
+        setMessage("");
+      }
+      setLibraryView("list");
+      setLibraryPreferencesError("");
+      setLibraryPreferencesReady(true);
+      setExternalImportPlan(null);
+      setExternalImportFileName("");
+      setResetDialogOpen(false);
+      setResetConfirmation("");
+      setResetSummary(null);
+      setBackupMessage(
+        "Prisma está limpio. Se eliminaron la Biblioteca, el Historial, las colecciones, el perfil, las preferencias y el catálogo local. "
+        + (resetAlsoDeleteTmdb
+          ? "También se eliminó la credencial TMDB."
+          : "Tu credencial TMDB y la región se conservaron.")
+      );
+    } catch (cause) {
+      setBackupError(cause instanceof Error ? cause.message : "No se pudieron eliminar los datos locales.");
+    } finally {
+      setResetBusy(false);
+    }
   }
 
   return (
@@ -467,6 +528,102 @@ export function SettingsPage() {
           <li>La credencial TMDB se excluye de las copias y no se modifica al importar o restaurar.</li>
         </ul>
       </section>
+
+      <section className="settings-section card-surface reset-data-section">
+        <div className="settings-section-heading">
+          <div className="settings-icon reset-data-icon"><Trash2 size={21} /></div>
+          <div>
+            <h2>Empezar de cero</h2>
+            <p className="muted-copy">Elimina los datos de este dispositivo para comenzar con una Prisma limpia.</p>
+          </div>
+        </div>
+        <p className="muted-copy">
+          Se borrarán películas guardadas, estados de Biblioteca, favoritos, visionados, comentarios,
+          colecciones, perfil, filtros, preferencias y cachés locales. Esta acción no se puede deshacer.
+        </p>
+        <p className="muted-copy">
+          Tu credencial TMDB y la región elegida se conservarán, salvo que marques expresamente lo contrario para la credencial.
+        </p>
+        <button className="button button-danger button-full" type="button"
+          onClick={() => void handleOpenResetDialog()} disabled={backupBusy || resetBusy}>
+          <Trash2 size={16} /> Empezar de cero
+        </button>
+      </section>
+
+      {resetDialogOpen && (
+        <div className="sheet-backdrop reset-data-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !backupBusy && !resetBusy) setResetDialogOpen(false);
+        }}>
+          <section className="bottom-sheet reset-data-sheet" role="dialog" aria-modal="true" aria-labelledby="reset-data-title">
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <div>
+                <h2 id="reset-data-title">Restablecer Prisma</h2>
+                <p className="muted-copy">Revisa el alcance antes de borrar.</p>
+              </div>
+            </div>
+
+            {resetSummary ? (
+              <div className="external-import-summary reset-data-summary">
+                <div><strong>{resetSummary.movies}</strong><span>Películas</span></div>
+                <div><strong>{resetSummary.libraryEntries}</strong><span>En Biblioteca</span></div>
+                <div><strong>{resetSummary.viewings}</strong><span>Visionados</span></div>
+                <div><strong>{resetSummary.collections}</strong><span>Colecciones</span></div>
+              </div>
+            ) : (
+              <p className="muted-copy">Consultando los datos guardados en este dispositivo…</p>
+            )}
+
+            <p className="reset-data-warning">
+              Se borrarán también el perfil, las notas, los filtros, las preferencias y las cachés locales.
+              No se borrará la aplicación ni los datos almacenados en otros dispositivos.
+            </p>
+
+            <button className="button button-secondary button-full" type="button"
+              onClick={() => void handleCreateBackup()} disabled={backupBusy || resetBusy}>
+              <Download size={16} /> Descargar copia Prisma antes de borrar
+            </button>
+
+            {backupMessage && (
+              <div className="connection-message is-success" role="status">
+                <CheckCircle2 size={17} /><span>{backupMessage}</span>
+              </div>
+            )}
+            {backupError && (
+              <div className="connection-message is-error" role="alert">
+                <CircleAlert size={17} /><span>{backupError}</span>
+              </div>
+            )}
+
+            {configured && (
+              <label className="reset-data-option">
+                <input type="checkbox" checked={resetAlsoDeleteTmdb}
+                  onChange={(event) => setResetAlsoDeleteTmdb(event.target.checked)} />
+                <span>Eliminar también la credencial TMDB guardada en este navegador.</span>
+              </label>
+            )}
+
+            <label className="field-label" htmlFor="reset-data-confirmation">Escribe BORRAR para confirmar</label>
+            <input id="reset-data-confirmation" className="text-field"
+              value={resetConfirmation} onChange={(event) => setResetConfirmation(event.target.value)}
+              autoComplete="off" spellCheck={false} placeholder="BORRAR" />
+
+            <p className="muted-copy reset-data-footnote">
+              No hay papelera ni botón de deshacer. Solo podrás recuperar estos datos mediante una copia de seguridad Prisma guardada previamente.
+            </p>
+
+            <button className="button button-danger button-full" type="button"
+              disabled={!resetSummary || resetConfirmation !== "BORRAR" || backupBusy || resetBusy}
+              onClick={() => void handleResetLocalData()}>
+              <Trash2 size={16} /> {resetBusy ? "Restableciendo…" : "Borrar definitivamente"}
+            </button>
+            <button className="button button-quiet button-full" type="button"
+              disabled={backupBusy || resetBusy} onClick={() => setResetDialogOpen(false)}>
+              Cancelar
+            </button>
+          </section>
+        </div>
+      )}
       )}
 
       {activeSection?.id === "privacy" && (
