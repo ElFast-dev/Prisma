@@ -18,6 +18,13 @@ import { getUserPreferences, saveLibraryView } from "../../infrastructure/databa
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
+function scrollToSettingsSection(id: string) {
+  const section = document.getElementById(id);
+  if (!section) return;
+  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  section.scrollIntoView({ behavior, block: "start" });
+}
+
 export function SettingsPage() {
   const [token, setToken] = useState("");
   const [configured, setConfigured] = useState(false);
@@ -237,7 +244,15 @@ export function SettingsPage() {
         </div>
       </header>
 
-      <section className="settings-section card-surface">
+      <nav className="settings-section-nav" aria-label="Subsecciones de Ajustes">
+        <button type="button" onClick={() => scrollToSettingsSection("settings-catalog")}>Catálogo</button>
+        <button type="button" onClick={() => scrollToSettingsSection("settings-appearance")}>Biblioteca</button>
+        <button type="button" onClick={() => scrollToSettingsSection("settings-data")}>Datos</button>
+        <button type="button" onClick={() => scrollToSettingsSection("settings-privacy")}>Privacidad</button>
+        <button type="button" onClick={() => scrollToSettingsSection("settings-about")}>Prisma</button>
+      </nav>
+
+      <section id="settings-catalog" className="settings-section settings-category-anchor card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><span className="tmdb-mark">TMDB</span></div>
           <div>
@@ -300,7 +315,7 @@ export function SettingsPage() {
 
       <EnrichmentPanel configured={configured} />
 
-      <section className="settings-section card-surface">
+      <section id="settings-appearance" className="settings-section settings-category-anchor card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><Grid2X2 size={21} /></div>
           <div>
@@ -335,7 +350,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <section className="settings-section card-surface">
+      <section id="settings-data" className="settings-section settings-category-anchor card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><ShieldCheck size={21} /></div>
           <div>
@@ -390,7 +405,7 @@ export function SettingsPage() {
         </ul>
       </section>
 
-      <section className="settings-section card-surface">
+      <section id="settings-privacy" className="settings-section settings-category-anchor card-surface">
         <h2>Privacidad de la credencial</h2>
         <ul className="settings-bullet-list">
           <li>Se guarda únicamente en el almacenamiento local de este navegador.</li>
@@ -401,11 +416,15 @@ export function SettingsPage() {
         <a className="text-link" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Gestionar credenciales de TMDB ↗</a>
       </section>
 
-      <section className="settings-section card-surface">
-        <h2>Próximamente</h2>
-        <p className="muted-copy">Preferencias adicionales de interfaz y controles avanzados de privacidad se incorporarán en próximas etapas.</p>
+      <section id="settings-about" className="settings-section settings-category-anchor card-surface settings-about-card">
+        <div>
+          <p className="eyebrow">INFORMACIÓN</p>
+          <h2>Tu historia permanece contigo</h2>
+          <p className="muted-copy">Prisma es un diario cinematográfico personal, gratuito y local-first. Tus películas, visionados, calificaciones y comentarios permanecen en el almacenamiento de este dispositivo.</p>
+        </div>
+        <span className="settings-app-version">Versión 0.1.1</span>
       </section>
-      <footer className="page-footer"><span>PRISMA</span><span>Versión 0.1.1</span></footer>
+      <footer className="page-footer"><span>PRISMA</span><span>Hecho para tu memoria cinematográfica.</span></footer>
     </div>
   );
 }

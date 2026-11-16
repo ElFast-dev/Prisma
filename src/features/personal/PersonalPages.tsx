@@ -6,7 +6,12 @@ import {
   Film, Clapperboard, Clock3 as AchievementClock,
   SlidersHorizontal
 } from "lucide-react";
-import type { Collection, LocalProfile, MovieRecord } from "../../domain/types";
+import type {
+  Collection,
+  HistoryBrowsePreferences,
+  LocalProfile,
+  MovieRecord
+} from "../../domain/types";
 import {
   buildHistoryCalendarCells,
   buildHistoryItems,
@@ -43,7 +48,12 @@ import { calculateAchievements, type AchievementIcon } from "../../domain/achiev
 import { getLocalProfile, saveLocalProfile } from "../../infrastructure/database/profileService";
 import { filterLibraryItems, getLibraryFacets, getMovieReleaseStatus, type LibraryBrowseItem, type LibraryBrowseOptions, type LibrarySort } from "../../domain/libraryBrowse";
 import { DEFAULT_LIBRARY_FILTERS, normalizeLibraryFilters, selectLibrarySort } from "../../domain/libraryPreferences";
-import { getUserPreferences, saveLibraryBrowseFilters } from "../../infrastructure/database/preferencesService";
+import {
+  getUserPreferences,
+  saveHistoryBrowsePreferences,
+  saveHistoryFilters,
+  saveLibraryBrowseFilters
+} from "../../infrastructure/database/preferencesService";
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { navigateBack } from "../../navigation/routeHistory";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
@@ -502,9 +512,10 @@ export function HistoryPage() {
   const [sortOrder, setSortOrder] = useState<HistorySortOrder>("newest");
   const [viewMode, setViewMode] = useState<HistoryViewMode>("timeline");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [editing, setEditing] = useState<HistoryItem | null>(null);
   const [error, setError] = useState("");
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const [preferencesError, setPreferencesError] = useState("");
 
   const loadHistory = useCallback(async () => {
     const viewings = await prismaDb.viewings.toArray();
@@ -516,6 +527,36 @@ export function HistoryPage() {
   useEffect(() => {
     void loadHistory().catch(() => setError("No se pudo leer el historial local."));
   }, [loadHistory]);
+
+  useEffect(() => {
+    let active = true;
+    void getUserPreferences()
+      .then((preferences) => {
+        if (!active) return;
+        const browse = preferences.historyBrowse;
+        if (browse) {
+          setViewMode(browse.viewMode);
+          setSortOrder(browse.sortOrder);
+          setMonth(browse.month);
+          setSelectedDate(browse.selectedDate);
+        }
+        const savedFilters = preferences.historyFilters;
+        if (savedFilters) {
+          setQuery(savedFilters.query);
+          setNotesFilter(savedFilters.notes);
+          setRatingFilter(savedFilters.rating);
+          setFromDate(savedFilters.fromDate);
+          setToDate(savedFilters.toDate);
+        }
+      })
+      .catch(() => {
+        if (active) setPreferencesError("No se pudieron leer las preferencias del Historial. Se usarán los valores predeterminados.");
+      })
+      .finally(() => {
+        if (active) setPreferencesReady(true);
+      });
+    return () => { active = false; };
+  }, []);
 
   const filters = useMemo<HistoryFilters>(() => ({
     query,
@@ -529,6 +570,39 @@ export function HistoryPage() {
     () => filterHistoryItems(items, filters, sortOrder),
     [items, filters, sortOrder]
   );
+
+  function updateHistoryBrowse(patch: Partial<HistoryBrowsePreferences>) {
+    const next: HistoryBrowsePreferences = {
+      viewMode,
+      sortOrder,
+      month,
+      selectedDate,
+      ...patch
+    };
+    setViewMode(next.viewMode);
+    setSortOrder(next.sortOrder);
+    setMonth(next.month);
+    setSelectedDate(next.selectedDate);
+    if (preferencesReady) {
+      void saveHistoryBrowsePreferences(next).catch(() => {
+        setPreferencesError("No se pudo guardar la presentación del Historial en este dispositivo.");
+      });
+    }
+  }
+
+  function updateHistoryFilters(patch: Partial<HistoryFilters>) {
+    const next: HistoryFilters = { ...filters, ...patch };
+    setQuery(next.query);
+    setNotesFilter(next.notes);
+    setRatingFilter(next.rating);
+    setFromDate(next.fromDate);
+    setToDate(next.toDate);
+    if (preferencesReady) {
+      void saveHistoryFilters(next).catch(() => {
+        setPreferencesError("No se pudieron guardar los filtros del Historial en este dispositivo.");
+      });
+    }
+  }
   const monthItems = useMemo(
     () => filteredItems.filter((item) => item.viewing.watchedOn.startsWith(month)),
     [filteredItems, month]
@@ -575,12 +649,14 @@ export function HistoryPage() {
     + Number(Boolean(toDate));
 
   function clearHistoryFilters() {
-    setQuery("");
-    setNotesFilter("all");
-    setRatingFilter("all");
-    setFromDate("");
-    setToDate("");
-    setSelectedDate(null);
+    updateHistoryFilters({
+      query: "",
+      notes: "all",
+      rating: "all",
+      fromDate: "",
+      toDate: ""
+    });
+    updateHistoryBrowse({ selectedDate: null });
   }
 
   async function handleDelete(item: HistoryItem) {
@@ -595,7 +671,7 @@ export function HistoryPage() {
     try {
       await deleteViewing(item.viewing.id);
       await loadHistory();
-      if (selectedDate === item.viewing.watchedOn) setSelectedDate(null);
+      if (selectedDate === item.viewing.watchedOn) updateHistoryBrowse({ selectedDate: null });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No se pudo eliminar el visionado.");
     }
@@ -612,6 +688,16 @@ export function HistoryPage() {
       year: "numeric"
     })
     : "";
+
+  if (!preferencesReady) {
+    return (
+      <div className="page history-loading" role="status" aria-live="polite">
+        <p className="eyebrow">DIARIO CINEMATOGRÁFICO</p>
+        <h1>Historial</h1>
+        <p className="muted-copy">Restaurando tu diario…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -637,13 +723,51 @@ export function HistoryPage() {
         placeholder="Película, director, género o comentario..."
         searchLabel="Buscar en tu historial"
         value={query}
-        onChange={setQuery}
+        onChange={(value) => updateHistoryFilters({ query: value })}
         onFiltersClick={() => setFiltersOpen(true)}
         filtersOpen={filtersOpen}
         filtersActive={activeFilterCount > 0}
-        onSettingsClick={() => setSettingsOpen(true)}
-        settingsExpanded={settingsOpen}
+        settingsHref="#/settings"
+        disabled={!preferencesReady}
       />
+
+      {preferencesError && <p className="preferences-feedback" role="status">{preferencesError}</p>}
+
+      <div className="history-explorer">
+        <div className="history-view-switch" role="group" aria-label="Modo de exploración del Historial">
+          <button
+            className={viewMode === "timeline" ? "history-view-option is-selected" : "history-view-option"}
+            type="button"
+            aria-pressed={viewMode === "timeline"}
+            disabled={!preferencesReady}
+            onClick={() => updateHistoryBrowse({ viewMode: "timeline" })}
+          >
+            <Clapperboard size={16} />
+            <span>Cronología</span>
+          </button>
+          <button
+            className={viewMode === "calendar" ? "history-view-option is-selected" : "history-view-option"}
+            type="button"
+            aria-pressed={viewMode === "calendar"}
+            disabled={!preferencesReady}
+            onClick={() => updateHistoryBrowse({ viewMode: "calendar" })}
+          >
+            <CalendarDays size={16} />
+            <span>Calendario</span>
+          </button>
+        </div>
+        <button
+          className="history-sort-toggle"
+          type="button"
+          disabled={!preferencesReady}
+          onClick={() => updateHistoryBrowse({ sortOrder: sortOrder === "newest" ? "oldest" : "newest" })}
+          aria-label={sortOrder === "newest" ? "Ordenar del más antiguo al más reciente" : "Ordenar del más reciente al más antiguo"}
+          title="Cambiar orden cronológico"
+        >
+          {sortOrder === "newest" ? <ArrowDown size={15} /> : <ArrowUp size={15} />}
+          <span>{sortOrder === "newest" ? "Más recientes" : "Más antiguos"}</span>
+        </button>
+      </div>
 
       <div className="history-list-heading">
         <div>
@@ -675,8 +799,7 @@ export function HistoryPage() {
                 className="icon-button"
                 type="button"
                 onClick={() => {
-                  setMonth((value) => shiftHistoryMonth(value, -1));
-                  setSelectedDate(null);
+                  updateHistoryBrowse({ month: shiftHistoryMonth(month, -1), selectedDate: null });
                 }}
                 aria-label="Mes anterior"
               >
@@ -686,8 +809,7 @@ export function HistoryPage() {
                 className="icon-button"
                 type="button"
                 onClick={() => {
-                  setMonth(today.slice(0, 7));
-                  setSelectedDate(null);
+                  updateHistoryBrowse({ month: today.slice(0, 7), selectedDate: null });
                 }}
                 aria-label="Ir al mes actual"
               >
@@ -697,8 +819,7 @@ export function HistoryPage() {
                 className="icon-button"
                 type="button"
                 onClick={() => {
-                  setMonth((value) => shiftHistoryMonth(value, 1));
-                  setSelectedDate(null);
+                  updateHistoryBrowse({ month: shiftHistoryMonth(month, 1), selectedDate: null });
                 }}
                 aria-label="Mes siguiente"
               >
@@ -720,7 +841,7 @@ export function HistoryPage() {
                 ].filter(Boolean).join(" ")}
                 key={cell.date}
                 type="button"
-                onClick={() => setSelectedDate((current) => current === cell.date ? null : cell.date)}
+                onClick={() => updateHistoryBrowse({ selectedDate: selectedDate === cell.date ? null : cell.date })}
                 aria-pressed={selectedDate === cell.date}
                 aria-label={cell.date + (dayCounts.has(cell.date)
                   ? ", " + dayCounts.get(cell.date) + " visionados"
@@ -757,9 +878,9 @@ export function HistoryPage() {
           action={items.length === 0 ? (
             <a className="text-link" href="#/discover">Descubrir películas</a>
           ) : viewMode === "calendar" && monthItems.length === 0 ? (
-            <button className="text-link" type="button" onClick={() => setViewMode("timeline")}>Ver toda la cronología</button>
+            <button className="text-link" type="button" onClick={() => updateHistoryBrowse({ viewMode: "timeline" })}>Ver toda la cronología</button>
           ) : selectedDate ? (
-            <button className="text-link" type="button" onClick={() => setSelectedDate(null)}>Ver mes completo</button>
+            <button className="text-link" type="button" onClick={() => updateHistoryBrowse({ selectedDate: null })}>Ver mes completo</button>
           ) : (
             <button className="text-link" type="button" onClick={clearHistoryFilters}>Limpiar búsqueda y filtros</button>
           )}
@@ -781,17 +902,22 @@ export function HistoryPage() {
                     item.movie.posterPath,
                     "w185"
                   );
-                  const dateLabel = new Date(item.viewing.watchedOn + "T12:00:00")
-                    .toLocaleDateString("es-PA", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric"
-                    });
+                  const watchedDate = new Date(item.viewing.watchedOn + "T12:00:00");
+                  const dateDay = new Intl.DateTimeFormat("es-PA", { day: "2-digit" }).format(watchedDate);
+                  const dateMonth = new Intl.DateTimeFormat("es-PA", { month: "short" })
+                    .format(watchedDate)
+                    .replace(".", "");
                   const genres = item.movie.genres.slice(0, 2).join(" · ");
                   const directors = item.movie.directors?.slice(0, 2).join(", ");
 
                   return (
-                    <article className="history-entry card-surface" key={item.viewing.id}>
+                    <article className="history-entry" key={item.viewing.id}>
+                      <div className="history-entry-date">
+                        <time dateTime={item.viewing.watchedOn} aria-label={item.viewing.watchedOn}>
+                          <strong>{dateDay}</strong>
+                          <small>{dateMonth}</small>
+                        </time>
+                      </div>
                       <a
                         className="history-entry-poster"
                         href={"#/movie/" + item.movie.tmdbId}
@@ -809,8 +935,11 @@ export function HistoryPage() {
                           <small className="history-entry-original">{item.movie.originalTitle}</small>
                         )}
                         <div className="history-entry-meta">
-                          <span>Visionado #{item.viewing.sequenceNumber}</span>
-                          <time dateTime={item.viewing.watchedOn}>{dateLabel}</time>
+                          <span className={item.viewing.sequenceNumber > 1 ? "history-entry-rewatch" : ""}>
+                            {item.viewing.sequenceNumber > 1
+                              ? "REVISIONADO · #" + item.viewing.sequenceNumber
+                              : "PRIMERA EXPERIENCIA"}
+                          </span>
                           {item.viewing.watchedAtLocalTime && (
                             <time
                               dateTime={item.viewing.watchedOn + "T" + item.viewing.watchedAtLocalTime}
@@ -910,7 +1039,7 @@ export function HistoryPage() {
                     type="button"
                     key={value}
                     aria-pressed={notesFilter === value}
-                    onClick={() => setNotesFilter(value)}
+                    onClick={() => updateHistoryFilters({ notes: value })}
                   >
                     {label}
                   </button>
@@ -932,7 +1061,7 @@ export function HistoryPage() {
                     type="button"
                     key={value}
                     aria-pressed={ratingFilter === value}
-                    onClick={() => setRatingFilter(value)}
+                    onClick={() => updateHistoryFilters({ rating: value })}
                   >
                     {label}
                   </button>
@@ -950,7 +1079,7 @@ export function HistoryPage() {
                     type="date"
                     value={fromDate}
                     max={toDate || today}
-                    onChange={(event) => setFromDate(event.target.value)}
+                    onChange={(event) => updateHistoryFilters({ fromDate: event.target.value })}
                   />
                 </label>
                 <label className="history-filter-field">
@@ -961,7 +1090,7 @@ export function HistoryPage() {
                     value={toDate}
                     min={fromDate || undefined}
                     max={today}
-                    onChange={(event) => setToDate(event.target.value)}
+                    onChange={(event) => updateHistoryFilters({ toDate: event.target.value })}
                   />
                 </label>
               </div>
@@ -973,106 +1102,6 @@ export function HistoryPage() {
               </button>
               <button className="button button-primary" type="button" onClick={() => setFiltersOpen(false)}>
                 Ver {filteredItems.length} resultados
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {settingsOpen && (
-        <div
-          className="sheet-backdrop history-sheet-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setSettingsOpen(false);
-          }}
-        >
-          <section
-            className="bottom-sheet history-bottom-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="history-settings-title"
-          >
-            <div className="sheet-handle" />
-            <div className="sheet-header">
-              <div>
-                <p className="eyebrow">PRESENTACIÓN</p>
-                <h2 id="history-settings-title">Vista del historial</h2>
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setSettingsOpen(false)}
-                aria-label="Cerrar ajustes de visualización"
-              >
-                <X size={19} />
-              </button>
-            </div>
-
-            <div className="history-filter-section">
-              <span className="history-filter-label">Orden cronológico</span>
-              <div className="library-status-options">
-                <button
-                  className={sortOrder === "newest" ? "library-status-option is-selected" : "library-status-option"}
-                  type="button"
-                  aria-pressed={sortOrder === "newest"}
-                  onClick={() => setSortOrder("newest")}
-                >
-                  <ArrowDown size={15} /> Más recientes
-                </button>
-                <button
-                  className={sortOrder === "oldest" ? "library-status-option is-selected" : "library-status-option"}
-                  type="button"
-                  aria-pressed={sortOrder === "oldest"}
-                  onClick={() => setSortOrder("oldest")}
-                >
-                  <ArrowUp size={15} /> Más antiguos
-                </button>
-              </div>
-            </div>
-
-            <div className="history-filter-section">
-              <span className="history-filter-label">Forma de explorar</span>
-              <div className="library-view-options">
-                <button
-                  className={viewMode === "timeline" ? "library-view-option is-selected" : "library-view-option"}
-                  type="button"
-                  aria-pressed={viewMode === "timeline"}
-                  onClick={() => {
-                    setViewMode("timeline");
-                    setSelectedDate(null);
-                  }}
-                >
-                  <List size={20} />
-                  <span>
-                    <strong>Cronología</strong>
-                    <small>Todos los meses, del más reciente al más antiguo</small>
-                  </span>
-                  {viewMode === "timeline" && <span className="library-view-check" aria-hidden="true">✓</span>}
-                </button>
-                <button
-                  className={viewMode === "calendar" ? "library-view-option is-selected" : "library-view-option"}
-                  type="button"
-                  aria-pressed={viewMode === "calendar"}
-                  onClick={() => {
-                    setViewMode("calendar");
-                    setSelectedDate(null);
-                  }}
-                >
-                  <CalendarDays size={20} />
-                  <span>
-                    <strong>Calendario</strong>
-                    <small>Consulta las experiencias por mes y día</small>
-                  </span>
-                  {viewMode === "calendar" && <span className="library-view-check" aria-hidden="true">✓</span>}
-                </button>
-              </div>
-            </div>
-
-            <div className="history-panel-actions">
-              <span className="muted-copy">La vista solo cambia cómo consultas tus datos.</span>
-              <button className="button button-primary" type="button" onClick={() => setSettingsOpen(false)}>
-                Listo
               </button>
             </div>
           </section>
