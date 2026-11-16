@@ -129,7 +129,7 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect(page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]')).toHaveAttribute("opacity", "1");
   await page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]').click();
   await expect(page.getByText(/influencia/).first()).toBeVisible();
-  await expect(page.getByText("Por explorar")).toBeVisible();
+  await expect(page.locator('.spectro-network-node.is-movie.is-unexplored[aria-label^="Candidata Prisma ficticia"]')).toBeVisible();
   await expect(page.getByText("Rasgos conectados")).toBeVisible();
   await page.locator(".spectro-network-related button").filter({ hasText: "Género · Drama" }).click();
   await expect(page.getByText("Películas conectadas")).toBeVisible();
