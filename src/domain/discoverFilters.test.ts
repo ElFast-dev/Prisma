@@ -57,13 +57,19 @@ describe("filtros reales de Descubrir", () => {
     })).toEqual({
       ...EMPTY_DISCOVER_FILTERS,
       genres: [18, 878],
-      yearFrom: "1990",
-      yearTo: "",
+      yearFrom: "",
+      yearTo: "1990",
       runtimeFrom: "",
       runtimeTo: "",
       originCountry: "",
       originalLanguage: ""
     });
+
+    expect(normalizeDiscoverFilters({
+      ...EMPTY_DISCOVER_FILTERS,
+      yearFrom: "2000",
+      yearTo: "1990"
+    })).toMatchObject({ yearFrom: "2000", yearTo: "" });
   });
 
   it("cuenta grupos de criterios activos y no el número de géneros", () => {
