@@ -97,6 +97,12 @@ test("abre una ficha, registra un visionado y crea una colección local", async 
   await expect(page.getByRole("button", { name: "Agregar a Pendientes" })).toBeVisible();
   await expect(page.getByRole("button", { name: "En Pendientes ✓" })).toHaveCount(0);
 
+  await page.getByRole("button", { name: "Agregar visionado #2" }).click();
+  const unRatedDialog = page.getByRole("dialog", { name: "Registrar visionado" });
+  await unRatedDialog.getByLabel("Fecha del visionado").fill("2024-05-02");
+  await unRatedDialog.getByRole("button", { name: "Guardar visionado" }).click();
+  await expect(page.getByText("Sin calificar")).toBeVisible();
+
   await page.getByRole("button", { name: "Más opciones" }).click();
   const optionsDialog = page.getByRole("dialog", { name: "Más opciones" });
   await optionsDialog.getByRole("button", { name: "Agregar a colección" }).click();
