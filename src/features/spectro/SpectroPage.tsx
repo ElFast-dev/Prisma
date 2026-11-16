@@ -662,6 +662,14 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
                       <circle className="spectro-network-movie-fallback" cx={node.x} cy={node.y} r={radius} />
                     )}
                     <circle className="spectro-network-node-outline" cx={node.x} cy={node.y} r={radius} />
+                    {node.favorite && (
+                      <text
+                        className="spectro-network-favorite-marker"
+                        x={node.x + radius - 1}
+                        y={node.y - radius + 6}
+                        textAnchor="middle"
+                      >★</text>
+                    )}
                   </>
                 ) : (
                   <>
