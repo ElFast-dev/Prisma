@@ -180,14 +180,20 @@ describe("analyzeSpectro 2.0", () => {
       movie("movie-1", "Drama", 18, 2015),
       movie("movie-2", "Drama", 18, 2016),
       movie("movie-3", "Drama", 18, 2017),
-      movie("movie-4", "Terror", 27, 2020)
+      movie("movie-4", "Terror", 27, 2020, {
+        countries: ["Estados Unidos"], directors: ["Director Z"], castMembers: ["Actor Z"],
+        originalLanguage: "en", runtimeMinutes: 160
+      })
     ];
     const viewings = [
       viewing("v1", "movie-1", "2026-01-01", 8),
       viewing("v2", "movie-2", "2026-01-02", 8),
       viewing("v3", "movie-3", "2026-01-03", 8)
     ];
-    const candidate = movie("movie-5", "Terror", 27, 2024);
+    const candidate = movie("movie-5", "Terror", 27, 2024, {
+      countries: ["Estados Unidos"], directors: ["Director Z"], castMembers: ["Actor Z"],
+      originalLanguage: "en", runtimeMinutes: 160
+    });
     const result = analyzeSpectro({
       movies,
       viewings,
