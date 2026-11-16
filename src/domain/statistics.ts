@@ -30,6 +30,8 @@ export interface PersonalStats {
   averageRating: number | null;
   genreHighlights: StatisticsHighlight[];
   decadeHighlights: StatisticsHighlight[];
+  directorHighlights: StatisticsHighlight[];
+  countryHighlights: StatisticsHighlight[];
   recentActivity: MonthlyActivity[];
 }
 
@@ -131,6 +133,33 @@ function buildDecadeHighlights(
   return rankHighlights(counts);
 }
 
+function buildMovieMetadataHighlights(
+  watchedMovieIds: Set<string>,
+  movieById: Map<string, MovieRecord>,
+  selectValues: (movie: MovieRecord) => string[] | undefined
+): StatisticsHighlight[] {
+  const counts = new Map<string, number>();
+
+  for (const movieId of watchedMovieIds) {
+    const movie = movieById.get(movieId);
+    if (!movie) continue;
+
+    const uniqueValues = new Map<string, string>();
+    for (const rawValue of selectValues(movie) ?? []) {
+      const label = rawValue.trim();
+      if (!label) continue;
+      const key = label.toLocaleLowerCase("es");
+      if (!uniqueValues.has(key)) uniqueValues.set(key, label);
+    }
+
+    for (const label of uniqueValues.values()) {
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+  }
+
+  return rankHighlights(counts);
+}
+
 function buildRecentActivity(viewings: Viewing[], today: string): MonthlyActivity[] {
   const [year, month] = today.split("-").map(Number);
   const buckets: MonthlyActivity[] = [];
@@ -196,6 +225,8 @@ export function calculatePersonalStats(
     averageRating,
     genreHighlights: buildGenreHighlights(watchedMovieIds, movieById),
     decadeHighlights: buildDecadeHighlights(watchedMovieIds, movieById),
+    directorHighlights: buildMovieMetadataHighlights(watchedMovieIds, movieById, (movie) => movie.directors),
+    countryHighlights: buildMovieMetadataHighlights(watchedMovieIds, movieById, (movie) => movie.countries),
     recentActivity: buildRecentActivity(viewings, today)
   };
 }

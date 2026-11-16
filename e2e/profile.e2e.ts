@@ -35,7 +35,8 @@ async function seedCinematicHistory(page: import("@playwright/test").Page) {
         title: "Historia ficticia uno",
         releaseYear: 1994,
         genres: ["Drama", "Thriller"],
-        countries: [],
+        countries: ["Panamá"],
+        directors: ["Directora ficticia"],
         runtimeMinutes: 110,
         lastViewingSequence: 2,
         createdAt: now,
@@ -47,7 +48,8 @@ async function seedCinematicHistory(page: import("@playwright/test").Page) {
         title: "Historia ficticia dos",
         releaseYear: 2008,
         genres: ["Drama", "Ciencia ficción"],
-        countries: [],
+        countries: ["Panamá", "México"],
+        directors: ["Directora ficticia", "Director ficticio dos"],
         runtimeMinutes: 95,
         lastViewingSequence: 1,
         createdAt: now,
@@ -90,6 +92,10 @@ test("presenta la huella cinematográfica a partir de visionados y películas lo
   await expect(page.getByRole("heading", { name: "Géneros más vistos" })).toBeVisible();
   await expect(page.getByText("Drama", { exact: true })).toBeVisible();
   await expect(page.getByText("Años 1990", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Directores que te acompañan" })).toBeVisible();
+  await expect(page.getByText("Directora ficticia", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Países de producción" })).toBeVisible();
+  await expect(page.getByText("Panamá", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tu ritmo reciente" })).toBeVisible();
   await expect(page.getByRole("img", { name: /Actividad de los últimos seis meses/ })).toBeVisible();
   await expect(page.locator(".achievement-count")).toHaveText("1/13 desbloqueados");

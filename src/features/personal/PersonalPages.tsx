@@ -1885,7 +1885,7 @@ export function ProfilePage() {
         <div className="profile-insights-heading">
           <p className="eyebrow">HUELLA CINEMATOGRÁFICA</p>
           <h2 id="profile-insights-title">Tu mapa de cine</h2>
-          <p className="muted-copy">Los géneros y las épocas que forman tu historia, a partir de las películas que has visto.</p>
+          <p className="muted-copy">Los géneros, las épocas, los autores y los países de producción que forman tu historia cinematográfica.</p>
         </div>
         <div className="profile-insights-grid">
           <section className="profile-insight-block" aria-labelledby="profile-genres-title">
@@ -1906,6 +1906,46 @@ export function ProfilePage() {
               </ol>
             ) : (
               <p className="profile-insight-empty">Cuando registres películas vistas, aquí aparecerán los géneros que más te acompañan.</p>
+            )}
+          </section>
+          <section className="profile-insight-block" aria-labelledby="profile-directors-title">
+            <h3 id="profile-directors-title">Directores que te acompañan</h3>
+            {stats?.directorHighlights.length ? (
+              <ol className="profile-distribution-list">
+                {stats.directorHighlights.map((highlight) => (
+                  <li className="profile-distribution-item" key={highlight.label}>
+                    <div className="profile-distribution-meta">
+                      <span>{highlight.label}</span>
+                      <strong>{highlight.count} {highlight.count === 1 ? "película" : "películas"}</strong>
+                    </div>
+                    <div className="profile-distribution-track" role="img" aria-label={highlight.label + ": " + highlight.count + " películas"}>
+                      <span style={{ width: highlight.percentage + "%" }} />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="profile-insight-empty">Cuando tus películas incluyan sus créditos, aquí aparecerán los directores que más has visto.</p>
+            )}
+          </section>
+          <section className="profile-insight-block" aria-labelledby="profile-countries-title">
+            <h3 id="profile-countries-title">Países de producción</h3>
+            {stats?.countryHighlights.length ? (
+              <ol className="profile-distribution-list">
+                {stats.countryHighlights.map((highlight) => (
+                  <li className="profile-distribution-item" key={highlight.label}>
+                    <div className="profile-distribution-meta">
+                      <span>{highlight.label}</span>
+                      <strong>{highlight.count} {highlight.count === 1 ? "película" : "películas"}</strong>
+                    </div>
+                    <div className="profile-distribution-track" role="img" aria-label={highlight.label + ": " + highlight.count + " películas"}>
+                      <span style={{ width: highlight.percentage + "%" }} />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="profile-insight-empty">Aquí descubrirás los países que aparecen en los créditos de producción de tus películas.</p>
             )}
           </section>
           <section className="profile-insight-block" aria-labelledby="profile-decades-title">
