@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { fakeDb } = vi.hoisted(() => {
+const fakeDb = vi.hoisted(() => {
   const names = [
     "movies",
     "libraryEntries",

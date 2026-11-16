@@ -293,7 +293,7 @@ export function SettingsPage() {
       setResetConfirmation("");
       setResetSummary(null);
       setBackupMessage(
-        "Prisma está limpio. Se eliminaron la Biblioteca, el Historial, las colecciones, el perfil, las preferencias y el catálogo local. "
+        "Prisma está limpio. Se borraron los datos de Biblioteca e Historial, las colecciones, el perfil, las preferencias y el catálogo local. "
         + (resetAlsoDeleteTmdb
           ? "También se eliminó la credencial TMDB."
           : "Tu credencial TMDB y la región se conservaron.")
@@ -598,7 +598,7 @@ export function SettingsPage() {
 
             {configured && (
               <label className="reset-data-option">
-                <input type="checkbox" checked={resetAlsoDeleteTmdb}
+                <input type="checkbox" checked={resetAlsoDeleteTmdb} disabled={backupBusy || resetBusy}
                   onChange={(event) => setResetAlsoDeleteTmdb(event.target.checked)} />
                 <span>Eliminar también la credencial TMDB guardada en este navegador.</span>
               </label>
