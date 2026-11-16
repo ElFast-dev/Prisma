@@ -7,26 +7,18 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("permite entrar a Historial y consultar su estado inicial", async ({ page }) => {
-  await page.getByRole("link", { name: /Historial/ }).click();
+  await openHistory(page);
 
   await expect(page).toHaveURL(/#\/personal\/history$/);
   await expect(page.getByRole("heading", { name: "Historial" })).toBeVisible();
   await expect(page.getByText("Todavía no hay visionados")).toBeVisible();
   await expect(page.getByRole("button", { name: "Abrir filtros" })).toBeVisible();
 
-  // La versión 2.0 presenta estos controles en línea; la anterior los agrupaba
-  // en un panel. Ambas interfaces deben seguir ofreciendo cambio de calendario.
   const inlineExplorer = page.getByRole("group", {
     name: "Modo de exploración del Historial"
   });
-  if (await inlineExplorer.count()) {
-    await expect(inlineExplorer.getByRole("button", { name: "Cronología" })).toBeVisible();
-    await expect(inlineExplorer.getByRole("button", { name: "Calendario" })).toBeVisible();
-  } else {
-    await expect(page.getByRole("button", {
-      name: "Abrir ajustes de visualización"
-    })).toBeVisible();
-  }
+  await expect(inlineExplorer.getByRole("button", { name: "Cronología" })).toBeVisible();
+  await expect(inlineExplorer.getByRole("button", { name: "Calendario" })).toBeVisible();
 });
 
 test("abre, cambia y restablece los filtros del Historial", async ({ page }) => {
@@ -54,15 +46,7 @@ test("permite cambiar a Calendario y seleccionar un día", async ({ page }) => {
   const inlineExplorer = page.getByRole("group", {
     name: "Modo de exploración del Historial"
   });
-  if (await inlineExplorer.count()) {
-    await inlineExplorer.getByRole("button", { name: "Calendario" }).click();
-  } else {
-    await page.getByRole("button", { name: "Abrir ajustes de visualización" }).click();
-    const dialog = page.getByRole("dialog", { name: "Vista del historial" });
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: /Calendario/ }).click();
-    await dialog.getByRole("button", { name: "Listo" }).click();
-  }
+  await inlineExplorer.getByRole("button", { name: "Calendario" }).click();
 
   const calendar = page.getByRole("grid", { name: /Calendario de/ });
   await expect(calendar).toBeVisible();
