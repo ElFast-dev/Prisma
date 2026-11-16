@@ -9,6 +9,7 @@ const validBackup = () => ({
   data: {
     movies: [{
       id: "tmdb-1", tmdbId: 1, title: "Película de prueba", genres: ["Drama"], countries: ["Japón"],
+      keywords: ["memoria", "identidad"],
       lastViewingSequence: 1, createdAt: "2026-11-01T00:00:00.000Z", updatedAt: "2026-11-01T00:00:00.000Z"
     }],
     libraryEntries: [{
@@ -32,6 +33,7 @@ describe("parsePrismaBackup", () => {
     const result = parsePrismaBackup(JSON.stringify(validBackup()));
     expect(result.formatVersion).toBe(1);
     expect(result.data.movies).toHaveLength(1);
+    expect(result.data.movies[0].keywords).toEqual(["memoria", "identidad"]);
     expect(result.data.collectionMovies).toHaveLength(1);
   });
 
