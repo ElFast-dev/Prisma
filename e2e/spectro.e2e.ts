@@ -101,8 +101,12 @@ test("presenta afinidades respaldadas, cambios temporales y recomendaciones expl
   await seedSpectroHistory(page);
 
   await page.goto("#/spectro");
-  await expect(page.getByRole("heading", { name: "Espectro" })).toBeAttached();
-  await expect(page.getByText("Versión 2.0.0")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
+  await expect(page.getByText("Versión 2.1.0")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cómo piensa Espectro" })).toBeVisible();
+  await expect(page.locator(".spectro-decision-graph")).toBeVisible();
+  await expect(page.getByText("Encaje estimado").first()).toBeVisible();
+  await expect(page.getByText("Nota estimada").first()).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "Afinidades" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Idioma original" })).toBeVisible();
@@ -112,11 +116,314 @@ test("presenta afinidades respaldadas, cambios temporales y recomendaciones expl
   await expect(page.getByText("Drama", { exact: true }).first()).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "Podrían gustarte" })).toBeVisible();
-  await expect(page.getByText("Candidata Prisma ficticia")).toBeVisible();
-  await expect(page.getByText("Género: Drama")).toBeVisible();
-  await expect(page.getByText("Dirección: Directora Prisma")).toBeVisible();
+  await expect(page.locator(".spectro-recommendation-copy > strong").filter({ hasText: "Candidata Prisma ficticia" })).toBeVisible();
+  const recommendationReasons = page.locator(".spectro-recommendation-reasons");
+  await expect(recommendationReasons.getByText("Género: Drama", { exact: true })).toBeVisible();
+  await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true })).toBeVisible();
 
   await expect(page.getByRole("navigation", { name: "Navegación principal" })
     .getByRole("link", { name: "Espectro", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page.locator(".section-heading")).toHaveCount(0);
+});
+
+async function seedIncompleteSpectroHistory(page: import("@playwright/test").Page): Promise<void> {
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const now = "2026-11-16T12:00:00.000Z";
+    const movies: Array<Record<string, unknown>> = [];
+    const viewings: Array<Record<string, unknown>> = [];
+
+    for (let index = 0; index < 3; index += 1) {
+      const tmdbId = 987100 + index;
+      const id = "tmdb-" + tmdbId;
+      movies.push({
+        id,
+        tmdbId,
+        title: "Drama sin completar " + (index + 1),
+        genres: ["Drama"],
+        genreIds: [18],
+        countries: [],
+        directors: [],
+        castMembers: [],
+        releaseYear: 2016 + index,
+        lastViewingSequence: 1,
+        createdAt: now,
+        updatedAt: now
+      });
+      viewings.push({
+        id: id + "-view",
+        movieId: id,
+        sequenceNumber: 1,
+        watchedOn: "2026-01-0" + (index + 1),
+        rating: index < 2 ? 9 : 5,
+        createdAt: now,
+        updatedAt: now,
+        operationId: id + "-operation"
+      });
+    }
+
+    try {
+      const transaction = db.transaction(["movies", "viewings"], "readwrite");
+      const movieStore = transaction.objectStore("movies");
+      const viewingStore = transaction.objectStore("viewings");
+      for (const movie of movies) movieStore.put(movie);
+      for (const viewing of viewings) viewingStore.put(viewing);
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error ?? new Error("No se pudieron preparar películas incompletas ficticias."));
+      });
+    } finally {
+      db.close();
+    }
+  });
+}
+
+test("completa metadatos de Espectro desde TMDB sin abrir fichas", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("prisma.tmdb.accessToken", "fixture-token");
+  });
+  await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const segments = pathname.split("/");
+    const tmdbId = Number(segments[segments.length - (pathname.endsWith("/credits") ? 2 : 1)]);
+    if (pathname.endsWith("/credits")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: tmdbId,
+          cast: [{
+            id: 8001,
+            name: tmdbId === 987102 ? "Otro reparto" : "Reparto automático",
+            character: "Protagonista"
+          }],
+          crew: [{
+            id: 8002,
+            name: tmdbId === 987102 ? "Otra dirección" : "Dirección automática",
+            job: "Director",
+            department: "Directing"
+          }]
+        })
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: tmdbId,
+        title: "Drama sin completar " + (tmdbId - 987099),
+        original_title: "Incomplete Drama",
+        overview: "Metadatos ficticios para la prueba automática.",
+        release_date: "2016-05-01",
+        runtime: 112,
+        status: "Released",
+        genres: [{ id: 18, name: "Drama" }],
+        production_countries: [{ iso_3166_1: "JP", name: "Japón" }],
+        original_language: "ja",
+        poster_path: "/fixture-poster.jpg",
+        backdrop_path: "/fixture-backdrop.jpg"
+      })
+    });
+  });
+
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await seedIncompleteSpectroHistory(page);
+
+  await page.goto("#/spectro");
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
+  await expect(page.getByText("Espectro está completando información")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Directores" })).toBeVisible();
+  await expect(page.getByText("Dirección automática", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Reparto automático", { exact: true }).first()).toBeVisible();
+});
+
+test("muestra errores de metadatos al volver y permite forzar el reintento sin abrir la ficha", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("prisma.tmdb.accessToken", "fixture-token");
+  });
+
+  const requestedPaths: string[] = [];
+  await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    requestedPaths.push(pathname);
+    if (pathname.endsWith("/credits")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 987401,
+          cast: [{ id: 8101, name: "Reparto reintentado", character: "Protagonista" }],
+          crew: [{ id: 8102, name: "Dirección reintentada", job: "Director", department: "Directing" }]
+        })
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: 987401,
+        title: "Error diferido Prisma",
+        original_title: "Deferred Prisma",
+        overview: "Metadatos ficticios recuperados mediante reintento.",
+        release_date: "2021-05-01",
+        runtime: 108,
+        status: "Released",
+        genres: [{ id: 18, name: "Drama" }],
+        production_countries: [{ iso_3166_1: "JP", name: "Japón" }],
+        original_language: "ja",
+        poster_path: "/retry-poster.jpg",
+        backdrop_path: "/retry-backdrop.jpg"
+      })
+    });
+  });
+
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tmdbId = 987401;
+    const now = new Date().toISOString();
+    try {
+      const transaction = db.transaction(["movies", "viewings", "appMetadata"], "readwrite");
+      transaction.objectStore("movies").put({
+        id: "tmdb-" + tmdbId,
+        tmdbId,
+        title: "Error diferido Prisma",
+        genres: ["Drama"],
+        genreIds: [18],
+        countries: [],
+        directors: [],
+        castMembers: [],
+        lastViewingSequence: 1,
+        createdAt: now,
+        updatedAt: now
+      });
+      transaction.objectStore("viewings").put({
+        id: "tmdb-" + tmdbId + "-view",
+        movieId: "tmdb-" + tmdbId,
+        sequenceNumber: 1,
+        watchedOn: "2026-11-15",
+        rating: 8,
+        createdAt: now,
+        updatedAt: now,
+        operationId: "retry-fixture-operation"
+      });
+      transaction.objectStore("appMetadata").put({
+        key: "spectro:metadata:v1:" + tmdbId,
+        value: JSON.stringify({
+          tmdbId,
+          status: "error",
+          attempts: 1,
+          updatedAt: now,
+          lastError: "Error temporal simulado."
+        })
+      });
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error ?? new Error("No se pudo preparar el fallo diferido de metadatos."));
+      });
+    } finally {
+      db.close();
+    }
+  });
+
+  await page.goto("#/spectro");
+  await expect(page.getByText("Quedaron 1 películas con datos incompletos")).toBeVisible();
+  await expect(page.getByText(/pausa temporal/)).toBeVisible();
+  await page.getByRole("button", { name: "Reintentar metadatos" }).click();
+  await expect(page.getByText("Espectro está completando información")).toBeVisible();
+  await expect(page.getByText("Espectro incorporó metadatos de 1 películas.")).toBeVisible();
+  expect(requestedPaths).toContain("/3/movie/987401");
+  expect(requestedPaths).toContain("/3/movie/987401/credits");
+});
+
+test("Espectro pregunta por una calificación pendiente sin abrir la ficha", async ({ page }) => {
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const now = "2026-11-16T12:00:00.000Z";
+    try {
+      const transaction = db.transaction(["movies", "viewings"], "readwrite");
+      transaction.objectStore("movies").put({
+        id: "tmdb-987300",
+        tmdbId: 987300,
+        title: "Una película sin nota",
+        genres: ["Drama"],
+        genreIds: [18],
+        countries: ["Panamá"],
+        lastViewingSequence: 1,
+        createdAt: now,
+        updatedAt: now
+      });
+      transaction.objectStore("viewings").put({
+        id: "spectro-unrated-viewing",
+        movieId: "tmdb-987300",
+        sequenceNumber: 1,
+        watchedOn: "2026-11-01",
+        review: "Una experiencia que quiero conservar.",
+        watchedAtLocalTime: "20:15",
+        timeZone: "America/Panama",
+        createdAt: now,
+        updatedAt: now,
+        operationId: "spectro-unrated-operation"
+      });
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error ?? new Error("No se pudo preparar el visionado sin calificación."));
+      });
+    } finally {
+      db.close();
+    }
+  });
+
+  await page.goto("#/spectro");
+  await expect(page.getByRole("heading", { name: "¿Qué nota le darías a Una película sin nota?" })).toBeVisible();
+  await page.getByRole("button", { name: "Calificar con 8 de 10" }).click();
+  await page.getByRole("button", { name: "Guardar nota" }).click();
+  await expect(page.getByRole("heading", { name: "¿Qué nota le darías a Una película sin nota?" })).toHaveCount(0);
+
+  const saved = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise<Record<string, unknown> | undefined>((resolve, reject) => {
+        const transaction = db.transaction("viewings", "readonly");
+        const request = transaction.objectStore("viewings").get("spectro-unrated-viewing");
+        request.onsuccess = () => resolve(request.result as Record<string, unknown> | undefined);
+        request.onerror = () => reject(request.error);
+      });
+    } finally {
+      db.close();
+    }
+  });
+  expect(saved).toMatchObject({
+    id: "spectro-unrated-viewing",
+    watchedOn: "2026-11-01",
+    rating: 8,
+    review: "Una experiencia que quiero conservar.",
+    watchedAtLocalTime: "20:15",
+    timeZone: "America/Panama"
+  });
 });

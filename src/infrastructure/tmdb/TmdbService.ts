@@ -229,6 +229,44 @@ export async function getMovieBundle(token: string, tmdbId: number, region: stri
   };
 }
 
+export interface TmdbMovieAnalysisMetadata {
+  details: TmdbMovieDetails;
+  credits: TmdbCredits;
+}
+
+/**
+ * Recupera solo los recursos que Espectro necesita para conocer una película.
+ * Reutiliza la caché de detalles y créditos sin descargar recomendaciones ni proveedores.
+ */
+export async function getMovieAnalysisMetadata(
+  token: string,
+  tmdbId: number,
+  signal?: AbortSignal
+): Promise<TmdbMovieAnalysisMetadata> {
+  if (!Number.isSafeInteger(tmdbId) || tmdbId <= 0) {
+    throw new Error("El identificador TMDB de la película no es válido.");
+  }
+
+  const [details, credits] = await Promise.all([
+    getCached<TmdbMovieDetails>(
+      token,
+      "movie:details:" + tmdbId,
+      "movie/" + tmdbId,
+      { language: LANGUAGE },
+      { signal }
+    ),
+    getCached<TmdbCredits>(
+      token,
+      "movie:credits:" + tmdbId,
+      "movie/" + tmdbId + "/credits",
+      { language: LANGUAGE },
+      { signal }
+    )
+  ]);
+
+  return { details: details.data, credits: credits.data };
+}
+
 export async function getMovieDetailsForEnrichment(
   token: string,
   tmdbId: number,

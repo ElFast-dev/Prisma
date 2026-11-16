@@ -2,7 +2,7 @@
 
 ## Estado actual: etapas 1–15 completadas
 
-La siguiente etapa planificada es la 16 — Espectro 2.0.
+Las etapas 1–15 están completadas. Espectro 2.0 tiene integradas las subetapas 16.1–16.3; la experiencia final 16.4 continúa en desarrollo.
 
 - [x] Repositorio público inicializado.
 - [x] Configuración React, TypeScript y Vite.
@@ -44,6 +44,12 @@ La siguiente etapa planificada es la 16 — Espectro 2.0.
   - [x] 16.2 Recomendaciones combinadas: puntuación por familias de rasgos con límites por categoría y explicaciones respaldadas.
   - [x] 16.3 Evolución de afinidades: comparación entre dos periodos con mínimo de tres títulos distintos por rasgo y periodo.
   - [ ] 16.4 Experiencia final, accesibilidad, pruebas completas y verificación del despliegue.
+    - [x] Afinidades y evolución presentadas mediante gráficos vectoriales de línea y divergencia, no solo cifras y barras.
+    - [x] Enriquecimiento local de metadatos de películas vistas, favoritas y candidatas, usando TMDB sin abrir cada ficha y sin reescribir datos personales.
+    - [x] Encaje relativo de 0–100 %, nota prevista de 0–10 y separación entre señales derivadas de valoraciones y favoritos declarados.
+    - [x] Grafo de decisiones con señales positivas y negativas, contribuciones por candidata y títulos de respaldo visibles.
+    - [x] Preguntas contextuales en Espectro para completar calificaciones de visionados sin abrir fichas; respuesta ligada al visionado existente y opción de posponer.
+    - [ ] Validar pruebas unitarias, persistencia, E2E y PWA; verificar visualmente el despliegue público.
 - [ ] 17. Optimización integral.
 
 Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
@@ -73,6 +79,10 @@ Este es el orden acordado para continuar Prisma. El alcance y los criterios de a
 - Afinidades con soporte mínimo, dispersión y diferencia ajustada frente al promedio personal.
 - Señales de idioma y duración únicamente cuando existen metadatos reales.
 - Candidatas locales no vistas puntuadas por varias familias de señales verificadas y explicadas.
+- El encaje se presenta como puntuación relativa 0–100, no como probabilidad; la nota prevista se calcula aparte y solo desde señales respaldadas por valoraciones.
+- Los favoritos son señales explícitas, nunca calificaciones inventadas.
+- El grafo muestra señales positivas y negativas, contribuciones y títulos de respaldo.
+- Los metadatos que faltan se consultan desde TMDB mediante ID local y caché, sin tener que abrir fichas ni alterar experiencias personales.
 - Las señales iniciales o variables no sostienen por sí solas una recomendación.
 - Comparación temporal anclada en fechas reales y con soporte mínimo por rasgo y periodo.
 - Repeticiones agregadas por título para las afinidades; no aumentan la muestra de películas distintas.

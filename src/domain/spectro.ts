@@ -1,22 +1,33 @@
 import type { MovieRecord, Viewing } from "./types";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.0.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.1.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;
+export const SPECTRO_MAX_GRAPH_RECOMMENDATIONS = 5;
 
-export type SpectroConfidence = "inicial" | "moderada" | "sólida" | "variable";
+export type SpectroConfidence = "inicial" | "moderada" | "sólida" | "variable" | "declarada";
 export type SpectroTrendDirection = "sube" | "baja" | "estable";
+export type SpectroSignalSource = "valoraciones" | "favoritos";
 
 export interface SpectroAffinity {
   key: string;
   label: string;
+  category: string;
   averageRating: number;
   difference: number;
   adjustedDifference: number;
   dispersion: number;
   sampleSize: number;
   confidence: SpectroConfidence;
+}
+
+export interface SpectroFavoriteSignal {
+  key: string;
+  label: string;
+  category: string;
+  sampleSize: number;
+  supportingTitles: string[];
 }
 
 export interface SpectroMonth {
@@ -38,18 +49,59 @@ export interface SpectroAffinityTrend {
 }
 
 export interface SpectroRecommendationReason {
+  key: string;
   category: string;
   label: string;
+  source: SpectroSignalSource;
   difference: number;
+  contribution: number;
   sampleSize: number;
   confidence: SpectroConfidence;
 }
 
 export interface SpectroRecommendation {
   movie: MovieRecord;
-  score: number;
+  fitPercentage: number;
+  predictedRating: number;
   confidence: SpectroConfidence;
   reasons: SpectroRecommendationReason[];
+}
+
+export interface SpectroGraphEvidence {
+  title: string;
+  rating: number | null;
+}
+
+export type SpectroGraphNodeKind = "profile" | "signal" | "candidate";
+
+export interface SpectroGraphNode {
+  id: string;
+  kind: SpectroGraphNodeKind;
+  label: string;
+  detail: string;
+  source?: SpectroSignalSource;
+  adjustedDifference?: number;
+  sampleSize?: number;
+  confidence?: SpectroConfidence;
+  fitPercentage?: number;
+  predictedRating?: number;
+  evidence?: SpectroGraphEvidence[];
+}
+
+export interface SpectroGraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  kind: "preference" | "contribution";
+  polarity: "positive" | "negative";
+  value: number;
+}
+
+export interface SpectroDecisionGraph {
+  nodes: SpectroGraphNode[];
+  edges: SpectroGraphEdge[];
+  signalCount: number;
+  candidateCount: number;
 }
 
 export interface SpectroAnalysis {
@@ -67,15 +119,18 @@ export interface SpectroAnalysis {
   decadeAffinities: SpectroAffinity[];
   languageAffinities: SpectroAffinity[];
   durationAffinities: SpectroAffinity[];
+  favoriteSignals: SpectroFavoriteSignal[];
   evolution: SpectroMonth[];
   affinityTrends: SpectroAffinityTrend[];
   recommendations: SpectroRecommendation[];
+  decisionGraph: SpectroDecisionGraph;
 }
 
 export interface SpectroInput {
   viewings: Viewing[];
   movies: MovieRecord[];
   candidates: MovieRecord[];
+  favoriteMovieIds?: string[];
   computedAt?: string;
 }
 
@@ -103,6 +158,11 @@ interface GroupedFeature {
   ratings: number[];
 }
 
+interface RecommendationAccumulator {
+  reason: SpectroRecommendationReason;
+  rawContribution: number;
+}
+
 type FeatureSelector = (movie: MovieRecord) => Feature[];
 
 const genreNames: Record<number, string> = {
@@ -124,6 +184,10 @@ function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
 function mean(values: number[]): number {
   return values.length
     ? values.reduce((sum, value) => sum + value, 0) / values.length
@@ -136,8 +200,8 @@ function standardDeviation(values: number[], average: number): number {
   return Math.sqrt(variance);
 }
 
-function hashFingerprint(value: string): string {
-  let hash = 2166136261;
+function fnvHash(value: string, seed: number): string {
+  let hash = seed;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
@@ -217,7 +281,7 @@ function movieFeatureGroups(movie: MovieRecord): FeatureGroup[] {
   ];
 }
 
-function fingerprintInput(input: SpectroInput): string {
+export function getSpectroInputFingerprint(input: SpectroInput): string {
   const viewings = [...input.viewings]
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((viewing) => [
@@ -228,11 +292,15 @@ function fingerprintInput(input: SpectroInput): string {
       viewing.sequenceNumber
     ]);
 
-  const movies = [...input.movies, ...input.candidates]
+  const moviesById = new Map<string, MovieRecord>();
+  for (const movie of [...input.movies, ...input.candidates]) moviesById.set(movie.id, movie);
+  const movies = [...moviesById.values()]
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((movie) => [
       movie.id,
+      movie.tmdbId,
       movie.title,
+      movie.originalTitle,
       movie.genres,
       movie.genreIds,
       movie.countries,
@@ -240,10 +308,16 @@ function fingerprintInput(input: SpectroInput): string {
       movie.castMembers,
       movie.releaseYear,
       movie.originalLanguage,
-      movie.runtimeMinutes
+      movie.runtimeMinutes,
+      movie.posterPath,
+      movie.backdropPath
     ]);
 
-  return hashFingerprint(JSON.stringify({ viewings, movies }));
+  const favoriteMovieIds = [...new Set(input.favoriteMovieIds ?? [])].sort();
+  const candidateMovieIds = [...new Set(input.candidates.map((movie) => movie.id))].sort();
+  const serialized = JSON.stringify({ viewings, movies, favoriteMovieIds, candidateMovieIds });
+  // Dos hashes independientes amplían a 64 bits el identificador ligero de caché.
+  return fnvHash(serialized, 2166136261) + fnvHash(serialized, 2246822519);
 }
 
 function groupFeatureRatings(
@@ -307,6 +381,7 @@ function buildAffinities(
       return {
         key: group.key,
         label: group.label,
+        category: group.category,
         averageRating: round(averageRating),
         difference: round(difference),
         adjustedDifference: round(adjustedDifference),
@@ -320,6 +395,48 @@ function buildAffinities(
       || b.sampleSize - a.sampleSize
       || a.label.localeCompare(b.label)
     ));
+}
+
+function buildFavoriteSignals(
+  movies: MovieRecord[],
+  favoriteMovieIds: string[]
+): SpectroFavoriteSignal[] {
+  const favoriteIds = new Set(favoriteMovieIds);
+  const grouped = new Map<string, {
+    key: string;
+    label: string;
+    category: string;
+    titles: string[];
+  }>();
+
+  for (const movie of movies) {
+    if (!favoriteIds.has(movie.id)) continue;
+    const seen = new Set<string>();
+    for (const group of movieFeatureGroups(movie)) {
+      for (const feature of group.features) {
+        if (seen.has(feature.key)) continue;
+        seen.add(feature.key);
+        const existing = grouped.get(feature.key) ?? {
+          key: feature.key,
+          label: feature.label,
+          category: group.category,
+          titles: []
+        };
+        if (!existing.titles.includes(movie.title)) existing.titles.push(movie.title);
+        grouped.set(feature.key, existing);
+      }
+    }
+  }
+
+  return [...grouped.values()]
+    .map((group) => ({
+      key: group.key,
+      label: group.label,
+      category: group.category,
+      sampleSize: group.titles.length,
+      supportingTitles: group.titles
+    }))
+    .sort((a, b) => b.sampleSize - a.sampleSize || a.category.localeCompare(b.category) || a.label.localeCompare(b.label));
 }
 
 function buildEvolution(viewings: Viewing[]): SpectroMonth[] {
@@ -441,88 +558,345 @@ function buildAffinityTrends(
 }
 
 function recommendationConfidence(reasons: SpectroRecommendationReason[]): SpectroConfidence {
-  const minimumSupport = Math.min(...reasons.map((reason) => reason.sampleSize));
-  if (reasons.length >= 3 && minimumSupport >= 5 && reasons.every((reason) => reason.confidence === "sólida")) {
-    return "sólida";
-  }
+  const ratedReasons = reasons.filter((reason) => reason.source === "valoraciones");
+  if (ratedReasons.length === 0) return "declarada";
+  const ratedFamilies = new Set(ratedReasons.map((reason) => reason.category));
+  const minimumSupport = Math.min(...ratedReasons.map((reason) => reason.sampleSize));
   if (
-    reasons.length >= 2
+    ratedFamilies.size >= 3
+    && minimumSupport >= 5
+    && ratedReasons.every((reason) => reason.confidence === "sólida")
+  ) return "sólida";
+  if (
+    ratedFamilies.size >= 2
     && minimumSupport >= 3
-    && reasons.every((reason) => reason.confidence === "moderada" || reason.confidence === "sólida")
+    && ratedReasons.every((reason) => reason.confidence === "moderada" || reason.confidence === "sólida")
   ) return "moderada";
   return "inicial";
+}
+
+function graphFromRecommendations(
+  recommendations: SpectroRecommendation[],
+  affinities: SpectroAffinity[],
+  favoriteSignals: SpectroFavoriteSignal[],
+  ratedMovies: RatedMovie[],
+  overallAverage: number,
+  movieCount: number
+): SpectroDecisionGraph {
+  const nodes = new Map<string, SpectroGraphNode>();
+  const edges = new Map<string, SpectroGraphEdge>();
+  const affinityByKey = new Map(affinities.map((item) => [item.key, item]));
+  const favoriteByKey = new Map(favoriteSignals.map((item) => [item.key, item]));
+  const evidenceByKey = new Map<string, SpectroGraphEvidence[]>();
+
+  for (const item of ratedMovies) {
+    const seen = new Set<string>();
+    for (const group of movieFeatureGroups(item.movie)) {
+      for (const feature of group.features) {
+        if (seen.has(feature.key)) continue;
+        seen.add(feature.key);
+        const evidence = evidenceByKey.get(feature.key) ?? [];
+        evidence.push({ title: item.movie.title, rating: item.averageRating });
+        evidenceByKey.set(feature.key, evidence);
+      }
+    }
+  }
+
+  nodes.set("profile", {
+    id: "profile",
+    kind: "profile",
+    label: "Tu perfil",
+    detail: movieCount + " películas · promedio " + round(overallAverage).toFixed(1) + "/10"
+  });
+
+  const visibleRecommendations = recommendations.slice(0, SPECTRO_MAX_GRAPH_RECOMMENDATIONS);
+  for (const recommendation of visibleRecommendations) {
+    const candidateId = "candidate:" + recommendation.movie.id;
+    nodes.set(candidateId, {
+      id: candidateId,
+      kind: "candidate",
+      label: recommendation.movie.title,
+      detail: "Encaje " + recommendation.fitPercentage + "% · Nota " + recommendation.predictedRating.toFixed(1) + "/10",
+      fitPercentage: recommendation.fitPercentage,
+      predictedRating: recommendation.predictedRating,
+      confidence: recommendation.confidence
+    });
+
+    for (const reason of recommendation.reasons) {
+      const signalId = "signal:" + reason.source + ":" + reason.key;
+      if (!nodes.has(signalId)) {
+        if (reason.source === "favoritos") {
+          const favorite = favoriteByKey.get(reason.key);
+          if (!favorite) continue;
+          nodes.set(signalId, {
+            id: signalId,
+            kind: "signal",
+            label: reason.category + ": " + reason.label,
+            detail: "Favorito declarado · " + favorite.sampleSize + " títulos · no es una nota",
+            source: "favoritos",
+            adjustedDifference: 0.35,
+            sampleSize: favorite.sampleSize,
+            confidence: "declarada",
+            evidence: favorite.supportingTitles.map((title) => ({ title, rating: null }))
+          });
+        } else {
+          const affinity = affinityByKey.get(reason.key);
+          if (!affinity) continue;
+          const supportingEvidence = (evidenceByKey.get(reason.key) ?? [])
+            .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+          nodes.set(signalId, {
+            id: signalId,
+            kind: "signal",
+            label: reason.category + ": " + reason.label,
+            detail: (affinity.adjustedDifference > 0 ? "+" : "") + affinity.adjustedDifference.toFixed(2)
+              + " ajustado · " + affinity.sampleSize + " títulos · " + affinity.confidence,
+            source: "valoraciones",
+            adjustedDifference: affinity.adjustedDifference,
+            sampleSize: affinity.sampleSize,
+            confidence: affinity.confidence,
+            evidence: supportingEvidence
+          });
+        }
+
+        const signalNode = nodes.get(signalId);
+        if (signalNode) {
+          const preferenceEdgeId = "preference:" + signalId;
+          edges.set(preferenceEdgeId, {
+            id: preferenceEdgeId,
+            source: "profile",
+            target: signalId,
+            kind: "preference",
+            polarity: (signalNode.adjustedDifference ?? 0) >= 0 ? "positive" : "negative",
+            value: signalNode.adjustedDifference ?? 0
+          });
+        }
+      }
+
+      const contributionEdgeId = "contribution:" + signalId + ":" + candidateId;
+      edges.set(contributionEdgeId, {
+        id: contributionEdgeId,
+        source: signalId,
+        target: candidateId,
+        kind: "contribution",
+        polarity: reason.contribution >= 0 ? "positive" : "negative",
+        value: reason.contribution
+      });
+    }
+  }
+
+  // Cuando todavía no hay candidatas, el grafo sigue mostrando las señales
+  // respaldadas disponibles, sin inventar conexiones con películas no evaluadas.
+  if (visibleRecommendations.length === 0) {
+    const reliable = affinities
+      .filter((item) => item.sampleSize >= 3 && (item.confidence === "moderada" || item.confidence === "sólida"))
+      .sort((a, b) => Math.abs(b.adjustedDifference) - Math.abs(a.adjustedDifference))
+      .slice(0, 12);
+    for (const affinity of reliable) {
+      const signalId = "signal:valoraciones:" + affinity.key;
+      const evidence = (evidenceByKey.get(affinity.key) ?? [])
+        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      nodes.set(signalId, {
+        id: signalId,
+        kind: "signal",
+        label: affinity.category + ": " + affinity.label,
+        detail: (affinity.adjustedDifference > 0 ? "+" : "") + affinity.adjustedDifference.toFixed(2)
+          + " ajustado · " + affinity.sampleSize + " títulos · " + affinity.confidence,
+        source: "valoraciones",
+        adjustedDifference: affinity.adjustedDifference,
+        sampleSize: affinity.sampleSize,
+        confidence: affinity.confidence,
+        evidence
+      });
+      edges.set("preference:" + signalId, {
+        id: "preference:" + signalId,
+        source: "profile",
+        target: signalId,
+        kind: "preference",
+        polarity: affinity.adjustedDifference >= 0 ? "positive" : "negative",
+        value: affinity.adjustedDifference
+      });
+    }
+
+    for (const favorite of favoriteSignals.slice(0, 8)) {
+      const signalId = "signal:favoritos:" + favorite.key;
+      nodes.set(signalId, {
+        id: signalId,
+        kind: "signal",
+        label: favorite.category + ": " + favorite.label,
+        detail: "Favorito declarado · " + favorite.sampleSize + " títulos · no es una nota",
+        source: "favoritos",
+        adjustedDifference: 0.35,
+        sampleSize: favorite.sampleSize,
+        confidence: "declarada",
+        evidence: favorite.supportingTitles.map((title) => ({ title, rating: null }))
+      });
+      edges.set("preference:" + signalId, {
+        id: "preference:" + signalId,
+        source: "profile",
+        target: signalId,
+        kind: "preference",
+        polarity: "positive",
+        value: 0.35
+      });
+    }
+  }
+
+  const graphNodes = [...nodes.values()];
+  return {
+    nodes: graphNodes,
+    edges: [...edges.values()],
+    signalCount: graphNodes.filter((node) => node.kind === "signal").length,
+    candidateCount: graphNodes.filter((node) => node.kind === "candidate").length
+  };
 }
 
 function buildRecommendations(
   candidates: MovieRecord[],
   affinities: SpectroAffinity[],
-  watchedMovieIds: Set<string>
-): SpectroRecommendation[] {
-  const positive = new Map(
+  favoriteSignals: SpectroFavoriteSignal[],
+  watchedMovieIds: Set<string>,
+  overallAverage: number,
+  ratedMovies: RatedMovie[]
+): { recommendations: SpectroRecommendation[]; graph: SpectroDecisionGraph } {
+  const reliable = new Map(
     affinities
       .filter((affinity) => (
-        affinity.adjustedDifference >= 0.25
+        affinity.sampleSize >= 3
+        && Math.abs(affinity.adjustedDifference) >= 0.25
         && (affinity.confidence === "moderada" || affinity.confidence === "sólida")
       ))
       .map((affinity) => [affinity.key, affinity])
   );
-  if (!positive.size) return [];
+  const explicit = new Map(favoriteSignals.map((signal) => [signal.key, signal]));
+  const ranked: SpectroRecommendation[] = [];
 
-  const ranked = candidates
-    .filter((movie) => !watchedMovieIds.has(movie.id))
-    .map((movie) => {
-      const reasonsWithWeight: Array<{ reason: SpectroRecommendationReason; weight: number }> = [];
+  for (const movie of candidates) {
+    if (watchedMovieIds.has(movie.id)) continue;
 
-      for (const group of movieFeatureGroups(movie)) {
-        const matched = group.features
-          .map((feature) => positive.get(feature.key))
-          .filter((affinity): affinity is SpectroAffinity => Boolean(affinity))
-          .sort((a, b) => b.adjustedDifference - a.adjustedDifference);
+    let totalFitWeight = 0;
+    let totalFitDifference = 0;
+    let totalRatingWeight = 0;
+    let totalRatingDifference = 0;
+    let positiveRatingEvidence = false;
+    const accumulators: RecommendationAccumulator[] = [];
 
-        const strongest = matched[0];
-        if (!strongest) continue;
+    for (const group of movieFeatureGroups(movie)) {
+      const seen = new Set<string>();
+      const matchedRatings = group.features
+        .filter((feature) => {
+          if (seen.has(feature.key)) return false;
+          seen.add(feature.key);
+          return reliable.has(feature.key);
+        })
+        .flatMap((feature) => {
+          const affinity = reliable.get(feature.key);
+          return affinity ? [{ feature, affinity }] : [];
+        });
+      const matchedFavorites = group.features
+        .filter((feature) => explicit.has(feature.key));
 
-        reasonsWithWeight.push({
-          weight: group.weight,
+      if (matchedRatings.length === 0 && matchedFavorites.length === 0) continue;
+
+      const familyRatingDifference = mean(matchedRatings.map((item) => item.affinity.adjustedDifference));
+      const familyFavoriteBoost = matchedFavorites.length ? 0.35 : 0;
+      const familyFitDifference = familyRatingDifference + familyFavoriteBoost;
+
+      totalFitWeight += group.weight;
+      totalFitDifference += familyFitDifference * group.weight;
+
+      if (matchedRatings.length > 0) {
+        totalRatingWeight += group.weight;
+        totalRatingDifference += familyRatingDifference * group.weight;
+      }
+      if (familyRatingDifference > 0) positiveRatingEvidence = true;
+
+      for (const item of matchedRatings) {
+        accumulators.push({
+          rawContribution: item.affinity.adjustedDifference * group.weight / matchedRatings.length,
           reason: {
+            key: item.feature.key,
             category: group.category,
-            label: strongest.label,
-            difference: strongest.adjustedDifference,
-            sampleSize: strongest.sampleSize,
-            confidence: strongest.confidence
+            label: item.feature.label,
+            source: "valoraciones",
+            difference: item.affinity.adjustedDifference,
+            contribution: 0,
+            sampleSize: item.affinity.sampleSize,
+            confidence: item.affinity.confidence
           }
         });
       }
 
-      if (!reasonsWithWeight.length) return undefined;
+      for (const feature of matchedFavorites) {
+        const favorite = explicit.get(feature.key);
+        if (!favorite) continue;
+        accumulators.push({
+          rawContribution: familyFavoriteBoost * group.weight / matchedFavorites.length,
+          reason: {
+            key: feature.key,
+            category: group.category,
+            label: feature.label,
+            source: "favoritos",
+            difference: 0,
+            contribution: 0,
+            sampleSize: favorite.sampleSize,
+            confidence: "declarada"
+          }
+        });
+      }
+    }
 
-      const totalWeight = reasonsWithWeight.reduce((sum, item) => sum + item.weight, 0);
-      const score = reasonsWithWeight.reduce(
-        (sum, item) => sum + item.reason.difference * item.weight,
-        0
-      ) / totalWeight;
-      const reasons = reasonsWithWeight
-        .sort((a, b) => (
-          b.reason.difference * b.weight - a.reason.difference * a.weight
-        ))
-        .map((item) => item.reason);
+    if (totalFitWeight === 0) continue;
 
-      return {
-        movie,
-        score: round(score),
-        confidence: recommendationConfidence(reasonsWithWeight.map((item) => item.reason)),
-        reasons
-      };
-    })
-    .filter((item): item is SpectroRecommendation => item !== undefined && item.score > 0)
-    .sort((a, b) => b.score - a.score || a.movie.title.localeCompare(b.movie.title));
+    const netFitDifference = totalFitDifference / totalFitWeight;
+    const netRatingDifference = totalRatingWeight > 0
+      ? totalRatingDifference / totalRatingWeight
+      : 0;
+    const fitPercentage = Math.round(clamp(50 + netFitDifference * 12.5, 0, 100));
+    if (fitPercentage <= 50 || (!positiveRatingEvidence && accumulators.every((item) => item.reason.source !== "favoritos"))) {
+      continue;
+    }
+
+    const reasons = accumulators
+      .map((item) => ({
+        ...item.reason,
+        contribution: round((item.rawContribution / totalFitWeight) * 12.5)
+      }))
+      .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
+
+    ranked.push({
+      movie,
+      fitPercentage,
+      predictedRating: round(clamp(overallAverage + netRatingDifference, 0, 10)),
+      confidence: recommendationConfidence(reasons),
+      reasons
+    });
+  }
 
   const seen = new Set<string>();
-  return ranked.filter((item) => {
-    if (seen.has(item.movie.id)) return false;
-    seen.add(item.movie.id);
-    return true;
-  }).slice(0, 12);
+  const recommendations = ranked
+    .sort((a, b) => (
+      b.fitPercentage - a.fitPercentage
+      || b.predictedRating - a.predictedRating
+      || a.movie.title.localeCompare(b.movie.title)
+    ))
+    .filter((item) => {
+      if (seen.has(item.movie.id)) return false;
+      seen.add(item.movie.id);
+      return true;
+    })
+    .slice(0, 12);
+
+  return {
+    recommendations,
+    graph: graphFromRecommendations(
+      recommendations,
+      affinities,
+      favoriteSignals,
+      ratedMovies,
+      overallAverage,
+      ratedMovies.length
+    )
+  };
 }
 
 export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
@@ -586,12 +960,33 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
     ...languageAffinities,
     ...durationAffinities
   ];
-
+  const favoriteSignals = buildFavoriteSignals(input.movies, input.favoriteMovieIds ?? []);
   const watchedIds = new Set(input.viewings.map((viewing) => viewing.movieId));
+
+  const recommendationResult = enough && overall !== null
+    ? buildRecommendations(
+      input.candidates,
+      allAffinities,
+      favoriteSignals,
+      watchedIds,
+      overall,
+      ratedMovies
+    )
+    : {
+      recommendations: [] as SpectroRecommendation[],
+      graph: graphFromRecommendations(
+        [],
+        allAffinities,
+        favoriteSignals,
+        ratedMovies,
+        overall ?? 0,
+        ratedMovies.length
+      )
+    };
 
   return {
     algorithmVersion: SPECTRO_ALGORITHM_VERSION,
-    inputFingerprint: fingerprintInput(input),
+    inputFingerprint: getSpectroInputFingerprint(input),
     computedAt: input.computedAt ?? new Date().toISOString(),
     movieCount: ratedMovies.length,
     totalViewings: input.viewings.length,
@@ -604,10 +999,10 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
     decadeAffinities,
     languageAffinities,
     durationAffinities,
+    favoriteSignals,
     evolution: buildEvolution(input.viewings),
     affinityTrends: buildAffinityTrends(input.viewings, movieById),
-    recommendations: enough
-      ? buildRecommendations(input.candidates, allAffinities, watchedIds)
-      : []
+    recommendations: recommendationResult.recommendations,
+    decisionGraph: recommendationResult.graph
   };
 }
