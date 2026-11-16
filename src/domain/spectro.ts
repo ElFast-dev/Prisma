@@ -560,9 +560,10 @@ function buildAffinityTrends(
 function recommendationConfidence(reasons: SpectroRecommendationReason[]): SpectroConfidence {
   const ratedReasons = reasons.filter((reason) => reason.source === "valoraciones");
   if (ratedReasons.length === 0) return "declarada";
+  const ratedFamilies = new Set(ratedReasons.map((reason) => reason.category));
   const minimumSupport = Math.min(...ratedReasons.map((reason) => reason.sampleSize));
   if (
-    ratedReasons.length >= 3
+    ratedFamilies.size >= 3
     && minimumSupport >= 5
     && ratedReasons.every((reason) => reason.confidence === "sólida")
   ) return "sólida";
