@@ -13,6 +13,7 @@ export type SpectroSignalSource = "valoraciones" | "favoritos";
 export interface SpectroAffinity {
   key: string;
   label: string;
+  category: string;
   averageRating: number;
   difference: number;
   adjustedDifference: number;
@@ -380,6 +381,7 @@ function buildAffinities(
       return {
         key: group.key,
         label: group.label,
+        category: group.category,
         averageRating: round(averageRating),
         difference: round(difference),
         adjustedDifference: round(adjustedDifference),
