@@ -68,7 +68,7 @@ function PageBack({ title, eyebrow = "PERSONAL", backHref = "#/personal" }: { ti
     <header className="section-heading">
       <div className="heading-with-back">
         <button type="button" className="back-link" aria-label="Volver a la pantalla anterior" onClick={() => navigateBack(fallback)}><ArrowLeft size={19} /></button>
-        <div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1></div>
+        <div>{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1></div>
       </div>
     </header>
   );
@@ -650,7 +650,11 @@ export function HistoryPage() {
   const activeFilterCount = Number(notesFilter !== "all")
     + Number(ratingFilter !== "all")
     + Number(Boolean(fromDate))
-    + Number(Boolean(toDate));
+    + Number(Boolean(toDate))
+    + Number(viewMode !== "timeline")
+    + Number(sortOrder !== "newest")
+    + Number(selectedDate !== null);
+  const hasActiveHistoryOptions = activeFilterCount > 0 || Boolean(query.trim());
 
   function clearHistoryFilters() {
     updateHistoryFilters({
@@ -660,7 +664,12 @@ export function HistoryPage() {
       fromDate: "",
       toDate: ""
     });
-    updateHistoryBrowse({ selectedDate: null });
+    updateHistoryBrowse({
+      viewMode: "timeline",
+      sortOrder: "newest",
+      month: today.slice(0, 7),
+      selectedDate: null
+    });
   }
 
   async function handleDelete(item: HistoryItem) {
@@ -685,14 +694,6 @@ export function HistoryPage() {
     setEditing(null);
   }
 
-  const selectedDateLabel = selectedDate
-    ? new Date(selectedDate + "T12:00:00").toLocaleDateString("es-PA", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    })
-    : "";
-
   if (!preferencesReady) {
     return (
       <div className="page history-loading" role="status" aria-live="polite">
@@ -705,7 +706,7 @@ export function HistoryPage() {
 
   return (
     <div className="page">
-      <PageBack title="Historial" />
+      <PageBack title="Historial" eyebrow="" />
 
       <section className="history-overview card-surface" aria-label="Resumen de tu historial">
         <div>
@@ -730,66 +731,12 @@ export function HistoryPage() {
         onChange={(value) => updateHistoryFilters({ query: value })}
         onFiltersClick={() => setFiltersOpen(true)}
         filtersOpen={filtersOpen}
-        filtersActive={activeFilterCount > 0}
+        filtersActive={hasActiveHistoryOptions}
         settingsHref="#/settings"
         disabled={!preferencesReady}
       />
 
       {preferencesError && <p className="preferences-feedback" role="status">{preferencesError}</p>}
-
-      <div className="history-explorer">
-        <div className="history-view-switch" role="group" aria-label="Modo de exploración del Historial">
-          <button
-            className={viewMode === "timeline" ? "history-view-option is-selected" : "history-view-option"}
-            type="button"
-            aria-pressed={viewMode === "timeline"}
-            disabled={!preferencesReady}
-            onClick={() => updateHistoryBrowse({ viewMode: "timeline" })}
-          >
-            <Clapperboard size={16} />
-            <span>Cronología</span>
-          </button>
-          <button
-            className={viewMode === "calendar" ? "history-view-option is-selected" : "history-view-option"}
-            type="button"
-            aria-pressed={viewMode === "calendar"}
-            disabled={!preferencesReady}
-            onClick={() => updateHistoryBrowse({ viewMode: "calendar" })}
-          >
-            <CalendarDays size={16} />
-            <span>Calendario</span>
-          </button>
-        </div>
-        <button
-          className="history-sort-toggle"
-          type="button"
-          disabled={!preferencesReady}
-          onClick={() => updateHistoryBrowse({ sortOrder: sortOrder === "newest" ? "oldest" : "newest" })}
-          aria-label={sortOrder === "newest" ? "Ordenar del más antiguo al más reciente" : "Ordenar del más reciente al más antiguo"}
-          title="Cambiar orden cronológico"
-        >
-          {sortOrder === "newest" ? <ArrowDown size={15} /> : <ArrowUp size={15} />}
-          <span>{sortOrder === "newest" ? "Más recientes" : "Más antiguos"}</span>
-        </button>
-      </div>
-
-      <div className="history-list-heading">
-        <div>
-          <p className="eyebrow">
-            {viewMode === "calendar"
-              ? selectedDate ? "DÍA SELECCIONADO" : "REGISTROS DEL MES"
-              : "CRONOLOGÍA COMPLETA"}
-          </p>
-          <h2>
-            {viewMode === "calendar"
-              ? selectedDateLabel || monthLabel
-              : "Tus experiencias"}
-          </h2>
-        </div>
-        <span className="history-view-count">
-          {visibleItems.length} {visibleItems.length === 1 ? "experiencia" : "experiencias"}
-        </span>
-      </div>
 
       {viewMode === "calendar" && (
         <section className="history-calendar card-surface">
@@ -1028,6 +975,60 @@ export function HistoryPage() {
               >
                 <X size={19} />
               </button>
+            </div>
+
+            <div className="history-filter-section">
+              <span className="history-filter-label">Presentación</span>
+              <div className="history-presentation-group">
+                <span className="history-filter-sublabel">Vista</span>
+                <div className="library-status-options" role="group" aria-label="Vista del historial">
+                  <button
+                    className={viewMode === "timeline" ? "library-status-option is-selected" : "library-status-option"}
+                    type="button"
+                    aria-pressed={viewMode === "timeline"}
+                    disabled={!preferencesReady}
+                    onClick={() => updateHistoryBrowse({ viewMode: "timeline" })}
+                  >
+                    <Clapperboard size={15} />
+                    <span>Cronología</span>
+                  </button>
+                  <button
+                    className={viewMode === "calendar" ? "library-status-option is-selected" : "library-status-option"}
+                    type="button"
+                    aria-pressed={viewMode === "calendar"}
+                    disabled={!preferencesReady}
+                    onClick={() => updateHistoryBrowse({ viewMode: "calendar" })}
+                  >
+                    <CalendarDays size={15} />
+                    <span>Calendario</span>
+                  </button>
+                </div>
+              </div>
+              <div className="history-presentation-group">
+                <span className="history-filter-sublabel">Orden cronológico</span>
+                <div className="library-status-options" role="group" aria-label="Orden cronológico">
+                  <button
+                    className={sortOrder === "newest" ? "library-status-option is-selected" : "library-status-option"}
+                    type="button"
+                    aria-pressed={sortOrder === "newest"}
+                    disabled={!preferencesReady}
+                    onClick={() => updateHistoryBrowse({ sortOrder: "newest" })}
+                  >
+                    <ArrowDown size={15} />
+                    <span>Más recientes primero</span>
+                  </button>
+                  <button
+                    className={sortOrder === "oldest" ? "library-status-option is-selected" : "library-status-option"}
+                    type="button"
+                    aria-pressed={sortOrder === "oldest"}
+                    disabled={!preferencesReady}
+                    onClick={() => updateHistoryBrowse({ sortOrder: "oldest" })}
+                  >
+                    <ArrowUp size={15} />
+                    <span>Más antiguos primero</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="history-filter-section">

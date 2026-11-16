@@ -18,13 +18,6 @@ import { getUserPreferences, saveLibraryView } from "../../infrastructure/databa
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
-function scrollToSettingsSection(id: string) {
-  const section = document.getElementById(id);
-  if (!section) return;
-  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-  section.scrollIntoView({ behavior, block: "start" });
-}
-
 export function SettingsPage() {
   const [token, setToken] = useState("");
   const [configured, setConfigured] = useState(false);
@@ -244,15 +237,7 @@ export function SettingsPage() {
         </div>
       </header>
 
-      <nav className="settings-section-nav" aria-label="Subsecciones de Ajustes">
-        <button type="button" onClick={() => scrollToSettingsSection("settings-catalog")}>Catálogo</button>
-        <button type="button" onClick={() => scrollToSettingsSection("settings-appearance")}>Biblioteca</button>
-        <button type="button" onClick={() => scrollToSettingsSection("settings-data")}>Datos</button>
-        <button type="button" onClick={() => scrollToSettingsSection("settings-privacy")}>Privacidad</button>
-        <button type="button" onClick={() => scrollToSettingsSection("settings-about")}>Prisma</button>
-      </nav>
-
-      <section id="settings-catalog" className="settings-section settings-category-anchor card-surface">
+      <section className="settings-section card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><span className="tmdb-mark">TMDB</span></div>
           <div>
@@ -315,7 +300,7 @@ export function SettingsPage() {
 
       <EnrichmentPanel configured={configured} />
 
-      <section id="settings-appearance" className="settings-section settings-category-anchor card-surface">
+      <section className="settings-section card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><Grid2X2 size={21} /></div>
           <div>
@@ -350,7 +335,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <section id="settings-data" className="settings-section settings-category-anchor card-surface">
+      <section className="settings-section card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><ShieldCheck size={21} /></div>
           <div>
@@ -405,7 +390,7 @@ export function SettingsPage() {
         </ul>
       </section>
 
-      <section id="settings-privacy" className="settings-section settings-category-anchor card-surface">
+      <section className="settings-section card-surface">
         <h2>Privacidad de la credencial</h2>
         <ul className="settings-bullet-list">
           <li>Se guarda únicamente en el almacenamiento local de este navegador.</li>
@@ -416,7 +401,7 @@ export function SettingsPage() {
         <a className="text-link" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Gestionar credenciales de TMDB ↗</a>
       </section>
 
-      <section id="settings-about" className="settings-section settings-category-anchor card-surface settings-about-card">
+      <section className="settings-section card-surface settings-about-card">
         <div>
           <p className="eyebrow">INFORMACIÓN</p>
           <h2>Tu historia permanece contigo</h2>

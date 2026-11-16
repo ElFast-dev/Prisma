@@ -8,9 +8,7 @@ test.beforeEach(async ({ page }) => {
 
 async function openHistory(page: import("@playwright/test").Page) {
   await page.getByRole("link", { name: /Historial/ }).click();
-  await expect(page.getByRole("group", {
-    name: "Modo de exploración del Historial"
-  })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Historial" })).toBeVisible();
 }
 
 test("permite entrar a Historial y consultar su estado inicial", async ({ page }) => {
@@ -20,12 +18,16 @@ test("permite entrar a Historial y consultar su estado inicial", async ({ page }
   await expect(page.getByRole("heading", { name: "Historial" })).toBeVisible();
   await expect(page.getByText("Todavía no hay visionados")).toBeVisible();
   await expect(page.getByRole("button", { name: "Abrir filtros" })).toBeVisible();
+  await expect(page.locator(".section-heading .eyebrow")).toHaveCount(0);
+  await expect(page.getByText("CRONOLOGÍA COMPLETA")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Tus experiencias" })).toHaveCount(0);
 
-  const inlineExplorer = page.getByRole("group", {
-    name: "Modo de exploración del Historial"
-  });
-  await expect(inlineExplorer.getByRole("button", { name: "Cronología" })).toBeVisible();
-  await expect(inlineExplorer.getByRole("button", { name: "Calendario" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros del historial" });
+  await expect(dialog.getByRole("group", { name: "Vista del historial" }).getByRole("button", { name: "Cronología" })).toBeVisible();
+  await expect(dialog.getByRole("group", { name: "Vista del historial" }).getByRole("button", { name: "Calendario" })).toBeVisible();
+  await expect(dialog.getByRole("group", { name: "Orden cronológico" }).getByRole("button", { name: "Más recientes primero" })).toBeVisible();
+  await expect(dialog.getByRole("group", { name: "Orden cronológico" }).getByRole("button", { name: "Más antiguos primero" })).toBeVisible();
 });
 
 test("abre, cambia y restablece los filtros del Historial", async ({ page }) => {
@@ -38,9 +40,14 @@ test("abre, cambia y restablece los filtros del Historial", async ({ page }) => 
   const withNotes = dialog.getByRole("button", { name: "Con nota" });
   await withNotes.click();
   await expect(withNotes).toHaveAttribute("aria-pressed", "true");
+  const oldest = dialog.getByRole("group", { name: "Orden cronológico" }).getByRole("button", { name: "Más antiguos primero" });
+  await oldest.click();
+  await expect(oldest).toHaveAttribute("aria-pressed", "true");
 
   await dialog.getByRole("button", { name: "Restablecer" }).click();
   await expect(dialog.getByRole("button", { name: "Todos" })).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog.getByRole("group", { name: "Vista del historial" }).getByRole("button", { name: "Cronología" })).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog.getByRole("group", { name: "Orden cronológico" }).getByRole("button", { name: "Más recientes primero" })).toHaveAttribute("aria-pressed", "true");
 
   await dialog.getByRole("button", { name: "Ver 0 resultados" }).click();
   await expect(dialog).toBeHidden();
@@ -50,10 +57,10 @@ test("abre, cambia y restablece los filtros del Historial", async ({ page }) => 
 test("permite cambiar a Calendario y seleccionar un día", async ({ page }) => {
   await openHistory(page);
 
-  const inlineExplorer = page.getByRole("group", {
-    name: "Modo de exploración del Historial"
-  });
-  await inlineExplorer.getByRole("button", { name: "Calendario" }).click();
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros del historial" });
+  await dialog.getByRole("group", { name: "Vista del historial" }).getByRole("button", { name: "Calendario" }).click();
+  await dialog.getByRole("button", { name: /Ver \d+ resultados/ }).click();
 
   const calendar = page.getByRole("grid", { name: /Calendario de/ });
   await expect(calendar).toBeVisible();
@@ -87,11 +94,11 @@ async function readTemporaryPreferences(page: import("@playwright/test").Page) {
 test("restaura modo, orden, fecha y filtros del Historial después de recargar", async ({ page }) => {
   await openHistory(page);
 
-  const inlineExplorer = page.getByRole("group", {
-    name: "Modo de exploración del Historial"
-  });
-  await inlineExplorer.getByRole("button", { name: "Calendario" }).click();
-  await page.getByRole("button", { name: "Ordenar del más antiguo al más reciente" }).click();
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const preferencesDialog = page.getByRole("dialog", { name: "Filtros del historial" });
+  await preferencesDialog.getByRole("group", { name: "Vista del historial" }).getByRole("button", { name: "Calendario" }).click();
+  await preferencesDialog.getByRole("group", { name: "Orden cronológico" }).getByRole("button", { name: "Más antiguos primero" }).click();
+  await preferencesDialog.getByRole("button", { name: /Ver \d+ resultados/ }).click();
   await page.getByRole("button", { name: "Mes anterior" }).click();
 
   const calendar = page.getByRole("grid", { name: /Calendario de/ });
@@ -135,11 +142,12 @@ test("restaura modo, orden, fecha y filtros del Historial después de recargar",
   await page.reload();
   await expect(page.getByRole("heading", { name: "Historial" })).toBeVisible();
   await expect(page.locator("#history-search")).toHaveValue("Prueba de persistencia");
-  await expect(inlineExplorer.getByRole("button", { name: "Calendario" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", {
-    name: "Ordenar del más reciente al más antiguo"
-  })).toBeVisible();
   await expect(page.getByRole("grid", { name: calendarLabel ?? "" })).toBeVisible();
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const restoredViewDialog = page.getByRole("dialog", { name: "Filtros del historial" });
+  await expect(restoredViewDialog.getByRole("group", { name: "Vista del historial" }).getByRole("button", { name: "Calendario" })).toHaveAttribute("aria-pressed", "true");
+  await expect(restoredViewDialog.getByRole("group", { name: "Orden cronológico" }).getByRole("button", { name: "Más antiguos primero" })).toHaveAttribute("aria-pressed", "true");
+  await restoredViewDialog.getByRole("button", { name: /Ver \d+ resultados/ }).click();
 
   const restoredDay = page.getByRole("grid", { name: calendarLabel ?? "" })
     .getByRole("button", { name: selectedDayLabel ?? "" });
