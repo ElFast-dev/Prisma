@@ -1447,7 +1447,7 @@ export function CollectionsPage() {
           ) : collections.length === 0 ? (
             <EmptyState
               icon={<Folders size={26} />}
-              title="No tienes colecciones"
+              title="Aún no hay selecciones"
               description="Crea una colección para agrupar películas."
               action={<button className="button button-primary" type="button" onClick={() => setCreateOpen(true)}>Crear mi primera colección</button>}
             />

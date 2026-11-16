@@ -25,7 +25,7 @@ test("busca y filtra una película local sin consultar TMDB", async ({ page }) =
 
   await page.locator("#library-search").fill("");
   await page.getByRole("button", { name: "Abrir filtros" }).click();
-  const dialog = page.getByRole("dialog", { name: "Filtros de Biblioteca" });
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
   await expect(dialog).toBeVisible();
   const pending = dialog.getByRole("group", {
     name: "Estado personal en Biblioteca"
