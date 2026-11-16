@@ -2,13 +2,14 @@
 
 Aplicación cinematográfica personal, local-first y gratuita, diseñada como PWA para Android.
 
-Actualmente Prisma cuenta con tres espacios publicados:
+Actualmente Prisma cuenta con cuatro espacios principales:
 
-- **Personal:** biblioteca, historial, colecciones, perfil y logros.
-- **Descubrir:** exploración cinematográfica mediante un feed de carátulas.
-- **Espectro:** análisis local de preferencias y recomendaciones propias.
+- **Inicio:** propone tres caminos para elegir película —Apuesta segura, Nuevo descubrimiento y Fuera de tu zona— a partir del catálogo local y de las señales disponibles en Espectro. Distingue el encaje y la nota estimada, y no inventa predicciones cuando falta evidencia.
+- **Descubrir:** explora películas mediante el feed cinematográfico conectado a TMDB.
+- **Mi cine:** reúne Biblioteca, Historial, Colecciones, Perfil y logros, conservando las rutas y los registros personales existentes.
+- **Espectro:** analiza localmente las preferencias, afinidades, evolución y relaciones cinematográficas, y enriquece metadatos mediante TMDB.
 
-El rediseño objetivo de cuatro espacios —Inicio, Descubrir, Mi cine y Espectro— está documentado en [Diseño de producto y arquitectura](docs/PRODUCT-ARCHITECTURE.md). Ese documento describe el plan, no una versión ya publicada.
+La arquitectura objetivo y las siguientes etapas de evolución continúan descritas en [Diseño de producto y arquitectura](docs/PRODUCT-ARCHITECTURE.md). El documento es una guía incremental: no todas las capacidades previstas están implementadas todavía.
 
 ## Estado del proyecto
 
