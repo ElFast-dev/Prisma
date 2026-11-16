@@ -2,14 +2,13 @@
 
 Aplicación cinematográfica personal, local-first y gratuita, diseñada como PWA para Android.
 
-Actualmente Prisma cuenta con cuatro espacios principales:
+Prisma conserva sus tres espacios principales:
 
-- **Inicio:** propone tres caminos para elegir película —Apuesta segura, Nuevo descubrimiento y Fuera de tu zona— a partir del catálogo local y de las señales disponibles en Espectro. Distingue el encaje y la nota estimada, y no inventa predicciones cuando falta evidencia.
-- **Descubrir:** explora películas mediante el feed cinematográfico conectado a TMDB.
-- **Mi cine:** reúne Biblioteca, Historial, Colecciones, Perfil y logros, conservando las rutas y los registros personales existentes.
-- **Espectro:** analiza localmente las preferencias, afinidades, evolución y relaciones cinematográficas, y enriquece metadatos mediante TMDB.
+- **Personal:** biblioteca, historial, colecciones, perfil y logros.
+- **Descubrir:** exploración cinematográfica mediante un feed de carátulas.
+- **Espectro:** análisis local de preferencias, afinidades y recomendaciones propias.
 
-La arquitectura objetivo y las siguientes etapas de evolución continúan descritas en [Diseño de producto y arquitectura](docs/PRODUCT-ARCHITECTURE.md). El documento es una guía incremental: no todas las capacidades previstas están implementadas todavía.
+El desarrollo nuevo se concentrará en hacer Espectro más inteligente y útil, manteniendo la navegación y la experiencia general de Prisma. La dirección técnica está descrita en [Diseño de producto y arquitectura](docs/PRODUCT-ARCHITECTURE.md).
 
 ## Estado del proyecto
 
@@ -17,11 +16,11 @@ Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, per
 
 Las etapas 1–15 están completadas. Espectro 2.2 organiza su análisis en cuatro apartados: Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. El mapa conecta películas con géneros, directores, actores y temas; agrupa títulos similares y diferencia las zonas ya exploradas de las pendientes. El algoritmo calcula encaje relativo 0–100 % y nota prevista por separado, y enriquece metadatos locales mediante TMDB sin abrir fichas.
 
-Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película. La etapa 16.4 ya superó CI, E2E móvil y la verificación pública de GitHub Pages y del manifiesto PWA. Permanece abierta únicamente para una revisión visual manual en un dispositivo Android físico.
+Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película. La etapa 16.4 superó CI, E2E móvil y la verificación pública de GitHub Pages y del manifiesto PWA. Permanece documentada la revisión visual manual en un dispositivo Android físico.
 
-La etapa 17 — Optimización integral — sigue pendiente de autorización y no se inicia automáticamente.
+Las siguientes mejoras se centran exclusivamente en Espectro. No se plantea introducir nuevos destinos principales ni reconstruir el resto de la aplicación.
 
-## Tecnologías previstas
+## Tecnologías
 
 - React
 - TypeScript
@@ -49,7 +48,7 @@ npm run preview
 
 ## GitHub Pages
 
-El proyecto está configurado para publicarse en:
+El proyecto está publicado en:
 
 `https://elfast-dev.github.io/Prisma/`
 
@@ -57,14 +56,14 @@ El flujo `.github/workflows/deploy.yml` construye la PWA y la publica mediante G
 
 ## Privacidad y credenciales
 
-- Los datos personales se almacenarán localmente en el dispositivo.
+- Los datos personales se almacenan localmente en el dispositivo.
 - No se debe guardar una clave TMDB en el código, en variables públicas de compilación ni en Git.
-- Cada instalación que utilice TMDB deberá configurar su propia credencial.
+- Cada instalación que utilice TMDB debe configurar su propia credencial.
 - No se deben subir al repositorio archivos de copias de seguridad, datos personales ni el correo privado de autorización de TMDB.
 
 ## Documentación
 
-La documentación técnica y funcional se encuentra en `docs/`. La nueva arquitectura de producto está descrita en [PRODUCT-ARCHITECTURE.md](docs/PRODUCT-ARCHITECTURE.md).
+La documentación técnica y funcional se encuentra en `docs/`. La dirección de las mejoras de Espectro está descrita en [PRODUCT-ARCHITECTURE.md](docs/PRODUCT-ARCHITECTURE.md).
 
 ## Conexión con TMDB
 

@@ -4,7 +4,7 @@ test.beforeEach(async ({ page }) => {
   // Cada prueba usa un contexto nuevo con IndexedDB aislada.
   await page.goto("#/personal");
   const navigation = page.getByRole("navigation", { name: "Navegación principal" });
-  await expect(navigation.getByRole("link", { name: "Mi cine", exact: true }))
+  await expect(navigation.getByRole("link", { name: "Personal", exact: true }))
     .toHaveAttribute("aria-current", "page");
   await expect(page.locator(".section-heading")).toHaveCount(0);
 });
@@ -131,8 +131,8 @@ test("separa el resumen de perfil de los accesos de Biblioteca", async ({ page }
   expect(firstNavigationCard!.y - (profile!.y + profile!.height)).toBeGreaterThanOrEqual(18);
 });
 
-test("Mi cine y Espectro se identifican desde la navegación inferior sin cabeceras duplicadas", async ({ page }) => {
-  for (const [path, activeLabel] of [["#/personal", "Mi cine"], ["#/spectro", "Espectro"]]) {
+test("Personal y Espectro se identifican desde la navegación inferior sin cabeceras duplicadas", async ({ page }) => {
+  for (const [path, activeLabel] of [["#/personal", "Personal"], ["#/spectro", "Espectro"]]) {
     await page.goto(path);
     const navigation = page.getByRole("navigation", { name: "Navegación principal" });
     await expect(navigation.getByRole("link", { name: activeLabel, exact: true }))
