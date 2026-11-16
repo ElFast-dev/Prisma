@@ -426,8 +426,7 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
           <strong>Quedaron {snapshot.failedMovies} películas con datos incompletos</strong>
         </div>
         <p className="muted-copy">
-          Prisma conserva los metadatos obtenidos y no modifica tus visionados ni calificaciones.
-          Puedes volver a intentar las consultas pendientes.
+          {snapshot.lastError ?? "Prisma conserva los metadatos obtenidos y no modifica tus visionados ni calificaciones. Puedes volver a intentar las consultas pendientes."}
         </p>
         <button className="button button-secondary" type="button" onClick={onRetry}>Reintentar metadatos</button>
       </section>
