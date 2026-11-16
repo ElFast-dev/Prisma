@@ -11,6 +11,7 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
     const now = "2026-11-16T12:00:00.000Z";
     const movies: Array<Record<string, unknown>> = [];
     const viewings: Array<Record<string, unknown>> = [];
+    const libraryEntries: Array<Record<string, unknown>> = [];
 
     const addGroup = (
       prefix: string,
@@ -58,6 +59,13 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
     addGroup("previous-comedy", "2025-01-26", "Comedia", 35, 9, "Director Alterno", "México", "es", 85);
     addGroup("recent-drama", "2026-02-01", "Drama", 18, 10, "Directora Prisma", "Japón", "ja", 115);
     addGroup("recent-comedy", "2026-02-02", "Comedia", 35, 5, "Director Alterno", "México", "es", 85);
+    libraryEntries.push({
+      movieId: "e2e-spectro-previous-drama-0",
+      status: "watched",
+      isFavorite: true,
+      addedAt: now,
+      updatedAt: now
+    });
 
     movies.push({
       id: "e2e-spectro-candidate",
@@ -77,11 +85,13 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
     });
 
     try {
-      const transaction = db.transaction(["movies", "viewings"], "readwrite");
+      const transaction = db.transaction(["movies", "viewings", "libraryEntries"], "readwrite");
       const movieStore = transaction.objectStore("movies");
       const viewingStore = transaction.objectStore("viewings");
+      const libraryStore = transaction.objectStore("libraryEntries");
       for (const movie of movies) movieStore.put(movie);
       for (const viewing of viewings) viewingStore.put(viewing);
+      for (const entry of libraryEntries) libraryStore.put(entry);
 
       await new Promise<void>((resolve, reject) => {
         transaction.oncomplete = () => resolve();
@@ -114,6 +124,7 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect(page.getByText("Grosor y brillo = fuerza del vínculo · Tamaño = influencia en recomendaciones")).toBeVisible();
   await expect(page.locator(".spectro-network-node.is-movie")).toHaveCount(13);
   await expect(page.locator(".spectro-network-node.is-genre").first()).toBeVisible();
+  await expect(page.locator(".spectro-network-favorite-marker")).toHaveCount(1);
   await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("Candidata Prisma ficticia");
   await expect(page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]')).toHaveAttribute("opacity", "1");
   await page.locator('.spectro-network-node.is-movie[aria-label^="Candidata Prisma ficticia"]').click();
