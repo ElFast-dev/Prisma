@@ -197,7 +197,7 @@ function SpectroDecisionGraph({ analysis }: { analysis: SpectroAnalysis }) {
 
   const width = 1080;
   const signalGap = 82;
-  const graphHeight = Math.max(360, 100 + signals.length * signalGap, 120 + candidates.length * 112);
+  const graphHeight = Math.max(360, 128 + signals.length * signalGap, 120 + candidates.length * 112);
   const profileHeight = 88;
   const signalHeight = 64;
   const candidateHeight = 76;
@@ -283,16 +283,13 @@ function SpectroDecisionGraph({ analysis }: { analysis: SpectroAnalysis }) {
             const secondary = isCandidate
               ? "Encaje " + node.fitPercentage + "% · Nota " + node.predictedRating?.toFixed(1) + "/10"
               : node.detail;
-            const evidenceText = node.evidence?.map((item) => (
-              item.title + (item.rating === null ? " (favorita)" : " (" + item.rating.toFixed(1) + "/10)")
-            )).join(", ");
             return (
               <g
                 key={node.id}
                 className={"spectro-graph-node " + nodeClass}
-                aria-label={node.label + ". " + node.detail + (evidenceText ? ". Evidencia: " + evidenceText : "")}
+                aria-label={node.label + ". " + node.detail}
               >
-                <title>{node.label + " · " + node.detail + (evidenceText ? " · " + evidenceText : "")}</title>
+                <title>{node.label + " · " + node.detail}</title>
                 <rect
                   x={position.x}
                   y={position.y}
@@ -323,8 +320,8 @@ function SpectroDecisionGraph({ analysis }: { analysis: SpectroAnalysis }) {
         Las líneas verdes muestran señales que elevan el encaje; las rojas, rasgos que lo reducen. Los favoritos son señales explícitas y no se transforman en notas.
       </p>
       {signals.some((node) => node.evidence?.length) && (
-        <details className="spectro-graph-evidence">
-          <summary>Ver las películas que respaldan las conexiones</summary>
+        <details className="spectro-graph-evidence" open>
+          <summary>Películas que respaldan cada conexión</summary>
           <div className="spectro-graph-evidence-list">
             {signals.map((node) => (
               <article className="spectro-graph-evidence-item" key={node.id}>
