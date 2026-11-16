@@ -1659,3 +1659,372 @@
 @media (prefers-reduced-motion: reduce) {
   .spectro-question-score { transition: none; }
 }
+
+
+/* Espectro 2.2 — mapa cinematográfico interactivo y navegación por secciones */
+.spectro-profile-summary {
+  margin-bottom: 16px;
+}
+.spectro-profile-summary .avatar-placeholder {
+  border-color: rgb(153 185 223 / 25%);
+  background: rgb(82 118 164 / 15%);
+  color: #A9C9EF;
+}
+.spectro-navigation-cards { margin-top: 0; }
+.spectro-network-section {
+  display: grid;
+  min-width: 0;
+  gap: 13px;
+  margin-top: 3px;
+}
+.spectro-network-intro {
+  display: grid;
+  gap: 10px;
+}
+.spectro-network-intro h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -.025em;
+}
+.spectro-network-intro .muted-copy {
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.spectro-network-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.spectro-network-counts span {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: rgb(18 26 36 / 72%);
+  padding: 8px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+.spectro-network-counts strong {
+  color: var(--color-text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.spectro-network-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.spectro-network-search {
+  display: flex;
+  min-width: 0;
+  min-height: 40px;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: #111923;
+  padding: 0 10px;
+  color: var(--color-text-muted);
+}
+.spectro-network-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 11px;
+}
+.spectro-network-search input::placeholder { color: var(--color-text-muted); }
+.spectro-network-search button,
+.spectro-network-zoom button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 5%);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.spectro-network-search button:hover,
+.spectro-network-zoom button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 10%);
+  color: var(--color-text);
+}
+.spectro-network-zoom {
+  display: flex;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: #111923;
+  padding: 0 4px;
+}
+.spectro-network-zoom span {
+  min-width: 39px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.spectro-network-zoom button:disabled { cursor: not-allowed; opacity: .35; }
+.spectro-network-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 13px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+.spectro-network-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.spectro-network-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.spectro-network-legend .is-movie { background: #9FBCD9; }
+.spectro-network-legend .is-genre { background: #D8AE75; }
+.spectro-network-legend .is-director { background: #87B7A4; }
+.spectro-network-legend .is-actor { background: #A99BDA; }
+.spectro-network-legend .is-theme { background: #D68CA2; }
+.spectro-network-legend-line {
+  flex-basis: 100%;
+  color: var(--color-text-muted);
+  font-size: 8px;
+}
+.spectro-network-viewport {
+  width: 100%;
+  max-height: min(68vh, 680px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+  border: 1px solid rgb(75 91 111 / 42%);
+  border-radius: 13px;
+  background:
+    radial-gradient(circle at 50% 42%, rgb(61 89 119 / 18%), transparent 60%),
+    radial-gradient(circle at 0 0, rgb(28 45 62 / 44%), transparent 55%),
+    #0E151E;
+  scrollbar-color: #46566A transparent;
+  scrollbar-width: thin;
+}
+.spectro-network-svg {
+  display: block;
+  max-width: none;
+  overflow: visible;
+  background-image: radial-gradient(rgb(143 166 194 / 10%) .75px, transparent .75px);
+  background-size: 22px 22px;
+}
+.spectro-network-cluster circle {
+  fill: rgb(96 137 177 / 6%);
+  stroke: rgb(111 146 177 / 24%);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 6;
+}
+.spectro-network-cluster.is-unexplored circle {
+  fill: rgb(84 95 111 / 5%);
+  stroke: rgb(111 122 137 / 18%);
+  stroke-dasharray: 2 8;
+}
+.spectro-network-cluster text {
+  fill: rgb(179 198 218 / 76%);
+  font-size: 10px;
+  font-weight: 650;
+  pointer-events: none;
+}
+.spectro-network-cluster .spectro-network-cluster-count {
+  fill: rgb(139 154 173 / 62%);
+  font-size: 8px;
+  font-weight: 450;
+}
+.spectro-network-edge {
+  stroke-linecap: round;
+  transition: opacity 150ms ease, stroke-width 150ms ease;
+}
+.spectro-network-edge.is-positive { stroke: #82C6A5; }
+.spectro-network-edge.is-negative { stroke: #DC9B82; }
+.spectro-network-edge.is-explicit { stroke: #D7B779; }
+.spectro-network-edge.is-neutral { stroke: #8595A8; }
+.spectro-network-node {
+  cursor: pointer;
+  outline: none;
+}
+.spectro-network-node > circle {
+  stroke-width: 1.2;
+  transition: r 150ms ease, stroke-width 150ms ease, filter 150ms ease;
+}
+.spectro-network-node.is-movie > image { pointer-events: none; }
+.spectro-network-node.is-movie .spectro-network-node-outline {
+  fill: none;
+  stroke: #BED1E5;
+  stroke-width: 1.5;
+}
+.spectro-network-node.is-movie .spectro-network-movie-fallback {
+  fill: #58748F;
+  stroke: #BED1E5;
+}
+.spectro-network-node.is-movie.is-unexplored .spectro-network-node-outline {
+  stroke: rgb(142 157 177 / 45%);
+  stroke-dasharray: 2 3;
+}
+.spectro-network-node.is-movie.is-unexplored .spectro-network-movie-fallback {
+  fill: #414B58;
+  stroke: #8B98A8;
+}
+.spectro-network-node.is-genre > circle { fill: #D8AE75; stroke: #F0D6AE; }
+.spectro-network-node.is-director > circle { fill: #87B7A4; stroke: #BDE0D0; }
+.spectro-network-node.is-actor > circle { fill: #A99BDA; stroke: #D0C6F2; }
+.spectro-network-node.is-theme > circle { fill: #D68CA2; stroke: #F2B9CB; }
+.spectro-network-node.is-unexplored:not(.is-movie) > circle {
+  opacity: .48;
+  filter: saturate(.38);
+}
+.spectro-network-node.is-selected > circle,
+.spectro-network-node:focus-visible > circle {
+  stroke: #F6E5BE;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px rgb(246 229 190 / 65%));
+}
+.spectro-network-node.is-movie.is-selected .spectro-network-node-outline,
+.spectro-network-node.is-movie:focus-visible .spectro-network-node-outline {
+  stroke: #F6E5BE;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px rgb(246 229 190 / 65%));
+}
+.spectro-network-node text {
+  fill: #E1E8F0;
+  font-size: 9px;
+  font-weight: 650;
+  paint-order: stroke;
+  stroke: #0E151E;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.spectro-network-selection {
+  display: grid;
+  gap: 9px;
+  margin-top: 2px;
+  padding: 13px;
+}
+.spectro-network-selection-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 9px;
+}
+.spectro-network-selection-heading > div { display: grid; gap: 3px; }
+.spectro-network-selection-heading > div > span {
+  color: var(--color-accent);
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.spectro-network-selection-heading h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.spectro-network-selection-heading button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.spectro-network-selection > .muted-copy {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.spectro-network-selection-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.spectro-network-selection-metrics span {
+  display: grid;
+  gap: 2px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 4%);
+  padding: 7px;
+  color: var(--color-text-muted);
+  font-size: 8px;
+}
+.spectro-network-selection-metrics strong {
+  color: var(--color-text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.spectro-network-related { display: grid; gap: 7px; }
+.spectro-network-related > strong { font-size: 10px; }
+.spectro-network-related > div { display: grid; gap: 5px; }
+.spectro-network-related button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 3%);
+  padding: 8px 9px;
+  color: var(--color-text);
+  text-align: left;
+}
+.spectro-network-related button span { font-size: 10px; }
+.spectro-network-related button small {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 8px;
+}
+.spectro-network-explainer {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.spectro-network-empty {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  padding: 18px;
+}
+.spectro-network-empty h2 { margin: 0; font-size: 16px; }
+.spectro-network-empty p { margin: 0 0 3px; font-size: 11px; line-height: 1.55; }
+@media (min-width: 700px) {
+  .spectro-network-intro {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, .7fr);
+    align-items: end;
+  }
+  .spectro-network-counts { max-width: 380px; justify-self: end; width: 100%; }
+  .spectro-network-viewport { max-height: 760px; }
+  .spectro-network-legend-line { flex-basis: auto; }
+}
+@media (max-width: 380px) {
+  .spectro-network-controls { align-items: stretch; flex-direction: column; }
+  .spectro-network-zoom { justify-content: center; }
+  .spectro-network-counts span { padding: 7px 5px; font-size: 8px; }
+  .spectro-network-selection-metrics { gap: 4px; }
+  .spectro-network-selection-metrics span { padding: 6px 5px; font-size: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spectro-network-edge,
+  .spectro-network-node > circle { transition: none; }
+}
