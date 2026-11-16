@@ -1,15 +1,16 @@
-import { BrainCircuit, Compass, UserRound } from "lucide-react";
+import { BookOpen, BrainCircuit, Compass, House } from "lucide-react";
 
-type Section = "personal" | "discover" | "spectro";
+type Section = "home" | "cine" | "discover" | "spectro";
 
 interface BottomNavigationProps {
   active: Section;
   compact?: boolean;
 }
 
-const items: { id: Section; label: string; href: string; icon: typeof UserRound }[] = [
-  { id: "personal", label: "Personal", href: "#/personal", icon: UserRound },
+const items: { id: Section; label: string; href: string; icon: typeof House }[] = [
+  { id: "home", label: "Inicio", href: "#/", icon: House },
   { id: "discover", label: "Descubrir", href: "#/discover", icon: Compass },
+  { id: "cine", label: "Mi cine", href: "#/personal", icon: BookOpen },
   { id: "spectro", label: "Espectro", href: "#/spectro", icon: BrainCircuit }
 ];
 
