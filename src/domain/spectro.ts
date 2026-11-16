@@ -170,7 +170,7 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
   const countryAffinities = affinities((movie) => [...new Set(movie.countries)]
     .map((name) => ({ key: "country:" + normalize(name), label: name })));
   const decadeAffinities = affinities(decadeFeature);
-  const watchedIds = new Set(ratingsByMovie.keys());
+  const watchedIds = new Set(input.viewings.map((viewing) => viewing.movieId));
   return {
     algorithmVersion: SPECTRO_ALGORITHM_VERSION,
     inputFingerprint: fingerprintInput(input),

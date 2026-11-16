@@ -4,28 +4,40 @@ Prisma acepta el respaldo Android de versión 2 como una fuente externa de migra
 
 ## Datos incluidos
 
-- movies.cH se incorpora a Vistas.
+- movies.cH se incorpora como una experiencia en Historial y clasifica la película en Vistas.
+- Una experiencia externa puede no tener calificación. Se conserva igual en Historial y se puede editar o eliminar.
 - movies.cW se incorpora a Pendientes.
-- movies.rM se enlaza con películas de Vistas por su ID de Trakt y se transforma en un visionado calificado de Prisma.
+- movies.rM se enlaza con películas de Vistas por su ID de Trakt y se conserva como calificación de la experiencia.
 - Solo se usa tmId cuando es un entero seguro mayor que cero. El ID interno de Prisma se forma con el ID TMDB.
 - shows, episodios, temporadas, ratings de series y listas externas se ignoran.
 
-## Fechas, rachas y calificaciones
+## Fechas y calificaciones
 
 Para calcular el día de una película vista, Prisma usa exclusivamente el instante UTC movies.cH[].a y lo convierte a la fecha calendario de la zona horaria del dispositivo. En Panamá se utiliza America/Panama. La conversión se hace con la zona horaria, no recortando los primeros diez caracteres del texto. Se aceptan timestamps UTC con y sin milisegundos.
 
-El día de visionado no se obtiene de rA ni de movies.cW. La racha cuenta días calendario distintos: dos o más películas el mismo día cuentan como un solo día y no interrumpen la racha. La racha actual se mantiene cuando la última actividad fue hoy o ayer. El cálculo normal no exige exactamente una película al día.
+El día de visionado no se obtiene de rA ni de movies.cW. Las calificaciones mantienen la escala de 1 a 10. Una película vista sin rating sigue siendo una experiencia completa; simplemente aparece como «Sin calificar» y no participa en los promedios ni en Espectro.
 
-La calificación externa de 1 a 10 conserva su escala y se enlaza por ID de Trakt. Su rA se conserva como fecha de creación/actualización del registro de calificación, pero nunca determina el día de la racha. Un rating sin película de Vistas importable se omite; no se crea una película ficticia para ratings huérfanos ni para IDs TMDB centinela.
+Un rating sin película de Vistas importable se omite; no se crea una película ficticia para ratings huérfanos ni para IDs TMDB centinela.
 
-## Fusión y duplicados
+## Prioridad y conflictos
 
-La importación combina películas por ID TMDB. Conserva metadatos locales si la película ya existe, así como favoritos, perfil, preferencias, colecciones y credencial TMDB. Una película ya presente en Vistas conserva sus visionados existentes; no se crea un visionado duplicado por volver a importar el mismo respaldo.
+Antes de importar, el propietario elige una de dos políticas:
 
-Cuando se vuelve a importar un respaldo, Prisma también corrige el día local de los visionados que creó una importación externa anterior. La corrección solo toca visionados identificados como importados por Prisma; los visionados registrados manualmente no se alteran. Si una película externa está en Vistas y en Prisma solo estaba Pendiente, su estado pasa a Vistas.
+- **Conservar Prisma:** mantiene el estado Vistas/Pendientes y la calificación local cuando coinciden la película y la misma fecha de visionado. El archivo completa películas y experiencias que aún no existen.
+- **Priorizar archivo JSON:** el estado Vistas/Pendientes del archivo prevalece. Cuando el registro externo coincide con una experiencia local del mismo día, también prevalece su calificación.
 
-El importador crea registros locales mínimos para películas nuevas usando el título y el ID TMDB del archivo. La ficha obtiene los metadatos cinematográficos completos desde TMDB cuando se abre con conexión y credencial configurada.
+Las experiencias manuales de otras fechas no se eliminan ni se sobrescriben. Una experiencia de la misma fecha se enlaza al identificador externo para que las importaciones posteriores puedan actualizarla en lugar de duplicarla.
+
+## Duplicados y reimportación
+
+La importación combina películas por ID TMDB. Conserva metadatos locales si la película ya existe, así como favoritos, perfil, preferencias, colecciones y credencial TMDB.
+
+Cada experiencia importada se identifica con el ID estable de Trakt. Reimportar el mismo respaldo actualiza esa experiencia en vez de crear otra. Las experiencias manuales de fechas distintas permanecen intactas.
+
+Los registros externos antiguos que Prisma había creado con un identificador aleatorio se reconocen y se enlazan a la referencia estable cuando se vuelve a importar su película.
 
 ## Formato nativo de Prisma
 
-La exportación y restauración nativas continúan usando exclusivamente el formato prisma-local-backup, versión 1. Restaurar una copia nativa reemplaza los datos incluidos en ella. Importar el formato Android externo realiza una fusión y no cambia el esquema ni el contenido del formato nativo.
+La exportación y restauración nativas continúan usando exclusivamente el formato prisma-local-backup, versión 1. El esquema acepta que los registros más nuevos omitan una calificación o una clasificación explícita, y sigue leyendo las copias anteriores que sí contienen esos campos.
+
+Restaurar una copia nativa reemplaza los datos incluidos en ella. Importar el formato Android externo realiza una fusión y no cambia el esquema ni el contenido del formato nativo.

@@ -1,3 +1,25 @@
+.external-import-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+.external-import-summary > div {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.external-import-summary strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.external-import-summary span { color: var(--text-secondary); font-size: 11px; text-align: center; }
+.external-import-priority { display: grid; gap: 8px; margin-top: 14px; }
+.external-import-priority > p { margin: 0 0 8px; }
+@media (max-width: 420px) {
+  .external-import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* Catálogo, pósteres y ficha cinematográfica */
 .poster-grid {
   display: grid;
