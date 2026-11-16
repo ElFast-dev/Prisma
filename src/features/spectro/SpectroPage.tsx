@@ -616,7 +616,7 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
             const unexplored = node.kind === "movie"
               ? node.state === "unexplored"
               : node.exploredConnections === 0;
-            const opacity = dim ? 0.12 : unexplored ? 0.38 : 1;
+            const opacity = dim ? 0.12 : unexplored && !activeNodeIds.has(node.id) ? 0.38 : 1;
             const clipId = "spectro-movie-clip-" + index;
             const posterUrl = node.kind === "movie"
               ? getTmdbImageUrl("https://image.tmdb.org/t/p/", node.posterPath, "w185")
