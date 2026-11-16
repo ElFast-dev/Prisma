@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  BrainCircuit, CalendarDays, ChartLine, Clapperboard, Film,
-  Fingerprint, Network, Sparkles, Users
+  ArrowDownRight, ArrowUpRight, BrainCircuit, CalendarDays, ChartLine,
+  Clapperboard, Film, Fingerprint, Languages, Network, Sparkles,
+  Timer, TrendingUp, Users
 } from "lucide-react";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
@@ -12,25 +13,60 @@ import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestorati
 
 type LoadState = "loading" | "ready" | "error";
 
-function AffinityPanel({ title, icon, items }: { title: string; icon: ReactNode; items: SpectroAffinity[] }) {
-  const strongest = items.filter((item) => item.difference > 0).slice(0, 5);
+function confidenceLabel(value: SpectroAffinity["confidence"]): string {
+  if (value === "sólida") return "Consistente";
+  if (value === "moderada") return "En desarrollo";
+  if (value === "variable") return "Variable";
+  return "Inicial";
+}
+
+function AffinityPanel({
+  title,
+  icon,
+  items
+}: {
+  title: string;
+  icon: ReactNode;
+  items: SpectroAffinity[];
+}) {
+  const strongest = items.filter((item) => item.adjustedDifference > 0).slice(0, 5);
+
   return (
     <section className="spectro-affinity-panel card-surface">
-      <div className="spectro-panel-title"><span>{icon}</span><h2>{title}</h2></div>
+      <div className="spectro-panel-title"><span>{icon}</span><h3>{title}</h3></div>
       {strongest.length ? strongest.map((item) => (
         <div className="spectro-affinity-row" key={item.key}>
-          <div className="spectro-affinity-heading"><strong>{item.label}</strong><span>{item.averageRating.toFixed(1)}/10</span></div>
-          <div className="spectro-affinity-track"><span style={{ width: Math.max(3, Math.min(100, item.averageRating * 10)) + "%" }} /></div>
-          <small>+{item.difference.toFixed(1)} frente a tu promedio · {item.sampleSize} {item.sampleSize === 1 ? "película" : "películas"}</small>
+          <div className="spectro-affinity-heading">
+            <strong>{item.label}</strong>
+            <span>{item.averageRating.toFixed(1)}/10</span>
+          </div>
+          <div
+            className="spectro-affinity-track"
+            role="img"
+            aria-label={item.label + ": " + item.averageRating.toFixed(1) + " de 10"}
+          >
+            <span style={{ width: Math.max(3, Math.min(100, item.averageRating * 10)) + "%" }} />
+          </div>
+          <div className="spectro-affinity-evidence">
+            <small>
+              +{item.difference.toFixed(1)} observado · +{item.adjustedDifference.toFixed(1)} ajustado · variación {item.dispersion.toFixed(1)} · {item.sampleSize} títulos
+            </small>
+            <span className={"spectro-confidence is-" + item.confidence}>{confidenceLabel(item.confidence)}</span>
+          </div>
         </div>
-      )) : <p className="muted-copy spectro-panel-empty">Todavía no hay una afinidad positiva consistente en esta categoría.</p>}
+      )) : (
+        <p className="muted-copy spectro-panel-empty">
+          Todavía no hay una señal positiva respaldada en esta categoría.
+        </p>
+      )}
     </section>
   );
 }
 
 function formatMonth(value: string): string {
   const [year, month] = value.split("-").map(Number);
-  return new Intl.DateTimeFormat("es-PA", { month: "short", year: "numeric" }).format(new Date(year, month - 1, 1));
+  return new Intl.DateTimeFormat("es-PA", { month: "short", year: "numeric" })
+    .format(new Date(year, month - 1, 1));
 }
 
 function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
@@ -47,14 +83,14 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
 
   return (
     <>
-      <section className="spectro-summary-grid">
+      <section className="spectro-summary-grid" aria-label="Resumen del análisis">
         <div className="spectro-summary-card"><span>Películas analizadas</span><strong>{analysis.movieCount}</strong></div>
         <div className="spectro-summary-card"><span>Visionados</span><strong>{analysis.totalViewings}</strong></div>
-        <div className="spectro-summary-card"><span>Promedio personal</span><strong>{analysis.averageRating?.toFixed(1) ?? "—"}<small>/10</small></strong></div>
+        <div className="spectro-summary-card"><span>Promedio por película</span><strong>{analysis.averageRating?.toFixed(1) ?? "—"}<small>/10</small></strong></div>
       </section>
 
       {!analysis.hasEnoughData ? (
-        <section className="spectro-insufficient card-surface">
+        <section className="spectro-insufficient card-surface" role="status">
           <Fingerprint size={23} className="accent-icon" />
           <div>
             <h2>Datos insuficientes</h2>
@@ -63,36 +99,91 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
         </section>
       ) : (
         <>
-          <section className="spectro-map card-surface">
-            <div className="content-caption"><h2>Afinidades</h2><span className="status-pill">Versión 1.0</span></div>
-            <p className="muted-copy spectro-section-intro">Compara tus valoraciones por rasgo con tu promedio general.</p>
+          <section className="spectro-map card-surface" aria-labelledby="spectro-affinities-title">
+            <div className="content-caption">
+              <h2 id="spectro-affinities-title">Afinidades</h2>
+              <span className="status-pill">Versión {analysis.algorithmVersion}</span>
+            </div>
+            <p className="muted-copy spectro-section-intro">
+              Diferencia ajustada frente a tu promedio por película. El respaldo depende de títulos distintos y de la variación entre sus notas.
+            </p>
             <div className="spectro-affinity-grid">
               <AffinityPanel title="Géneros" icon={<Film size={17} />} items={analysis.genreAffinities} />
               <AffinityPanel title="Directores" icon={<Clapperboard size={17} />} items={analysis.directorAffinities} />
               <AffinityPanel title="Reparto" icon={<Users size={17} />} items={analysis.castAffinities} />
               <AffinityPanel title="Países" icon={<Network size={17} />} items={analysis.countryAffinities} />
               <AffinityPanel title="Épocas" icon={<CalendarDays size={17} />} items={analysis.decadeAffinities} />
+              <AffinityPanel title="Idioma original" icon={<Languages size={17} />} items={analysis.languageAffinities} />
+              <AffinityPanel title="Duración" icon={<Timer size={17} />} items={analysis.durationAffinities} />
             </div>
+            <p className="spectro-method-note">
+              Una afinidad inicial es una pista, no una preferencia confirmada. Los revisionados no aumentan el número de títulos que respaldan una señal.
+            </p>
           </section>
 
-          <section className="spectro-evolution-section">
-            <div className="content-caption"><div><h2>Evolución</h2></div><ChartLine size={19} className="accent-icon" /></div>
+          <section className="spectro-evolution-section" aria-labelledby="spectro-evolution-title">
+            <div className="content-caption">
+              <h2 id="spectro-evolution-title">Evolución mensual</h2>
+              <ChartLine size={19} className="accent-icon" />
+            </div>
             {analysis.evolution.length ? (
               <div className="spectro-evolution-list card-surface">
                 {analysis.evolution.map((item) => (
                   <div className="spectro-evolution-row" key={item.month}>
                     <span>{formatMonth(item.month)}</span>
-                    <div className="spectro-evolution-track"><span style={{ width: item.averageRating * 10 + "%" }} /></div>
+                    <div
+                      className="spectro-evolution-track"
+                      role="img"
+                      aria-label={"Promedio mensual " + item.averageRating.toFixed(1) + " de 10"}
+                    >
+                      <span style={{ width: item.averageRating * 10 + "%" }} />
+                    </div>
                     <strong>{item.averageRating.toFixed(1)}</strong>
-                    <small>{item.viewingCount} {item.viewingCount === 1 ? "visionado" : "visionados"}</small>
+                    <small>{item.viewingCount} {item.viewingCount === 1 ? "calificación" : "calificaciones"}</small>
                   </div>
                 ))}
               </div>
-            ) : <p className="muted-copy">Aún no hay registros mensuales suficientes para mostrar la evolución.</p>}
+            ) : (
+              <p className="muted-copy">Aún no hay calificaciones mensuales para mostrar la evolución.</p>
+            )}
           </section>
 
-          <section className="spectro-recommendations-section">
-            <div className="content-caption"><div><h2>Podrían gustarte</h2></div><Sparkles size={19} className="accent-icon" /></div>
+          <section className="spectro-trends-section" aria-labelledby="spectro-trends-title">
+            <div className="content-caption">
+              <div><h2 id="spectro-trends-title">Cambios recientes</h2></div>
+              <TrendingUp size={19} className="accent-icon" />
+            </div>
+            {analysis.affinityTrends.length ? (
+              <div className="spectro-trends-list card-surface">
+                {analysis.affinityTrends.slice(0, 5).map((item) => (
+                  <article className="spectro-trend-row" key={item.key}>
+                    <div className="spectro-trend-copy">
+                      <strong>{item.label}</strong>
+                      <small>{item.category} · {item.previousSampleSize} antes · {item.recentSampleSize} recientes</small>
+                    </div>
+                    <div className={"spectro-trend-change is-" + item.direction}>
+                      {item.direction === "sube" ? <ArrowUpRight size={16} />
+                        : item.direction === "baja" ? <ArrowDownRight size={16} /> : <span>—</span>}
+                      <strong>{item.change > 0 ? "+" : ""}{item.change.toFixed(1)}</strong>
+                    </div>
+                  </article>
+                ))}
+                <p className="spectro-method-note">
+                  Compara los últimos 12 meses disponibles con los 12 anteriores. Cada título cuenta una vez por periodo; no se extrapolan meses sin actividad.
+                </p>
+              </div>
+            ) : (
+              <p className="muted-copy spectro-trends-empty">
+                Aún no hay dos periodos comparables. Se necesitan al menos tres películas calificadas en cada periodo y rasgo.
+              </p>
+            )}
+          </section>
+
+          <section className="spectro-recommendations-section" aria-labelledby="spectro-recommendations-title">
+            <div className="content-caption">
+              <div><h2 id="spectro-recommendations-title">Podrían gustarte</h2></div>
+              <Sparkles size={19} className="accent-icon" />
+            </div>
             {analysis.recommendations.length ? (
               <div className="spectro-recommendation-grid">
                 {analysis.recommendations.map((item) => (
@@ -107,8 +198,18 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
                     />
                     <div className="spectro-recommendation-copy">
                       <strong>{item.movie.title}</strong>
-                      <small>Afinidad +{item.score.toFixed(1)} puntos</small>
-                      <p>{item.reasons.join(" · ")}</p>
+                      <div className="spectro-recommendation-meta">
+                        <small>Encaje estimado +{item.score.toFixed(1)}</small>
+                        <span className={"spectro-confidence is-" + item.confidence}>{confidenceLabel(item.confidence)}</span>
+                      </div>
+                      <ul className="spectro-recommendation-reasons">
+                        {item.reasons.map((reason) => (
+                          <li key={reason.category}>
+                            <span>{reason.category}: {reason.label}</span>
+                            <small>+{reason.difference.toFixed(1)} · {reason.sampleSize} títulos</small>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </article>
                 ))}
@@ -116,14 +217,18 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
             ) : (
               <div className="spectro-no-recommendations card-surface">
                 <Sparkles size={20} className="accent-icon" />
-                <p>No hay candidatas locales que coincidan con tus afinidades positivas todavía. Al abrir fichas desde Descubrir, Prisma guardará recomendaciones relacionadas para analizarlas aquí.</p>
+                <p>
+                  Aún no hay candidatas locales con coincidencias respaldadas. Prisma necesita al menos tres títulos por señal antes de utilizarla en una recomendación.
+                </p>
               </div>
             )}
           </section>
         </>
       )}
 
-      <p className="spectro-version-note">Espectro {analysis.algorithmVersion} · Análisis local actualizado {new Date(analysis.computedAt).toLocaleString("es-PA")}</p>
+      <p className="spectro-version-note">
+        Espectro {analysis.algorithmVersion} · Análisis local actualizado {new Date(analysis.computedAt).toLocaleString("es-PA")}
+      </p>
     </>
   );
 }

@@ -1152,3 +1152,108 @@
 .reset-data-footnote { margin: 0 0 2px; }
 .reset-data-sheet .field-label { margin-top: 2px; }
 .reset-data-sheet .connection-message { margin: 0; }
+
+ 
+/* Espectro 2.0 — evidencia legible y comparación temporal */
+.spectro-affinity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.spectro-affinity-panel { min-width: 0; gap: 12px; }
+.spectro-panel-title h3 { margin: 0; font-size: 12px; font-weight: 650; }
+.spectro-affinity-evidence {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+.spectro-affinity-evidence small {
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+.spectro-confidence {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 3px 6px;
+  color: var(--color-text-muted);
+  font-size: 8px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.spectro-confidence.is-sólida { border-color: rgb(129 168 141 / 30%); color: var(--color-success); }
+.spectro-confidence.is-moderada { border-color: rgb(217 189 145 / 28%); color: var(--color-accent); }
+.spectro-confidence.is-variable { border-color: rgb(214 175 112 / 28%); color: var(--color-warning); }
+.spectro-method-note {
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.spectro-trends-section { margin-top: 24px; }
+.spectro-trends-list { display: grid; gap: 0; padding: 0 15px; }
+.spectro-trend-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgb(53 64 77 / 62%);
+  padding: 12px 0;
+}
+.spectro-trend-row:last-of-type { border-bottom: 0; }
+.spectro-trend-copy { display: grid; min-width: 0; gap: 3px; }
+.spectro-trend-copy strong { overflow-wrap: anywhere; font-size: 12px; }
+.spectro-trend-copy small { color: var(--color-text-muted); font-size: 9px; }
+.spectro-trend-change { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
+.spectro-trend-change strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.spectro-trend-change.is-sube { color: var(--color-success); }
+.spectro-trend-change.is-baja { color: var(--color-warning); }
+.spectro-trend-change.is-estable { color: var(--color-text-muted); }
+.spectro-trends-list .spectro-method-note { margin: 3px 0 13px; }
+.spectro-trends-empty { margin-top: 8px; }
+.spectro-recommendation-meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.spectro-recommendation-reasons {
+  display: grid;
+  gap: 5px;
+  margin: 5px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.spectro-recommendation-reasons li {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 7px;
+}
+.spectro-recommendation-reasons li span {
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.spectro-recommendation-reasons li small {
+  flex: 0 0 auto;
+  color: var(--color-accent);
+  font-size: 8px;
+  white-space: nowrap;
+}
+@media (max-width: 380px) {
+  .spectro-affinity-grid { grid-template-columns: 1fr; }
+  .spectro-affinity-evidence { align-items: flex-start; flex-direction: column; }
+}
+@media (min-width: 700px) {
+  .spectro-affinity-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spectro-affinity-track span { transition: none; }
+}
