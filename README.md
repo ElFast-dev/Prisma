@@ -14,7 +14,7 @@ Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, per
 
 Las etapas 1–15 están completadas. Espectro 2.2 organiza su análisis en cuatro apartados: Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. El mapa conecta películas con géneros, directores, actores y temas; agrupa títulos similares y diferencia las zonas ya exploradas de las pendientes. El algoritmo calcula encaje relativo 0–100 % y nota prevista por separado, y enriquece metadatos locales mediante TMDB sin abrir fichas.
 
-Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película. La etapa 16.4 sigue abierta hasta completar CI y validar la nueva publicación en Android.
+Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película. La etapa 16.4 ya superó CI, E2E móvil y la verificación pública de GitHub Pages y del manifiesto PWA. Permanece abierta únicamente para una revisión visual manual en un dispositivo Android físico.
 
 La etapa 17 — Optimización integral — sigue pendiente de autorización y no se inicia automáticamente.
 
