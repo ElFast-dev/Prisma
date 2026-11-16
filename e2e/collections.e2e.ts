@@ -214,9 +214,11 @@ test("añade una película guardada desde Biblioteca sin cambiar sus estados per
 
   await page.goto("#/personal/collections");
   await page.getByRole("button", { name: "Crear colección" }).click();
+  const createForm = page.locator("form.collection-create-panel");
+  await expect(createForm).toBeVisible();
   await page.getByRole("textbox", { name: "Nombre de la colección" })
     .fill("Selección desde Biblioteca E2E");
-  await page.getByRole("button", { name: "Crear colección" }).click();
+  await createForm.getByRole("button", { name: "Crear colección" }).click();
 
   await expect(page.getByRole("heading", { name: "Selección desde Biblioteca E2E" })).toBeVisible();
   await page.getByRole("button", { name: "Añadir películas desde Biblioteca" }).click();
