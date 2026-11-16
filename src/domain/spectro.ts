@@ -504,7 +504,6 @@ function buildRecommendations(
         .sort((a, b) => (
           b.reason.difference * b.weight - a.reason.difference * a.weight
         ))
-        .slice(0, 4)
         .map((item) => item.reason);
 
       return {

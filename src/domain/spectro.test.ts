@@ -119,6 +119,8 @@ describe("analyzeSpectro 2.0", () => {
     expect(result.recommendations[0].reasons.map((reason) => reason.category)).toEqual(
       expect.arrayContaining(["Género", "Dirección", "Reparto", "País", "Idioma original", "Duración"])
     );
+    expect(result.languageAffinities.find((item) => item.key === "language:ja")?.sampleSize).toBe(3);
+    expect(result.durationAffinities.find((item) => item.key === "duration:medium")?.sampleSize).toBe(3);
     expect(result.recommendations[0].confidence).toBe("moderada");
     expect(result.recommendations[0].reasons.every((reason) => reason.sampleSize === 3)).toBe(true);
   });
@@ -179,8 +181,8 @@ describe("analyzeSpectro 2.0", () => {
       });
     };
 
-    addPeriod("previous", "2025-01-31", [6, 6, 6], [9, 9, 9]);
-    addPeriod("recent", "2026-02-01", [10, 10, 10], [5, 5, 5]);
+    addPeriod("previous", "2025-01-30", [6, 6, 6], [9, 9, 9]);
+    addPeriod("recent", "2026-02-02", [10, 10, 10], [5, 5, 5]);
 
     const result = analyzeSpectro({ movies, viewings, candidates: [] });
     const dramaTrend = result.affinityTrends.find((item) => item.key === "genre:18");
