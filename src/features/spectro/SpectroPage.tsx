@@ -443,7 +443,10 @@ function networkNodeTypeLabel(kind: SpectroNetworkNode["kind"]): string {
 function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(() => Math.max(
+    0.2,
+    Math.min(1, (window.innerWidth - 48) / graph.width, (window.innerHeight * 0.66) / graph.height)
+  ));
   const nodeById = useMemo(
     () => new Map(graph.nodes.map((node) => [node.id, node])),
     [graph.nodes]
@@ -535,7 +538,7 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
           {query && <button type="button" aria-label="Limpiar búsqueda" onClick={() => setQuery("")}><X size={14} /></button>}
         </label>
         <div className="spectro-network-zoom" aria-label="Zoom del mapa">
-          <button type="button" aria-label="Alejar mapa" onClick={() => setZoom((value) => Math.max(0.65, Math.round((value - 0.15) * 100) / 100))} disabled={zoom <= 0.65}>
+          <button type="button" aria-label="Alejar mapa" onClick={() => setZoom((value) => Math.max(0.2, Math.round((value - 0.15) * 100) / 100))} disabled={zoom <= 0.2}>
             <ZoomOut size={16} />
           </button>
           <span>{Math.round(zoom * 100)}%</span>
