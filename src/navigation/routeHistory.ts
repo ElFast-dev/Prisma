@@ -6,66 +6,44 @@ export interface RouteHistory {
   current(): string;
 }
 
-/**
- * Pila propia que acompaña al historial hash del navegador.
- * Las navegaciones normales añaden rutas; Atrás/Adelante las recorren.
- */
 export function createRouteHistory(initialPath: string): RouteHistory {
-  let paths = [initialPath || "/discover"];
-
+  let paths = [initialPath || "/"];
   return {
     record(path, fromHistoryTraversal = false) {
       if (!path || paths[paths.length - 1] === path) return;
-
       if (fromHistoryTraversal) {
         const destinationIndex = paths.lastIndexOf(path);
-        if (destinationIndex >= 0) {
-          paths = paths.slice(0, destinationIndex + 1);
-        } else {
-          paths.push(path);
-        }
+        paths = destinationIndex >= 0 ? paths.slice(0, destinationIndex + 1) : [...paths, path];
         return;
       }
-
       paths.push(path);
     },
-    hasPrevious() {
-      return paths.length > 1;
-    },
-    current() {
-      return paths[paths.length - 1] ?? "/discover";
-    }
+    hasPrevious() { return paths.length > 1; },
+    current() { return paths[paths.length - 1] ?? "/"; }
   };
 }
 
-let activeHistory = createRouteHistory("/discover");
+let activeHistory = createRouteHistory("/");
 
 export function initializeRouteHistory(initialPath: string): void {
   activeHistory = createRouteHistory(initialPath);
 }
-
 export function recordRouteChange(path: string, fromHistoryTraversal = false): void {
   activeHistory.record(path, fromHistoryTraversal);
 }
 
-/**
- * Reutiliza la entrada anterior del navegador. Para una ficha abierta
- * directamente, reemplaza la URL por Descubrir sin abandonar Prisma.
- */
 export function navigateBack(fallback = "/discover"): void {
   saveCurrentRouteScrollPosition();
   if (activeHistory.hasPrevious()) {
     window.history.back();
     return;
   }
-
   if (activeHistory.current() !== fallback) {
     activeHistory = createRouteHistory(fallback);
     window.location.replace("#" + fallback);
   }
 }
 
-/** Indica si la ruta representa una de las tres secciones principales. */
 export function isPrimaryRoute(path: string): boolean {
-  return path === "/personal" || path === "/discover" || path === "/spectro";
+  return path === "/" || path === "/personal" || path === "/discover" || path === "/spectro";
 }

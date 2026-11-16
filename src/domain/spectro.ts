@@ -285,6 +285,11 @@ function themeFeatures(movie: MovieRecord): Feature[] {
   return textFeatures(movie.keywords, "theme:");
 }
 
+/** Devuelve las características cinematográficas normalizadas que utiliza Espectro. */
+export function getSpectroMovieFeatureKeys(movie: MovieRecord): string[] {
+  return movieFeatureGroups(movie).flatMap((group) => group.features.map((feature) => feature.key));
+}
+
 function movieFeatureGroups(movie: MovieRecord): FeatureGroup[] {
   return [
     { category: "Género", weight: 1.3, features: movieGenreFeatures(movie) },
@@ -914,6 +919,72 @@ function buildRecommendations(
       overallAverage,
       ratedMovies.length
     )
+  };
+}
+
+export interface SpectroCandidateRanking {
+  recommendations: SpectroRecommendation[];
+  decisionGraph: SpectroDecisionGraph;
+}
+
+/**
+ * Reutiliza el perfil calculado por Espectro para puntuar otro conjunto de candidatas,
+ * como Pendientes. No recalcula el mapa global ni guarda otra instantánea.
+ */
+export function rankSpectroCandidates(
+  analysis: SpectroAnalysis,
+  movies: MovieRecord[],
+  viewings: Viewing[],
+  candidates: MovieRecord[]
+): SpectroCandidateRanking {
+  const emptyGraph: SpectroDecisionGraph = { nodes: [], edges: [], signalCount: 0, candidateCount: 0 };
+  if (!analysis.hasEnoughData || analysis.averageRating === null) {
+    return { recommendations: [], decisionGraph: emptyGraph };
+  }
+
+  const movieById = new Map(movies.map((movie) => [movie.id, movie]));
+  const ratingsByMovie = new Map<string, number[]>();
+  for (const viewing of viewings) {
+    if (viewing.rating === undefined) continue;
+    const ratings = ratingsByMovie.get(viewing.movieId) ?? [];
+    ratings.push(viewing.rating);
+    ratingsByMovie.set(viewing.movieId, ratings);
+  }
+
+  const ratedMovies: RatedMovie[] = [...ratingsByMovie.entries()].flatMap(([movieId, ratings]) => {
+    const movie = movieById.get(movieId);
+    return movie && ratings.length ? [{ movie, averageRating: mean(ratings) }] : [];
+  });
+  if (ratedMovies.length < SPECTRO_MINIMUM_MOVIES) {
+    return { recommendations: [], decisionGraph: emptyGraph };
+  }
+
+  const affinities = [
+    ...analysis.genreAffinities,
+    ...analysis.directorAffinities,
+    ...analysis.castAffinities,
+    ...analysis.countryAffinities,
+    ...analysis.decadeAffinities,
+    ...analysis.languageAffinities,
+    ...analysis.durationAffinities,
+    ...analysis.themeAffinities
+  ];
+  const candidateIds = new Set(candidates.map((movie) => movie.id));
+  const watchedIds = new Set(
+    viewings.map((viewing) => viewing.movieId).filter((movieId) => !candidateIds.has(movieId))
+  );
+
+  const ranking = buildRecommendations(
+    candidates,
+    affinities,
+    analysis.favoriteSignals,
+    watchedIds,
+    analysis.averageRating,
+    ratedMovies
+  );
+  return {
+    recommendations: ranking.recommendations,
+    decisionGraph: ranking.graph
   };
 }
 
