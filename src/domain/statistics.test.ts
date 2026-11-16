@@ -17,13 +17,16 @@ const movie = (
   id: string,
   runtimeMinutes: number,
   genres: string[] = [],
-  releaseYear?: number
+  releaseYear?: number,
+  directors: string[] = [],
+  countries: string[] = []
 ): MovieRecord => ({
   id,
   tmdbId: Number(id.replace("movie-", "")),
   title: "Película " + id,
   genres,
-  countries: [],
+  countries,
+  directors,
   runtimeMinutes,
   ...(releaseYear ? { releaseYear } : {}),
   lastViewingSequence: 0,
@@ -85,9 +88,9 @@ describe("statistics", () => {
         viewing("4", "movie-3", "2026-07-02", 7)
       ],
       [
-        movie("movie-1", 100, ["Drama", "Drama", " Thriller "], 1988),
-        movie("movie-2", 110, ["Drama", "Comedia"], 2005),
-        movie("movie-3", 90, [], undefined)
+        movie("movie-1", 100, ["Drama", "Drama", " Thriller "], 1988, ["Directora A", " Directora A "], ["Panamá", "Panamá"]),
+        movie("movie-2", 110, ["Drama", "Comedia"], 2005, ["Directora A", "Director B"], ["Panamá", "México"]),
+        movie("movie-3", 90, [], undefined, [], [])
       ],
       "2026-11-15"
     );
@@ -100,6 +103,14 @@ describe("statistics", () => {
     expect(stats.decadeHighlights.map(({ label, count }) => [label, count])).toEqual([
       ["Años 1980", 1],
       ["Años 2000", 1]
+    ]);
+    expect(stats.directorHighlights.map(({ label, count }) => [label, count])).toEqual([
+      ["Directora A", 2],
+      ["Director B", 1]
+    ]);
+    expect(stats.countryHighlights.map(({ label, count }) => [label, count])).toEqual([
+      ["Panamá", 2],
+      ["México", 1]
     ]);
     expect(stats.recentActivity.map(({ key, viewings, uniqueMovies }) => [key, viewings, uniqueMovies])).toEqual([
       ["2026-06", 0, 0],

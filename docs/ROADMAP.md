@@ -38,6 +38,7 @@ La siguiente etapa planificada es la 15 — Evolución de Personal.
   - [x] 15.3 Colecciones: organización y gestión mejoradas.
   - [ ] 15.4 Perfil y logros: presentación y estadísticas personales ampliadas.
     - [x] 15.4.1 Huella cinematográfica: distribución local por géneros y décadas, actividad de seis meses y progresión ampliada de logros.
+    - [x] 15.4.2 Firmas y cine del mundo: directores y países de producción más frecuentes, contados por películas distintas.
 - [ ] 16. Espectro 2.0.
 - [ ] 17. Optimización integral.
 
@@ -74,7 +75,7 @@ Este es el orden acordado para continuar Prisma. El alcance y los criterios de a
 - Perfil local editable: nombre, descripción, frase personal e imagen.
 - Imagen limitada a formatos JPG, PNG o WebP y almacenada únicamente en IndexedDB.
 - Logros calculados desde estadísticas y colecciones locales, sin servicios externos.
-- Resumen de géneros y décadas basado en películas distintas realmente vistas; los revisionados cuentan en visionados y tiempo, no duplican títulos en la huella.
+- Resumen de géneros, décadas, directores y países de producción basado en películas distintas realmente vistas; los revisionados cuentan en visionados y tiempo, no duplican títulos en la huella.
 - Actividad mensual de los últimos seis meses derivada de fechas locales de visionado.
 - Progresión de logros escalonada, calculada de nuevo desde la actividad local y sin guardar estados duplicados.
 
