@@ -715,7 +715,7 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
                 <strong>Rasgos conectados</strong>
                 {relatedNodes.filter((node) => node.kind !== "movie").length ? (
                   <div>
-                    {selectedEdges.map((edge) => {
+                    {[...selectedEdges].sort((a, b) => b.strength - a.strength).slice(0, 12).map((edge) => {
                       const node = nodeById.get(edge.source === selectedNode.id ? edge.target : edge.source);
                       if (!node || node.kind === "movie") return null;
                       return (
@@ -737,7 +737,7 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
               <strong>Películas conectadas</strong>
               {selectedEdges.length ? (
                 <div>
-                  {selectedEdges.map((edge) => {
+                  {[...selectedEdges].sort((a, b) => b.strength - a.strength).slice(0, 12).map((edge) => {
                     const node = nodeById.get(edge.source === selectedNode.id ? edge.target : edge.source);
                     if (!node || node.kind !== "movie") return null;
                     return (
