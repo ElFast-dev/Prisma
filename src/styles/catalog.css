@@ -941,3 +941,104 @@
 @media (max-width: 699px) {
   .collection-movie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* Selector local de películas para Colecciones */
+.collection-add-library-trigger {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.collection-library-picker {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 18px;
+  padding: 14px;
+}
+.collection-library-picker .section-intro-row { align-items: center; }
+.collection-library-picker h2 { margin: 2px 0 0; font-size: 15px; }
+.collection-library-search { display: block; }
+.collection-library-search input { width: 100%; min-height: 42px; }
+.collection-library-options {
+  display: grid;
+  max-height: min(48dvh, 420px);
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+.collection-library-option {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #141B24;
+  padding: 8px;
+}
+.collection-library-option-poster {
+  display: grid;
+  width: 38px;
+  height: 57px;
+  flex: 0 0 38px;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 5px;
+  background: linear-gradient(145deg, #283342, #171D26 68%);
+  color: var(--color-accent);
+}
+.collection-library-option-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.collection-library-option-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 4px;
+}
+.collection-library-option-copy strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-library-option-copy small {
+  color: var(--color-text-muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+.collection-library-add-button {
+  min-width: 66px;
+  min-height: 34px;
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  font-size: 10px;
+}
+.collection-library-empty {
+  margin: 2px 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.collection-library-footnote {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+@media (max-width: 390px) {
+  .collection-detail-actions { flex-wrap: wrap; }
+  .collection-add-library-trigger { flex: 1 1 100%; justify-content: center; }
+  .collection-library-picker { padding: 11px; }
+  .collection-library-option { gap: 8px; padding: 7px; }
+  .collection-library-add-button { min-width: 58px; }
+}
