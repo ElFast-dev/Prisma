@@ -142,17 +142,23 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect.poll(async () => Number((await zoomLabel.textContent())?.replace("%", "")))
     .toBe(initialZoom + 15);
 
+  await page.getByRole("button", { name: "Volver a Espectro" }).click();
+  await expect(page.locator('a[href="#/spectro/affinities"]')).toBeVisible();
   await page.locator('a[href="#/spectro/affinities"]').click();
   await expect(page.getByRole("heading", { name: "Afinidades" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Idioma original" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Duración" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
 
+  await page.getByRole("button", { name: "Volver a Espectro" }).click();
+  await expect(page.locator('a[href="#/spectro/evolution"]')).toBeVisible();
   await page.locator('a[href="#/spectro/evolution"]').click();
   await expect(page.getByRole("heading", { name: "Evolución" })).toBeVisible();
   await expect(page.getByText("Cambios recientes")).toBeVisible();
   await expect(page.locator(".spectro-trend-row").first()).toBeVisible();
 
+  await page.getByRole("button", { name: "Volver a Espectro" }).click();
+  await expect(page.locator('a[href="#/spectro/recommendations"]')).toBeVisible();
   await page.locator('a[href="#/spectro/recommendations"]').click();
   await expect(page.getByRole("heading", { name: "Recomendaciones" })).toBeVisible();
   await expect(page.locator(".spectro-recommendation-copy > strong").filter({ hasText: "Candidata Prisma ficticia" })).toBeVisible();
