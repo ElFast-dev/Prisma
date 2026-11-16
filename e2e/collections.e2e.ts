@@ -133,12 +133,12 @@ test("crea una colección ficticia y conserva su descripción al recargar", asyn
   await expect(page).toHaveURL(/#\/personal\/collections\/[^/]+$/);
   await expect(page.getByRole("heading", { name: "Prisma E2E: colección ficticia" })).toBeVisible();
   await expect(page.getByText("Una selección de prueba con identidad propia.")).toBeVisible();
-  await expect(page.getByText("Esta colección está vacía")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Una historia por comenzar" })).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Prisma E2E: colección ficticia" })).toBeVisible();
   await expect(page.getByText("Una selección de prueba con identidad propia.")).toBeVisible();
-  await expect(page.getByText("Esta colección está vacía")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Una historia por comenzar" })).toBeVisible();
 });
 
 test("edita la selección, cambia portada y ordena películas sin alterar el catálogo", async ({ page }) => {
