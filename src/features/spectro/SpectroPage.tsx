@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowDownRight, ArrowLeft, ArrowUpRight, BrainCircuit, CalendarDays, ChartLine,
-  CheckCircle2, ChevronRight, Clapperboard, Film, Fingerprint, Languages, Map,
+  CheckCircle2, ChevronRight, Clapperboard, Film, Fingerprint, Languages,
   Network, RefreshCw, Search, Sparkles, Star, Timer, TrendingUp, Users,
   WifiOff, X, ZoomIn, ZoomOut
 } from "lucide-react";
@@ -486,13 +486,9 @@ function SpectroNetworkMap({ graph }: { graph: SpectroNetworkGraph }) {
   }, [graph.edges, graph.nodes, query, selectedEdges, selectedNode]);
 
   const openMovie = (node: SpectroNetworkNode) => {
-    if (!node.movieId) return;
-    const movie = graph.nodes.find((item) => item.id === "movie:" + node.movieId);
-    if (!movie) return;
-    const tmdbId = node.movieId.replace(/^tmdb-/, "");
-    if (!/^\d+$/.test(tmdbId)) return;
+    if (!node.tmdbId) return;
     saveCurrentRouteScrollPosition();
-    window.location.hash = "#/movie/" + tmdbId;
+    window.location.hash = "#/movie/" + node.tmdbId;
   };
 
   if (!graph.stats.movies) {
