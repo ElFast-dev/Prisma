@@ -125,8 +125,11 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect(page.locator(".spectro-network-related button").first()).toBeVisible();
   await page.getByRole("button", { name: "Cerrar detalle" }).click();
   await page.getByRole("searchbox", { name: "Buscar película o rasgo en el mapa" }).fill("");
+  const zoomLabel = page.locator(".spectro-network-zoom span");
+  const initialZoom = Number((await zoomLabel.textContent())?.replace("%", ""));
   await page.getByRole("button", { name: "Acercar mapa" }).click();
-  await expect(page.getByText("115%")).toBeVisible();
+  await expect.poll(async () => Number((await zoomLabel.textContent())?.replace("%", "")))
+    .toBe(initialZoom + 15);
 
   await page.locator('a[href="#/spectro/affinities"]').click();
   await expect(page.getByRole("heading", { name: "Afinidades" })).toBeVisible();
