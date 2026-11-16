@@ -3,6 +3,12 @@ import {
   buildSpectroNetworkGraph,
   type SpectroNetworkGraph
 } from "./spectroNetwork";
+export type {
+  SpectroNetworkGraph,
+  SpectroNetworkNode,
+  SpectroNetworkEdge,
+  SpectroNetworkCluster
+} from "./spectroNetwork";
 
 export const SPECTRO_ALGORITHM_VERSION = "2.2.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
