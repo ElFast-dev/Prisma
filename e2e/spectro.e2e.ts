@@ -163,8 +163,8 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect(page.getByRole("heading", { name: "Recomendaciones" })).toBeVisible();
   await expect(page.locator(".spectro-recommendation-copy > strong").filter({ hasText: "Candidata Prisma ficticia" })).toBeVisible();
   const recommendationReasons = page.locator(".spectro-recommendation-reasons");
-  await expect(recommendationReasons.getByText("Género: Drama", { exact: true })).toBeVisible();
-  await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true })).toBeVisible();
+  await expect(recommendationReasons.getByText("Género: Drama", { exact: true }).first()).toBeVisible();
+  await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true }).first()).toBeVisible();
 });
 
 async function seedIncompleteSpectroHistory(page: import("@playwright/test").Page): Promise<void> {
