@@ -38,8 +38,8 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
     return (
       <EmptyState
         icon={<BrainCircuit size={26} />}
-        title="Espectro necesita tus primeras experiencias"
-        description="Registra películas vistas y sus calificaciones. El análisis se construye únicamente con esos datos locales."
+        title="Sin datos suficientes"
+        description="Registra al menos tres películas vistas con calificación."
         action={<a href="#/discover" className="button button-primary">Descubrir películas</a>}
       />
     );
@@ -57,15 +57,15 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
         <section className="spectro-insufficient card-surface">
           <Fingerprint size={23} className="accent-icon" />
           <div>
-            <h2>Tu huella está tomando forma</h2>
-            <p>Necesitamos al menos tres películas distintas con calificación para detectar afinidades. Por ahora llevas {analysis.movieCount} de 3.</p>
+            <h2>Datos insuficientes</h2>
+            <p>Necesitas tres películas distintas con calificación. Llevas {analysis.movieCount} de 3.</p>
           </div>
         </section>
       ) : (
         <>
           <section className="spectro-map card-surface">
-            <div className="content-caption"><h2>Tu huella cinematográfica</h2><span className="status-pill">Versión 1.0</span></div>
-            <p className="muted-copy spectro-section-intro">Tus afinidades se calculan comparando la calificación media de cada rasgo con tu promedio general.</p>
+            <div className="content-caption"><h2>Afinidades</h2><span className="status-pill">Versión 1.0</span></div>
+            <p className="muted-copy spectro-section-intro">Compara tus valoraciones por rasgo con tu promedio general.</p>
             <div className="spectro-affinity-grid">
               <AffinityPanel title="Géneros" icon={<Film size={17} />} items={analysis.genreAffinities} />
               <AffinityPanel title="Directores" icon={<Clapperboard size={17} />} items={analysis.directorAffinities} />
@@ -76,7 +76,7 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
           </section>
 
           <section className="spectro-evolution-section">
-            <div className="content-caption"><div><p className="eyebrow">HISTORIAL DE VALORACIONES</p><h2>Evolución</h2></div><ChartLine size={19} className="accent-icon" /></div>
+            <div className="content-caption"><div><h2>Evolución</h2></div><ChartLine size={19} className="accent-icon" /></div>
             {analysis.evolution.length ? (
               <div className="spectro-evolution-list card-surface">
                 {analysis.evolution.map((item) => (
@@ -92,7 +92,7 @@ function SpectroContent({ analysis }: { analysis: SpectroAnalysis }) {
           </section>
 
           <section className="spectro-recommendations-section">
-            <div className="content-caption"><div><p className="eyebrow">DESCUBRIMIENTO LOCAL</p><h2>Podrían gustarte</h2></div><Sparkles size={19} className="accent-icon" /></div>
+            <div className="content-caption"><div><h2>Podrían gustarte</h2></div><Sparkles size={19} className="accent-icon" /></div>
             {analysis.recommendations.length ? (
               <div className="spectro-recommendation-grid">
                 {analysis.recommendations.map((item) => (
@@ -152,12 +152,11 @@ export function SpectroPage() {
   return (
     <div className="page">
       <header className="section-heading">
-        <div><p className="eyebrow">ANÁLISIS CINEMATOGRÁFICO LOCAL</p><h1 className="spectro-wordmark">Espectro</h1></div>
+        <h1 className="spectro-wordmark">Espectro</h1>
         <BrainCircuit size={26} className="accent-icon" />
       </header>
-      <p className="page-lead">Un retrato de tus gustos construido a partir de películas y experiencias reales, sin enviar tu historial fuera del dispositivo.</p>
       {state === "loading" ? (
-        <div className="detail-loading"><span>Analizando tu universo cinematográfico...</span></div>
+        <div className="detail-loading"><span>Analizando…</span></div>
       ) : state === "error" ? (
         <EmptyState
           icon={<BrainCircuit size={26} />}

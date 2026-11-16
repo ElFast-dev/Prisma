@@ -62,13 +62,13 @@ import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { navigateBack } from "../../navigation/routeHistory";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 
-function PageBack({ title, eyebrow = "PERSONAL", backHref = "#/personal" }: { title: string; eyebrow?: string; backHref?: string }) {
+function PageBack({ title, backHref = "#/personal" }: { title: string; backHref?: string }) {
   const fallback = backHref.replace(/^#/, "") || "/personal";
   return (
     <header className="section-heading">
       <div className="heading-with-back">
         <button type="button" className="back-link" aria-label="Volver a la pantalla anterior" onClick={() => navigateBack(fallback)}><ArrowLeft size={19} /></button>
-        <div>{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1></div>
+        <h1>{title}</h1>
       </div>
     </header>
   );
@@ -106,10 +106,15 @@ export function PersonalPage() {
 
   return (
     <div className="page">
-      <header className="section-heading"><div><p className="eyebrow">MI ESPACIO CINEMATOGRÁFICO</p><h1>Personal</h1></div></header>
+      <header className="section-heading"><h1>Personal</h1></header>
       <a href="#/personal/profile" className="profile-summary card-surface">
         <div className="avatar-placeholder">{profile?.avatarDataUrl ? <img className="profile-summary-avatar" src={profile.avatarDataUrl} alt="" /> : <UserRound size={27} />}</div>
-        <div className="profile-summary-copy"><span className="card-title">{profile?.name || "Mi perfil"}</span><span className="muted-copy">{profile?.description || profile?.personalPhrase || "Tu identidad cinematográfica"}</span></div>
+        <div className="profile-summary-copy">
+          <span className="card-title">{profile?.name || "Mi perfil"}</span>
+          {(profile?.description || profile?.personalPhrase) && (
+            <span className="muted-copy">{profile.description || profile.personalPhrase}</span>
+          )}
+        </div>
         <ChevronRight size={19} className="subtle-icon" />
         <div className="profile-metrics">
           <div><strong>{stats?.uniqueMoviesWatched ?? "—"}</strong><span>Películas vistas</span></div>
@@ -117,7 +122,6 @@ export function PersonalPage() {
           <div><strong>{stats?.longestStreak ?? "—"}</strong><span>Récord de racha</span></div>
         </div>
       </a>
-      <div className="section-heading compact-heading"><div><p className="eyebrow">TU COLECCIÓN</p><h2>Mi cine</h2></div></div>
       <div className="navigation-cards">
         {personalLinks.map((item) => {
           const Icon = item.icon;
@@ -366,7 +370,7 @@ export function LibraryPage() {
           <section className="bottom-sheet library-bottom-sheet library-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="library-filters-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
-              <div><p className="eyebrow">MI COLECCIÓN</p><h2 id="library-filters-title">Filtros de Biblioteca</h2></div>
+              <h2 id="library-filters-title">Filtros</h2>
               <button className="icon-button" type="button" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><X size={19} /></button>
             </div>
 
@@ -697,7 +701,6 @@ export function HistoryPage() {
   if (!preferencesReady) {
     return (
       <div className="page history-loading" role="status" aria-live="polite">
-        <p className="eyebrow">DIARIO CINEMATOGRÁFICO</p>
         <h1>Historial</h1>
         <p className="muted-copy">Restaurando tu diario…</p>
       </div>
@@ -706,7 +709,7 @@ export function HistoryPage() {
 
   return (
     <div className="page">
-      <PageBack title="Historial" eyebrow="" />
+      <PageBack title="Historial" />
 
       <section className="history-overview card-surface" aria-label="Resumen de tu historial">
         <div>
@@ -1363,7 +1366,6 @@ export function CollectionsPage() {
     <div className="page">
       <PageBack
         title={selectedCollection?.name ?? "Colecciones"}
-        eyebrow={collectionId ? "SELECCIÓN PERSONAL" : "PERSONAL"}
         backHref={collectionId ? "#/personal/collections" : "#/personal"}
       />
       {error && <p className="form-error collection-page-error" role="alert">{error}</p>}
@@ -1371,10 +1373,6 @@ export function CollectionsPage() {
       {!collectionId ? (
         <>
           <div className="collection-library-intro">
-            <div>
-              <p className="eyebrow">TU MIRADA, TUS SELECCIONES</p>
-              <p className="muted-copy">Pequeños universos de películas reunidos por ti.</p>
-            </div>
             <button
               className="icon-button accent-icon-button"
               type="button"
@@ -1403,10 +1401,7 @@ export function CollectionsPage() {
           {createOpen && (
             <form className="collection-create-panel card-surface" onSubmit={(event) => void handleCreateCollection(event)}>
               <div className="section-intro-row">
-                <div>
-                  <p className="eyebrow">NUEVA SELECCIÓN</p>
-                  <h2>Una colección propia</h2>
-                </div>
+                <h2>Nueva colección</h2>
                 <button className="icon-button" type="button" aria-label="Cerrar formulario" onClick={() => setCreateOpen(false)}>
                   <X size={18} />
                 </button>
@@ -1452,8 +1447,8 @@ export function CollectionsPage() {
           ) : collections.length === 0 ? (
             <EmptyState
               icon={<Folders size={26} />}
-              title="Tu cine, en capítulos"
-              description="Crea una selección para reunir películas por atmósfera, director, época o cualquier hilo que quieras seguir."
+              title="No tienes colecciones"
+              description="Crea una colección para agrupar películas."
               action={<button className="button button-primary" type="button" onClick={() => setCreateOpen(true)}>Crear mi primera colección</button>}
             />
           ) : visibleCollections.length === 0 ? (
@@ -1497,14 +1492,12 @@ export function CollectionsPage() {
               )}
             </div>
             <div className="collection-detail-copy">
-              <p className="eyebrow">COLECCIÓN PERSONAL</p>
               <p className="muted-copy">{movies.length} {movies.length === 1 ? "película reunida" : "películas reunidas"}</p>
               {selectedCollection.description && <p className="collection-detail-description">{selectedCollection.description}</p>}
             </div>
           </div>
 
           <div className="section-intro-row collection-detail-heading">
-            <p className="muted-copy">El orden y la portada son tuyos.</p>
             <div className="collection-detail-actions">
               <button
                 className="button button-secondary collection-add-library-trigger"
@@ -1544,7 +1537,6 @@ export function CollectionsPage() {
             <section className="collection-library-picker card-surface" aria-labelledby="collection-library-picker-title">
               <div className="section-intro-row">
                 <div>
-                  <p className="eyebrow">TU CATÁLOGO LOCAL</p>
                   <h2 id="collection-library-picker-title">Añadir desde tu Biblioteca</h2>
                 </div>
                 <button
@@ -1615,7 +1607,6 @@ export function CollectionsPage() {
             <form className="collection-create-panel card-surface" onSubmit={(event) => void handleSaveCollection(event)}>
               <div className="section-intro-row">
                 <div>
-                  <p className="eyebrow">IDENTIDAD DE LA SELECCIÓN</p>
                   <h2>Editar colección</h2>
                 </div>
                 <button className="icon-button" type="button" aria-label="Cancelar edición" disabled={busy} onClick={() => setEditingCollection(false)}>
@@ -1834,8 +1825,8 @@ export function ProfilePage() {
             ? <img className="profile-avatar-image" src={profile.avatarDataUrl} alt={"Foto de " + (profile.name || "perfil")} />
             : <UserRound size={34} />}
         </div>
-        <h2>{profile?.name || "Tu identidad cinematográfica"}</h2>
-        <p className="muted-copy">{profile?.description || "Una historia construida película a película."}</p>
+        {profile?.name && <h2>{profile.name}</h2>}
+        {profile?.description && <p className="muted-copy">{profile.description}</p>}
         {profile?.personalPhrase && <p className="profile-personal-phrase">“{profile.personalPhrase}”</p>}
         <button className="button button-secondary" type="button" onClick={startEditing}><Pencil size={15} /> Editar perfil</button>
       </div>
@@ -1868,7 +1859,7 @@ export function ProfilePage() {
         </form>
       )}
 
-      <div className="content-caption"><h2>Mi historia</h2></div>
+      <div className="content-caption"><h2>Estadísticas</h2></div>
       <div className="metric-grid">
         <div className="metric-card"><strong>{stats?.uniqueMoviesWatched ?? "—"}</strong><span>Películas vistas</span></div>
         <div className="metric-card"><strong>{stats ? formatWatchTime(stats.watchedMinutes) : "—"}</strong><span>Tiempo de visionado</span></div>
@@ -1884,9 +1875,7 @@ export function ProfilePage() {
 
       <section className="profile-insights card-surface" aria-labelledby="profile-insights-title">
         <div className="profile-insights-heading">
-          <p className="eyebrow">HUELLA CINEMATOGRÁFICA</p>
-          <h2 id="profile-insights-title">Tu mapa de cine</h2>
-          <p className="muted-copy">Los géneros, las épocas, los autores y los países de producción que forman tu historia cinematográfica.</p>
+          <h2 id="profile-insights-title">Afinidades</h2>
         </div>
         <div className="profile-insights-grid">
           <section className="profile-insight-block" aria-labelledby="profile-genres-title">
@@ -1906,11 +1895,11 @@ export function ProfilePage() {
                 ))}
               </ol>
             ) : (
-              <p className="profile-insight-empty">Cuando registres películas vistas, aquí aparecerán los géneros que más te acompañan.</p>
+              <p className="profile-insight-empty">No hay datos de géneros.</p>
             )}
           </section>
           <section className="profile-insight-block" aria-labelledby="profile-directors-title">
-            <h3 id="profile-directors-title">Directores que te acompañan</h3>
+            <h3 id="profile-directors-title">Directores más vistos</h3>
             {stats?.directorHighlights.length ? (
               <ol className="profile-distribution-list">
                 {stats.directorHighlights.map((highlight) => (
@@ -1926,7 +1915,7 @@ export function ProfilePage() {
                 ))}
               </ol>
             ) : (
-              <p className="profile-insight-empty">Cuando tus películas incluyan sus créditos, aquí aparecerán los directores que más has visto.</p>
+              <p className="profile-insight-empty">No hay créditos de dirección.</p>
             )}
           </section>
           <section className="profile-insight-block" aria-labelledby="profile-countries-title">
@@ -1946,11 +1935,11 @@ export function ProfilePage() {
                 ))}
               </ol>
             ) : (
-              <p className="profile-insight-empty">Aquí descubrirás los países que aparecen en los créditos de producción de tus películas.</p>
+              <p className="profile-insight-empty">No hay datos de producción.</p>
             )}
           </section>
           <section className="profile-insight-block" aria-labelledby="profile-decades-title">
-            <h3 id="profile-decades-title">Décadas que has recorrido</h3>
+            <h3 id="profile-decades-title">Décadas</h3>
             {stats?.decadeHighlights.length ? (
               <ol className="profile-distribution-list">
                 {stats.decadeHighlights.map((highlight) => (
@@ -1966,7 +1955,7 @@ export function ProfilePage() {
                 ))}
               </ol>
             ) : (
-              <p className="profile-insight-empty">Las décadas aparecerán cuando tus películas vistas incluyan su año de estreno.</p>
+              <p className="profile-insight-empty">No hay años de estreno.</p>
             )}
           </section>
         </div>
@@ -1974,7 +1963,7 @@ export function ProfilePage() {
 
       <section className="profile-activity card-surface" aria-labelledby="profile-activity-title">
         <div className="profile-activity-heading">
-          <div><p className="eyebrow">SEIS MESES</p><h3 id="profile-activity-title">Tu ritmo reciente</h3></div>
+          <h3 id="profile-activity-title">Actividad reciente</h3>
           <span>{stats?.totalViewings ?? 0} visionados en total</span>
         </div>
         {stats && stats.totalViewings > 0 ? (
@@ -1998,7 +1987,7 @@ export function ProfilePage() {
         )}
       </section>
 
-      <div className="content-caption"><div><p className="eyebrow">HITOS PERSONALES</p><h2>Mis logros</h2></div><span className="achievement-count">{unlockedCount}/{achievements.length} desbloqueados</span></div>
+      <div className="content-caption"><h2>Logros</h2><span className="achievement-count">{unlockedCount}/{achievements.length} desbloqueados</span></div>
       {achievements.length > 0 ? (
         <div className="achievement-grid">
           {achievements.map((achievement) => {
@@ -2019,7 +2008,7 @@ export function ProfilePage() {
           })}
         </div>
       ) : (
-        <p className="muted-copy">Calculando tus logros a partir de tu actividad local...</p>
+        <p className="muted-copy">Cargando logros…</p>
       )}
     </div>
   );

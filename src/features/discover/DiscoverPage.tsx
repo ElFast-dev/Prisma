@@ -184,10 +184,9 @@ export function DiscoverPage() {
           <section className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="filters-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
-              <div><p className="eyebrow">EXPLORACIÓN</p><h2 id="filters-title">Filtros</h2></div>
+              <h2 id="filters-title">Filtros</h2>
               <button className="icon-button" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><X size={19} /></button>
             </div>
-            <p className="muted-copy">La búsqueda ya utiliza TMDB. Los filtros avanzados de género, año, país, duración y equipo se incorporarán en la siguiente etapa.</p>
             <button className="button button-secondary button-full" onClick={() => setFiltersOpen(false)}>Entendido</button>
           </section>
         </div>

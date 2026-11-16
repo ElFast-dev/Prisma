@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { ArrowLeft, Eye, EyeOff, CheckCircle2, CircleAlert, LoaderCircle, Trash2, Download, Upload, ShieldCheck, Grid2X2, List } from "lucide-react";
+import { ArrowLeft, ChevronRight, Clapperboard, Database, Eye, EyeOff, CheckCircle2, CircleAlert, LoaderCircle, Trash2, Download, Upload, ShieldCheck, Grid2X2, List } from "lucide-react";
 import {
   clearTmdbAccessToken,
   getCatalogRegion,
@@ -18,7 +18,18 @@ import { getUserPreferences, saveLibraryView } from "../../infrastructure/databa
 
 type ConnectionState = "idle" | "testing" | "success" | "error";
 
+const settingsSections = [
+  { id: "catalog", title: "Catálogo", description: "Conexión con TMDB y actualización de películas.", icon: Clapperboard },
+  { id: "library", title: "Biblioteca", description: "Vista de lista o cuadrícula.", icon: Grid2X2 },
+  { id: "data", title: "Datos", description: "Copias de seguridad e importación.", icon: Database },
+  { id: "privacy", title: "Privacidad", description: "Almacenamiento local y credencial TMDB.", icon: ShieldCheck }
+] as const;
+
 export function SettingsPage() {
+  const pathParts = window.location.hash.replace(/^#\/?/, "").split("/");
+  const requestedSection = pathParts[0] === "settings" ? pathParts[1] : undefined;
+  const activeSection = settingsSections.find((section) => section.id === requestedSection);
+
   const [token, setToken] = useState("");
   const [configured, setConfigured] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -229,20 +240,39 @@ export function SettingsPage() {
     <div className="page">
       <header className="section-heading">
         <div className="heading-with-back">
-          <button type="button" className="back-link" aria-label="Volver a la pantalla anterior" onClick={() => navigateBack("/discover")}><ArrowLeft size={19} /></button>
-          <div>
-            <p className="eyebrow">PRISMA</p>
-            <h1>Ajustes</h1>
-          </div>
+          <button type="button" className="back-link"
+            aria-label={activeSection ? "Volver a Ajustes" : "Volver a la pantalla anterior"}
+            onClick={() => navigateBack(activeSection ? "/settings" : "/discover")}>
+            <ArrowLeft size={19} />
+          </button>
+          <h1>{activeSection?.title ?? "Ajustes"}</h1>
         </div>
       </header>
-
+      {!activeSection && (
+        <nav className="navigation-cards settings-navigation-cards" aria-label="Secciones de Ajustes">
+          {settingsSections.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a className="navigation-card card-surface" href={"#/settings/" + item.id} key={item.id}>
+                <span className="navigation-card-icon"><Icon size={22} /></span>
+                <span className="navigation-card-copy">
+                  <strong>{item.title}</strong>
+                  <span>{item.description}</span>
+                </span>
+                <ChevronRight size={19} className="subtle-icon" />
+              </a>
+            );
+          })}
+        </nav>
+      )}
+      {activeSection?.id === "catalog" && (
+        <>
       <section className="settings-section card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><span className="tmdb-mark">TMDB</span></div>
           <div>
-            <h2>Catálogo cinematográfico</h2>
-            <p className="muted-copy">Conecta tu propia cuenta de desarrollador de TMDB.</p>
+            <h2>TMDB</h2>
+            <p className="muted-copy">Conecta tu credencial para consultar y completar películas.</p>
           </div>
         </div>
         <div className="settings-connection-row">
@@ -297,15 +327,17 @@ export function SettingsPage() {
           </button>
         )}
       </section>
+        <EnrichmentPanel configured={configured} />
+        </>
+      )}
 
-      <EnrichmentPanel configured={configured} />
-
+      {activeSection?.id === "library" && (
       <section className="settings-section card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><Grid2X2 size={21} /></div>
           <div>
-            <h2>Presentación de Biblioteca</h2>
-            <p className="muted-copy">Elige cómo quieres ver tu colección. Esta preferencia solo afecta a Biblioteca.</p>
+            <h2>Vista</h2>
+            
           </div>
         </div>
         {libraryPreferencesError && <p className="form-error" role="alert">{libraryPreferencesError}</p>}
@@ -334,16 +366,18 @@ export function SettingsPage() {
           </button>
         </div>
       </section>
+      )}
 
+      {activeSection?.id === "data" && (
       <section className="settings-section card-surface">
         <div className="settings-section-heading">
           <div className="settings-icon"><ShieldCheck size={21} /></div>
           <div>
-            <h2>Copias de seguridad y migración</h2>
-            <p className="muted-copy">Respalda Prisma o trae solo tus películas desde otra aplicación.</p>
+            <h2>Copias de seguridad</h2>
+            <p className="muted-copy">Exporta, restaura o importa tus datos.</p>
           </div>
         </div>
-        <p className="muted-copy">La copia Prisma incluye películas, Biblioteca, visionados, colecciones, perfil, preferencias y región del catálogo.</p>
+        <p className="muted-copy">Incluye películas, estados de Biblioteca, visionados, colecciones, perfil y preferencias.</p>
         <button className="button button-primary button-full" type="button" onClick={() => void handleCreateBackup()} disabled={backupBusy}>
           <Download size={17} /> {backupBusy ? "Procesando..." : "Crear copia de seguridad Prisma"}
         </button>
@@ -389,9 +423,12 @@ export function SettingsPage() {
           <li>La credencial TMDB se excluye de las copias y no se modifica al importar o restaurar.</li>
         </ul>
       </section>
+      )}
 
+      {activeSection?.id === "privacy" && (
+        <>
       <section className="settings-section card-surface">
-        <h2>Privacidad de la credencial</h2>
+        <h2>Credencial TMDB</h2>
         <ul className="settings-bullet-list">
           <li>Se guarda únicamente en el almacenamiento local de este navegador.</li>
           <li>No se incluye en GitHub ni en las copias de seguridad de Prisma.</li>
@@ -400,16 +437,15 @@ export function SettingsPage() {
         <p className="settings-security-note">Importante: al ser una aplicación web, una persona que tenga acceso a este navegador puede inspeccionar el almacenamiento y las solicitudes. Usa una credencial propia de TMDB y no la reutilices en otros servicios.</p>
         <a className="text-link" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Gestionar credenciales de TMDB ↗</a>
       </section>
-
       <section className="settings-section card-surface settings-about-card">
         <div>
-          <p className="eyebrow">INFORMACIÓN</p>
-          <h2>Tu historia permanece contigo</h2>
-          <p className="muted-copy">Prisma es un diario cinematográfico personal, gratuito y local-first. Tus películas, visionados, calificaciones y comentarios permanecen en el almacenamiento de este dispositivo.</p>
+          <h2>Datos locales</h2>
+          <p className="muted-copy">Tu Biblioteca, Historial, calificaciones y comentarios se guardan en este dispositivo. Prisma no requiere cuenta.</p>
         </div>
         <span className="settings-app-version">Versión 0.1.1</span>
       </section>
-      <footer className="page-footer"><span>PRISMA</span><span>Hecho para tu memoria cinematográfica.</span></footer>
+        </>
+      )}
     </div>
   );
 }
