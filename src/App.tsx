@@ -148,7 +148,7 @@ export default function App() {
   useEffect(() => {
     const resumeEnrichment = () => requestAutomaticEnrichment();
     const retryWithUpdatedCredentials = () => requestAutomaticEnrichment(true);
-    const resumeSpectroMetadata = () => { void startSpectroMetadataEnrichment(); };
+    const resumeSpectroMetadata = () => { void startSpectroMetadataEnrichment().catch(() => undefined); };
     const retrySpectroMetadataWithUpdatedCredentials = () => { void startSpectroMetadataEnrichment(true); };
 
     requestAutomaticEnrichment();
