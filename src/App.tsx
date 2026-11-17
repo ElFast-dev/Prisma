@@ -15,6 +15,7 @@ import { MovieDetailPage } from "./features/movie/MovieDetailPage";
 import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
 import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
 import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
+import { startSpectroMetadataEnrichment } from "./infrastructure/database/spectroMetadataService";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
