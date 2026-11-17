@@ -111,7 +111,7 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
-  await expect(page.getByText("Espectro 2.3.0")).toBeVisible();
+  await expect(page.getByText("Espectro 2.4.0")).toBeVisible();
   await expect(page.getByText("Películas en el mapa")).toBeVisible();
   await expect(page.locator('a[href="#/spectro/map"]')).toBeVisible();
   await expect(page.locator('a[href="#/spectro/affinities"]')).toBeVisible();
