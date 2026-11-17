@@ -4,8 +4,10 @@ import { TmdbHttpError } from "../tmdb/TmdbClient";
 import {
   classifySpectroMetadataError,
   getSpectroMetadataPriority,
+  getSpectroMetadataRetryDelay,
   isSpectroMetadataIncomplete,
-  isSpectroMetadataRetryDeferred
+  isSpectroMetadataRetryDeferred,
+  shouldContinueSpectroMetadataEnrichment
 } from "./spectroMetadataService";
 
 const completeMovie: MovieRecord = {
@@ -105,11 +107,15 @@ describe("Espectro · pausa de reintentos", () => {
     }, now)).toBe(true);
   });
 
-  it("permite el reintento automático al cumplir las 12 horas", () => {
-    expect(isSpectroMetadataRetryDeferred({
+  it("calcula el plazo restante y permite consultar al cumplir las 12 horas", () => {
+    expect(getSpectroMetadataRetryDelay({
+      status: "error",
+      updatedAt: new Date(now - 60 * 60 * 1000).toISOString()
+    }, now)).toBe(11 * 60 * 60 * 1000);
+    expect(getSpectroMetadataRetryDelay({
       status: "error",
       updatedAt: new Date(now - 12 * 60 * 60 * 1000).toISOString()
-    }, now)).toBe(false);
+    }, now)).toBe(0);
   });
 
   it("no difiere registros completos, no encontrados ni fechas inválidas", () => {
@@ -125,6 +131,15 @@ describe("Espectro · pausa de reintentos", () => {
       status: "error",
       updatedAt: "fecha inválida"
     }, now)).toBe(false);
+  });
+});
+
+describe("Espectro · reanudación automática", () => {
+  it("continúa solo después de un lote correcto con credencial y conexión", () => {
+    expect(shouldContinueSpectroMetadataEnrichment("unconfigured", false, true)).toBe(false);
+    expect(shouldContinueSpectroMetadataEnrichment("waiting-connection", true, false)).toBe(false);
+    expect(shouldContinueSpectroMetadataEnrichment("error", true, true)).toBe(false);
+    expect(shouldContinueSpectroMetadataEnrichment("completed", true, true)).toBe(true);
   });
 });
 

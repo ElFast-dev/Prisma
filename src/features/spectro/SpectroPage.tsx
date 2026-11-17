@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  BrainCircuit, CheckCircle2, Fingerprint, RefreshCw, Sparkles, WifiOff
+  BrainCircuit, CheckCircle2, Fingerprint, RefreshCw, WifiOff
 } from "lucide-react";
 import { EmptyState } from "../../components/EmptyState";
 import { getSpectroAnalysis } from "../../infrastructure/database/spectroRepository";
@@ -50,13 +50,7 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
   return (
     <section className="spectro-patterns-section card-surface" aria-labelledby="spectro-patterns-title">
       <div className="content-caption">
-        <div>
-          <h2 id="spectro-patterns-title">Combinaciones que destacan</h2>
-          <p className="muted-copy spectro-patterns-intro">
-            Interacciones encontradas al explorar las combinaciones de rasgos disponibles, no una lista cerrada de parejas.
-          </p>
-        </div>
-        <Sparkles size={19} className="accent-icon" aria-hidden="true" />
+        <h2 id="spectro-patterns-title">Interacciones estadísticas</h2>
       </div>
       {patterns.length ? (
         <div className="spectro-pattern-grid">
@@ -111,9 +105,8 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
   );
 }
 
-function SpectroMetadataStatus({ snapshot, onRetry }: {
+function SpectroMetadataStatus({ snapshot }: {
   snapshot: SpectroMetadataSnapshot;
-  onRetry: () => void;
 }) {
   if (snapshot.status === "running") {
     return (
@@ -146,7 +139,7 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
       <section className="spectro-metadata-status card-surface" role="status">
         <div className="spectro-metadata-heading">
           <Fingerprint size={17} className="accent-icon" />
-          <strong>Hay metadatos que pueden completarse</strong>
+          <strong>Metadatos pendientes</strong>
         </div>
         <p className="muted-copy">
           Conecta tu credencial TMDB en Ajustes para completar automáticamente géneros, equipo y temas, sin abrir cada ficha.
@@ -169,8 +162,7 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
     return (
       <section className="spectro-metadata-status card-surface" role="status">
         <div className="spectro-metadata-heading"><WifiOff size={17} /><strong>No se pudieron completar todos los metadatos</strong></div>
-        <p className="muted-copy">{snapshot.lastError ?? "Revisa la credencial TMDB o tu conexión."}</p>
-        <button className="button button-secondary" type="button" onClick={onRetry}>Reintentar</button>
+        <p className="muted-copy">{snapshot.lastError ?? "Prisma conservará la información disponible. Revisa la credencial TMDB en Ajustes si el problema persiste."}</p>
       </section>
     );
   }
@@ -183,9 +175,8 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
           <strong>Quedaron {snapshot.failedMovies} películas con datos incompletos</strong>
         </div>
         <p className="muted-copy">
-          {snapshot.lastError ?? "Prisma conserva los metadatos obtenidos y no modifica tus visionados ni calificaciones."}
+          {snapshot.lastError ?? "Prisma conservará los datos disponibles y volverá a consultar automáticamente los metadatos temporales."}
         </p>
-        <button className="button button-secondary" type="button" onClick={onRetry}>Reintentar metadatos</button>
       </section>
     );
   }
@@ -227,11 +218,9 @@ function SpectroRatingQuestionCard({
   return (
     <section className="spectro-question-card card-surface" aria-labelledby="spectro-question-title">
       <div className="spectro-question-heading">
-        <span className="spectro-question-icon"><BrainCircuit size={19} /></span>
         <div>
-          <p className="spectro-question-eyebrow">Una pregunta para afinar tu perfil</p>
           <h2 id="spectro-question-title">¿Qué nota le darías a {question.title}?</h2>
-          <p className="muted-copy">Visionado del {formatQuestionDate(question.watchedOn)} · No necesitas abrir la ficha.</p>
+          <p className="muted-copy">Visionado registrado: {formatQuestionDate(question.watchedOn)}.</p>
         </div>
       </div>
       <div className="spectro-question-rating" role="group" aria-label="Calificación del 1 al 10">
@@ -274,7 +263,6 @@ function SpectroHome({
   analysis,
   analyticsData,
   metadata,
-  onRetryMetadata,
   question,
   questionBusy,
   questionError,
@@ -284,7 +272,6 @@ function SpectroHome({
   analysis: SpectroAnalysis;
   analyticsData: SpectroAnalyticsInput;
   metadata: SpectroMetadataSnapshot;
-  onRetryMetadata: () => void;
   question: SpectroRatingQuestion | null;
   questionBusy: boolean;
   questionError: string;
@@ -294,11 +281,7 @@ function SpectroHome({
   return (
     <div className="page spectro-page">
       <header className="spectro-page-intro">
-        <div className="spectro-page-kicker"><BrainCircuit size={17} /> ESPECTRO · ANALÍTICA CINEMATOGRÁFICA</div>
-        <h1>Tu cine, en datos</h1>
-        <p>
-          Diferentes perspectivas de tu historial: actividad, calificaciones, películas, preferencias y biblioteca. Cada gráfica se construye a partir de la información guardada en Prisma.
-        </p>
+        <h1>Espectro</h1>
       </header>
 
       {question && (
@@ -310,15 +293,15 @@ function SpectroHome({
           onDismiss={onQuestionDismiss}
         />
       )}
-      <SpectroMetadataStatus snapshot={metadata} onRetry={onRetryMetadata} />
+      <SpectroMetadataStatus snapshot={metadata} />
 
       {analysis.movieCount < 3 && (
         <section className="spectro-insufficient card-surface" role="status">
           <Fingerprint size={23} className="accent-icon" />
           <div>
-            <h2>Tu perfil estadístico todavía está tomando forma</h2>
+            <h2>Pocas películas calificadas</h2>
             <p>
-              Has calificado {analysis.movieCount} películas distintas. Algunas comparaciones necesitan al menos tres títulos y otras requieren muestras mayores. Las gráficas de actividad y distribución siguen disponibles desde ahora.
+              Hay {analysis.movieCount} películas distintas calificadas. Las afinidades requieren al menos tres títulos; otras comparaciones necesitan muestras mayores.
             </p>
           </div>
         </section>
@@ -456,7 +439,6 @@ export function SpectroPage() {
       analysis={analysis}
       analyticsData={analyticsData}
       metadata={metadata}
-      onRetryMetadata={() => void startSpectroMetadataEnrichment(true)}
       question={question}
       questionBusy={questionBusy}
       questionError={questionError}

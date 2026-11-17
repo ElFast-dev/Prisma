@@ -1,16 +1,44 @@
 import { describe, expect, it } from "vitest";
 import { TmdbHttpError } from "../tmdb/TmdbClient";
 import {
+  canResumeEnrichmentAfterConnection,
   classifyEnrichmentError,
   ENRICHMENT_CONCURRENCY,
-  ENRICHMENT_REQUEST_INTERVAL_MS
+  ENRICHMENT_REQUEST_INTERVAL_MS,
+  getEnrichmentAutomaticRetryDelay
 } from "./enrichmentService";
 
 describe("enrichment queue throughput", () => {
-  it("uses 24 parallel workers and a controlled pace below 30 requests per second", () => {
-    expect(ENRICHMENT_CONCURRENCY).toBe(24);
-    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(35);
-    expect(1000 / ENRICHMENT_REQUEST_INTERVAL_MS).toBeLessThan(30);
+  it("uses four parallel workers and a controlled pace of at most five requests per second", () => {
+    expect(ENRICHMENT_CONCURRENCY).toBe(4);
+    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(200);
+    expect(1000 / ENRICHMENT_REQUEST_INTERVAL_MS).toBeLessThanOrEqual(5);
+  });
+
+  it("rechecks pending work after reconnection regardless of the persisted queue label", () => {
+    expect(canResumeEnrichmentAfterConnection(true, "fixture-token")).toBe(true);
+    expect(canResumeEnrichmentAfterConnection(true, "  ")).toBe(false);
+    expect(canResumeEnrichmentAfterConnection(false, "fixture-token")).toBe(false);
+  });
+});
+
+describe("automatic enrichment retry schedule", () => {
+  const now = Date.parse("2026-11-16T12:00:00.000Z");
+
+  it("increases the delay after consecutive temporary failures", () => {
+    expect(getEnrichmentAutomaticRetryDelay({ status: "error", attempts: 3, updatedAt: new Date(now).toISOString(), retryable: true }, now)).toBe(15 * 60_000);
+    expect(getEnrichmentAutomaticRetryDelay({ status: "error", attempts: 6, updatedAt: new Date(now).toISOString(), retryable: true }, now)).toBe(60 * 60_000);
+    expect(getEnrichmentAutomaticRetryDelay({ status: "error", attempts: 9, updatedAt: new Date(now).toISOString(), retryable: true }, now)).toBe(6 * 60 * 60_000);
+  });
+
+  it("allows a retry when its deadline is reached and ignores permanent errors", () => {
+    expect(getEnrichmentAutomaticRetryDelay({ status: "error", attempts: 3, updatedAt: new Date(now - 15 * 60_000).toISOString(), retryable: true }, now)).toBe(0);
+    expect(getEnrichmentAutomaticRetryDelay({ status: "error", attempts: 3, updatedAt: new Date(now).toISOString(), retryable: false }, now)).toBeNull();
+  });
+
+  it("does not assign a retry deadline to pending or missing items", () => {
+    expect(getEnrichmentAutomaticRetryDelay(undefined, now)).toBeNull();
+    expect(getEnrichmentAutomaticRetryDelay({ status: "pending", attempts: 0, updatedAt: new Date(now).toISOString() }, now)).toBeNull();
   });
 });
 

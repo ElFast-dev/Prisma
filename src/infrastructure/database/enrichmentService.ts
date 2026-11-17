@@ -12,14 +12,14 @@ import { getTmdbAccessToken } from "../tmdb/settings";
 const QUEUE_KEY = "library-enrichment:queue:v1";
 const ITEM_PREFIX = "library-enrichment:movie:";
 
-// Veinticuatro trabajos simultáneos con un máximo inicial cercano a 28 solicitudes/s.
-// Se mantiene margen frente al límite superior aproximado de TMDB y se reduce
-// automáticamente el ritmo cuando el servicio responde HTTP 429.
-export const ENRICHMENT_CONCURRENCY = 24;
-export const ENRICHMENT_REQUEST_INTERVAL_MS = 35;
+// Lote cooperativo para dispositivos móviles: cuatro trabajadores y un máximo
+// inicial de cinco inicios de solicitud por segundo. HTTP 429 reduce el ritmo global.
+export const ENRICHMENT_CONCURRENCY = 4;
+export const ENRICHMENT_REQUEST_INTERVAL_MS = 200;
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [1500, 4000];
 const RATE_LIMIT_FALLBACK_MS = 2000;
+const AUTOMATIC_RETRY_DELAYS_MS = [15 * 60_000, 60 * 60_000, 6 * 60 * 60_000, 24 * 60 * 60_000];
 
 export type EnrichmentQueueStatus =
   | "idle"
@@ -36,6 +36,9 @@ interface EnrichmentItemState {
   attempts: number;
   updatedAt: string;
   lastError?: string;
+  /** false para errores de credencial o solicitudes permanentes que requieren corrección. */
+  retryable?: boolean;
+  movieId?: string;
 }
 
 interface EnrichmentCandidate {
@@ -77,6 +80,8 @@ const emptyQueue = (): PersistedQueueState => ({
 
 let runner: Promise<void> | null = null;
 let starting: Promise<void> | null = null;
+let automaticRetryTimer: ReturnType<typeof setTimeout> | undefined;
+let automaticRetrySuppressed = false;
 let pauseRequested = false;
 let pauseReason: "paused" | "waiting-connection" = "paused";
 let fatalQueueError: string | undefined;
@@ -104,6 +109,25 @@ let currentRequestIntervalMs = ENRICHMENT_REQUEST_INTERVAL_MS;
 
 function isOnline(): boolean {
   return typeof navigator === "undefined" || navigator.onLine;
+}
+
+function scheduleAutomaticRetry(delayMs?: number): void {
+  if (automaticRetryTimer) clearTimeout(automaticRetryTimer);
+  automaticRetryTimer = undefined;
+  if (automaticRetrySuppressed || delayMs === undefined || !Number.isFinite(delayMs)) return;
+  automaticRetryTimer = setTimeout(() => {
+    automaticRetryTimer = undefined;
+    requestAutomaticEnrichment();
+  }, Math.max(1000, delayMs));
+}
+
+async function scheduleNextAutomaticPass(): Promise<void> {
+  const batch = await collectCandidates();
+  if (batch.candidates.length > 0) {
+    scheduleAutomaticRetry(1000);
+    return;
+  }
+  scheduleAutomaticRetry(batch.nextRetryDelayMs);
 }
 
 function parseQueueState(record?: AppMetadata): PersistedQueueState {
@@ -141,7 +165,9 @@ function parseItemState(record: AppMetadata): EnrichmentItemState | undefined {
       status: value.status as EnrichmentItemStatus,
       attempts: Number.isFinite(value.attempts) ? Math.max(0, Number(value.attempts)) : 0,
       updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
-      lastError: typeof value.lastError === "string" ? value.lastError : undefined
+      lastError: typeof value.lastError === "string" ? value.lastError : undefined,
+      retryable: value.retryable !== false,
+      movieId: typeof value.movieId === "string" ? value.movieId : undefined
     };
   } catch {
     return undefined;
@@ -177,9 +203,15 @@ async function readItemStates(): Promise<Map<number, EnrichmentItemState>> {
 }
 
 async function saveItemState(state: EnrichmentItemState): Promise<void> {
-  await prismaDb.appMetadata.put({
-    key: ITEM_PREFIX + state.tmdbId,
-    value: JSON.stringify(state)
+  const movieId = state.movieId;
+  if (!movieId) return;
+  await prismaDb.transaction("rw", [prismaDb.movies, prismaDb.appMetadata], async () => {
+    // Un restablecimiento puede borrar la película mientras la consulta está en curso.
+    if (!await prismaDb.movies.get(movieId)) return;
+    await prismaDb.appMetadata.put({
+      key: ITEM_PREFIX + state.tmdbId,
+      value: JSON.stringify(state)
+    });
   });
 }
 
@@ -189,14 +221,41 @@ async function getLibraryMovies(): Promise<MovieRecord[]> {
   return movies.filter((movie): movie is MovieRecord => Boolean(movie));
 }
 
-async function collectCandidates(): Promise<EnrichmentCandidate[]> {
+export function getEnrichmentAutomaticRetryDelay(
+  previous: Pick<EnrichmentItemState, "status" | "attempts" | "updatedAt" | "retryable"> | undefined,
+  now = Date.now()
+): number | null {
+  if (!previous || previous.status !== "error" || previous.retryable === false) return null;
+  const updatedAt = Date.parse(previous.updatedAt);
+  if (!Number.isFinite(updatedAt)) return null;
+  const failedCycles = Math.max(1, Math.ceil(previous.attempts / MAX_ATTEMPTS));
+  const delay = AUTOMATIC_RETRY_DELAYS_MS[Math.min(failedCycles - 1, AUTOMATIC_RETRY_DELAYS_MS.length - 1)];
+  return Math.max(0, updatedAt + delay - now);
+}
+
+interface EnrichmentCandidateBatch {
+  candidates: EnrichmentCandidate[];
+  nextRetryDelayMs?: number;
+}
+
+async function collectCandidates(forceRetry = false): Promise<EnrichmentCandidateBatch> {
   const [movies, states] = await Promise.all([getLibraryMovies(), readItemStates()]);
-  return movies.flatMap((movie) => {
+  let nextRetryDelayMs: number | undefined;
+  const candidates = movies.flatMap((movie) => {
     const previousState = states.get(movie.tmdbId);
     if (previousState?.status === "complete" || previousState?.status === "not-found") return [];
     if (hasCompleteMovieMetadata(movie)) return [];
+    if (previousState?.status === "error" && previousState.retryable === false && !forceRetry) return [];
+    if (!forceRetry && previousState?.status === "error") {
+      const retryDelay = getEnrichmentAutomaticRetryDelay(previousState);
+      if (retryDelay !== null && retryDelay > 0) {
+        nextRetryDelayMs = nextRetryDelayMs === undefined ? retryDelay : Math.min(nextRetryDelayMs, retryDelay);
+        return [];
+      }
+    }
     return [{ movie, previousState }];
   });
+  return { candidates, nextRetryDelayMs };
 }
 
 export function classifyEnrichmentError(
@@ -290,12 +349,12 @@ async function persistMovieMetadata(
   const now = new Date().toISOString();
   await prismaDb.transaction("rw", prismaDb.movies, prismaDb.appMetadata, async () => {
     const current = await prismaDb.movies.get(movieId);
-    if (current) {
-      const patch = createMovieMetadataPatch(current, details, now);
-      // Solo se actualizan metadatos cinematográficos. Los datos personales
-      // viven en tablas separadas y no se reescriben durante este proceso.
-      await prismaDb.movies.update(movieId, patch);
-    }
+    // No recrear marcadores si el registro se eliminó durante el enriquecimiento.
+    if (!current) return;
+    const patch = createMovieMetadataPatch(current, details, now);
+    // Solo se actualizan metadatos cinematográficos. Los datos personales
+    // viven en tablas separadas y no se reescriben durante este proceso.
+    await prismaDb.movies.update(movieId, patch);
     await prismaDb.appMetadata.put({
       key: ITEM_PREFIX + tmdbId,
       value: JSON.stringify({
@@ -340,7 +399,8 @@ async function enrichMovie(
 
       attempts += 1;
       await saveItemState({
-        tmdbId: movie.tmdbId,
+        movieId: movie.id,
+          tmdbId: movie.tmdbId,
         status: "pending",
         attempts,
         updatedAt: new Date().toISOString()
@@ -352,6 +412,7 @@ async function enrichMovie(
     } catch (error) {
       if (pauseRequested || isAbortError(error)) {
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "pending",
           attempts,
@@ -366,6 +427,7 @@ async function enrichMovie(
         pauseRequested = true;
         abortAllRequests();
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "pending",
           attempts,
@@ -379,6 +441,7 @@ async function enrichMovie(
 
       if (classification === "not-found") {
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "not-found",
           attempts,
@@ -390,12 +453,15 @@ async function enrichMovie(
 
       if (classification === "authentication") {
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "error",
           attempts,
           updatedAt: new Date().toISOString(),
-          lastError: message
+          lastError: message,
+          retryable: false
         });
+        automaticRetrySuppressed = true;
         fatalQueueError = "Revisa la credencial TMDB en Ajustes. " + message;
         pauseReason = "paused";
         pauseRequested = true;
@@ -412,6 +478,7 @@ async function enrichMovie(
         }
 
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "pending",
           attempts,
@@ -422,11 +489,13 @@ async function enrichMovie(
       }
 
       await saveItemState({
-        tmdbId: movie.tmdbId,
+        movieId: movie.id,
+          tmdbId: movie.tmdbId,
         status: "error",
         attempts,
         updatedAt: new Date().toISOString(),
-        lastError: message
+        lastError: message,
+        retryable: classification === "retryable"
       });
       return "error";
     } finally {
@@ -504,7 +573,7 @@ async function runQueue(token: string, candidates: EnrichmentCandidate[]): Promi
   await emitSnapshot();
 }
 
-export function startEnrichmentQueue(token: string): Promise<void> {
+export function startEnrichmentQueue(token: string, forceRetry = false): Promise<void> {
   const normalizedToken = token.trim();
   if (!normalizedToken) {
     return Promise.reject(new Error("Configura tu credencial TMDB antes de enriquecer la Biblioteca."));
@@ -517,7 +586,8 @@ export function startEnrichmentQueue(token: string): Promise<void> {
   fatalQueueError = undefined;
 
   const operation = (async () => {
-    const candidates = await collectCandidates();
+    const batch = await collectCandidates(forceRetry);
+    const { candidates, nextRetryDelayMs } = batch;
 
     if (pauseRequested) {
       await persistQueuePatch({
@@ -550,8 +620,11 @@ export function startEnrichmentQueue(token: string): Promise<void> {
         lastError: undefined
       });
       await emitSnapshot();
+      scheduleAutomaticRetry(nextRetryDelayMs);
       return;
     }
+    if (automaticRetryTimer) clearTimeout(automaticRetryTimer);
+    automaticRetryTimer = undefined;
 
     await persistQueuePatch({
       status: "running",
@@ -576,6 +649,9 @@ export function startEnrichmentQueue(token: string): Promise<void> {
         runner = null;
         activeControllers.clear();
         activeTmdbIds.clear();
+        if (!automaticRetrySuppressed) {
+          void scheduleNextAutomaticPass().catch(() => undefined);
+        }
       });
 
     await runner;
@@ -587,7 +663,17 @@ export function startEnrichmentQueue(token: string): Promise<void> {
   return starting;
 }
 
+export function requestAutomaticEnrichment(forceRetry = false): void {
+  const token = getTmdbAccessToken();
+  if (!token || !isOnline()) return;
+  automaticRetrySuppressed = false;
+  if (automaticRetryTimer) clearTimeout(automaticRetryTimer);
+  automaticRetryTimer = undefined;
+  void startEnrichmentQueue(token, forceRetry).catch(() => undefined);
+}
+
 export async function pauseEnrichmentQueue(waitingForConnection = false): Promise<void> {
+  if (!waitingForConnection) automaticRetrySuppressed = true;
   pauseRequested = true;
   pauseReason = waitingForConnection ? "waiting-connection" : "paused";
   abortAllRequests();
@@ -663,20 +749,22 @@ export function subscribeEnrichmentQueue(
   return () => listeners.delete(listener);
 }
 
-// La cola no depende de que Ajustes permanezca abierta: los eventos de red
-// se observan desde el servicio mientras la aplicación esté cargada.
+export function canResumeEnrichmentAfterConnection(online: boolean, token: string): boolean {
+  return online && token.trim().length > 0;
+}
+
+// La cola no depende de que Ajustes permanezca abierta: cualquier recuperación
+// de red vuelve a comprobar los pendientes, incluso si un reintento venció offline.
 async function resumeQueueAfterConnection(): Promise<void> {
   if (!isOnline()) return;
 
   const active = runner ?? starting;
   if (active) await active.catch(() => undefined);
 
-  if (!isOnline()) return;
-  const state = await readQueueState();
-  if (state.status !== "waiting-connection" && state.status !== "running") return;
-
   const token = getTmdbAccessToken();
-  if (token) await startEnrichmentQueue(token);
+  if (canResumeEnrichmentAfterConnection(isOnline(), token)) {
+    requestAutomaticEnrichment();
+  }
 }
 
 if (typeof window !== "undefined") {
@@ -686,5 +774,8 @@ if (typeof window !== "undefined") {
 
   window.addEventListener("online", () => {
     void resumeQueueAfterConnection().catch(() => undefined);
+  });
+  window.addEventListener("prisma:tmdb-credentials-updated", () => {
+    requestAutomaticEnrichment(true);
   });
 }

@@ -14,7 +14,9 @@ test("Ajustes organiza sus opciones en secciones independientes", async ({ page 
   await navigation.getByRole("link", { name: /Catálogo/ }).click();
   await expect(page.getByRole("heading", { name: "Catálogo", exact: true })).toBeVisible();
   await expect(page.getByLabel("API Read Access Token")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Enriquecer Biblioteca" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Metadatos de Biblioteca" })).toBeVisible();
+  await expect(page.getByText(/Prisma iniciará las actualizaciones automáticamente/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Iniciar enriquecimiento" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Volver a Ajustes" }).click();
   await navigation.getByRole("link", { name: /Biblioteca/ }).click();
@@ -47,11 +49,15 @@ test("la vista de Biblioteca se puede cambiar desde sus ajustes", async ({ page 
 
 
 test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem("prisma.tmdb.accessToken", "token-ficticio-de-prueba");
+  let tmdbRequests = 0;
+  await page.route("https://api.themoviedb.org/3/**", async (route) => {
+    tmdbRequests += 1;
+    await route.abort();
   });
   await page.goto("#/settings/data");
   await expect(page.getByRole("heading", { name: "Datos", exact: true })).toBeVisible();
+  // Añade la credencial tras el arranque para no iniciar enriquecimientos sobre los datos del test.
+  await page.evaluate(() => localStorage.setItem("prisma.tmdb.accessToken", "token-ficticio-de-prueba"));
 
   await page.evaluate(async () => {
     const request = indexedDB.open("prisma_database");
@@ -88,6 +94,18 @@ test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", a
     transaction.objectStore("peopleCache").put({ tmdbPersonId: 654321, name: "Persona ficticia", fetchedAt: now });
     transaction.objectStore("spectroSnapshots").put({ id: "snapshot-test", algorithmVersion: "test", inputFingerprint: "test", computedAt: now, analysisPayload: {} });
     transaction.objectStore("appMetadata").put({ key: "internal-test", value: "preserve" });
+    transaction.objectStore("appMetadata").put({
+      key: "library-enrichment:queue:v1",
+      value: JSON.stringify({ version: 1, status: "completed", total: 1, processed: 1, updatedAt: now })
+    });
+    transaction.objectStore("appMetadata").put({
+      key: "library-enrichment:movie:987654",
+      value: JSON.stringify({ tmdbId: 987654, status: "complete", attempts: 1, updatedAt: now })
+    });
+    transaction.objectStore("appMetadata").put({
+      key: "spectro:metadata:v1:987654",
+      value: JSON.stringify({ tmdbId: 987654, status: "complete", attempts: 1, updatedAt: now })
+    });
 
     await new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => resolve();
@@ -124,22 +142,30 @@ test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", a
       count.onsuccess = () => resolve(count.result);
       count.onerror = () => reject(count.error);
     })));
-    const metadataCount = await new Promise<number>((resolve, reject) => {
-      const count = transaction.objectStore("appMetadata").count();
-      count.onsuccess = () => resolve(count.result);
-      count.onerror = () => reject(count.error);
+    const metadataStore = transaction.objectStore("appMetadata");
+    const metadataKeys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+      const request = metadataStore.getAllKeys();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
     });
+    const metadataCount = metadataKeys.length;
     await new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
     db.close();
-    return { counts, metadataCount, tmdbToken: localStorage.getItem("prisma.tmdb.accessToken") };
+    return { counts, metadataCount, metadataKeys: metadataKeys.map(String), tmdbToken: localStorage.getItem("prisma.tmdb.accessToken") };
   });
 
   expect(state.counts.every((count) => count === 0)).toBe(true);
-  expect(state.metadataCount).toBe(1);
+  expect(state.metadataKeys).toContain("internal-test");
+  expect(state.metadataKeys.filter((key) => key.startsWith("library-enrichment:"))).toEqual([
+    "library-enrichment:queue:v1"
+  ]);
+  expect(state.metadataKeys.some((key) => key.startsWith("spectro:metadata:v1:"))).toBe(false);
+  expect(state.metadataCount).toBe(2);
   expect(state.tmdbToken).toBe("token-ficticio-de-prueba");
+  expect(tmdbRequests).toBe(0);
 });
 
 test("el restablecimiento permite eliminar también la credencial TMDB", async ({ page }) => {

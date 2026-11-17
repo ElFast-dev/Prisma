@@ -1,6 +1,8 @@
 import type { ExternalMovieImportPlan } from "../../domain/externalMovieImport";
 import type { LibraryEntry, MovieRecord, Viewing } from "../../domain/types";
 import { prismaDb } from "./database";
+import { requestAutomaticEnrichment } from "./enrichmentService";
+import { startSpectroMetadataEnrichment } from "./spectroMetadataService";
 
 export type ExternalMovieImportPriority = "local" | "external";
 
@@ -242,5 +244,9 @@ export async function importExternalMovies(
     }
   );
 
+  if (result.newLibraryEntries > 0) {
+    requestAutomaticEnrichment();
+    void startSpectroMetadataEnrichment().catch(() => undefined);
+  }
   return result;
 }

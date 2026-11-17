@@ -97,6 +97,14 @@ function cacheTtlMs(cacheKey: string): number {
   return 24 * hours;
 }
 
+type TmdbCacheFlightResult =
+  | { ok: true; data: unknown; fetchedAt: string }
+  | { ok: false; error: unknown; cached?: CatalogCacheEntry };
+
+// Comparte las consultas simultáneas al mismo recurso entre Biblioteca,
+// Espectro y las fichas, sin guardar credenciales ni resultados en otro sitio.
+const inFlightCacheRequests = new Map<string, Promise<TmdbCacheFlightResult>>();
+
 async function getCached<T>(
   token: string,
   cacheKey: string,
@@ -104,42 +112,67 @@ async function getCached<T>(
   params: Record<string, string | number | boolean | undefined> = {},
   options: { signal?: AbortSignal; useStaleOnError?: boolean } = {}
 ): Promise<{ data: T; fetchedAt: string; stale: boolean }> {
-  const cached = await prismaDb.catalogCache.get(cacheKey);
-  const cachedTimestamp = cached ? Date.parse(cached.fetchedAt) : Number.NaN;
-  const cacheIsFresh = Boolean(
-    cached && Number.isFinite(cachedTimestamp)
-    && Date.now() - cachedTimestamp < cacheTtlMs(cacheKey)
-  );
+  // La credencial forma parte solo de la clave efímera en memoria: un cambio de
+  // token no puede heredar un error o una respuesta iniciada con el token anterior.
+  const flightKey = token + "\\u0000" + cacheKey;
+  let request = inFlightCacheRequests.get(flightKey);
 
-  if (cached && cacheIsFresh) {
-    return { data: cached.payload as T, fetchedAt: cached.fetchedAt, stale: false };
+  if (!request) {
+    request = (async (): Promise<TmdbCacheFlightResult> => {
+      const cached = await prismaDb.catalogCache.get(cacheKey);
+      const cachedTimestamp = cached ? Date.parse(cached.fetchedAt) : Number.NaN;
+      const cacheIsFresh = Boolean(
+        cached && Number.isFinite(cachedTimestamp)
+        && Date.now() - cachedTimestamp < cacheTtlMs(cacheKey)
+      );
+
+      if (cached && cacheIsFresh) {
+        return { ok: true, data: cached.payload, fetchedAt: cached.fetchedAt };
+      }
+
+      try {
+        const data = await client(token).get<T>(endpoint, { params, signal: options.signal });
+        const now = new Date().toISOString();
+        const entry: CatalogCacheEntry = {
+          cacheKey,
+          resourceType: endpoint.split("/")[1] ?? "catalog",
+          payload: data,
+          fetchedAt: now,
+          lastValidatedAt: now
+        };
+
+        // Una cuota local agotada no debe impedir mostrar el resultado recién obtenido.
+        try {
+          await prismaDb.catalogCache.put(entry);
+        } catch {
+          // El resultado sigue disponible en memoria para esta consulta.
+        }
+
+        return { ok: true, data, fetchedAt: now };
+      } catch (error) {
+        return { ok: false, error, cached };
+      }
+    })();
+    inFlightCacheRequests.set(flightKey, request);
+    void request.then(
+      () => {
+        if (inFlightCacheRequests.get(flightKey) === request) inFlightCacheRequests.delete(flightKey);
+      },
+      () => {
+        if (inFlightCacheRequests.get(flightKey) === request) inFlightCacheRequests.delete(flightKey);
+      }
+    );
   }
 
-  try {
-    const data = await client(token).get<T>(endpoint, { params, signal: options.signal });
-    const now = new Date().toISOString();
-    const entry: CatalogCacheEntry = {
-      cacheKey,
-      resourceType: endpoint.split("/")[1] ?? "catalog",
-      payload: data,
-      fetchedAt: now,
-      lastValidatedAt: now
-    };
-
-    // Una cuota local agotada no debe impedir mostrar el resultado recién obtenido.
-    try {
-      await prismaDb.catalogCache.put(entry);
-    } catch {
-      // El resultado sigue disponible en memoria para esta consulta.
+  const result = await request;
+  if (!result.ok) {
+    if (result.cached && options.useStaleOnError !== false) {
+      return { data: result.cached.payload as T, fetchedAt: result.cached.fetchedAt, stale: true };
     }
-
-    return { data, fetchedAt: now, stale: false };
-  } catch (error) {
-    if (cached && options.useStaleOnError !== false) {
-      return { data: cached.payload as T, fetchedAt: cached.fetchedAt, stale: true };
-    }
-    throw error;
+    throw result.error;
   }
+
+  return { data: result.data as T, fetchedAt: result.fetchedAt, stale: false };
 }
 
 export async function testTmdbConnection(token: string): Promise<void> {

@@ -14,6 +14,8 @@ import { SpectroPage } from "./features/spectro/SpectroPage";
 import { MovieDetailPage } from "./features/movie/MovieDetailPage";
 import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
 import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
+import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
+import { startSpectroMetadataEnrichment } from "./infrastructure/database/spectroMetadataService";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
@@ -142,6 +144,26 @@ export default function App() {
       window.cancelAnimationFrame(frame);
     };
   }, [path]);
+
+  useEffect(() => {
+    const resumeEnrichment = () => requestAutomaticEnrichment();
+    const retryWithUpdatedCredentials = () => requestAutomaticEnrichment(true);
+    const resumeSpectroMetadata = () => { void startSpectroMetadataEnrichment().catch(() => undefined); };
+    const retrySpectroMetadataWithUpdatedCredentials = () => { void startSpectroMetadataEnrichment(true); };
+
+    requestAutomaticEnrichment();
+    resumeSpectroMetadata();
+    window.addEventListener("online", resumeEnrichment);
+    window.addEventListener("online", resumeSpectroMetadata);
+    window.addEventListener("prisma:tmdb-credentials-updated", retryWithUpdatedCredentials);
+    window.addEventListener("prisma:tmdb-credentials-updated", retrySpectroMetadataWithUpdatedCredentials);
+    return () => {
+      window.removeEventListener("online", resumeEnrichment);
+      window.removeEventListener("online", resumeSpectroMetadata);
+      window.removeEventListener("prisma:tmdb-credentials-updated", retryWithUpdatedCredentials);
+      window.removeEventListener("prisma:tmdb-credentials-updated", retrySpectroMetadataWithUpdatedCredentials);
+    };
+  }, []);
 
   useEffect(() => {
     const updateConnection = () => setIsOnline(navigator.onLine);

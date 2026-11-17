@@ -31,7 +31,7 @@ Cuando Espectro detecta campos cinematográficos que faltan, solicita a TMDB los
 - Consulta detalles, créditos y palabras clave; no descarga proveedores ni recomendaciones solo para construir el perfil.
 - Reutiliza la caché local de TMDB antes de hacer una solicitud nueva.
 - Limita el ritmo de consultas, reintenta errores temporales y respeta el tiempo indicado por TMDB ante HTTP 429.
-- Los errores repetidos quedan en pausa automática durante 12 horas, pero Espectro mantiene visibles esas películas pendientes y permite forzar un reintento manual desde la misma vista.
+- Los errores temporales quedan en pausa automática durante 12 horas. Prisma programa el siguiente intento sin requerir una acción manual; los errores de credencial esperan a que se guarde un token válido.
 - Registra películas no encontradas (404) para no repetir consultas inútiles.
 - Si falta la credencial TMDB, no hace solicitudes y muestra cómo configurarla.
 - Si se pierde la conexión, conserva el progreso y continúa cuando vuelve la conexión.

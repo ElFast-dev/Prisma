@@ -4,16 +4,14 @@ import {
   CheckCircle2,
   CloudOff,
   LoaderCircle,
-  Pause,
-  Play,
   RefreshCw,
   Wifi
 } from "lucide-react";
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
+import { requestAutomaticEnrichment } from "../../infrastructure/database/enrichmentService";
 import {
   getEnrichmentSnapshot,
   pauseEnrichmentQueue,
-  startEnrichmentQueue,
   subscribeEnrichmentQueue,
   type EnrichmentSnapshot
 } from "../../infrastructure/database/enrichmentService";
@@ -59,9 +57,7 @@ function statusLabel(snapshot: EnrichmentSnapshot): string {
 
 export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
   const [snapshot, setSnapshot] = useState(EMPTY_SNAPSHOT);
-  const [actionError, setActionError] = useState("");
   const snapshotRef = useRef(snapshot);
-  const resumeAfterConnection = useRef(false);
 
   useEffect(() => {
     snapshotRef.current = snapshot;
@@ -78,7 +74,6 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
 
     const onOffline = () => {
       if (snapshotRef.current.status === "running") {
-        resumeAfterConnection.current = true;
         void pauseEnrichmentQueue(true);
       }
       void getEnrichmentSnapshot().then(update);
@@ -87,10 +82,7 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
     const onOnline = () => {
       void getEnrichmentSnapshot().then((value) => {
         update(value);
-        if (resumeAfterConnection.current && getTmdbAccessToken()) {
-          resumeAfterConnection.current = false;
-          void startEnrichmentQueue(getTmdbAccessToken());
-        }
+
       });
     };
 
@@ -99,15 +91,8 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
 
     void getEnrichmentSnapshot().then((value) => {
       update(value);
-      if (
-        (value.status === "running" || value.status === "waiting-connection")
-        && getTmdbAccessToken()
-      ) {
-        resumeAfterConnection.current = true;
-        if (navigator.onLine) {
-          resumeAfterConnection.current = false;
-          void startEnrichmentQueue(getTmdbAccessToken());
-        }
+      if (configured && navigator.onLine && getTmdbAccessToken()) {
+        requestAutomaticEnrichment();
       }
     });
 
@@ -117,47 +102,16 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("online", onOnline);
     };
-  }, []);
+  }, [configured]);
 
-  async function handleStart() {
-    setActionError("");
-    const token = getTmdbAccessToken();
-    if (!token) {
-      setActionError("Primero configura y prueba tu credencial TMDB arriba.");
-      return;
-    }
-    if (!navigator.onLine) {
-      setActionError("Necesitas conexión para consultar TMDB. El progreso guardado no se perderá.");
-      return;
-    }
-    resumeAfterConnection.current = true;
-    try {
-      await startEnrichmentQueue(token);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "No se pudo iniciar el enriquecimiento.");
-    }
-  }
-
-  async function handlePause() {
-    resumeAfterConnection.current = false;
-    await pauseEnrichmentQueue(false);
-  }
-
-  const isRunning = snapshot.status === "running";
-  const hasWork = snapshot.pendingMovies > 0 || snapshot.errorMovies > 0;
-  const buttonLabel = snapshot.status === "paused"
-    ? "Continuar"
-    : snapshot.status === "completed" && snapshot.errorMovies > 0
-      ? "Reintentar errores"
-      : "Iniciar enriquecimiento";
 
   return (
     <section className="settings-section card-surface enrichment-panel" aria-labelledby="enrichment-heading">
       <div className="settings-section-heading">
         <div className="settings-icon"><RefreshCw size={21} /></div>
         <div>
-          <h2 id="enrichment-heading">Enriquecer Biblioteca</h2>
-          <p className="muted-copy">Completa la información cinematográfica guardada en este dispositivo.</p>
+          <h2 id="enrichment-heading">Metadatos de Biblioteca</h2>
+          <p className="muted-copy">Prisma completa automáticamente la información cinematográfica guardada en este dispositivo.</p>
         </div>
       </div>
 
@@ -196,35 +150,17 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
         </p>
       )}
       {snapshot.lastError && <p className="enrichment-error" role="alert">{snapshot.lastError}</p>}
-      {actionError && <p className="enrichment-error" role="alert">{actionError}</p>}
-
-      {isRunning ? (
-        <button className="button button-secondary button-full" type="button" onClick={() => void handlePause()}>
-          <Pause size={17} /> Pausar proceso
-        </button>
-      ) : (
-        <button
-          className="button button-primary button-full"
-          type="button"
-          onClick={() => void handleStart()}
-          disabled={!configured || !snapshot.isOnline || !hasWork}
-        >
-          {snapshot.status === "waiting-connection" && !snapshot.isOnline
-            ? <CloudOff size={17} />
-            : snapshot.status === "paused" || (snapshot.status === "completed" && snapshot.errorMovies > 0)
-              ? <Play size={17} />
-              : <RefreshCw size={17} />}
-          {buttonLabel}
-        </button>
-      )}
 
       {snapshot.status === "running" && (
-        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 24 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes; puedes pausar y continuar más tarde.</p>
+        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 4 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes.</p>
       )}
       {snapshot.status === "completed" && !snapshot.pendingMovies && !snapshot.errorMovies && (
         <p className="enrichment-success"><CheckCircle2 size={15} /> No quedan películas pendientes de enriquecimiento.</p>
       )}
-      {!configured && <p className="enrichment-note"><AlertCircle size={15} /> Configura tu credencial TMDB para iniciar este proceso.</p>}
+      {!configured && <p className="enrichment-note"><AlertCircle size={15} /> Configura tu credencial TMDB una vez. Prisma iniciará las actualizaciones automáticamente cuando esté disponible.</p>}
+      {configured && snapshot.errorMovies > 0 && snapshot.status !== "running" && (
+        <p className="enrichment-note">Los errores temporales se reintentan automáticamente con pausas crecientes. Revisa la credencial solo cuando el error indique un problema de autenticación.</p>
+      )}
       <p className="enrichment-footnote">Solo se actualizan metadatos de películas. Tus estados, favoritos, visionados, fechas, calificaciones, comentarios y colecciones permanecen intactos.</p>
     </section>
   );
