@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CollectionMovie, LibraryEntry, MovieRecord, Viewing } from "./types";
-import { analyzeSpectro, selectSpectroCandidates, SPECTRO_ALGORITHM_VERSION } from "./spectro";
+import {
+  analyzeSpectro,
+  rankSpectroRecommendations,
+  selectSpectroCandidates,
+  SPECTRO_ALGORITHM_VERSION
+} from "./spectro";
 
 const movie = (
   id: string,
@@ -43,9 +48,27 @@ const viewing = (
   operationId: "op-" + id
 });
 
-describe("analyzeSpectro 2.5", () => {
+describe("analyzeSpectro 2.6", () => {
+  it("ordena primero por nota prevista y usa el encaje para desempatar", () => {
+    const ranked = rankSpectroRecommendations([
+      { movie: { title: "Encaje alto" }, fitPercentage: 96, predictedRating: 6.4 },
+      { movie: { title: "Nota alta" }, fitPercentage: 62, predictedRating: 8.7 },
+      { movie: { title: "Empate · B" }, fitPercentage: 80, predictedRating: 7.5 },
+      { movie: { title: "Empate · A" }, fitPercentage: 80, predictedRating: 7.5 },
+      { movie: { title: "Encaje medio" }, fitPercentage: 73, predictedRating: 6.4 }
+    ]);
+
+    expect(ranked.map((item) => item.movie.title)).toEqual([
+      "Nota alta",
+      "Empate · A",
+      "Empate · B",
+      "Encaje medio",
+      "Encaje alto"
+    ]);
+  });
+
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.5.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.6.0");
   });
 
   it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {
