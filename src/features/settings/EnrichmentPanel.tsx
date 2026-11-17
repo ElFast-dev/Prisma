@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   CloudOff,
   LoaderCircle,
-  Pause,
   RefreshCw,
   Wifi
 } from "lucide-react";
@@ -75,7 +74,6 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
 
     const onOffline = () => {
       if (snapshotRef.current.status === "running") {
-        resumeAfterConnection.current = true;
         void pauseEnrichmentQueue(true);
       }
       void getEnrichmentSnapshot().then(update);
@@ -106,11 +104,6 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
     };
   }, [configured]);
 
-  async function handlePause() {
-    await pauseEnrichmentQueue(false);
-  }
-
-  const isRunning = snapshot.status === "running";
 
   return (
     <section className="settings-section card-surface enrichment-panel" aria-labelledby="enrichment-heading">
@@ -158,14 +151,8 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
       )}
       {snapshot.lastError && <p className="enrichment-error" role="alert">{snapshot.lastError}</p>}
 
-      {isRunning && (
-        <button className="button button-secondary button-full" type="button" onClick={() => void handlePause()}>
-          <Pause size={17} /> Pausar actualizaciones
-        </button>
-      )}
-
       {snapshot.status === "running" && (
-        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 24 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes; puedes pausar y continuar más tarde.</p>
+        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 24 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes.</p>
       )}
       {snapshot.status === "completed" && !snapshot.pendingMovies && !snapshot.errorMovies && (
         <p className="enrichment-success"><CheckCircle2 size={15} /> No quedan películas pendientes de enriquecimiento.</p>
