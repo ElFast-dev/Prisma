@@ -150,9 +150,12 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect(page.getByRole("heading", { name: "Duración" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Combinaciones que destacan" })).toBeVisible();
-  await expect(page.locator(".spectro-pattern-card").first()).toBeVisible();
-  await expect(page.getByText(/películas distintas/).first()).toBeVisible();
-  await expect(page.getByText(/asociación descriptiva/)).toBeVisible();
+  // La fixture tiene solo 12 títulos y valoraciones uniformes por grupo:
+  // el comportamiento correcto es abstenerse de inventar patrones.
+  await expect(page.locator(".spectro-patterns-empty")).toBeVisible();
+  await expect(page.locator(".spectro-pattern-card")).toHaveCount(0);
+  await expect(page.getByText(/validación cruzada y la corrección por múltiples comparaciones/)).toBeVisible();
+  await expect(page.getByText(/Benjamini–Yekutieli/)).toBeVisible();
 
   await page.getByRole("button", { name: "Volver a Espectro" }).click();
   await expect(page.locator('a[href="#/spectro/evolution"]')).toBeVisible();
