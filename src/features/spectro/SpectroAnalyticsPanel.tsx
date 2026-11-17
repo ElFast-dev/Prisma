@@ -10,13 +10,13 @@ import {
 
 type SectionKey = "resumen" | "actividad" | "calificaciones" | "cine" | "perfil" | "biblioteca";
 
-const SECTIONS: Array<{ id: SectionKey; label: string; number: string }> = [
-  { id: "resumen", label: "Resumen", number: "01" },
-  { id: "actividad", label: "Actividad", number: "02" },
-  { id: "calificaciones", label: "Calificaciones", number: "03" },
-  { id: "cine", label: "Universo", number: "04" },
-  { id: "perfil", label: "Perfil", number: "05" },
-  { id: "biblioteca", label: "Biblioteca", number: "06" }
+const SECTIONS: Array<{ id: SectionKey; label: string }> = [
+  { id: "resumen", label: "Resumen" },
+  { id: "actividad", label: "Actividad" },
+  { id: "calificaciones", label: "Calificaciones" },
+  { id: "cine", label: "Universo" },
+  { id: "perfil", label: "Perfil" },
+  { id: "biblioteca", label: "Biblioteca" }
 ];
 
 function number(value: number): string {
@@ -385,8 +385,6 @@ export function SpectroAnalyticsPanel({
   const summary = analytics.summary;
   const estimatedHours = (summary.estimatedMinutes / 60).toLocaleString("es-PA", { maximumFractionDigits: 1 });
 
-  const selectedSection = SECTIONS.find((item) => item.id === activeSection);
-
   return (
     <section className="spectro-analytics" aria-label="Analítica personal de Espectro">
       <div className="spectro-data-metrics">
@@ -410,41 +408,25 @@ export function SpectroAnalyticsPanel({
             aria-controls="spectro-analytics-panel"
             onClick={() => setActiveSection(section.id)}
           >
-            <small>{section.number}</small>
             {section.label}
           </button>
         ))}
       </nav>
 
-      <div className="spectro-analytics-section-heading">
-        <span>{selectedSection?.number ?? "01"}</span>
-        <div>
-          <h3>{selectedSection?.label ?? "Resumen"}</h3>
-          <p>
-            {activeSection === "resumen" && "Las cifras principales y una vista de todo tu historial."}
-            {activeSection === "actividad" && "Cuándo ves cine, con qué frecuencia y en qué momentos del día."}
-            {activeSection === "calificaciones" && "Cómo distribuyes tus notas y qué cambia cuando vuelves a ver una película."}
-            {activeSection === "cine" && "Los géneros, épocas, países, personas y duraciones que aparecen en tu historial."}
-            {activeSection === "perfil" && "Señales estadísticas derivadas de tus valoraciones, con su muestra y respaldo."}
-            {activeSection === "biblioteca" && "Cómo se reparte tu catálogo, tus favoritos y tus colecciones."}
-          </p>
-        </div>
-      </div>
-
       <div id="spectro-analytics-panel" role="tabpanel" aria-labelledby={"spectro-tab-" + activeSection} className="spectro-analytics-grid">
         {activeSection === "resumen" && (
           <>
-            <ChartCard title="Tu actividad a lo largo del tiempo" description="Cada punto representa el número de visionados registrados en ese mes." tag="Historial completo">
+            <ChartCard title="Visionados por mes">
               <MonthlyActivityChart points={analytics.monthly} />
               <p className="spectro-chart-footnote">Cada sesión cuenta como un visionado; la misma película puede aparecer más de una vez.</p>
             </ChartCard>
-            <ChartCard title="Distribución de tus notas" description="Frecuencia de cada calificación, de 1 a 10." tag="Por sesión">
+            <ChartCard title="Distribución de calificaciones" tag="Por sesión">
               <RatingColumns items={analytics.ratingDistribution} />
             </ChartCard>
-            <ChartCard title="Tu biblioteca en proporción" description="Películas con historial, pendientes y otros títulos guardados localmente.">
+            <ChartCard title="Estado de la Biblioteca" description="Películas con historial, pendientes y otros títulos guardados localmente.">
               <DonutChart items={analytics.libraryBreakdown} />
             </ChartCard>
-            <ChartCard title="Datos disponibles" description="Cobertura real de los metadatos de tus películas vistas.">
+            <ChartCard title="Cobertura de metadatos" description="Cobertura real de los metadatos de tus películas vistas.">
               <div className="spectro-coverage-grid">
                 {[
                   ["Géneros", analytics.coverage.withGenres],
@@ -468,13 +450,13 @@ export function SpectroAnalyticsPanel({
 
         {activeSection === "actividad" && (
           <>
-            <ChartCard title="Ritmo de visionado" description="Todos los meses entre tu primer y tu último registro.">
+            <ChartCard title="Visionados por mes" description="Todos los meses entre tu primer y tu último registro.">
               <MonthlyActivityChart points={analytics.monthly} />
             </ChartCard>
             <ChartCard title="Días de la semana" description="Cantidad de sesiones según el día local registrado.">
               <HorizontalBars items={analytics.weekdays} suffix="sesiones" showPercentage />
             </ChartCard>
-            <ChartCard title="Mapa de horarios" description="Concentración de visionados por día y hora local." tag={number(analytics.timedViewings) + " con hora"}>
+            <ChartCard title="Visionados por día y hora" description="Solo incluye sesiones con hora local válida." tag={number(analytics.timedViewings) + " con hora"}>
               <HourHeatmap cells={analytics.hourHeatmap} total={analytics.timedViewings} />
             </ChartCard>
           </>
@@ -482,24 +464,24 @@ export function SpectroAnalyticsPanel({
 
         {activeSection === "calificaciones" && (
           <>
-            <ChartCard title="La forma de tus calificaciones" description="Cuántas veces has asignado cada nota. Un revisionado con nota también cuenta como sesión.">
+            <ChartCard title="Distribución de calificaciones" description="Cada nota corresponde a una sesión; los revisionados también cuentan.">
               <RatingColumns items={analytics.ratingDistribution} />
               <p className="spectro-chart-footnote">{number(analytics.coverage.ratedViewings)} notas registradas · {number(analytics.coverage.unratedViewings)} visionados sin nota.</p>
             </ChartCard>
-            <ChartCard title="Promedio mensual" description="Media de las notas de las sesiones registradas en cada mes.">
+            <ChartCard title="Calificación media por mes" description="Media de las notas de las sesiones registradas en cada mes.">
               <MonthlyRatingChart points={analytics.monthly} />
             </ChartCard>
-            <ChartCard title="Películas que vuelves a ver" description="Títulos con más de una sesión registrada." tag={number(summary.moviesWithRewatches) + " títulos"}>
+            <ChartCard title="Revisionados" description="Títulos con más de una sesión registrada." tag={number(summary.moviesWithRewatches) + " títulos"}>
               <RewatchBars items={analytics.rewatchTitles} />
               <p className="spectro-rewatch-delta">
                 Cambio medio entre primera y última nota:
                 <strong>{analytics.averageRewatchChange === null ? " Sin datos" : (analytics.averageRewatchChange > 0 ? "+" : "") + analytics.averageRewatchChange.toFixed(2) + " puntos"}</strong>
               </p>
             </ChartCard>
-            <ChartCard title="Notas más altas por película" description="Promedio de las calificaciones de cada título, no de cada sesión.">
+            <ChartCard title="Mejores calificaciones por película" description="Promedio de las calificaciones de cada título, no de cada sesión.">
               <MovieRatingList items={analytics.topRatedMovies} mode="top" />
             </ChartCard>
-            <ChartCard title="Notas más bajas por película" description="El extremo inferior de tus valoraciones, agrupando revisionados.">
+            <ChartCard title="Calificaciones más bajas por película" description="El extremo inferior de tus valoraciones, agrupando revisionados.">
               <MovieRatingList items={analytics.lowestRatedMovies} mode="bottom" />
             </ChartCard>
           </>
@@ -536,14 +518,14 @@ export function SpectroAnalyticsPanel({
 
         {activeSection === "perfil" && (
           <>
-            <ChartCard title="Rasgos que inclinan tus notas" description="Diferencia ajustada respecto a tu promedio por película. El centro representa 0." tag="Hasta 12 señales">
+            <ChartCard title="Afinidades ajustadas" description="Diferencia ajustada respecto a tu promedio por película. El centro representa 0." tag="Hasta 12 señales">
               <AffinityBars analysis={analysis} />
             </ChartCard>
-            <ChartCard title="Tus favoritos explícitos" description="Géneros de las películas que marcaste como favoritas.">
+            <ChartCard title="Géneros de favoritos">
               <HorizontalBars items={analytics.favoriteGenreCounts} />
               <p className="spectro-chart-footnote">{number(summary.favorites)} favoritos guardados. Esta elección es independiente de la nota de cada visionado.</p>
             </ChartCard>
-            <ChartCard title="Rasgos presentes en tus favoritos" description="Metadatos que se repiten entre tus elecciones explícitas.">
+            <ChartCard title="Metadatos de favoritos" description="Características registradas en las películas marcadas como favoritas.">
               <HorizontalBars
                 items={analysis.favoriteSignals.map((item) => ({
                   label: item.category + ": " + item.label,
@@ -562,7 +544,7 @@ export function SpectroAnalyticsPanel({
             <ChartCard title="Distribución del catálogo" description="Estados de los títulos almacenados localmente. Los favoritos pueden pertenecer a cualquiera de los grupos.">
               <DonutChart items={analytics.libraryBreakdown} />
             </ChartCard>
-            <ChartCard title="Tus colecciones" description="Número de películas distintas dentro de cada colección.">
+            <ChartCard title="Películas por colección" description="Número de películas distintas dentro de cada colección.">
               <HorizontalBars
                 items={analytics.collectionCounts.map((item) => ({
                   label: item.name,
@@ -575,7 +557,7 @@ export function SpectroAnalyticsPanel({
                 showPercentage={false}
               />
             </ChartCard>
-            <ChartCard title="Información personal registrada" description="Elementos adicionales guardados en los visionados.">
+            <ChartCard title="Datos de visionado">
               <div className="spectro-coverage-grid">
                 <div><strong>{number(summary.notesWritten)}</strong><span>Comentarios escritos</span></div>
                 <div><strong>{number(summary.unratedViewings)}</strong><span>Sesiones sin nota</span></div>
