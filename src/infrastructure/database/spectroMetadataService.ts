@@ -327,28 +327,31 @@ async function persistItem(
   let complete = true;
   await prismaDb.transaction("rw", [prismaDb.movies, prismaDb.appMetadata], async () => {
     const current = await prismaDb.movies.get(movie.id);
-    if (current) {
-      const patch = createMovieMetadataPatch(current, {
-        ...metadata.details,
-        keywords: metadata.keywords
-      }, now);
-      const directors = [...new Set(
-        metadata.credits.crew
-          .filter((person) => person.job === "Director" || person.department === "Directing")
-          .map((person) => person.name.trim())
-          .filter(Boolean)
-      )];
-      const castMembers = [...new Set(
-        metadata.credits.cast.slice(0, 12).map((person) => person.name.trim()).filter(Boolean)
-      )];
-      if (directors.length) patch.directors = directors;
-      if (castMembers.length) patch.castMembers = castMembers;
-      const enriched = { ...current, ...patch };
-      complete = !isSpectroMetadataIncomplete(enriched);
-      // Este parche solo contiene metadatos cinematográficos. No escribe visionados,
-      // calificaciones, favoritos, colecciones, perfil ni preferencias.
-      await prismaDb.movies.update(movie.id, patch);
+    // No guardar metadatos ni estado si un restablecimiento borró la película.
+    if (!current) {
+      complete = false;
+      return;
     }
+    const patch = createMovieMetadataPatch(current, {
+      ...metadata.details,
+      keywords: metadata.keywords
+    }, now);
+    const directors = [...new Set(
+      metadata.credits.crew
+        .filter((person) => person.job === "Director" || person.department === "Directing")
+        .map((person) => person.name.trim())
+        .filter(Boolean)
+    )];
+    const castMembers = [...new Set(
+      metadata.credits.cast.slice(0, 12).map((person) => person.name.trim()).filter(Boolean)
+    )];
+    if (directors.length) patch.directors = directors;
+    if (castMembers.length) patch.castMembers = castMembers;
+    const enriched = { ...current, ...patch };
+    complete = !isSpectroMetadataIncomplete(enriched);
+    // Este parche solo contiene metadatos cinematográficos. No escribe visionados,
+    // calificaciones, favoritos, colecciones, perfil ni preferencias.
+    await prismaDb.movies.update(movie.id, patch);
     await prismaDb.appMetadata.put({
       key: itemKey(movie.tmdbId),
       value: JSON.stringify({
@@ -378,9 +381,13 @@ async function persistItemState(
     lastError,
     retryable
   };
-  await prismaDb.appMetadata.put({
-    key: itemKey(movie.tmdbId),
-    value: JSON.stringify(item)
+  await prismaDb.transaction("rw", [prismaDb.movies, prismaDb.appMetadata], async () => {
+    // Los errores tardíos tampoco deben recrear marcadores tras un restablecimiento.
+    if (!await prismaDb.movies.get(movie.id)) return;
+    await prismaDb.appMetadata.put({
+      key: itemKey(movie.tmdbId),
+      value: JSON.stringify(item)
+    });
   });
 }
 
