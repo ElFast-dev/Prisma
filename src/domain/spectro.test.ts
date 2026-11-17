@@ -45,7 +45,7 @@ const viewing = (
 
 describe("analyzeSpectro 2.3", () => {
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.3.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.4.0");
   });
 
   it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {
@@ -536,7 +536,7 @@ describe("patrones cinematográficos combinados", () => {
     ];
 
     for (const group of groups) {
-      for (let index = 0; index < 4; index += 1) {
+      for (let index = 0; index < 20; index += 1) {
         const id = "movie-" + (100 + movies.length);
         const item = movie(id, group.genre, group.genreId, 2020, {
           title: group.prefix + " " + (index + 1),
@@ -559,19 +559,22 @@ describe("patrones cinematográficos combinados", () => {
     const negative = result.patterns.find((pattern) => pattern.key === "genre:35::theme:memoria");
 
     expect(positive).toBeDefined();
-    expect(positive?.sampleSize).toBe(4);
-    expect(positive?.adjustedDifference).toBeGreaterThan(0.35);
+    expect(positive?.sampleSize).toBe(20);
+    expect(positive?.adjustedDifference).toBeGreaterThan(0.5);
     expect(positive?.averageRating).toBeGreaterThan(positive?.expectedRating ?? 10);
+    expect(positive?.qValue).toBeLessThanOrEqual(0.05);
+    expect(positive?.foldCount).toBeGreaterThanOrEqual(3);
+    expect(positive?.foldConsistency).toBeGreaterThanOrEqual(0.75);
     expect(positive?.supportingMovies).toHaveLength(3);
-    expect(positive?.confidence).toBe("moderada");
 
     expect(negative).toBeDefined();
-    expect(negative?.sampleSize).toBe(4);
-    expect(negative?.adjustedDifference).toBeLessThan(-0.35);
+    expect(negative?.sampleSize).toBe(20);
+    expect(negative?.adjustedDifference).toBeLessThan(-0.5);
+    expect(negative?.qValue).toBeLessThanOrEqual(0.05);
     expect(negative?.averageRating).toBeLessThan(negative?.expectedRating ?? 0);
   });
 
-  it("no presenta combinaciones respaldadas por menos de cuatro películas distintas", () => {
+  it("no presenta combinaciones cuando no hay suficientes películas distintas para validar", () => {
     const movies = [
       movie("movie-201", "Drama", 18, 2020, { keywords: ["Memoria"] }),
       movie("movie-202", "Drama", 18, 2020, { keywords: ["Memoria"] }),
