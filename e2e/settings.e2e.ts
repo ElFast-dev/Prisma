@@ -49,11 +49,15 @@ test("la vista de Biblioteca se puede cambiar desde sus ajustes", async ({ page 
 
 
 test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem("prisma.tmdb.accessToken", "token-ficticio-de-prueba");
+  let tmdbRequests = 0;
+  await page.route("https://api.themoviedb.org/3/**", async (route) => {
+    tmdbRequests += 1;
+    await route.abort();
   });
   await page.goto("#/settings/data");
   await expect(page.getByRole("heading", { name: "Datos", exact: true })).toBeVisible();
+  // Añade la credencial tras el arranque para no iniciar enriquecimientos sobre los datos del test.
+  await page.evaluate(() => localStorage.setItem("prisma.tmdb.accessToken", "token-ficticio-de-prueba"));
 
   await page.evaluate(async () => {
     const request = indexedDB.open("prisma_database");
@@ -90,6 +94,18 @@ test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", a
     transaction.objectStore("peopleCache").put({ tmdbPersonId: 654321, name: "Persona ficticia", fetchedAt: now });
     transaction.objectStore("spectroSnapshots").put({ id: "snapshot-test", algorithmVersion: "test", inputFingerprint: "test", computedAt: now, analysisPayload: {} });
     transaction.objectStore("appMetadata").put({ key: "internal-test", value: "preserve" });
+    transaction.objectStore("appMetadata").put({
+      key: "library-enrichment:queue:v1",
+      value: JSON.stringify({ version: 1, status: "completed", total: 1, processed: 1, updatedAt: now })
+    });
+    transaction.objectStore("appMetadata").put({
+      key: "library-enrichment:movie:987654",
+      value: JSON.stringify({ tmdbId: 987654, status: "complete", attempts: 1, updatedAt: now })
+    });
+    transaction.objectStore("appMetadata").put({
+      key: "spectro:metadata:v1:987654",
+      value: JSON.stringify({ tmdbId: 987654, status: "complete", attempts: 1, updatedAt: now })
+    });
 
     await new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => resolve();
@@ -149,6 +165,7 @@ test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", a
   expect(state.metadataKeys.some((key) => key.startsWith("spectro:metadata:v1:"))).toBe(false);
   expect(state.metadataCount).toBe(2);
   expect(state.tmdbToken).toBe("token-ficticio-de-prueba");
+  expect(tmdbRequests).toBe(0);
 });
 
 test("el restablecimiento permite eliminar también la credencial TMDB", async ({ page }) => {
