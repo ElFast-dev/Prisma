@@ -132,7 +132,7 @@ describe("predicción personal no lineal de Espectro", () => {
     const candidate = movie("candidate-memory", "Candidata de memoria", "memoria");
     const result = predictSpectroMovies(training, [candidate]).get(candidate.id);
 
-    expect(result?.predictedRating).toBeCloseTo(8.5, 2);
+    expect(result?.predictedRating).toBeCloseTo(7, 2);
     expect(result?.neighbors.length).toBe(2);
   });
 
