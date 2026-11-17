@@ -14,6 +14,7 @@ import { SpectroPage } from "./features/spectro/SpectroPage";
 import { MovieDetailPage } from "./features/movie/MovieDetailPage";
 import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
 import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
+import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
@@ -142,6 +143,17 @@ export default function App() {
       window.cancelAnimationFrame(frame);
     };
   }, [path]);
+
+  useEffect(() => {
+    requestAutomaticEnrichment();
+    const resumeEnrichment = () => requestAutomaticEnrichment();
+    window.addEventListener("online", resumeEnrichment);
+    window.addEventListener("prisma:tmdb-credentials-updated", resumeEnrichment);
+    return () => {
+      window.removeEventListener("online", resumeEnrichment);
+      window.removeEventListener("prisma:tmdb-credentials-updated", resumeEnrichment);
+    };
+  }, []);
 
   useEffect(() => {
     const updateConnection = () => setIsOnline(navigator.onLine);
