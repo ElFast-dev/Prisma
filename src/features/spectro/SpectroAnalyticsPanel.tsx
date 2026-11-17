@@ -550,6 +550,16 @@ export function SpectroAnalyticsPanel({
               <HorizontalBars items={analytics.favoriteGenreCounts} />
               <p className="spectro-chart-footnote">{number(summary.favorites)} favoritos guardados. Esta elección es independiente de la nota de cada visionado.</p>
             </ChartCard>
+            <ChartCard title="Rasgos presentes en tus favoritos" description="Metadatos que se repiten entre tus elecciones explícitas.">
+              <HorizontalBars
+                items={analysis.favoriteSignals.map((item) => ({
+                  label: item.category + ": " + item.label,
+                  count: item.sampleSize,
+                  percentage: summary.favorites ? Math.round((item.sampleSize / summary.favorites) * 1000) / 10 : 0
+                }))}
+                suffix="favoritos"
+              />
+            </ChartCard>
             <div className="spectro-chart-span">{patterns}</div>
           </>
         )}
@@ -571,7 +581,6 @@ export function SpectroAnalyticsPanel({
                 suffix="películas"
                 showPercentage={false}
               />
-              {!analytics.collectionCounts.length && <EmptyChart>No tienes colecciones con datos todavía.</EmptyChart>}
             </ChartCard>
             <ChartCard title="Información personal registrada" description="Elementos adicionales guardados en los visionados.">
               <div className="spectro-coverage-grid">
