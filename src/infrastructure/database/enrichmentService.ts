@@ -12,11 +12,10 @@ import { getTmdbAccessToken } from "../tmdb/settings";
 const QUEUE_KEY = "library-enrichment:queue:v1";
 const ITEM_PREFIX = "library-enrichment:movie:";
 
-// Veinticuatro trabajos simultáneos con un máximo inicial cercano a 28 solicitudes/s.
-// Se mantiene margen frente al límite superior aproximado de TMDB y se reduce
-// automáticamente el ritmo cuando el servicio responde HTTP 429.
-export const ENRICHMENT_CONCURRENCY = 24;
-export const ENRICHMENT_REQUEST_INTERVAL_MS = 35;
+// Lote cooperativo para dispositivos móviles: cuatro trabajadores y un máximo
+// inicial de cinco inicios de solicitud por segundo. HTTP 429 reduce el ritmo global.
+export const ENRICHMENT_CONCURRENCY = 4;
+export const ENRICHMENT_REQUEST_INTERVAL_MS = 200;
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [1500, 4000];
 const RATE_LIMIT_FALLBACK_MS = 2000;
@@ -735,20 +734,22 @@ export function subscribeEnrichmentQueue(
   return () => listeners.delete(listener);
 }
 
-// La cola no depende de que Ajustes permanezca abierta: los eventos de red
-// se observan desde el servicio mientras la aplicación esté cargada.
+export function canResumeEnrichmentAfterConnection(online: boolean, token: string): boolean {
+  return online && token.trim().length > 0;
+}
+
+// La cola no depende de que Ajustes permanezca abierta: cualquier recuperación
+// de red vuelve a comprobar los pendientes, incluso si un reintento venció offline.
 async function resumeQueueAfterConnection(): Promise<void> {
   if (!isOnline()) return;
 
   const active = runner ?? starting;
   if (active) await active.catch(() => undefined);
 
-  if (!isOnline()) return;
-  const state = await readQueueState();
-  if (state.status !== "waiting-connection" && state.status !== "running") return;
-
   const token = getTmdbAccessToken();
-  if (token) requestAutomaticEnrichment();
+  if (canResumeEnrichmentAfterConnection(isOnline(), token)) {
+    requestAutomaticEnrichment();
+  }
 }
 
 if (typeof window !== "undefined") {
