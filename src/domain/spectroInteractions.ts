@@ -463,7 +463,7 @@ export function buildSpectroInteractions(
           : "variable";
       return {
         ...item,
-        qValue: Math.round(qValue * 1_000_000) / 1_000_000,
+        qValue,
         confidence
       };
     })
