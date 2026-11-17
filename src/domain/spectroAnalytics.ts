@@ -140,12 +140,15 @@ function languageLabel(code?: string): string[] {
   }
 }
 
-function categoryPoints(counts: Map<string, Set<string>>, denominator: number): SpectroCategoryPoint[] {
-  return [...counts.entries()]
-    .map(([label, ids]) => ({
+function categoryPoints(
+  counts: Map<string, { label: string; movieIds: Set<string> }>,
+  denominator: number
+): SpectroCategoryPoint[] {
+  return [...counts.values()]
+    .map(({ label, movieIds }) => ({
       label,
-      count: ids.size,
-      percentage: denominator ? Math.round((ids.size / denominator) * 1000) / 10 : 0
+      count: movieIds.size,
+      percentage: denominator ? Math.round((movieIds.size / denominator) * 1000) / 10 : 0
     }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"))
     .slice(0, 12);
@@ -155,13 +158,13 @@ function buildCategories(
   viewedMovies: MovieRecord[],
   selector: (movie: MovieRecord) => string[]
 ): SpectroCategoryPoint[] {
-  const counts = new Map<string, Set<string>>();
+  const counts = new Map<string, { label: string; movieIds: Set<string> }>();
   for (const movie of viewedMovies) {
     for (const label of selector(movie)) {
       const key = label.toLocaleLowerCase("es");
-      const ids = counts.get(key) ?? new Set<string>();
-      ids.add(movie.id);
-      counts.set(key, ids);
+      const category = counts.get(key) ?? { label, movieIds: new Set<string>() };
+      category.movieIds.add(movie.id);
+      counts.set(key, category);
     }
   }
   return categoryPoints(counts, viewedMovies.length);
