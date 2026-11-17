@@ -155,13 +155,13 @@ export function DiscoverPage() {
 
   useEffect(() => {
     const target = sentinelRef.current;
-    if (!target || state !== "ready") return;
+    if (!target || state !== "ready" || (filtersActive && query.trim())) return;
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) void loadMore();
     }, { rootMargin: "500px" });
     observer.observe(target);
     return () => observer.disconnect();
-  }, [state, loadMore]);
+  }, [filtersActive, query, state, loadMore]);
 
   function openMovie(movie: TmdbMovieSummary) {
     saveCurrentRouteScrollPosition();
@@ -266,7 +266,12 @@ export function DiscoverPage() {
             </>
           )}
           <div ref={sentinelRef} className="feed-sentinel" aria-hidden="true" />
-          {loadingMore && <div className="feed-loading"><LoaderCircle size={19} className="spin" /><span>Cargando películas...</span></div>}
+          {filtersActive && query.trim() && page < totalPages && (
+            <button className="button button-secondary discover-load-more" type="button" onClick={() => void loadMore()} disabled={loadingMore}>
+              {loadingMore ? <><LoaderCircle size={17} className="spin" /> Cargando...</> : "Buscar en más resultados"}
+            </button>
+          )}
+          {loadingMore && !(filtersActive && query.trim()) && <div className="feed-loading"><LoaderCircle size={19} className="spin" /><span>Cargando películas...</span></div>}
           {error && movies.length > 0 && <p className="feed-inline-error">{error}</p>}
         </>
       )}
