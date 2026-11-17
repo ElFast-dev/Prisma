@@ -25,6 +25,13 @@ const fakeDb = vi.hoisted(() => {
     };
   }
 
+  const deletedMetadataPrefixes: string[] = [];
+  const metadataWhere = vi.fn((_index: string) => ({
+    startsWith: vi.fn((prefix: string) => ({
+      delete: vi.fn(async () => { deletedMetadataPrefixes.push(prefix); return 0; })
+    }))
+  }));
+
   const transaction = vi.fn(async (...args: unknown[]) => {
     const callback = args[args.length - 1];
     if (typeof callback === "function") {
@@ -33,12 +40,13 @@ const fakeDb = vi.hoisted(() => {
     return undefined;
   });
 
-  return { counts, tables, transaction };
+  return { counts, tables, transaction, deletedMetadataPrefixes, metadataWhere };
 });
 
 vi.mock("./database", () => ({
   prismaDb: {
     ...fakeDb.tables,
+    appMetadata: { ...fakeDb.tables.appMetadata, where: fakeDb.metadataWhere },
     transaction: fakeDb.transaction
   }
 }));
@@ -48,6 +56,7 @@ import { getLocalDataSummary, resetLocalData } from "./dataManagementService";
 describe("gestión y restablecimiento de datos locales", () => {
   beforeEach(() => {
     for (const name of Object.keys(fakeDb.counts)) fakeDb.counts[name] = 2;
+    fakeDb.deletedMetadataPrefixes.length = 0;
     vi.clearAllMocks();
   });
 
@@ -81,6 +90,16 @@ describe("gestión y restablecimiento de datos locales", () => {
       expect(fakeDb.tables[name].clear).toHaveBeenCalledOnce();
       expect(fakeDb.counts[name]).toBe(0);
     }
+  });
+
+  it("elimina solo los marcadores técnicos ligados a películas", async () => {
+    await resetLocalData();
+
+    expect(fakeDb.deletedMetadataPrefixes).toEqual([
+      "library-enrichment:movie:",
+      "spectro:metadata:v1:"
+    ]);
+    expect(fakeDb.tables.appMetadata.clear).not.toHaveBeenCalled();
   });
 
   it("conserva los metadatos internos de Prisma", async () => {
