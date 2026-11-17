@@ -1058,3 +1058,6 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 @media (min-width: 560px) {
   .discover-filter-sheet { max-height: min(92vh, 860px); }
 }
+
+.discover-load-more { display: flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; margin: 16px auto 10px; }
+.discover-load-more:disabled { opacity: .65; }
