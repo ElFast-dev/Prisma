@@ -145,13 +145,22 @@ export default function App() {
   }, [path]);
 
   useEffect(() => {
-    requestAutomaticEnrichment();
     const resumeEnrichment = () => requestAutomaticEnrichment();
+    const retryWithUpdatedCredentials = () => requestAutomaticEnrichment(true);
+    const resumeSpectroMetadata = () => { void startSpectroMetadataEnrichment(); };
+    const retrySpectroMetadataWithUpdatedCredentials = () => { void startSpectroMetadataEnrichment(true); };
+
+    requestAutomaticEnrichment();
+    resumeSpectroMetadata();
     window.addEventListener("online", resumeEnrichment);
-    window.addEventListener("prisma:tmdb-credentials-updated", resumeEnrichment);
+    window.addEventListener("online", resumeSpectroMetadata);
+    window.addEventListener("prisma:tmdb-credentials-updated", retryWithUpdatedCredentials);
+    window.addEventListener("prisma:tmdb-credentials-updated", retrySpectroMetadataWithUpdatedCredentials);
     return () => {
       window.removeEventListener("online", resumeEnrichment);
-      window.removeEventListener("prisma:tmdb-credentials-updated", resumeEnrichment);
+      window.removeEventListener("online", resumeSpectroMetadata);
+      window.removeEventListener("prisma:tmdb-credentials-updated", retryWithUpdatedCredentials);
+      window.removeEventListener("prisma:tmdb-credentials-updated", retrySpectroMetadataWithUpdatedCredentials);
     };
   }, []);
 
