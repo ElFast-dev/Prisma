@@ -1019,8 +1019,8 @@ function buildRecommendations(
   const seen = new Set<string>();
   const recommendations = ranked
     .sort((a, b) => (
-      b.predictedRating - a.predictedRating
-      || b.fitPercentage - a.fitPercentage
+      b.fitPercentage - a.fitPercentage
+      || b.predictedRating - a.predictedRating
       || a.movie.title.localeCompare(b.movie.title)
     ))
     .filter((item) => {
