@@ -852,3 +852,51 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 }
 .library-sort-direction svg { color: var(--color-accent); flex: 0 0 auto; }
 .library-filter-sheet { max-height: min(90vh, 780px); }
+
+
+/* Espectro unificado: retrato personal, señales respaldadas y hallazgos */
+.spectro-page { display: grid; gap: 16px; }
+.spectro-page-intro { display: grid; gap: 7px; margin: 3px 0 1px; }
+.spectro-page-kicker { display: flex; align-items: center; gap: 7px; color: var(--color-accent); font-size: 9px; font-weight: 750; letter-spacing: .1em; }
+.spectro-page-intro h1 { margin: 0; font-size: clamp(24px, 6vw, 30px); line-height: 1.12; letter-spacing: -.045em; }
+.spectro-page-intro > p { max-width: 620px; margin: 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.55; }
+.spectro-overview { display: grid; gap: 12px; padding: 15px; }
+.spectro-overview-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.spectro-overview-eyebrow { color: var(--color-accent); font-size: 9px; font-weight: 750; letter-spacing: .08em; }
+.spectro-overview-heading h2 { margin: 4px 0 0; font-size: 15px; }
+.spectro-overview .spectro-summary-grid { margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.spectro-overview .spectro-summary-card { min-height: 76px; padding: 10px 9px; }
+.spectro-overview .spectro-summary-card strong { font-size: 22px; }
+.spectro-overview-note { margin: 0; color: var(--color-text-muted); font-size: 10px; line-height: 1.45; }
+.spectro-profile-signals, .spectro-explicit-favorites { display: grid; gap: 12px; padding: 14px; }
+.spectro-profile-section-intro { max-width: 620px; margin: 5px 0 0; font-size: 10px; line-height: 1.5; }
+.spectro-profile-signal-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.spectro-profile-signal-group { display: grid; align-content: start; gap: 8px; min-width: 0; }
+.spectro-profile-signal-group h3 { margin: 0; font-size: 11px; }
+.spectro-profile-signal-list { display: grid; gap: 7px; }
+.spectro-profile-signal { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 9px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-card); }
+.spectro-profile-signal-copy { display: grid; gap: 2px; min-width: 0; }
+.spectro-profile-signal-copy > small { color: var(--color-text-muted); font-size: 9px; }
+.spectro-profile-signal-copy > strong { overflow-wrap: anywhere; font-size: 11px; line-height: 1.3; }
+.spectro-profile-signal-copy > span { color: var(--color-text-muted); font-size: 9px; }
+.spectro-profile-signal-value { display: grid; flex: 0 0 auto; justify-items: end; gap: 2px; }
+.spectro-profile-signal-value > strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.spectro-profile-signal-value > strong small { margin-left: 1px; color: var(--color-text-muted); font-size: 9px; }
+.spectro-profile-signal-value > span { font-size: 8px; font-variant-numeric: tabular-nums; }
+.spectro-profile-signal.is-positive .spectro-profile-signal-value > span { color: var(--color-success, var(--color-accent)); }
+.spectro-profile-signal.is-negative .spectro-profile-signal-value > span { color: var(--color-danger, #D99083); }
+.spectro-profile-signal-empty { margin: 0; font-size: 10px; line-height: 1.5; }
+.spectro-favorite-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.spectro-favorite-chip { display: grid; gap: 2px; max-width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-card); }
+.spectro-favorite-chip strong { overflow-wrap: anywhere; font-size: 10px; }
+.spectro-favorite-chip small { color: var(--color-text-muted); font-size: 9px; }
+.spectro-profile-signals .spectro-method-note, .spectro-explicit-favorites .spectro-method-note { margin: 0; }
+.spectro-page .spectro-patterns-section { margin-top: 0; }
+
+@media (max-width: 520px) {
+  .spectro-profile-signal-columns { grid-template-columns: 1fr; }
+}
+@media (min-width: 700px) {
+  .spectro-profile-signal-columns { gap: 18px; }
+  .spectro-profile-signal-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
