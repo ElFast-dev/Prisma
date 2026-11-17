@@ -6,7 +6,8 @@ import {
   getSpectroMetadataPriority,
   getSpectroMetadataRetryDelay,
   isSpectroMetadataIncomplete,
-  isSpectroMetadataRetryDeferred
+  isSpectroMetadataRetryDeferred,
+  shouldContinueSpectroMetadataEnrichment
 } from "./spectroMetadataService";
 
 const completeMovie: MovieRecord = {
@@ -130,6 +131,15 @@ describe("Espectro · pausa de reintentos", () => {
       status: "error",
       updatedAt: "fecha inválida"
     }, now)).toBe(false);
+  });
+});
+
+describe("Espectro · reanudación automática", () => {
+  it("continúa solo después de un lote correcto con credencial y conexión", () => {
+    expect(shouldContinueSpectroMetadataEnrichment("unconfigured", false, true)).toBe(false);
+    expect(shouldContinueSpectroMetadataEnrichment("waiting-connection", true, false)).toBe(false);
+    expect(shouldContinueSpectroMetadataEnrichment("error", true, true)).toBe(false);
+    expect(shouldContinueSpectroMetadataEnrichment("completed", true, true)).toBe(true);
   });
 });
 
