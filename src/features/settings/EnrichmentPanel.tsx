@@ -110,8 +110,8 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
       <div className="settings-section-heading">
         <div className="settings-icon"><RefreshCw size={21} /></div>
         <div>
-          <h2 id="enrichment-heading">Enriquecer Biblioteca</h2>
-          <p className="muted-copy">Completa la información cinematográfica guardada en este dispositivo.</p>
+          <h2 id="enrichment-heading">Metadatos de Biblioteca</h2>
+          <p className="muted-copy">Prisma completa automáticamente la información cinematográfica guardada en este dispositivo.</p>
         </div>
       </div>
 
@@ -152,7 +152,7 @@ export function EnrichmentPanel({ configured }: EnrichmentPanelProps) {
       {snapshot.lastError && <p className="enrichment-error" role="alert">{snapshot.lastError}</p>}
 
       {snapshot.status === "running" && (
-        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 24 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes.</p>
+        <p className="enrichment-note"><LoaderCircle className="enrichment-spinner" size={14} /> Hasta 4 películas en paralelo. Prisma ajusta el ritmo si TMDB limita las solicitudes.</p>
       )}
       {snapshot.status === "completed" && !snapshot.pendingMovies && !snapshot.errorMovies && (
         <p className="enrichment-success"><CheckCircle2 size={15} /> No quedan películas pendientes de enriquecimiento.</p>
