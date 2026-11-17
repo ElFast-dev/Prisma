@@ -111,7 +111,7 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
-  await expect(page.getByText("Espectro 2.2.0")).toBeVisible();
+  await expect(page.getByText("Espectro 2.3.0")).toBeVisible();
   await expect(page.getByText("Películas en el mapa")).toBeVisible();
   await expect(page.locator('a[href="#/spectro/map"]')).toBeVisible();
   await expect(page.locator('a[href="#/spectro/affinities"]')).toBeVisible();
@@ -149,6 +149,10 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await expect(page.getByRole("heading", { name: "Idioma original" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Duración" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Combinaciones que destacan" })).toBeVisible();
+  await expect(page.locator(".spectro-pattern-card").first()).toBeVisible();
+  await expect(page.getByText(/películas distintas/).first()).toBeVisible();
+  await expect(page.getByText(/asociación descriptiva/)).toBeVisible();
 
   await page.getByRole("button", { name: "Volver a Espectro" }).click();
   await expect(page.locator('a[href="#/spectro/evolution"]')).toBeVisible();

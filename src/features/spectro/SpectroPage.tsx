@@ -157,6 +157,67 @@ function AffinityPanel({
   );
 }
 
+function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["patterns"] }) {
+  return (
+    <section className="spectro-patterns-section card-surface" aria-labelledby="spectro-patterns-title">
+      <div className="content-caption">
+        <div>
+          <h2 id="spectro-patterns-title">Combinaciones que destacan</h2>
+          <p className="muted-copy spectro-patterns-intro">
+            Rasgos que, al aparecer juntos, se asocian con notas distintas de lo que explicarían por separado.
+          </p>
+        </div>
+        <Sparkles size={19} className="accent-icon" aria-hidden="true" />
+      </div>
+      {patterns.length ? (
+        <div className="spectro-pattern-grid">
+          {patterns.map((pattern) => (
+            <article className="spectro-pattern-card" key={pattern.key}>
+              <div className="spectro-pattern-heading">
+                <div>
+                  <small>{pattern.category}</small>
+                  <h3>{pattern.label}</h3>
+                </div>
+                <strong className={pattern.adjustedDifference >= 0 ? "is-positive" : "is-negative"}>
+                  {signed(pattern.adjustedDifference)}
+                </strong>
+              </div>
+              <div className="spectro-pattern-metrics">
+                <span>Nota observada <strong>{pattern.averageRating.toFixed(1)}/10</strong></span>
+                <span>Esperada por separado <strong>{pattern.expectedRating.toFixed(1)}/10</strong></span>
+              </div>
+              <div className="spectro-pattern-support">
+                <span>{pattern.sampleSize} películas distintas</span>
+                <span>Variación {pattern.dispersion.toFixed(1)}</span>
+                <span className={"spectro-confidence is-" + pattern.confidence}>{confidenceLabel(pattern.confidence)}</span>
+              </div>
+              <div className="spectro-pattern-evidence">
+                <small>Ejemplos que respaldan el patrón</small>
+                <ul>
+                  {pattern.supportingMovies.map((movie) => (
+                    <li key={movie.title}>
+                      <span>{movie.title}</span>
+                      <strong>{movie.rating.toFixed(1)}/10</strong>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="muted-copy spectro-patterns-empty">
+          Todavía no hay combinaciones con al menos cuatro películas distintas y una diferencia adicional suficientemente consistente.
+        </p>
+      )}
+      <p className="spectro-method-note">
+        La diferencia adicional compara la combinación con la suma de sus rasgos por separado y se modera cuando la muestra es pequeña.
+        Es una asociación descriptiva, no una prueba de causalidad ni de significación estadística.
+      </p>
+    </section>
+  );
+}
+
 function formatMonth(value: string): string {
   const [year, month] = value.split("-").map(Number);
   return new Intl.DateTimeFormat("es-PA", { month: "short", year: "numeric" })
@@ -882,6 +943,7 @@ function SpectroAffinitiesPage({ analysis }: { analysis: SpectroAnalysis }) {
           Una afinidad inicial es una pista, no una preferencia confirmada. Los revisionados se promedian dentro de cada título y no aumentan la muestra.
         </p>
       </section>
+      <SpectroPatternsPanel patterns={analysis.patterns} />
     </div>
   );
 }

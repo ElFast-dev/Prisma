@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { MovieRecord, Viewing } from "./types";
-import { analyzeSpectro, SPECTRO_ALGORITHM_VERSION } from "./spectro";
+import type { CollectionMovie, LibraryEntry, MovieRecord, Viewing } from "./types";
+import { analyzeSpectro, selectSpectroCandidates, SPECTRO_ALGORITHM_VERSION } from "./spectro";
 
 const movie = (
   id: string,
@@ -43,9 +43,9 @@ const viewing = (
   operationId: "op-" + id
 });
 
-describe("analyzeSpectro 2.2", () => {
+describe("analyzeSpectro 2.3", () => {
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.2.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.3.0");
   });
 
   it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {
@@ -521,5 +521,119 @@ describe("analyzeSpectro 2.2", () => {
     });
 
     expect(after.inputFingerprint).not.toBe(before.inputFingerprint);
+  });
+});
+
+describe("patrones cinematográficos combinados", () => {
+  it("detecta interacciones por encima y por debajo de la suma de rasgos individuales", () => {
+    const movies: MovieRecord[] = [];
+    const viewings: Viewing[] = [];
+    const groups = [
+      { genre: "Drama", genreId: 18, theme: "Memoria", rating: 10, prefix: "drama-memory" },
+      { genre: "Drama", genreId: 18, theme: "Amistad", rating: 6, prefix: "drama-friendship" },
+      { genre: "Comedia", genreId: 35, theme: "Memoria", rating: 6, prefix: "comedy-memory" },
+      { genre: "Comedia", genreId: 35, theme: "Amistad", rating: 6, prefix: "comedy-friendship" }
+    ];
+
+    for (const group of groups) {
+      for (let index = 0; index < 4; index += 1) {
+        const id = "movie-" + (100 + movies.length);
+        const item = movie(id, group.genre, group.genreId, 2020, {
+          title: group.prefix + " " + (index + 1),
+          keywords: [group.theme]
+        });
+        movies.push(item);
+        viewings.push(viewing(
+          "pattern-view-" + item.id,
+          item.id,
+          "2026-01-" + String(movies.length).padStart(2, "0"),
+          group.rating
+        ));
+      }
+    }
+
+    // Un revisionado modifica el promedio de la película, pero no aumenta la muestra.
+    viewings.push(viewing("pattern-repeat", "movie-100", "2026-02-01", 8));
+    const result = analyzeSpectro({ movies, viewings, candidates: [] });
+    const positive = result.patterns.find((pattern) => pattern.key === "genre:18::theme:memoria");
+    const negative = result.patterns.find((pattern) => pattern.key === "genre:35::theme:memoria");
+
+    expect(positive).toBeDefined();
+    expect(positive?.sampleSize).toBe(4);
+    expect(positive?.adjustedDifference).toBeGreaterThan(0.35);
+    expect(positive?.averageRating).toBeGreaterThan(positive?.expectedRating ?? 10);
+    expect(positive?.supportingMovies).toHaveLength(3);
+    expect(positive?.confidence).toBe("moderada");
+
+    expect(negative).toBeDefined();
+    expect(negative?.sampleSize).toBe(4);
+    expect(negative?.adjustedDifference).toBeLessThan(-0.35);
+    expect(negative?.averageRating).toBeLessThan(negative?.expectedRating ?? 0);
+  });
+
+  it("no presenta combinaciones respaldadas por menos de cuatro películas distintas", () => {
+    const movies = [
+      movie("movie-201", "Drama", 18, 2020, { keywords: ["Memoria"] }),
+      movie("movie-202", "Drama", 18, 2020, { keywords: ["Memoria"] }),
+      movie("movie-203", "Drama", 18, 2020, { keywords: ["Memoria"] })
+    ];
+    const viewings = movies.map((item, index) => viewing(
+      "pattern-small-" + index,
+      item.id,
+      "2026-03-0" + (index + 1),
+      8 + index
+    ));
+    const result = analyzeSpectro({ movies, viewings, candidates: [] });
+
+    expect(result.patterns).toEqual([]);
+  });
+});
+
+describe("candidatas locales de Espectro", () => {
+  it("incluye Pendientes, excluye Vistas, visionados previos y títulos guardados solo en colecciones", () => {
+    const pending = movie("movie-301", "Drama", 18, 2020);
+    const catalog = movie("movie-302", "Comedia", 35, 2021);
+    const watched = movie("movie-303", "Drama", 18, 2022);
+    const pendingAlreadyViewed = movie("movie-304", "Drama", 18, 2023);
+    const collectionOnly = movie("movie-305", "Acción", 28, 2024);
+    const pendingWithoutGenre = movie("movie-306", "Drama", 18, 2024, {
+      genres: [],
+      genreIds: []
+    });
+
+    const now = "2026-11-16T12:00:00.000Z";
+    const entry = (movieId: string, status: LibraryEntry["status"]): LibraryEntry => ({
+      movieId,
+      status,
+      isFavorite: false,
+      addedAt: now,
+      updatedAt: now
+    });
+    const libraryEntries = [
+      entry(pending.id, "pending"),
+      entry(watched.id, "watched"),
+      entry(pendingAlreadyViewed.id, "pending"),
+      entry(pendingWithoutGenre.id, "pending")
+    ];
+    const viewings = [
+      viewing("candidate-watched", watched.id, "2026-01-01", 8),
+      viewing("candidate-pending-viewed", pendingAlreadyViewed.id, "2026-01-02", 7)
+    ];
+    const collectionEntries: CollectionMovie[] = [{
+      id: "collection-link-1",
+      collectionId: "collection-1",
+      movieId: collectionOnly.id,
+      position: 0,
+      addedAt: now
+    }];
+
+    const candidates = selectSpectroCandidates(
+      [pending, catalog, watched, pendingAlreadyViewed, collectionOnly, pendingWithoutGenre],
+      viewings,
+      libraryEntries,
+      collectionEntries
+    );
+
+    expect(candidates.map((item) => item.id)).toEqual([pending.id, catalog.id]);
   });
 });

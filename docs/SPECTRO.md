@@ -4,7 +4,7 @@ Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el d
 
 ## Versión del algoritmo
 
-La versión activa es **2.2.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.2.0.
+La versión activa es **2.3.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.3.0.
 
 ## Información que utiliza
 
@@ -17,7 +17,7 @@ Espectro combina señales que Prisma puede verificar:
 - Países de producción y década de estreno.
 - Idioma original y duración.
 - Favoritos marcados explícitamente en Biblioteca.
-- Películas candidatas que ya están guardadas en el catálogo local.
+- Películas candidatas del catálogo local, incluidas las que el propietario ha marcado como Pendientes. Las Vistas y cualquier título con un visionado registrado quedan excluidos.
 
 Los comentarios y textos libres no se interpretan mediante un modelo lingüístico: no se les atribuye un sentimiento o preferencia que Prisma no pueda verificar. Tampoco se envían el historial, el perfil o sus inferencias a terceros.
 
@@ -27,7 +27,7 @@ Cuando existen visionados sin calificación, Espectro puede hacer una pregunta c
 
 Cuando Espectro detecta campos cinematográficos que faltan, solicita a TMDB los detalles, créditos y palabras clave temáticas usando el identificador TMDB local. Los tres recursos se guardan en la caché local; no es necesario abrir la ficha.
 
-- Prioriza películas con visionados y favoritos, además de candidatas locales no vistas.
+- Prioriza las películas Pendientes, después los favoritos y los visionados, además de candidatas locales no guardadas. Las Pendientes permanecen elegibles para recomendaciones cuando sus metadatos son suficientes.
 - Consulta detalles, créditos y palabras clave; no descarga proveedores ni recomendaciones solo para construir el perfil.
 - Reutiliza la caché local de TMDB antes de hacer una solicitud nueva.
 - Limita el ritmo de consultas, reintenta errores temporales y respeta el tiempo indicado por TMDB ante HTTP 429.
@@ -49,6 +49,18 @@ El proceso actualiza exclusivamente campos cinematográficos del registro de pel
 - Un favorito es una señal declarada explícitamente. No se transforma en una calificación ni aumenta el promedio de notas.
 - Las señales ausentes no se inventan.
 
+## Patrones combinados
+
+La versión 2.3.0 detecta algunas combinaciones de rasgos que se asocian con notas distintas de lo que explicarían sus componentes por separado. Por ejemplo, puede estudiar si un género unido a un tema presenta un resultado diferente del efecto individual del género y del tema.
+
+- Se comparan familias acotadas: género con temas, dirección, país, época, duración o idioma; además, dirección con temas y país con temas.
+- Cada película aporta una sola observación por combinación. Los revisionados se promedian dentro de cada título y no multiplican el tamaño de la muestra.
+- Se calcula primero la nota media observada en la combinación y se compara con una expectativa aditiva construida a partir del promedio personal y de las diferencias individuales de cada rasgo.
+- La diferencia adicional se modera mediante `n / (n + 5)`. Es una regularización para reducir extremos cuando hay pocas películas, no una probabilidad ni una prueba de significación.
+- Solo se muestran combinaciones respaldadas por al menos cuatro películas distintas y cuya diferencia adicional ajustada alcanza 0,35 puntos en valor absoluto.
+- Cada resultado incluye categoría, combinación, nota observada, expectativa aditiva, diferencia ajustada, dispersión, número de películas y hasta tres títulos de evidencia. El tamaño de muestra corresponde a todas las películas que respaldan la combinación, no solo a los ejemplos visibles.
+- Se muestran asociaciones positivas y negativas. Una asociación no demuestra que la combinación cause una mejor o peor valoración.
+- Las combinaciones se calculan con características verificables de TMDB; si faltan datos o la muestra es insuficiente, no se inventa un hallazgo.
 ## Encaje y nota prevista
 
 Cada candidata local puede mostrar dos estimaciones distintas:
@@ -96,7 +108,7 @@ El buscador resalta nodos y conexiones; al seleccionar una película se muestran
 
 ## Huella e instantáneas
 
-La huella incluye visionados, calificaciones, fechas, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.2.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie.
+La huella incluye visionados, calificaciones, fechas, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.3.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie. Las instantáneas antiguas se conservan, pero no se reutilizan para el nuevo contrato que incluye patrones combinados.
 
 Antes de calcular, el repositorio comprueba si ya existe una instantánea de la versión y huella actuales. Así evita repetir el análisis cuando la entrada no ha cambiado.
 
@@ -105,7 +117,7 @@ Antes de calcular, el repositorio comprueba si ya existe una instantánea de la 
 - La precisión depende de la diversidad de las valoraciones y de los metadatos disponibles en el dispositivo.
 - El encaje es un orden relativo, no una probabilidad calibrada.
 - La nota prevista es una proyección de las valoraciones conocidas, no una promesa sobre la reacción futura del usuario.
-- Las recomendaciones solo pueden salir de candidatas que Prisma ya tenga localmente. Espectro no realiza búsquedas ilimitadas por su cuenta.
+- Las recomendaciones solo pueden salir de candidatas que Prisma ya tenga localmente. Las películas Pendientes se incluyen cuando disponen de metadatos suficientes; las Vistas y los títulos con visionados quedan excluidos. Espectro no realiza búsquedas ilimitadas por su cuenta.
 - Una afinidad es una asociación en los datos registrados, no una relación causal ni una preferencia permanente.
 - Los comentarios escritos todavía no se interpretan como señales semánticas.
 
