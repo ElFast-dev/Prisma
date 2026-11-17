@@ -68,7 +68,9 @@ El enriquecimiento usa los identificadores TMDB que ya están guardados en la Bi
 
 La cola procesa hasta 24 películas simultáneamente y separa inicialmente el inicio de cada solicitud al menos 35 milisegundos (ritmo objetivo máximo de unas 28 solicitudes por segundo). Mantiene margen frente al límite superior aproximado que publica TMDB; si recibe HTTP 429, aplica Retry-After como pausa global y duplica progresivamente el intervalo entre nuevas solicitudes para reducir la presión sobre el servicio. Los errores temporales se reintentan hasta tres veces; los 404 se registran como no encontrados y los errores de autenticación detienen el proceso. La cola pausa al perder conexión y puede reanudarse al volver a estar en línea o al reabrir Ajustes después de un cierre.
 
-El proceso solo actualiza campos de metadatos en movies. No modifica libraryEntries, viewings, collections, profile, preferences ni la credencial TMDB. El progreso de enriquecimiento es estado operativo local y no forma parte de los respaldos personales de Prisma.
+El proceso se inicia automáticamente al abrir Prisma y cuando se incorpora un título nuevo a la Biblioteca, se registra un visionado o se importa una lista. Si se pierde la conexión, espera y continúa al recuperarla. Si se cierra la aplicación, el trabajo pendiente se detecta de nuevo en la siguiente apertura. Los errores temporales usan reintentos con pausas crecientes; los errores de credencial requieren corregir el token, tras lo cual Prisma reanuda la cola automáticamente. No hay que pulsar «Iniciar» ni «Reintentar».
+
+El proceso solo actualiza campos de metadatos en movies. No modifica libraryEntries, viewings, collections, profile, preferences ni la credencial TMDB. El progreso y los plazos de reintento son estado operativo local y no forman parte de los respaldos personales de Prisma. Los temporizadores solo funcionan mientras la PWA está abierta; al volver a abrirla, Prisma retoma de inmediato los pendientes detectados.
 
 
 ## Filtros de Descubrir
