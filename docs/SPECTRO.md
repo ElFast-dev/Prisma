@@ -4,7 +4,7 @@ Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el d
 
 ## Versión del algoritmo
 
-La versión activa es **2.4.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.4.0.
+La versión activa es **2.5.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.5.0.
 
 ## Información que utiliza
 
@@ -51,7 +51,7 @@ El proceso actualiza exclusivamente campos cinematográficos del registro de pel
 
 ## Interacciones cinematográficas
 
-La versión 2.4.0 sustituye la lista fija de combinaciones por una búsqueda general de parejas entre características presentes en películas distintas. Explora todas las parejas de categorías diferentes disponibles en los datos, sin limitarse a una lista escrita a mano como género + dirección o género + tema.
+La versión 2.5.0 sustituye la lista fija de combinaciones por una búsqueda general de parejas entre características presentes en películas distintas. Explora todas las parejas de categorías diferentes disponibles en los datos, sin limitarse a una lista escrita a mano como género + dirección o género + tema.
 
 Las señales disponibles incluyen:
 
@@ -82,7 +82,7 @@ Solo se presentan parejas con al menos cuatro películas distintas, q ajustado �
 
 El valor q es una medida de evidencia estadística corregida, no la probabilidad de que te guste una película. La consistencia entre bloques indica estabilidad interna, no validación temporal ni causalidad. Las pruebas t son una aproximación sobre residuos y siguen dependiendo de la calidad, independencia y distribución de las observaciones. La ausencia de patrones que superen los controles es un resultado válido.
 
-La versión 2.4.0 todavía no reemplaza el estimador de nota de las recomendaciones por un bosque aleatorio, una Factorization Machine o una red neuronal. Esos modelos se compararán por separado con validación temporal y baselines antes de incorporarlos.
+La versión 2.5.0 todavía no reemplaza el estimador de nota de las recomendaciones por un bosque aleatorio, una Factorization Machine o una red neuronal. Esos modelos se compararán por separado con validación temporal y baselines antes de incorporarlos.
 
 
 ## Encaje y nota prevista
@@ -93,9 +93,15 @@ Cada candidata local puede mostrar dos estimaciones distintas:
 
 La escala se centra en 50 y transforma la diferencia ponderada mediante `50 + 12,5 × diferencia`, limitada al intervalo 0–100. Un valor superior a 50 indica un encaje neto positivo. **No es una probabilidad de que la película guste ni una garantía.**
 
-**Nota prevista (0–10).** Parte del promedio personal por película y suma la diferencia ajustada ponderada de las señales que proceden de calificaciones. Se limita al intervalo 0–10. Los favoritos no cambian esta predicción. Cuando no hay respaldo suficiente para proyectar una diferencia, la estimación se mantiene en el promedio personal.
+**Nota prevista (0–10).** Es un modelo local de regresión Kernel Ridge con kernel RBF. Entrena sobre la media de las calificaciones de cada película distinta y representa géneros, países, dirección, reparto, palabras clave, idioma, década, duración y términos de las sinopsis. El vocabulario TF‑IDF se ajusta solo con películas calificadas; las candidatas no intervienen en el entrenamiento. La solución del sistema regularizado usa Cholesky. Si faltan rasgos, hay menos de tres títulos o el sistema no puede resolverse de forma estable, utiliza el promedio personal como respaldo.
 
-Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) son etiquetas descriptivas; no son probabilidades ni intervalos de confianza estadísticos.
+La nota prevista ya no se obtiene sumando las afinidades individuales. El encaje, en cambio, conserva el cálculo relativo anterior. Por prudencia, el orden principal de las recomendaciones sigue priorizando el encaje; la nota prevista desempata candidatas con encaje similar hasta que una evaluación de ranking independiente justifique otra política.
+
+Cada candidata puede mostrar hasta tres películas similares del historial. La similitud se calcula por coseno entre características estructuradas y términos de sinopsis normalizados. El porcentaje es una medida de cercanía descriptiva, no la probabilidad de que te guste ni una valoración prevista.
+
+Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial de un modelo candidato. La evaluación exploratoria temporal mostró una mejora pequeña frente a Ridge en MAE, pero no una superioridad concluyente en NDCG ni una comparación externa definitiva con el estimador histórico. Por eso no se interpreta todavía como un predictor calibrado.
+
+Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) describen las señales que justifican el encaje; no son la confianza calibrada de Kernel Ridge ni probabilidades o intervalos de confianza estadísticos.
 
 ## Grafo cinematográfico y trazabilidad
 
@@ -132,7 +138,7 @@ El buscador resalta nodos y conexiones; al seleccionar una película se muestran
 
 ## Huella e instantáneas
 
-La huella incluye visionados, calificaciones, fechas, sinopsis, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.4.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie. Las instantáneas antiguas se conservan, pero no se reutilizan para el nuevo contrato que incluye interacciones generales y términos de sinopsis.
+La huella incluye visionados, calificaciones, fechas, sinopsis, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.5.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie. Las instantáneas antiguas se conservan, pero no se reutilizan para el nuevo contrato que incluye interacciones generales y términos de sinopsis.
 
 Antes de calcular, el repositorio comprueba si ya existe una instantánea de la versión y huella actuales. Así evita repetir el análisis cuando la entrada no ha cambiado.
 
