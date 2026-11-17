@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  CheckCircle2, Fingerprint, RefreshCw, Sparkles, WifiOff
+  BrainCircuit, CheckCircle2, Fingerprint, RefreshCw, Sparkles, WifiOff
 } from "lucide-react";
 import { EmptyState } from "../../components/EmptyState";
 import { getSpectroAnalysis } from "../../infrastructure/database/spectroRepository";
