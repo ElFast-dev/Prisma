@@ -402,7 +402,10 @@ function summarizePair(pair: PairAccumulator): Omit<SpectroInteractionPattern, "
     fold.push(item.residual);
     byFold.set(item.fold, fold);
   }
-  const foldMeans = [...byFold.values()].map((items) => mean(items));
+  // Una sola película en un bloque no cuenta como replicación del hallazgo.
+  const foldMeans = [...byFold.values()]
+    .filter((items) => items.length >= 2)
+    .map((items) => mean(items));
   const sameDirection = foldMeans.filter((value) => (
     difference >= 0 ? value > 0 : value < 0
   )).length;
