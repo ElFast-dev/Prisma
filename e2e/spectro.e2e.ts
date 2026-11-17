@@ -117,6 +117,7 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await expect(page.locator(".spectro-chart-card")).toHaveCount(4);
   await expect(page.locator(".spectro-analytics-section-heading")).toHaveCount(0);
   await expect(page.getByText("Las cifras principales y una vista de todo tu historial.")).toHaveCount(0);
+  await expect(page.getByText("Una pregunta para afinar tu perfil")).toHaveCount(0);
 
   await page.getByRole("tab", { name: /Actividad/ }).click();
   await expect(page.getByRole("heading", { name: "Visionados por mes" })).toBeVisible();
