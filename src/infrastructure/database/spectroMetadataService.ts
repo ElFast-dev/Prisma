@@ -62,6 +62,7 @@ const EMPTY_SNAPSHOT: SpectroMetadataSnapshot = {
 
 let snapshot = EMPTY_SNAPSHOT;
 let runner: Promise<void> | null = null;
+let automaticRetryTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<(value: SpectroMetadataSnapshot) => void>();
 
 function isOnline(): boolean {
@@ -135,13 +136,21 @@ export function classifySpectroMetadataError(
   return "permanent";
 }
 
+export function getSpectroMetadataRetryDelay(
+  previous: Pick<SpectroMetadataItem, "status" | "updatedAt"> | undefined,
+  now = Date.now()
+): number | null {
+  if (previous?.status !== "error") return null;
+  const updatedAt = Date.parse(previous.updatedAt);
+  if (!Number.isFinite(updatedAt)) return null;
+  return Math.max(0, updatedAt + ERROR_RETRY_AFTER_MS - now);
+}
+
 export function isSpectroMetadataRetryDeferred(
   previous: Pick<SpectroMetadataItem, "status" | "updatedAt"> | undefined,
   now = Date.now()
 ): boolean {
-  if (previous?.status !== "error") return false;
-  const updatedAt = Date.parse(previous.updatedAt);
-  return Number.isFinite(updatedAt) && updatedAt + ERROR_RETRY_AFTER_MS > now;
+  return (getSpectroMetadataRetryDelay(previous, now) ?? 0) > 0;
 }
 
 /** Prioriza títulos elegidos para ver antes que otros registros locales. */
@@ -160,6 +169,7 @@ export function getSpectroMetadataPriority(
 interface SpectroMetadataQueue {
   targets: SpectroMetadataTarget[];
   deferredMovies: number;
+  nextRetryDelayMs?: number;
 }
 
 async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue> {
@@ -197,6 +207,7 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue>
   }
 
   let deferredMovies = 0;
+  let nextRetryDelayMs: number | undefined;
   const targets = [...relevantIds]
     .flatMap((movieId) => {
       const movie = movieById.get(movieId);
@@ -206,6 +217,10 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue>
       if (previous?.status === "complete" || previous?.status === "not-found") return [];
       if (!forceRetry && isSpectroMetadataRetryDeferred(previous)) {
         deferredMovies += 1;
+        const retryDelay = getSpectroMetadataRetryDelay(previous);
+        if (retryDelay !== null) {
+          nextRetryDelayMs = nextRetryDelayMs === undefined ? retryDelay : Math.min(nextRetryDelayMs, retryDelay);
+        }
         return [];
       }
       return [{ movie, previous }];
@@ -216,7 +231,17 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue>
       || a.movie.title.localeCompare(b.movie.title)
     ));
 
-  return { targets, deferredMovies };
+  return { targets, deferredMovies, nextRetryDelayMs };
+}
+
+function scheduleSpectroMetadataRetry(delayMs?: number): void {
+  if (automaticRetryTimer) clearTimeout(automaticRetryTimer);
+  automaticRetryTimer = undefined;
+  if (delayMs === undefined || !Number.isFinite(delayMs)) return;
+  automaticRetryTimer = setTimeout(() => {
+    automaticRetryTimer = undefined;
+    if (isOnline() && getTmdbAccessToken()) void startSpectroMetadataEnrichment();
+  }, Math.max(1000, delayMs));
 }
 
 function publish(next: SpectroMetadataSnapshot): void {
@@ -267,7 +292,7 @@ export async function getSpectroMetadataSnapshot(): Promise<SpectroMetadataSnaps
       status: "completed" as const,
       failedMovies: deferredMovies,
       lastError: deferredMovies
-        ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+        ? "Hay consultas de metadatos temporalmente pendientes. Prisma las volverá a consultar automáticamente."
         : undefined
     };
     publish(next);
@@ -427,11 +452,14 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
         status: "completed",
         failedMovies: deferredMovies,
         lastError: deferredMovies
-          ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+          ? "Hay consultas de metadatos temporalmente pendientes. Prisma las volverá a consultar automáticamente."
           : undefined
       });
+      scheduleSpectroMetadataRetry(nextRetryDelayMs);
       return;
     }
+    if (automaticRetryTimer) clearTimeout(automaticRetryTimer);
+    automaticRetryTimer = undefined;
 
     const candidates = targets;
     let processedMovies = 0;
@@ -439,7 +467,7 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
     let failedMovies = deferredMovies;
     let notFoundMovies = 0;
     let lastError: string | undefined = deferredMovies
-      ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+      ? "Hay consultas de metadatos temporalmente pendientes. Prisma las volverá a consultar automáticamente."
       : undefined;
 
     publish({
@@ -451,7 +479,7 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
       currentTitle: candidates[0]?.movie.title,
       failedMovies,
       lastError: deferredMovies
-        ? "Hay consultas de metadatos en pausa temporal. Puedes forzar un nuevo intento."
+        ? "Hay consultas de metadatos temporalmente pendientes. Prisma las volverá a consultar automáticamente."
         : undefined
     });
 
@@ -542,6 +570,19 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
 
   runner = operation.finally(() => {
     runner = null;
+    void collectTargets().then((queue) => {
+      if (queue.targets.length > 0) {
+        void startSpectroMetadataEnrichment();
+      } else {
+        scheduleSpectroMetadataRetry(queue.nextRetryDelayMs);
+      }
+    }).catch(() => undefined);
   });
   return runner;
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("prisma:tmdb-credentials-updated", () => {
+    void startSpectroMetadataEnrichment(true);
+  });
 }
