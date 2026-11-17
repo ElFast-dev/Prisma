@@ -62,8 +62,8 @@ describe("analyzeSpectro 2.6", () => {
       "Nota alta",
       "Empate · A",
       "Empate · B",
-      "Encaje medio",
-      "Encaje alto"
+      "Encaje alto",
+      "Encaje medio"
     ]);
   });
 
