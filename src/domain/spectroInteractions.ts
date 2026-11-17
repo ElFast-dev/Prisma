@@ -297,7 +297,9 @@ function interactionPValue(residuals: readonly number[]): number {
   if (residuals.length < 2) return 1;
   const average = mean(residuals);
   const deviation = standardDeviation(residuals, average);
-  if (deviation === 0) return average === 0 ? 1 : 0;
+  // Con varianza nula la prueba t no puede estimar incertidumbre.
+  // Se abstiene en vez de convertir una muestra uniforme en certeza infinita.
+  if (deviation === 0) return 1;
   const statistic = Math.abs(average) / (deviation / Math.sqrt(residuals.length));
   return twoSidedStudentP(statistic, residuals.length - 1);
 }
