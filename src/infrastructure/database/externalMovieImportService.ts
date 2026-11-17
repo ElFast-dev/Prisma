@@ -1,6 +1,7 @@
 import type { ExternalMovieImportPlan } from "../../domain/externalMovieImport";
 import type { LibraryEntry, MovieRecord, Viewing } from "../../domain/types";
 import { prismaDb } from "./database";
+import { requestAutomaticEnrichment } from "./enrichmentService";
 
 export type ExternalMovieImportPriority = "local" | "external";
 
@@ -242,5 +243,6 @@ export async function importExternalMovies(
     }
   );
 
+  if (result.newLibraryEntries > 0) requestAutomaticEnrichment();
   return result;
 }
