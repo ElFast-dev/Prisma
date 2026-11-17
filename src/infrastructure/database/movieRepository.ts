@@ -87,7 +87,7 @@ export async function addToPending(movieId: string): Promise<void> {
     });
   }
   requestAutomaticEnrichment();
-  void startSpectroMetadataEnrichment();
+  void startSpectroMetadataEnrichment().catch(() => undefined);
 }
 
 export async function removeFromLibrary(movieId: string): Promise<void> {
