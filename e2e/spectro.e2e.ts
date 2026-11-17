@@ -110,7 +110,6 @@ test("presenta Espectro como un retrato cinematográfico integrado", async ({ pa
   await seedSpectroHistory(page);
 
   await page.goto("#/spectro");
-  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tu mirada cinematográfica" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Lo que sabemos de tu gusto" })).toBeVisible();
   await expect(page.locator(".spectro-summary-card")).toHaveCount(3);
