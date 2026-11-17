@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TmdbHttpError } from "../tmdb/TmdbClient";
 import {
+  canResumeEnrichmentAfterConnection,
   classifyEnrichmentError,
   ENRICHMENT_CONCURRENCY,
   ENRICHMENT_REQUEST_INTERVAL_MS,
@@ -8,10 +9,16 @@ import {
 } from "./enrichmentService";
 
 describe("enrichment queue throughput", () => {
-  it("uses 24 parallel workers and a controlled pace below 30 requests per second", () => {
-    expect(ENRICHMENT_CONCURRENCY).toBe(24);
-    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(35);
-    expect(1000 / ENRICHMENT_REQUEST_INTERVAL_MS).toBeLessThan(30);
+  it("uses four parallel workers and a controlled pace of at most five requests per second", () => {
+    expect(ENRICHMENT_CONCURRENCY).toBe(4);
+    expect(ENRICHMENT_REQUEST_INTERVAL_MS).toBe(200);
+    expect(1000 / ENRICHMENT_REQUEST_INTERVAL_MS).toBeLessThanOrEqual(5);
+  });
+
+  it("rechecks pending work after reconnection regardless of the persisted queue label", () => {
+    expect(canResumeEnrichmentAfterConnection(true, "fixture-token")).toBe(true);
+    expect(canResumeEnrichmentAfterConnection(true, "  ")).toBe(false);
+    expect(canResumeEnrichmentAfterConnection(false, "fixture-token")).toBe(false);
   });
 });
 
