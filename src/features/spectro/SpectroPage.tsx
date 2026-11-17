@@ -1014,7 +1014,7 @@ function SpectroRecommendationsPage({ analysis }: { analysis: SpectroAnalysis })
                   </ul>
                   {item.similarMovies.length > 0 && (
                     <div className="spectro-recommendation-similar">
-                      <small>Películas similares en tu historial</small>
+                      <small>Películas similares en tu historial · cercanía descriptiva, no probabilidad</small>
                       <ul>
                         {item.similarMovies.map((similar) => (
                           <li key={similar.title}>
