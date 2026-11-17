@@ -113,10 +113,6 @@ function validDate(value: string): boolean {
     && date.getUTCDate() === day;
 }
 
-function dateOrdinal(value: string): number {
-  const [year, month, day] = value.split("-").map(Number);
-  return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
-}
 
 function mean(values: number[]): number | null {
   if (!values.length) return null;
