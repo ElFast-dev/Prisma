@@ -232,24 +232,35 @@ Las pruebas utilizan películas ficticias e IndexedDB temporal. El respaldo pers
 
 ## 11. Estado implementado y siguientes entregas
 
-### Implementado en Espectro 2.4.0
+### Implementado en Espectro 2.4.0 y 2.5.0
 
-- Búsqueda de interacciones entre parejas de características de categorías distintas, sin lista cerrada de familias permitidas.
-- Inclusión de términos y expresiones de la sinopsis como señales léxicas, separados de las palabras clave de TMDB.
+**Versión 2.4.0 — descubrimiento de interacciones**
+
+- Búsqueda general de parejas de características de categorías distintas, sin lista cerrada de familias permitidas.
+- Términos y expresiones de sinopsis como señales léxicas, separados de las palabras clave TMDB.
 - Expectativa aditiva estimada fuera de muestra mediante cinco bloques deterministas.
 - Corrección Benjamini–Yekutieli de comparaciones múltiples.
-- Comprobación de consistencia entre bloques y evidencia por películas distintas.
-- Huella de entrada sensible a cambios de sinopsis.
-- Resultados explicados en la pantalla actual de Afinidades, sin crear nuevas secciones de navegación.
+- Consistencia entre bloques y evidencia por películas distintas.
+- Huella de entrada sensible a cambios de sinopsis y explicación dentro de Afinidades.
 
-Esta entrega mejora el descubrimiento estadístico; no afirma que el motor de predicción de notas ya haya sido sustituido por un modelo de aprendizaje no lineal.
+**Versión 2.5.0 — predicción no lineal local**
+
+- Regresión Kernel Ridge con kernel gaussiano RBF, sin dependencia externa.
+- Características estructuradas y TF‑IDF de términos y bigramas de sinopsis. Vocabulario, IDF y selección de términos se aprenden exclusivamente con películas calificadas.
+- Una observación de entrenamiento por película distinta: los revisionados se promedian antes de entrenar.
+- Sistema lineal regularizado resuelto con Cholesky; promedio personal como fallback cuando faltan rasgos, la muestra es demasiado pequeña o el sistema no puede resolverse de forma estable.
+- Hasta tres películas similares del historial como evidencia descriptiva calculada con similitud coseno. No es probabilidad de gusto.
+- La nota prevista utiliza el modelo RBF; el encaje conserva su escala relativa anterior y continúa siendo el orden principal de recomendaciones hasta validar un modelo de ranking separado.
+- Los niveles de confianza existentes describen el respaldo de las afinidades; no son intervalos de predicción ni confianza calibrada del modelo RBF.
+
+Los parámetros actuales son una configuración candidata. La exploración temporal inicial mostró una mejora pequeña de MAE frente a Ridge, pero no una mejora concluyente de NDCG ni una comparación externa definitiva contra el estimador histórico. No se presenta como modelo calibrado ni ganador definitivo.
 
 ### Siguientes entregas
 
-1. **Modelo predictivo comparable:** encoder de características reutilizable, baselines, regresión regularizada, árboles, kernels y factorization machines con evaluación temporal reproducible.
-2. **Modelo seleccionado y calibrado:** adoptar solo el modelo que supere la referencia en datos retenidos; intervalos de predicción y confianza calibrada.
-3. **Runtime opcional:** ejecución en Worker y benchmark WASM/WebGPU; pruebas físicas en Android.
-4. **Semántica local:** embeddings multilingües descargables, comparados con texto léxico y metadatos estructurados.
+1. **Evaluación predictiva independiente:** validación temporal anidada, tramo final reservado y comparación pareada del RBF con promedios, Ridge, árboles, boosting y Factorization Machines; incluir MAE, RMSE, NDCG y estabilidad.
+2. **Calibración y ranking:** calibrar intervalos/errores fuera de muestra y reemplazar el ranking por encaje solo si mejora la calidad de primeras recomendaciones de manera reproducible.
+3. **Rendimiento Android:** mover entrenamiento e inferencia a Web Worker y medir memoria, latencia, batería y almacenamiento en dispositivos reales.
+4. **Semántica local opcional:** embeddings multilingües preentrenados descargables, comparados contra TF‑IDF y metadatos sin transmitir historial personal.
 5. **Recomendación y exploración:** diversidad, novedad, películas puente, contrastes, Atlas con procedencia y evolución temporal más profunda.
 
 La navegación Personal · Descubrir · Espectro, las funciones ajenas a Espectro y los datos personales permanecen fuera de los cambios de esta arquitectura.
