@@ -500,7 +500,7 @@ describe("analyzeSpectro 2.3", () => {
     expect(result.affinityTrends).toEqual([]);
   });
 
-  it("incluye idioma y duración en la huella que invalida instantáneas", () => {
+  it("incluye sinopsis, idioma y duración en la huella que invalida instantáneas", () => {
     const movies = [
       movie("movie-1", "Drama", 18, 1995),
       movie("movie-2", "Drama", 18, 2005),
@@ -514,7 +514,7 @@ describe("analyzeSpectro 2.3", () => {
     const before = analyzeSpectro({ movies, viewings, candidates: [] });
     const after = analyzeSpectro({
       movies: movies.map((item) => item.id === "movie-1"
-        ? { ...item, originalLanguage: "fr", runtimeMinutes: 145 }
+        ? { ...item, overview: "Una sinopsis cinematográfica diferente", originalLanguage: "fr", runtimeMinutes: 145 }
         : item),
       viewings,
       candidates: []
