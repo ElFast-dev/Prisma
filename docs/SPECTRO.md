@@ -99,7 +99,7 @@ La nota prevista ya no se obtiene sumando las afinidades individuales. El encaje
 
 Cada candidata puede mostrar hasta tres películas similares del historial. La similitud se calcula por coseno entre características estructuradas y términos de sinopsis normalizados. El porcentaje es una medida de cercanía descriptiva, no la probabilidad de que te guste ni una valoración prevista.
 
-Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial de un modelo candidato. La evaluación exploratoria temporal mostró una mejora pequeña frente a Ridge en MAE, pero no una superioridad concluyente en NDCG ni una comparación externa definitiva con el estimador histórico. Por eso no se interpreta todavía como un predictor calibrado.
+Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial de un modelo candidato. Una prueba exploratoria anterior con un prototipo RBF de representación relacionada mostró una mejora pequeña frente a Ridge en MAE, pero no una superioridad concluyente en NDCG. Esa prueba no valida los parámetros ni la representación exacta integrada en esta versión. El predictor 2.5.0 todavía necesita una evaluación temporal independiente antes de considerarse calibrado o superior al estimador histórico.
 
 Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) describen las señales que justifican el encaje; no son la confianza calibrada de Kernel Ridge ni probabilidades o intervalos de confianza estadísticos.
 
