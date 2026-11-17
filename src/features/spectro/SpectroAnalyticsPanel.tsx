@@ -302,7 +302,7 @@ function MovieRatingList({
 }) {
   if (!items.length) return <EmptyChart>Necesitas visionados con calificación para comparar películas.</EmptyChart>;
   return (
-    <ol className="spectro-movie-rating-list">
+    <ol className="spectro-movie-rating-list" aria-label={mode === "top" ? "Películas con mejores calificaciones" : "Películas con calificaciones más bajas"}>
       {items.map((item, index) => (
         <li key={item.movieId}>
           <span className="spectro-movie-rating-rank">{index + 1}</span>
