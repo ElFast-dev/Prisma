@@ -126,21 +126,28 @@ test("restablecer Prisma borra los datos locales y conserva TMDB por defecto", a
       count.onsuccess = () => resolve(count.result);
       count.onerror = () => reject(count.error);
     })));
-    const metadataCount = await new Promise<number>((resolve, reject) => {
-      const count = transaction.objectStore("appMetadata").count();
-      count.onsuccess = () => resolve(count.result);
-      count.onerror = () => reject(count.error);
+    const metadataStore = transaction.objectStore("appMetadata");
+    const metadataKeys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+      const request = metadataStore.getAllKeys();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
     });
+    const metadataCount = metadataKeys.length;
     await new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
     db.close();
-    return { counts, metadataCount, tmdbToken: localStorage.getItem("prisma.tmdb.accessToken") };
+    return { counts, metadataCount, metadataKeys: metadataKeys.map(String), tmdbToken: localStorage.getItem("prisma.tmdb.accessToken") };
   });
 
   expect(state.counts.every((count) => count === 0)).toBe(true);
-  expect(state.metadataCount).toBe(1);
+  expect(state.metadataKeys).toContain("internal-test");
+  expect(state.metadataKeys.filter((key) => key.startsWith("library-enrichment:"))).toEqual([
+    "library-enrichment:queue:v1"
+  ]);
+  expect(state.metadataKeys.some((key) => key.startsWith("spectro:metadata:v1:"))).toBe(false);
+  expect(state.metadataCount).toBe(2);
   expect(state.tmdbToken).toBe("token-ficticio-de-prueba");
 });
 
