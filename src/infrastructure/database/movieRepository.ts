@@ -1,6 +1,7 @@
 import type { LibraryEntry, MovieRecord } from "../../domain/types";
 import type { TmdbCredits, TmdbMovieDetails, TmdbMovieSummary } from "../tmdb/TmdbService";
 import { prismaDb } from "./database";
+import { requestAutomaticEnrichment } from "./enrichmentService";
 
 function dateYear(value?: string): number | undefined {
   if (!value || !/^\d{4}/.test(value)) return undefined;
@@ -84,6 +85,7 @@ export async function addToPending(movieId: string): Promise<void> {
       updatedAt: now
     });
   }
+  requestAutomaticEnrichment();
 }
 
 export async function removeFromLibrary(movieId: string): Promise<void> {
