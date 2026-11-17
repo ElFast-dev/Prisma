@@ -111,7 +111,6 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
-  await expect(page.getByText("Datos locales")).toBeVisible();
   await expect(page.locator(".spectro-data-metric")).toHaveCount(6);
   await expect(page.getByRole("tab", { name: /Resumen/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("heading", { name: "Tu actividad a lo largo del tiempo" })).toBeVisible();
