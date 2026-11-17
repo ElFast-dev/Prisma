@@ -51,7 +51,7 @@ El proceso actualiza exclusivamente campos cinematográficos del registro de pel
 
 ## Interacciones cinematográficas
 
-La versión 2.5.0 sustituye la lista fija de combinaciones por una búsqueda general de parejas entre características presentes en películas distintas. Explora todas las parejas de categorías diferentes disponibles en los datos, sin limitarse a una lista escrita a mano como género + dirección o género + tema.
+La versión 2.4.0 sustituyó la lista fija de combinaciones por una búsqueda general de parejas entre características presentes en películas distintas. Explora todas las parejas de categorías diferentes disponibles en los datos, sin limitarse a una lista escrita a mano como género + dirección o género + tema.
 
 Las señales disponibles incluyen:
 
