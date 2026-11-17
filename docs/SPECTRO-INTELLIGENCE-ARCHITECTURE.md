@@ -180,33 +180,27 @@ Un patrón debe explicar las características que lo forman, títulos de respald
 
 La corrección múltiple no convierte automáticamente una prueba aproximada en una prueba causal o perfecta. Los resultados seguirán sujetos a calidad de metadatos, independencia de observaciones, tamaño de muestra y replicación posterior.
 
-## 7. Recomendaciones
+## 7. Motor de predicción y uso de candidatas
 
-Cada candidata local se evaluará con la misma representación utilizada para aprender las preferencias. Los títulos con visionados permanecen fuera del flujo habitual; las películas Pendientes pueden competir cuando los metadatos permitan representarlas.
+El motor conserva la capacidad de puntuar candidatas locales con la misma representación utilizada para aprender preferencias. Los títulos con visionados permanecen fuera del conjunto habitual; las películas Pendientes pueden participar cuando sus metadatos permitan representarlas.
 
-La salida mantendrá separados:
+La salida interna mantiene separados:
 
-- **Encaje:** puntuación relativa para ordenar candidatas; nunca se muestra como probabilidad de que guste.
-- **Nota estimada:** predicción personal en la escala de 0 a 10, acompañada de intervalo cuando la calibración lo permita.
-- **Confianza:** fiabilidad estimada con errores fuera de muestra, cantidad/diversidad de evidencia y cobertura de características.
+- **Encaje:** puntuación relativa; nunca se interpreta como probabilidad de que guste.
+- **Nota estimada:** predicción personal de 0 a 10, acompañada de intervalo cuando exista calibración suficiente.
+- **Respaldo:** calidad de las señales y cantidad/diversidad de películas que las sostienen. No equivale todavía a confianza calibrada del modelo.
 
-Los motivos pueden incluir afinidades, interacciones validadas, cercanía semántica y títulos comparables. Cada motivo debe poder trazarse hasta características y películas reales.
+Los motivos pueden incluir características individuales, interacciones validadas y títulos comparables. Cada motivo debe poder trazarse hasta características y películas reales.
 
-La lista combinará cuatro intenciones dentro de la experiencia ya existente: afinidad conocida, descubrimiento cercano, ampliación de intereses y contraste. La diversidad se optimizará después de estimar el mérito individual para no devolver doce variaciones de la misma película.
+La interfaz actual de Espectro no presenta una página de recomendaciones ni un catálogo de candidatas. Su función es explicar el retrato personal y los hallazgos respaldados. Cualquier uso futuro de las candidatas en Descubrir deberá diseñarse como una experiencia aparte y conservar encaje, nota, evidencia y diversidad como conceptos distintos.
 
-## 8. Grafo, atlas y evolución
+## 8. Relaciones y contexto temporal
 
-### Grafo
+Las relaciones entre películas, personas, temas y géneros pueden conservarse como estructura interna para explicar la procedencia de las señales. No se muestran como un mapa interactivo ni como una pantalla separada: la interfaz actual prioriza el resumen de señales respaldadas y las combinaciones estadísticamente contrastadas.
 
-El grafo utilizará entidades estables y relaciones tipadas: película, persona, tema, género, época, país y localización. Las aristas conservarán la razón de la conexión, fuente, confianza y soporte. Se priorizarán caminos relevantes, comunidades y películas puente; el usuario profundizará desde un elemento sin desplegar toda la red.
+Las comparaciones temporales siguen siendo útiles para evaluar estabilidad del modelo durante su desarrollo, pero no forman una sección visible de evolución. Cualquier futura exposición de cambios en el gusto deberá distinguir preferencias estables, intereses recientes y señales circunstanciales, con soporte suficiente y fechas válidas. No se inferirán tendencias permanentes a partir de pequeñas muestras.
 
-### Atlas
-
-El Atlas mantendrá los alcances Mi Prisma y Cine mundial, y separará países de producción, sitios reales de rodaje y lugares narrativos. Wikidata podrá aportar P915, P840 y P625, con procedencia y precisión. Un punto desconocido no se colocará en un mapa por inferencia aproximada.
-
-### Evolución
-
-Se distinguirán preferencias estables, intereses recientes y señales circunstanciales. Los periodos se compararán con soporte suficiente y fechas válidas. Las tendencias no se inferirán de recuentos de actividad ni se presentarán como cambios permanentes por una pequeña muestra reciente.
+El Atlas geográfico, si se desarrolla en el futuro, deberá separar países de producción, sitios reales de rodaje y lugares narrativos. Wikidata podrá aportar P915, P840 y P625, con procedencia y precisión. Un punto desconocido no se colocará en un mapa por inferencia aproximada.
 
 ## 9. Ejecución local y rendimiento
 
@@ -232,6 +226,14 @@ Las pruebas utilizan películas ficticias e IndexedDB temporal. El respaldo pers
 
 ## 11. Estado implementado y siguientes entregas
 
+### Experiencia actual de Espectro
+
+- Una sola pantalla con el retrato actual, señales positivas y negativas respaldadas, favoritos explícitos y combinaciones validadas.
+- Los favoritos se presentan como elecciones declaradas y nunca se convierten en notas.
+- Las señales iniciales o variables no se muestran como preferencias confirmadas.
+- Se retiraron las pantallas Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. Las rutas antiguas vuelven al retrato unificado.
+- Se conserva la pregunta contextual para completar calificaciones pendientes y el enriquecimiento de metadatos, sin modificar experiencias existentes.
+
 ### Implementado en Espectro 2.4.0, 2.5.0 y 2.6.0
 
 **Versión 2.4.0 — descubrimiento de interacciones**
@@ -241,7 +243,7 @@ Las pruebas utilizan películas ficticias e IndexedDB temporal. El respaldo pers
 - Expectativa aditiva estimada fuera de muestra mediante cinco bloques deterministas.
 - Corrección Benjamini–Yekutieli de comparaciones múltiples.
 - Consistencia entre bloques y evidencia por películas distintas.
-- Huella de entrada sensible a cambios de sinopsis y explicación dentro de Afinidades.
+- Huella de entrada sensible a cambios de sinopsis y explicación dentro del retrato unificado de Espectro.
 
 **Versión 2.5.0 — predicción no lineal local**
 
@@ -265,9 +267,9 @@ Los parámetros actuales son una configuración candidata. La exploración tempo
 ### Siguientes entregas
 
 1. **Evaluación predictiva independiente:** mantener validación temporal anidada, tramo final reservado y comparación pareada del RBF con promedios, Ridge, árboles, boosting y Factorization Machines; incluir MAE, RMSE, NDCG y estabilidad.
-2. **Calibración y ranking:** calibrar errores e intervalos fuera de muestra; medir diversidad, novedad, cobertura y calidad de las primeras recomendaciones junto al ranking por nota personal.
+2. **Calibración:** calibrar errores e intervalos fuera de muestra y medir cuándo el sistema debe abstenerse. Cualquier futura aparición de candidatas deberá integrarse en Descubrir, no recrear una pantalla de recomendaciones dentro de Espectro.
 3. **Rendimiento Android:** mover entrenamiento e inferencia a Web Worker y medir memoria, latencia, batería y almacenamiento en dispositivos reales.
 4. **Semántica local opcional:** embeddings multilingües preentrenados descargables, comparados contra TF‑IDF y metadatos sin transmitir historial personal.
-5. **Recomendación y exploración:** diversidad, novedad, películas puente, contrastes, Atlas con procedencia y evolución temporal más profunda.
+5. **Exploración futura:** diversidad y novedad dentro de Descubrir, películas puente y contrastes con evidencia trazable; Atlas solo con procedencia y precisión verificables.
 
 La navegación Personal · Descubrir · Espectro, las funciones ajenas a Espectro y los datos personales permanecen fuera de los cambios de esta arquitectura.

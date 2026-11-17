@@ -17,6 +17,7 @@ import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/s
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
+  if (path.startsWith("/spectro/")) return "/spectro";
   return path || "/discover";
 }
 
@@ -31,8 +32,13 @@ export default function App() {
   });
 
   useEffect(() => {
-    initializeRouteHistory(currentPath());
-    if (!window.location.hash) window.location.hash = "#/discover";
+    const normalizedInitialPath = currentPath();
+    initializeRouteHistory(normalizedInitialPath);
+    if (!window.location.hash) {
+      window.location.hash = "#/discover";
+    } else if (window.location.hash !== "#" + normalizedInitialPath) {
+      window.history.replaceState(null, "", "#" + normalizedInitialPath);
+    }
 
     const previousScrollRestoration = window.history.scrollRestoration;
     window.history.scrollRestoration = "manual";
@@ -54,6 +60,9 @@ export default function App() {
 
     const updatePath = (fromHistoryTraversal: boolean) => {
       const nextPath = currentPath();
+      if (window.location.hash !== "#" + nextPath) {
+        window.history.replaceState(null, "", "#" + nextPath);
+      }
       if (nextPath === activePathRef.current) return;
 
       persistScroll();
@@ -169,19 +178,7 @@ export default function App() {
       page = <DiscoverPage />;
       break;
     case "/spectro":
-      page = <SpectroPage section="home" />;
-      break;
-    case "/spectro/map":
-      page = <SpectroPage section="map" />;
-      break;
-    case "/spectro/affinities":
-      page = <SpectroPage section="affinities" />;
-      break;
-    case "/spectro/evolution":
-      page = <SpectroPage section="evolution" />;
-      break;
-    case "/spectro/recommendations":
-      page = <SpectroPage section="recommendations" />;
+      page = <SpectroPage />;
       break;
     case "/settings":
       page = <SettingsPage />;
