@@ -69,3 +69,12 @@ El enriquecimiento usa los identificadores TMDB que ya están guardados en la Bi
 La cola procesa hasta 24 películas simultáneamente y separa inicialmente el inicio de cada solicitud al menos 35 milisegundos (ritmo objetivo máximo de unas 28 solicitudes por segundo). Mantiene margen frente al límite superior aproximado que publica TMDB; si recibe HTTP 429, aplica Retry-After como pausa global y duplica progresivamente el intervalo entre nuevas solicitudes para reducir la presión sobre el servicio. Los errores temporales se reintentan hasta tres veces; los 404 se registran como no encontrados y los errores de autenticación detienen el proceso. La cola pausa al perder conexión y puede reanudarse al volver a estar en línea o al reabrir Ajustes después de un cierre.
 
 El proceso solo actualiza campos de metadatos en movies. No modifica libraryEntries, viewings, collections, profile, preferences ni la credencial TMDB. El progreso de enriquecimiento es estado operativo local y no forma parte de los respaldos personales de Prisma.
+
+
+## Filtros de Descubrir
+
+Descubrir consulta `/discover/movie` cuando hay criterios avanzados activos. Los filtros se envían a TMDB: género, duración mínima/máxima, rango de fechas de estreno, valoración mínima, número mínimo de votos, idioma original y orden. La búsqueda textual sin filtros continúa usando `/search/movie`; cuando hay criterios avanzados, el texto acota localmente los títulos devueltos por la búsqueda filtrada y permite cargar más páginas de forma manual.
+
+Los criterios avanzados se normalizan antes de crear la petición y se incluyen en la clave de caché local. Los rangos invertidos se bloquean en la interfaz; los valores de duración y año se validan y acotan antes de enviarse. El orden predeterminado mantiene el catálogo de tendencias. Los filtros no cambian la Biblioteca ni guardan preferencias personales: solo afectan a la consulta actual de Descubrir.
+
+La consulta utiliza los parámetros públicos de TMDB para `/discover/movie`, incluidos `with_runtime.gte`, `with_runtime.lte`, `primary_release_date.gte`, `primary_release_date.lte`, `vote_average.gte`, `vote_count.gte`, `with_genres` y `with_original_language`.
