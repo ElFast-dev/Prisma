@@ -43,9 +43,9 @@ const viewing = (
   operationId: "op-" + id
 });
 
-describe("analyzeSpectro 2.3", () => {
+describe("analyzeSpectro 2.5", () => {
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.4.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.5.0");
   });
 
   it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {
@@ -281,6 +281,9 @@ describe("analyzeSpectro 2.3", () => {
     expect(result.recommendations[0].fitPercentage).toBeLessThanOrEqual(100);
     expect(result.recommendations[0].predictedRating).toBeGreaterThan(7.5);
     expect(result.recommendations[0].predictedRating).toBeLessThanOrEqual(10);
+    expect(result.recommendations[0].similarMovies.length).toBeGreaterThan(0);
+    expect(result.recommendations[0].similarMovies[0].similarity).toBeGreaterThan(0);
+    expect(result.recommendations[0].similarMovies[0].rating).toBeGreaterThan(0);
     expect(result.decisionGraph.candidateCount).toBe(1);
     expect(result.decisionGraph.signalCount).toBeGreaterThan(0);
   });
