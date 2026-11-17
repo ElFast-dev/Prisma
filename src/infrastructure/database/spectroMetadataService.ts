@@ -128,6 +128,16 @@ export function isSpectroMetadataIncomplete(movie: MovieRecord): boolean {
   );
 }
 
+export function shouldContinueSpectroMetadataEnrichment(
+  status: SpectroMetadataStatus,
+  hasCredentials: boolean,
+  online: boolean
+): boolean {
+  // Solo se encadena otro lote tras completar el actual. Sin credenciales,
+  // conexión o ante un error de autenticación, se espera al disparador adecuado.
+  return status === "completed" && hasCredentials && online;
+}
+
 export function classifySpectroMetadataError(
   error: unknown
 ): "not-found" | "authentication" | "retryable" | "permanent" {
@@ -575,6 +585,11 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
 
   runner = operation.finally(() => {
     runner = null;
+    if (!shouldContinueSpectroMetadataEnrichment(
+      snapshot.status,
+      Boolean(getTmdbAccessToken()),
+      isOnline()
+    )) return;
     void collectTargets().then((queue) => {
       if (queue.targets.length > 0) {
         void startSpectroMetadataEnrichment();
