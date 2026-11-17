@@ -139,7 +139,7 @@ export function classifySpectroMetadataError(
 }
 
 export function getSpectroMetadataRetryDelay(
-  previous: Pick<SpectroMetadataItem, "status" | "updatedAt"> | undefined,
+  previous: Pick<SpectroMetadataItem, "status" | "updatedAt" | "retryable"> | undefined,
   now = Date.now()
 ): number | null {
   if (previous?.status !== "error" || previous.retryable === false) return null;
