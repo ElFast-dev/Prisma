@@ -26,7 +26,8 @@ export async function getLocalDataSummary(): Promise<LocalDataSummary> {
 
 /**
  * Elimina la información personal, el catálogo local y las cachés en una sola
- * transacción. Conserva appMetadata (metadatos internos de Prisma) y no toca
+ * transacción. Conserva el estado general de la cola y otros metadatos internos,
+ * pero elimina los marcadores ligados a películas que ya no existen. No toca
  * localStorage, por lo que la credencial y la región de TMDB se mantienen.
  */
 export async function resetLocalData(): Promise<void> {
@@ -43,7 +44,8 @@ export async function resetLocalData(): Promise<void> {
       prismaDb.catalogCache,
       prismaDb.availabilityCache,
       prismaDb.peopleCache,
-      prismaDb.spectroSnapshots
+      prismaDb.spectroSnapshots,
+      prismaDb.appMetadata
     ],
     async () => {
       await Promise.all([
@@ -57,7 +59,9 @@ export async function resetLocalData(): Promise<void> {
         prismaDb.catalogCache.clear(),
         prismaDb.availabilityCache.clear(),
         prismaDb.peopleCache.clear(),
-        prismaDb.spectroSnapshots.clear()
+        prismaDb.spectroSnapshots.clear(),
+        prismaDb.appMetadata.where("key").startsWith("library-enrichment:movie:").delete(),
+        prismaDb.appMetadata.where("key").startsWith("spectro:metadata:v1:").delete()
       ]);
     }
   );
