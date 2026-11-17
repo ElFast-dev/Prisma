@@ -389,15 +389,6 @@ export function SpectroAnalyticsPanel({
 
   return (
     <section className="spectro-analytics" aria-label="Analítica personal de Espectro">
-      <header className="spectro-analytics-header">
-        <div>
-          <span className="spectro-analytics-kicker">ESPECTRO / ANALÍTICA PERSONAL</span>
-          <h2>Un vistazo a tu historia</h2>
-          <p>Un recorrido visual por tus sesiones, tus calificaciones y el universo de películas que has visto.</p>
-        </div>
-        <span className="spectro-local-indicator"><i /> Datos locales</span>
-      </header>
-
       <div className="spectro-data-metrics">
         <Metric label="Visionados" value={number(summary.totalViewings)} detail={number(summary.additionalViewings) + " sesiones adicionales"} />
         <Metric label="Películas únicas" value={number(summary.uniqueMoviesWatched)} detail={number(summary.ratedMovies) + " con nota"} />
