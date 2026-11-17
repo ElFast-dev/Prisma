@@ -185,6 +185,7 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
               <div className="spectro-pattern-metrics">
                 <span>Nota observada <strong>{pattern.averageRating.toFixed(1)}/10</strong></span>
                 <span>Esperada por separado <strong>{pattern.expectedRating.toFixed(1)}/10</strong></span>
+                <span>p original <strong>{pattern.pValue < 0.0001 ? "<0.0001" : pattern.pValue.toFixed(4)}</strong></span>
                 <span>q corregido <strong>{(pattern.qValue * 100).toFixed(1)}%</strong></span>
               </div>
               <div className="spectro-pattern-support">
@@ -199,7 +200,7 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
                   {pattern.supportingMovies.map((movie) => (
                     <li key={movie.title}>
                       <span>{movie.title}</span>
-                      <strong>{movie.rating.toFixed(1)}/10 · residuo {signed(movie.residual)}</strong>
+                      <strong>{movie.rating.toFixed(1)}/10 · desvío {signed(movie.residual)}</strong>
                     </li>
                   ))}
                 </ul>
