@@ -89,8 +89,8 @@ describe("calculateSpectroAnalytics", () => {
     });
     expect(result.averageRewatchChange).toBe(2);
     expect(result.genreCounts.map((item) => [item.label, item.count])).toEqual([
-      ["Drama", 1],
-      ["Comedia", 1]
+      ["Comedia", 1],
+      ["Drama", 1]
     ]);
   });
 
