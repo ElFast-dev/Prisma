@@ -57,7 +57,7 @@ Cada instalación configurará su propia credencial. Nunca se publicará una cla
 
 ## Identidad visual
 
-Oscura, cinematográfica, minimalista, con fondo #0E1117, superficies #171D26 y #222B37, texto #F1EEE8 y acento #D9BD91.
+Oscura, cinematográfica, minimalista, con fondo #0E1117, superficies #171D26 y #222B37, texto #F1EEE8 y acento #D9BD91. La redacción de todas las pantallas debe cumplir obligatoriamente la sección «Redacción y jerarquía de interfaz» de `docs/DESIGN-SYSTEM.md`: sin eslóganes ni introducciones genéricas; prioridad para datos, controles y acciones.
 
 ## Distribución
 
