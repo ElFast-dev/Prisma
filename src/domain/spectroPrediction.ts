@@ -190,8 +190,8 @@ function cosineSimilarity(left: SparseVector, right: SparseVector): number {
   return Math.max(0, Math.min(1, dot));
 }
 
-function rbfKernel(similarity: number): number {
-  if (similarity <= 0) return 0;
+function rbfKernel(similarity: number, hasFeatures = true): number {
+  if (!hasFeatures) return 0;
   const squaredDistance = Math.max(0, 2 - 2 * similarity);
   return Math.exp(-KERNEL_GAMMA * squaredDistance);
 }
@@ -307,7 +307,8 @@ export function predictSpectroMovies(
       for (let row = 0; row < size; row += 1) {
         for (let column = 0; column <= row; column += 1) {
           const kernel = rbfKernel(
-            cosineSimilarity(trainingVectors[row], trainingVectors[column])
+            cosineSimilarity(trainingVectors[row], trainingVectors[column]),
+            trainingVectors[row].size > 0 && trainingVectors[column].size > 0
           );
           matrix[row * size + column] = kernel;
           matrix[column * size + row] = kernel;
@@ -333,7 +334,7 @@ export function predictSpectroMovies(
       let adjustment = 0;
       for (let index = 0; index < size; index += 1) {
         const similarity = cosineSimilarity(vector, trainingVectors[index]);
-        adjustment += rbfKernel(similarity) * coefficients[index];
+        adjustment += rbfKernel(similarity, vector.size > 0 && trainingVectors[index].size > 0) * coefficients[index];
       }
       predictedRating = Math.max(1, Math.min(10, fallbackRating + adjustment));
     }
