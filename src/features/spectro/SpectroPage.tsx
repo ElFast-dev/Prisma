@@ -111,9 +111,8 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
   );
 }
 
-function SpectroMetadataStatus({ snapshot, onRetry }: {
+function SpectroMetadataStatus({ snapshot }: {
   snapshot: SpectroMetadataSnapshot;
-  onRetry: () => void;
 }) {
   if (snapshot.status === "running") {
     return (
@@ -169,8 +168,7 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
     return (
       <section className="spectro-metadata-status card-surface" role="status">
         <div className="spectro-metadata-heading"><WifiOff size={17} /><strong>No se pudieron completar todos los metadatos</strong></div>
-        <p className="muted-copy">{snapshot.lastError ?? "Revisa la credencial TMDB o tu conexión."}</p>
-        <button className="button button-secondary" type="button" onClick={onRetry}>Reintentar</button>
+        <p className="muted-copy">{snapshot.lastError ?? "Prisma conservará la información disponible. Revisa la credencial TMDB en Ajustes si el problema persiste."}</p>
       </section>
     );
   }
@@ -183,9 +181,8 @@ function SpectroMetadataStatus({ snapshot, onRetry }: {
           <strong>Quedaron {snapshot.failedMovies} películas con datos incompletos</strong>
         </div>
         <p className="muted-copy">
-          {snapshot.lastError ?? "Prisma conserva los metadatos obtenidos y no modifica tus visionados ni calificaciones."}
+          {snapshot.lastError ?? "Prisma conservará los datos disponibles y volverá a consultar automáticamente los metadatos temporales."}
         </p>
-        <button className="button button-secondary" type="button" onClick={onRetry}>Reintentar metadatos</button>
       </section>
     );
   }
@@ -274,7 +271,6 @@ function SpectroHome({
   analysis,
   analyticsData,
   metadata,
-  onRetryMetadata,
   question,
   questionBusy,
   questionError,
@@ -284,7 +280,6 @@ function SpectroHome({
   analysis: SpectroAnalysis;
   analyticsData: SpectroAnalyticsInput;
   metadata: SpectroMetadataSnapshot;
-  onRetryMetadata: () => void;
   question: SpectroRatingQuestion | null;
   questionBusy: boolean;
   questionError: string;
@@ -294,11 +289,7 @@ function SpectroHome({
   return (
     <div className="page spectro-page">
       <header className="spectro-page-intro">
-        <div className="spectro-page-kicker"><BrainCircuit size={17} /> ESPECTRO · ANALÍTICA CINEMATOGRÁFICA</div>
-        <h1>Tu cine, en datos</h1>
-        <p>
-          Diferentes perspectivas de tu historial: actividad, calificaciones, películas, preferencias y biblioteca. Cada gráfica se construye a partir de la información guardada en Prisma.
-        </p>
+        <h1>Espectro</h1>
       </header>
 
       {question && (
@@ -310,7 +301,7 @@ function SpectroHome({
           onDismiss={onQuestionDismiss}
         />
       )}
-      <SpectroMetadataStatus snapshot={metadata} onRetry={onRetryMetadata} />
+      <SpectroMetadataStatus snapshot={metadata} />
 
       {analysis.movieCount < 3 && (
         <section className="spectro-insufficient card-surface" role="status">
@@ -456,7 +447,6 @@ export function SpectroPage() {
       analysis={analysis}
       analyticsData={analyticsData}
       metadata={metadata}
-      onRetryMetadata={() => void startSpectroMetadataEnrichment(true)}
       question={question}
       questionBusy={questionBusy}
       questionError={questionError}
