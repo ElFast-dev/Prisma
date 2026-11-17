@@ -334,7 +334,6 @@ function collectPairs(
   observations: readonly ResidualObservation[]
 ): PairAccumulator[] {
   const movieById = new Map(movies.map((movie) => [movie.id, movie]));
-  const observationById = new Map(observations.map((observation) => [observation.id, observation]));
   const featureSupport = new Map<string, number>();
 
   for (const movie of movies) {
@@ -352,7 +351,9 @@ function collectPairs(
     const groups = movie.groups
       .map((group) => ({
         category: group.category,
-        features: group.features.filter((feature) => (featureSupport.get(feature.key) ?? 0) >= 2)
+        features: group.features.filter((feature) => (
+          (featureSupport.get(feature.key) ?? 0) >= MINIMUM_PAIR_SUPPORT
+        ))
       }))
       .filter((group) => group.features.length > 0);
 
