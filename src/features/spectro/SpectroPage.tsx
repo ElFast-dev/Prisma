@@ -379,7 +379,7 @@ function SpectroExplicitFavorites({ analysis }: { analysis: SpectroAnalysis }) {
         {signals.map((item) => (
           <span className="spectro-favorite-chip" key={item.key}>
             <strong>{item.label}</strong>
-            <small>{item.category} · {item.sampleSize} favoritos</small>
+            <small>{item.category} · {item.sampleSize} {item.sampleSize === 1 ? "película favorita" : "películas favoritas"}</small>
           </span>
         ))}
       </div>
@@ -412,8 +412,8 @@ function SpectroHome({
   return (
     <div className="page spectro-page">
       <header className="spectro-page-intro">
-        <div className="spectro-page-kicker"><BrainCircuit size={17} /> TU PERFIL CINEMATOGRÁFICO</div>
-        <h1>Espectro</h1>
+        <div className="spectro-page-kicker"><BrainCircuit size={17} /> ESPECTRO · PERFIL PERSONAL</div>
+        <h1>Tu mirada cinematográfica</h1>
         <p>
           Una lectura de tu manera de ver el cine, construida con tus calificaciones, tus favoritos y patrones que superan controles estadísticos.
         </p>
