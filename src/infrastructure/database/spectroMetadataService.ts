@@ -426,7 +426,7 @@ export function startSpectroMetadataEnrichment(forceRetry = false): Promise<void
 
   const operation = (async () => {
     const token = getTmdbAccessToken();
-    const { targets, deferredMovies } = await collectTargets(forceRetry);
+    const { targets, deferredMovies, nextRetryDelayMs } = await collectTargets(forceRetry);
     const outstandingMovies = targets.length + deferredMovies;
 
     if (!token) {
