@@ -216,10 +216,9 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
   await expect(page.getByText("Espectro incorporó metadatos de 4 películas.")).toBeVisible();
 
   await page.goto("#/spectro/affinities");
-  await expect(page.getByRole("heading", { name: "Directores" })).toBeVisible();
-  await expect(page.getByText("Dirección automática", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Reparto automático", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Temas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tu mirada cinematográfica" })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).hash).toBe("#/spectro");
+  await expect(page.getByRole("heading", { name: "Señales de tu gusto" })).toBeVisible();
 
   const storedKeywords = await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
