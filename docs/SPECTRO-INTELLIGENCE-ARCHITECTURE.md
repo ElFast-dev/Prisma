@@ -232,7 +232,7 @@ Las pruebas utilizan películas ficticias e IndexedDB temporal. El respaldo pers
 
 ## 11. Estado implementado y siguientes entregas
 
-### Implementado en Espectro 2.4.0 y 2.5.0
+### Implementado en Espectro 2.4.0, 2.5.0 y 2.6.0
 
 **Versión 2.4.0 — descubrimiento de interacciones**
 
@@ -252,12 +252,19 @@ Las pruebas utilizan películas ficticias e IndexedDB temporal. El respaldo pers
 - Hasta tres películas similares del historial como evidencia descriptiva calculada con similitud coseno. No es probabilidad de gusto.
 - La nota prevista utiliza el modelo RBF; el encaje conserva su escala relativa anterior y continúa siendo el orden principal de recomendaciones hasta validar un modelo de ranking separado.
 - Los niveles de confianza existentes describen el respaldo de las afinidades; no son intervalos de predicción ni confianza calibrada del modelo RBF.
+ 
+**Versión 2.6.0 — ranking por predicción personal**
+
+- Ordena candidatas primero por la nota RBF prevista y utiliza el encaje relativo como desempate.
+- Mantiene separadas nota prevista, encaje y respaldo explicable; el encaje no se interpreta como probabilidad.
+- El cambio se apoya en una comparación temporal exploratoria del historial local. Es evidencia de un solo perfil y no demuestra que RBF supere a Ridge ni que esté calibrado.
+- Los resultados numéricos derivados del historial personal no se incorporan a la documentación pública.
 
 Los parámetros actuales son una configuración candidata. La exploración temporal inicial mostró una mejora pequeña de MAE frente a Ridge, pero no una mejora concluyente de NDCG ni una comparación externa definitiva contra el estimador histórico. No se presenta como modelo calibrado ni ganador definitivo.
 
 ### Siguientes entregas
 
-1. **Evaluación predictiva independiente:** validación temporal anidada, tramo final reservado y comparación pareada del RBF con promedios, Ridge, árboles, boosting y Factorization Machines; incluir MAE, RMSE, NDCG y estabilidad.
+1. **Evaluación predictiva independiente:** mantener validación temporal anidada, tramo final reservado y comparación pareada del RBF con promedios, Ridge, árboles, boosting y Factorization Machines; incluir MAE, RMSE, NDCG y estabilidad.
 2. **Calibración y ranking:** calibrar intervalos/errores fuera de muestra y reemplazar el ranking por encaje solo si mejora la calidad de primeras recomendaciones de manera reproducible.
 3. **Rendimiento Android:** mover entrenamiento e inferencia a Web Worker y medir memoria, latencia, batería y almacenamiento en dispositivos reales.
 4. **Semántica local opcional:** embeddings multilingües preentrenados descargables, comparados contra TF‑IDF y metadatos sin transmitir historial personal.
