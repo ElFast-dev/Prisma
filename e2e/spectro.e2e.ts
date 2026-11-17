@@ -110,7 +110,7 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await seedSpectroHistory(page);
 
   await page.goto("#/spectro");
-  await expect(page.getByRole("heading", { name: "Tu cine, en datos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
   await expect(page.getByText("Datos locales")).toBeVisible();
   await expect(page.locator(".spectro-data-metric")).toHaveCount(6);
   await expect(page.getByRole("tab", { name: /Resumen/ })).toHaveAttribute("aria-selected", "true");
@@ -149,7 +149,7 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
 });
 test("redirige enlaces guardados de las antiguas vistas de Espectro", async ({ page }) => {
   await page.goto("#/spectro/map");
-  await expect(page.getByRole("heading", { name: "Tu cine, en datos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
   await expect.poll(() => new URL(page.url()).hash).toBe("#/spectro");
   await expect(page.locator('a[href^="#/spectro/"]')).toHaveCount(0);
 });
@@ -304,13 +304,13 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
   await seedIncompleteSpectroHistory(page);
 
   await page.goto("#/spectro");
-  await expect(page.getByRole("heading", { name: "Tu cine, en datos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
   await expect.poll(() => requestedPaths.filter((path) => path.endsWith("/keywords")).length).toBe(4);
   await expect(page.getByText("Espectro incorporó metadatos de 4 películas.")).toBeVisible();
 
   await page.goto("#/spectro/affinities");
-  await expect(page.getByRole("heading", { name: "Tu cine, en datos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
   await expect.poll(() => new URL(page.url()).hash).toBe("#/spectro");
   await page.getByRole("tab", { name: /Perfil/ }).click();
   await expect(page.getByRole("heading", { name: "Rasgos que inclinan tus notas" })).toBeVisible();
@@ -376,7 +376,7 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
   expect(preservedPersonalState.viewingRatings).toEqual([9, 9, 5]);
 });
 
-test("muestra errores de metadatos al volver y permite forzar el reintento sin abrir la ficha", async ({ page }) => {
+test("reanuda automáticamente metadatos temporales cuyo plazo de espera ya venció", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("prisma.tmdb.accessToken", "fixture-token");
   });
@@ -466,7 +466,7 @@ test("muestra errores de metadatos al volver y permite forzar el reintento sin a
           tmdbId,
           status: "error",
           attempts: 1,
-          updatedAt: now,
+          updatedAt: "2026-11-15T00:00:00.000Z",
           lastError: "Error temporal simulado."
         })
       });
@@ -481,9 +481,6 @@ test("muestra errores de metadatos al volver y permite forzar el reintento sin a
   });
 
   await page.goto("#/spectro");
-  await expect(page.getByText("Quedaron 1 películas con datos incompletos")).toBeVisible();
-  await expect(page.getByText(/pausa temporal/)).toBeVisible();
-  await page.getByRole("button", { name: "Reintentar metadatos" }).click();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
   await expect(page.getByText("Espectro incorporó metadatos de 1 películas.")).toBeVisible();
   expect(requestedPaths).toContain("/3/movie/987401");
