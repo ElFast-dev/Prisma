@@ -14,7 +14,7 @@ test("Ajustes organiza sus opciones en secciones independientes", async ({ page 
   await navigation.getByRole("link", { name: /Catálogo/ }).click();
   await expect(page.getByRole("heading", { name: "Catálogo", exact: true })).toBeVisible();
   await expect(page.getByLabel("API Read Access Token")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Enriquecer Biblioteca" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Metadatos de Biblioteca" })).toBeVisible();
   await expect(page.getByText(/Prisma iniciará las actualizaciones automáticamente/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Iniciar enriquecimiento" })).toHaveCount(0);
 
