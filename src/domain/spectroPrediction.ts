@@ -46,17 +46,17 @@ const STOPWORDS = new Set([
   "ellas", "ello", "ellos", "en", "entre", "era", "es", "esa", "esas", "ese", "eso",
   "esos", "esta", "estaba", "estaban", "estas", "este", "esto", "estos", "fue",
   "fueron", "ha", "habia", "han", "hasta", "hay", "la", "las", "le", "les", "lo",
-  "los", "mas", "me", "mi", "mis", "mientras", "muy", "no", "nos", "nuestra",
-  "nuestro", "o", "para", "pero", "por", "porque", "que", "quien", "se", "sin",
+  "los", "mas", "me", "mi", "mis", "mientras", "muy", "nos", "nuestra",
+  "nuestro", "o", "para", "por", "porque", "que", "quien", "se",
   "sobre", "su", "sus", "tambien", "te", "tiene", "tienen", "todo", "tras", "tu",
   "tus", "un", "una", "uno", "unos", "unas", "y", "ya", "the", "and", "for",
   "from", "with", "into", "that", "this", "their", "they", "them", "when", "where",
   "who", "what", "which", "while", "after", "before", "over", "under", "about",
   "through", "his", "her", "its", "are", "was", "were", "has", "have", "had",
-  "not", "but", "you", "your", "our", "out", "all", "any", "can", "will",
+  "you", "your", "our", "out", "all", "any", "can", "will",
   "dans", "avec", "pour", "par", "une", "des", "les", "sur", "son", "ses",
   "est", "sont", "qui", "que", "aux", "leur", "leurs", "elle", "elles", "ils",
-  "ont", "ete", "etre", "avoir", "mais", "pas", "plus", "apres", "avant"
+  "ont", "ete", "etre", "avoir", "plus", "apres", "avant"
 ]);
 
 const normalizeText = (value: string): string => value
