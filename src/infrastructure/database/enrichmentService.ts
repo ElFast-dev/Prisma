@@ -38,6 +38,7 @@ interface EnrichmentItemState {
   lastError?: string;
   /** false para errores de credencial o solicitudes permanentes que requieren corrección. */
   retryable?: boolean;
+  movieId?: string;
 }
 
 interface EnrichmentCandidate {
@@ -165,7 +166,8 @@ function parseItemState(record: AppMetadata): EnrichmentItemState | undefined {
       attempts: Number.isFinite(value.attempts) ? Math.max(0, Number(value.attempts)) : 0,
       updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
       lastError: typeof value.lastError === "string" ? value.lastError : undefined,
-      retryable: value.retryable !== false
+      retryable: value.retryable !== false,
+      movieId: typeof value.movieId === "string" ? value.movieId : undefined
     };
   } catch {
     return undefined;
@@ -201,9 +203,15 @@ async function readItemStates(): Promise<Map<number, EnrichmentItemState>> {
 }
 
 async function saveItemState(state: EnrichmentItemState): Promise<void> {
-  await prismaDb.appMetadata.put({
-    key: ITEM_PREFIX + state.tmdbId,
-    value: JSON.stringify(state)
+  const movieId = state.movieId;
+  if (!movieId) return;
+  await prismaDb.transaction("rw", [prismaDb.movies, prismaDb.appMetadata], async () => {
+    // Un restablecimiento puede borrar la película mientras la consulta está en curso.
+    if (!await prismaDb.movies.get(movieId)) return;
+    await prismaDb.appMetadata.put({
+      key: ITEM_PREFIX + state.tmdbId,
+      value: JSON.stringify(state)
+    });
   });
 }
 
@@ -341,12 +349,12 @@ async function persistMovieMetadata(
   const now = new Date().toISOString();
   await prismaDb.transaction("rw", prismaDb.movies, prismaDb.appMetadata, async () => {
     const current = await prismaDb.movies.get(movieId);
-    if (current) {
-      const patch = createMovieMetadataPatch(current, details, now);
-      // Solo se actualizan metadatos cinematográficos. Los datos personales
-      // viven en tablas separadas y no se reescriben durante este proceso.
-      await prismaDb.movies.update(movieId, patch);
-    }
+    // No recrear marcadores si el registro se eliminó durante el enriquecimiento.
+    if (!current) return;
+    const patch = createMovieMetadataPatch(current, details, now);
+    // Solo se actualizan metadatos cinematográficos. Los datos personales
+    // viven en tablas separadas y no se reescriben durante este proceso.
+    await prismaDb.movies.update(movieId, patch);
     await prismaDb.appMetadata.put({
       key: ITEM_PREFIX + tmdbId,
       value: JSON.stringify({
@@ -391,7 +399,8 @@ async function enrichMovie(
 
       attempts += 1;
       await saveItemState({
-        tmdbId: movie.tmdbId,
+        movieId: movie.id,
+          tmdbId: movie.tmdbId,
         status: "pending",
         attempts,
         updatedAt: new Date().toISOString()
@@ -403,6 +412,7 @@ async function enrichMovie(
     } catch (error) {
       if (pauseRequested || isAbortError(error)) {
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "pending",
           attempts,
@@ -417,6 +427,7 @@ async function enrichMovie(
         pauseRequested = true;
         abortAllRequests();
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "pending",
           attempts,
@@ -430,6 +441,7 @@ async function enrichMovie(
 
       if (classification === "not-found") {
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "not-found",
           attempts,
@@ -441,6 +453,7 @@ async function enrichMovie(
 
       if (classification === "authentication") {
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "error",
           attempts,
@@ -465,6 +478,7 @@ async function enrichMovie(
         }
 
         await saveItemState({
+          movieId: movie.id,
           tmdbId: movie.tmdbId,
           status: "pending",
           attempts,
@@ -475,7 +489,8 @@ async function enrichMovie(
       }
 
       await saveItemState({
-        tmdbId: movie.tmdbId,
+        movieId: movie.id,
+          tmdbId: movie.tmdbId,
         status: "error",
         attempts,
         updatedAt: new Date().toISOString(),
