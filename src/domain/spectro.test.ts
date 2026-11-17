@@ -388,7 +388,9 @@ describe("analyzeSpectro 2.3", () => {
           "view-" + group.prefix + "-" + index,
           item.id,
           "2026-01-" + String(index + 1).padStart(2, "0"),
-          group.rating
+          group.rating === 10
+            ? 10 - (index % 3 === 0 ? 1 : 0)
+            : 5 + (index % 3)
         ));
       }
     }
