@@ -3,6 +3,7 @@ import type { LibraryEntry, LibraryStatus, Viewing } from "../../domain/types";
 import { validateViewingDraft, type ViewingDraft } from "../../domain/viewingRules";
 import { prismaDb } from "./database";
 import { requestAutomaticEnrichment } from "./enrichmentService";
+import { startSpectroMetadataEnrichment } from "./spectroMetadataService";
 
 const viewingSchema = z.object({
   movieId: z.string().min(1),
@@ -78,6 +79,7 @@ export async function addViewing(
     }
   );
   requestAutomaticEnrichment();
+  void startSpectroMetadataEnrichment();
   return viewing;
 }
 
@@ -111,7 +113,10 @@ export async function moveMovieToPending(movieId: string): Promise<LibraryStatus
       appliedAt
     };
   });
-  if (result) requestAutomaticEnrichment();
+  if (result) {
+    requestAutomaticEnrichment();
+    void startSpectroMetadataEnrichment();
+  }
   return result;
 }
 
