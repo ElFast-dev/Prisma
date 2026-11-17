@@ -978,7 +978,7 @@ function SpectroRecommendationsPage({ analysis }: { analysis: SpectroAnalysis })
           <Sparkles size={19} className="accent-icon" />
         </div>
         <p className="spectro-method-note">
-          Encaje: 0–100, una comparación relativa de señales, no una probabilidad. Nota estimada: proyección basada en tus calificaciones; no es una garantía.
+          Encaje: 0–100, una comparación relativa de señales, no una probabilidad. Nota estimada: modelo RBF local entrenado con tus películas calificadas; no es una garantía ni un intervalo de confianza.
         </p>
         {analysis.recommendations.length ? (
           <div className="spectro-recommendation-grid">
@@ -1012,6 +1012,19 @@ function SpectroRecommendationsPage({ analysis }: { analysis: SpectroAnalysis })
                       </li>
                     ))}
                   </ul>
+                  {item.similarMovies.length > 0 && (
+                    <div className="spectro-recommendation-similar">
+                      <small>Películas similares en tu historial · cercanía descriptiva, no probabilidad</small>
+                      <ul>
+                        {item.similarMovies.map((similar) => (
+                          <li key={similar.title}>
+                            <span>{similar.title} · {similar.rating.toFixed(1)}/10</span>
+                            <strong>{Math.round(similar.similarity * 100)}% similitud</strong>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </article>
             ))}

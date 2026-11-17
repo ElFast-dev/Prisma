@@ -1,4 +1,5 @@
 import type { CollectionMovie, LibraryEntry, MovieRecord, Viewing } from "./types";
+import { predictSpectroMovies, type SpectroMoviePrediction } from "./spectroPrediction";
 import { buildSpectroInteractions } from "./spectroInteractions";
 import {
   buildSpectroNetworkGraph,
@@ -11,7 +12,7 @@ export type {
   SpectroNetworkCluster
 } from "./spectroNetwork";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.4.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.5.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;
@@ -105,6 +106,7 @@ export interface SpectroRecommendation {
   predictedRating: number;
   confidence: SpectroConfidence;
   reasons: SpectroRecommendationReason[];
+  similarMovies: SpectroMoviePrediction["neighbors"];
 }
 
 export interface SpectroGraphEvidence {
@@ -903,6 +905,10 @@ function buildRecommendations(
       .map((affinity) => [affinity.key, affinity])
   );
   const explicit = new Map(favoriteSignals.map((signal) => [signal.key, signal]));
+  const modelPredictions = predictSpectroMovies(
+    ratedMovies.map((item) => ({ movie: item.movie, rating: item.averageRating })),
+    candidates
+  );
   const ranked: SpectroRecommendation[] = [];
 
   for (const movie of candidates) {
@@ -998,12 +1004,15 @@ function buildRecommendations(
       }))
       .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
 
+    const modelPrediction = modelPredictions.get(movie.id);
     ranked.push({
       movie,
       fitPercentage,
-      predictedRating: round(clamp(overallAverage + netRatingDifference, 0, 10)),
+      predictedRating: modelPrediction?.predictedRating
+        ?? round(clamp(overallAverage + netRatingDifference, 0, 10)),
       confidence: recommendationConfidence(reasons),
-      reasons
+      reasons,
+      similarMovies: modelPrediction?.neighbors ?? []
     });
   }
 
