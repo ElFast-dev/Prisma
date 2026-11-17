@@ -245,6 +245,7 @@ function HourHeatmap({ cells, total }: { cells: number[][]; total: number }) {
   const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   return (
     <div className="spectro-heatmap-wrap">
+      <div className="spectro-heatmap-scroll">
       <div className="spectro-heatmap">
         <div className="spectro-heatmap-corner" />
         {Array.from({ length: 24 }, (_, hour) => (
@@ -266,6 +267,7 @@ function HourHeatmap({ cells, total }: { cells: number[][]; total: number }) {
             })}
           </div>
         ))}
+      </div>
       </div>
       <div className="spectro-heatmap-scale"><span>Menos</span><i className="is-0" /><i className="is-1" /><i className="is-2" /><i className="is-3" /><i className="is-4" /><span>Más</span></div>
       <p className="spectro-chart-footnote">{number(total)} visionados con hora local registrada. La hora del día se interpreta como fue guardada en Prisma.</p>
@@ -390,7 +392,7 @@ export function SpectroAnalyticsPanel({
       <header className="spectro-analytics-header">
         <div>
           <span className="spectro-analytics-kicker">ESPECTRO / ANALÍTICA PERSONAL</span>
-          <h2>Tu cine, en datos</h2>
+          <h2>Un vistazo a tu historia</h2>
           <p>Un recorrido visual por tus sesiones, tus calificaciones y el universo de películas que has visto.</p>
         </div>
         <span className="spectro-local-indicator"><i /> Datos locales</span>
