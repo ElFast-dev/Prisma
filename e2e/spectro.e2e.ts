@@ -140,6 +140,86 @@ test("redirige enlaces guardados de las antiguas vistas de Espectro", async ({ p
   await expect(page.locator('a[href^="#/spectro/"]')).toHaveCount(0);
 });
 
+async function seedIncompleteSpectroHistory(page: import("@playwright/test").Page): Promise<void> {
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("prisma_database");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const now = "2026-11-16T12:00:00.000Z";
+    const movies: Array<Record<string, unknown>> = [];
+    const viewings: Array<Record<string, unknown>> = [];
+
+    for (let index = 0; index < 3; index += 1) {
+      const tmdbId = 987100 + index;
+      const id = "tmdb-" + tmdbId;
+      movies.push({
+        id,
+        tmdbId,
+        title: "Drama sin completar " + (index + 1),
+        genres: ["Drama"],
+        genreIds: [18],
+        countries: [],
+        directors: [],
+        castMembers: [],
+        releaseYear: 2016 + index,
+        lastViewingSequence: 1,
+        createdAt: now,
+        updatedAt: now
+      });
+      viewings.push({
+        id: id + "-view",
+        movieId: id,
+        sequenceNumber: 1,
+        watchedOn: "2026-01-0" + (index + 1),
+        rating: index < 2 ? 9 : 5,
+        createdAt: now,
+        updatedAt: now,
+        operationId: id + "-operation"
+      });
+    }
+    const pendingId = "tmdb-987103";
+    movies.push({
+      id: pendingId,
+      tmdbId: 987103,
+      title: "Película pendiente sin completar",
+      genres: [],
+      genreIds: [],
+      countries: [],
+      directors: [],
+      castMembers: [],
+      releaseYear: 2022,
+      lastViewingSequence: 0,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    try {
+      const transaction = db.transaction(["movies", "viewings", "libraryEntries"], "readwrite");
+      const movieStore = transaction.objectStore("movies");
+      const viewingStore = transaction.objectStore("viewings");
+      for (const movie of movies) movieStore.put(movie);
+      for (const viewing of viewings) viewingStore.put(viewing);
+      transaction.objectStore("libraryEntries").put({
+        movieId: pendingId,
+        status: "pending",
+        isFavorite: false,
+        addedAt: now,
+        updatedAt: now
+      });
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error ?? new Error("No se pudieron preparar películas incompletas ficticias."));
+      });
+    } finally {
+      db.close();
+    }
+  });
+}
+
+
 test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async ({ page }) => {
   const requestedPaths: string[] = [];
   await page.addInitScript(() => {
