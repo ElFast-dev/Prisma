@@ -82,7 +82,7 @@ Solo se presentan parejas con al menos cuatro películas distintas, q ajustado �
 
 El valor q es una medida de evidencia estadística corregida, no la probabilidad de que te guste una película. La consistencia entre bloques indica estabilidad interna, no validación temporal ni causalidad. Las pruebas t son una aproximación sobre residuos y siguen dependiendo de la calidad, independencia y distribución de las observaciones. La ausencia de patrones que superen los controles es un resultado válido.
 
-La versión 2.5.0 todavía no reemplaza el estimador de nota de las recomendaciones por un bosque aleatorio, una Factorization Machine o una red neuronal. Esos modelos se compararán por separado con validación temporal y baselines antes de incorporarlos.
+La versión 2.5.0 ya sustituye la nota prevista anterior por Kernel Ridge RBF. No incorpora aún árboles, boosting, Factorization Machines ni redes neuronales. Se compararán en evaluaciones temporales separadas; el orden principal sigue basándose en el encaje hasta que un modelo de ranking demuestre una mejora reproducible.
 
 
 ## Encaje y nota prevista
