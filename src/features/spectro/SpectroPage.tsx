@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "../../components/EmptyState";
 import { getSpectroAnalysis } from "../../infrastructure/database/spectroRepository";
+import { getSpectroAnalyticsData } from "../../infrastructure/database/spectroAnalyticsRepository";
 import {
   getSpectroMetadataSnapshot,
   startSpectroMetadataEnrichment,
@@ -17,6 +18,8 @@ import {
   type SpectroRatingQuestion
 } from "../../infrastructure/database/spectroQuestionService";
 import type { SpectroAffinity, SpectroAnalysis } from "../../domain/spectro";
+import type { SpectroAnalyticsInput } from "../../domain/spectroAnalytics";
+import { SpectroAnalyticsPanel } from "./SpectroAnalyticsPanel";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -267,131 +270,9 @@ function SpectroRatingQuestionCard({
   );
 }
 
-function getProfileSignals(analysis: SpectroAnalysis): {
-  positive: SpectroAffinity[];
-  negative: SpectroAffinity[];
-} {
-  const all = [
-    ...analysis.genreAffinities,
-    ...analysis.directorAffinities,
-    ...analysis.castAffinities,
-    ...analysis.countryAffinities,
-    ...analysis.decadeAffinities,
-    ...analysis.languageAffinities,
-    ...analysis.durationAffinities,
-    ...analysis.themeAffinities
-  ];
-  const supported = all.filter((item) => (
-    item.sampleSize >= 3
-    && (item.confidence === "moderada" || item.confidence === "sólida")
-    && Math.abs(item.adjustedDifference) >= 0.15
-  ));
-  return {
-    positive: supported
-      .filter((item) => item.adjustedDifference > 0)
-      .sort((a, b) => b.adjustedDifference - a.adjustedDifference || b.sampleSize - a.sampleSize)
-      .slice(0, 4),
-    negative: supported
-      .filter((item) => item.adjustedDifference < 0)
-      .sort((a, b) => a.adjustedDifference - b.adjustedDifference || b.sampleSize - a.sampleSize)
-      .slice(0, 4)
-  };
-}
-
-function SpectroProfileSignals({ analysis }: { analysis: SpectroAnalysis }) {
-  const signals = getProfileSignals(analysis);
-  const renderSignal = (item: SpectroAffinity, tone: "positive" | "negative") => (
-    <article className={"spectro-profile-signal is-" + tone} key={item.key}>
-      <div className="spectro-profile-signal-copy">
-        <small>{item.category}</small>
-        <strong>{item.label}</strong>
-        <span>{item.sampleSize} películas · {confidenceLabel(item.confidence)}</span>
-      </div>
-      <div className="spectro-profile-signal-value">
-        <strong>{item.averageRating.toFixed(1)}<small>/10</small></strong>
-        <span>{signed(item.adjustedDifference)} vs. tu promedio</span>
-      </div>
-    </article>
-  );
-
-  return (
-    <section className="spectro-profile-signals card-surface" aria-labelledby="spectro-profile-signals-title">
-      <div className="content-caption">
-        <div>
-          <h2 id="spectro-profile-signals-title">Señales de tu gusto</h2>
-          <p className="muted-copy spectro-profile-section-intro">
-            Rasgos que se repiten en tus calificaciones y cuentan con respaldo suficiente.
-          </p>
-        </div>
-        <Fingerprint size={19} className="accent-icon" aria-hidden="true" />
-      </div>
-      {signals.positive.length || signals.negative.length ? (
-        <div className="spectro-profile-signal-columns">
-          <div className="spectro-profile-signal-group">
-            <h3>Te suelen gustar más</h3>
-            {signals.positive.length ? (
-              <div className="spectro-profile-signal-list">
-                {signals.positive.map((item) => renderSignal(item, "positive"))}
-              </div>
-            ) : (
-              <p className="muted-copy spectro-profile-signal-empty">Todavía no hay señales positivas suficientemente consistentes.</p>
-            )}
-          </div>
-          <div className="spectro-profile-signal-group">
-            <h3>Te suelen convencer menos</h3>
-            {signals.negative.length ? (
-              <div className="spectro-profile-signal-list">
-                {signals.negative.map((item) => renderSignal(item, "negative"))}
-              </div>
-            ) : (
-              <p className="muted-copy spectro-profile-signal-empty">Todavía no hay señales negativas suficientemente consistentes.</p>
-            )}
-          </div>
-        </div>
-      ) : (
-        <p className="muted-copy spectro-profile-signal-empty">
-          Aún no hay suficientes señales consistentes para describir tu gusto. Espectro evita convertir diferencias pequeñas o muestras variables en preferencias confirmadas.
-        </p>
-      )}
-      <p className="spectro-method-note">
-        Cada señal compara películas distintas con tu promedio personal. Una asociación describe tus valoraciones; no demuestra que ese rasgo sea la causa de que te guste una película.
-      </p>
-    </section>
-  );
-}
-
-function SpectroExplicitFavorites({ analysis }: { analysis: SpectroAnalysis }) {
-  const signals = analysis.favoriteSignals.slice(0, 8);
-  if (!signals.length) return null;
-
-  return (
-    <section className="spectro-explicit-favorites card-surface" aria-labelledby="spectro-explicit-favorites-title">
-      <div className="content-caption">
-        <div>
-          <h2 id="spectro-explicit-favorites-title">Lo que has elegido como favorito</h2>
-          <p className="muted-copy spectro-profile-section-intro">
-            Tus elecciones explícitas, separadas de las conclusiones que se extraen de tus notas.
-          </p>
-        </div>
-        <Sparkles size={18} className="accent-icon" aria-hidden="true" />
-      </div>
-      <div className="spectro-favorite-chips">
-        {signals.map((item) => (
-          <span className="spectro-favorite-chip" key={item.key}>
-            <strong>{item.label}</strong>
-            <small>{item.category} · {item.sampleSize} {item.sampleSize === 1 ? "película favorita" : "películas favoritas"}</small>
-          </span>
-        ))}
-      </div>
-      <p className="spectro-method-note">
-        Marcar una película como favorita no añade ni modifica su calificación.
-      </p>
-    </section>
-  );
-}
-
 function SpectroHome({
   analysis,
+  analyticsData,
   metadata,
   onRetryMetadata,
   question,
@@ -401,6 +282,7 @@ function SpectroHome({
   onQuestionDismiss
 }: {
   analysis: SpectroAnalysis;
+  analyticsData: SpectroAnalyticsInput;
   metadata: SpectroMetadataSnapshot;
   onRetryMetadata: () => void;
   question: SpectroRatingQuestion | null;
@@ -412,39 +294,12 @@ function SpectroHome({
   return (
     <div className="page spectro-page">
       <header className="spectro-page-intro">
-        <div className="spectro-page-kicker"><BrainCircuit size={17} /> ESPECTRO · PERFIL PERSONAL</div>
-        <h1>Tu mirada cinematográfica</h1>
+        <div className="spectro-page-kicker"><BrainCircuit size={17} /> ESPECTRO · ANALÍTICA CINEMATOGRÁFICA</div>
+        <h1>Tu cine, en datos</h1>
         <p>
-          Una lectura de tu manera de ver el cine, construida con tus calificaciones, tus favoritos y patrones que superan controles estadísticos.
+          Diferentes perspectivas de tu historial: actividad, calificaciones, películas, preferencias y biblioteca. Cada gráfica se construye a partir de la información guardada en Prisma.
         </p>
       </header>
-
-      <section className="spectro-overview card-surface" aria-labelledby="spectro-overview-title">
-        <div className="spectro-overview-heading">
-          <div>
-            <span className="spectro-overview-eyebrow">TU RETRATO ACTUAL</span>
-            <h2 id="spectro-overview-title">Lo que sabemos de tu gusto</h2>
-          </div>
-          <span className="status-pill">Análisis local</span>
-        </div>
-        <div className="spectro-summary-grid">
-          <div className="spectro-summary-card">
-            <strong>{analysis.movieCount}</strong>
-            <span>Películas distintas calificadas</span>
-          </div>
-          <div className="spectro-summary-card">
-            <strong>{analysis.averageRating?.toFixed(1) ?? "—"}<small>/10</small></strong>
-            <span>Promedio personal por título</span>
-          </div>
-          <div className="spectro-summary-card">
-            <strong>{analysis.patterns.length}</strong>
-            <span>Combinaciones validadas</span>
-          </div>
-        </div>
-        <p className="spectro-overview-note">
-          Los revisionados aportan contexto sobre cada película, pero no cuentan como títulos nuevos para confirmar una preferencia.
-        </p>
-      </section>
 
       {question && (
         <SpectroRatingQuestionCard
@@ -461,20 +316,22 @@ function SpectroHome({
         <section className="spectro-insufficient card-surface" role="status">
           <Fingerprint size={23} className="accent-icon" />
           <div>
-            <h2>Tu retrato todavía está tomando forma</h2>
+            <h2>Tu perfil estadístico todavía está tomando forma</h2>
             <p>
-              Necesitamos al menos tres películas distintas con calificación para empezar a identificar señales. Llevas {analysis.movieCount} de 3. Tus favoritos se conservan como elecciones explícitas, sin convertirse en notas.
+              Has calificado {analysis.movieCount} películas distintas. Algunas comparaciones necesitan al menos tres títulos y otras requieren muestras mayores. Las gráficas de actividad y distribución siguen disponibles desde ahora.
             </p>
           </div>
         </section>
       )}
 
-      <SpectroProfileSignals analysis={analysis} />
-      <SpectroExplicitFavorites analysis={analysis} />
-      <SpectroPatternsPanel patterns={analysis.patterns} />
+      <SpectroAnalyticsPanel
+        data={analyticsData}
+        analysis={analysis}
+        patterns={<SpectroPatternsPanel patterns={analysis.patterns} />}
+      />
 
       <p className="spectro-version-note">
-        Espectro {analysis.algorithmVersion} · Análisis local actualizado {new Date(analysis.computedAt).toLocaleString("es-PA")}
+        Espectro {analysis.algorithmVersion} · Cálculo local actualizado {new Date(analysis.computedAt).toLocaleString("es-PA")}
       </p>
     </div>
   );
@@ -482,6 +339,7 @@ function SpectroHome({
 
 export function SpectroPage() {
   const [analysis, setAnalysis] = useState<SpectroAnalysis | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<SpectroAnalyticsInput | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState<SpectroMetadataSnapshot>(EMPTY_METADATA);
@@ -492,8 +350,12 @@ export function SpectroPage() {
 
   const refreshAnalysis = useCallback(async () => {
     try {
-      const result = await getSpectroAnalysis();
+      const [result, analytics] = await Promise.all([
+        getSpectroAnalysis(),
+        getSpectroAnalyticsData()
+      ]);
       setAnalysis(result);
+      setAnalyticsData(analytics);
       setState("ready");
       setError("");
     } catch (cause) {
@@ -574,9 +436,9 @@ export function SpectroPage() {
   }, [metadata.processedMovies, metadata.status, refreshAnalysis]);
 
   if (state === "loading") {
-    return <div className="page"><div className="detail-loading"><span>Analizando tu perfil…</span></div></div>;
+    return <div className="page"><div className="detail-loading"><span>Preparando tus gráficas…</span></div></div>;
   }
-  if (state === "error" || !analysis) {
+  if (state === "error" || !analysis || !analyticsData) {
     return (
       <div className="page spectro-page">
         <EmptyState
@@ -592,12 +454,13 @@ export function SpectroPage() {
   return (
     <SpectroHome
       analysis={analysis}
+      analyticsData={analyticsData}
       metadata={metadata}
       onRetryMetadata={() => void startSpectroMetadataEnrichment(true)}
       question={question}
       questionBusy={questionBusy}
       questionError={questionError}
-      onQuestionAnswer={(rating) => void handleQuestionAnswer(rating)}
+      onQuestionAnswer={(value) => void handleQuestionAnswer(value)}
       onQuestionDismiss={() => void handleQuestionDismiss()}
     />
   );
