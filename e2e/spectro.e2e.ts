@@ -121,12 +121,12 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
 
   await page.getByRole("tab", { name: /Actividad/ }).click();
   await expect(page.getByRole("heading", { name: "Visionados por mes" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Mapa de horarios" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Visionados por día y hora" })).toBeVisible();
 
   await page.getByRole("tab", { name: /Calificaciones/ }).click();
   await expect(page.getByRole("heading", { name: "Distribución de calificaciones" }).first()).toBeVisible();
   await expect(page.locator(".spectro-rating-column")).toHaveCount(10);
-  await expect(page.getByRole("heading", { name: "Películas que vuelves a ver" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Revisionados" })).toBeVisible();
 
   await page.getByRole("tab", { name: /Universo/ }).click();
   await expect(page.getByRole("heading", { name: "Géneros" })).toBeVisible();
@@ -139,7 +139,7 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
 
   await page.getByRole("tab", { name: /Biblioteca/ }).click();
   await expect(page.getByRole("heading", { name: "Distribución del catálogo" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Tus colecciones" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Películas por colección" })).toBeVisible();
 
   // Las secciones antiguas no reaparecen como destinos separados.
   await expect(page.locator('a[href^="#/spectro/"]')).toHaveCount(0);
@@ -315,7 +315,7 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
   await expect.poll(() => new URL(page.url()).hash).toBe("#/spectro");
   await page.getByRole("tab", { name: /Perfil/ }).click();
-  await expect(page.getByRole("heading", { name: "Rasgos que inclinan tus notas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Afinidades ajustadas" })).toBeVisible();
 
   const storedKeywords = await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
