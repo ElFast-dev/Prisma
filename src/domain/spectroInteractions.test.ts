@@ -16,7 +16,9 @@ function interactionMovies(): SpectroInteractionMovie[] {
       movies.push({
         id,
         title: id,
-        rating: combination.rating,
+        rating: combination.rating === 10
+          ? 10 - (index % 3 === 0 ? 1 : 0)
+          : 5 + (index % 3),
         groups: [
           {
             category: "Género",
