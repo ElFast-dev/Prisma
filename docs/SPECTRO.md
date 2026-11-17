@@ -4,7 +4,7 @@ Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el d
 
 ## Versión del algoritmo
 
-La versión activa es **2.3.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.3.0.
+La versión activa es **2.4.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.4.0.
 
 ## Información que utiliza
 
@@ -19,7 +19,7 @@ Espectro combina señales que Prisma puede verificar:
 - Favoritos marcados explícitamente en Biblioteca.
 - Películas candidatas del catálogo local, incluidas las que el propietario ha marcado como Pendientes. Las Vistas y cualquier título con un visionado registrado quedan excluidos.
 
-Los comentarios y textos libres no se interpretan mediante un modelo lingüístico: no se les atribuye un sentimiento o preferencia que Prisma no pueda verificar. Tampoco se envían el historial, el perfil o sus inferencias a terceros.
+Las sinopsis se utilizan en el detector de interacciones mediante términos y expresiones léxicas, no como comprensión semántica: no se infieren emociones, atmósferas ni temas filosóficos. Los comentarios personales no se interpretan como señales. Tampoco se envían el historial, el perfil o sus inferencias a terceros.
 
 Cuando existen visionados sin calificación, Espectro puede hacer una pregunta contextual en la propia vista: pide una nota del 1 al 10 para una experiencia registrada, sin abrir la ficha. La respuesta actualiza solo el campo de calificación de ese visionado y vuelve a calcular el perfil. Se formula como máximo una pregunta cada 24 horas y se puede posponer; no se crean experiencias nuevas ni se alteran fechas, revisionados o comentarios.
 
@@ -49,18 +49,42 @@ El proceso actualiza exclusivamente campos cinematográficos del registro de pel
 - Un favorito es una señal declarada explícitamente. No se transforma en una calificación ni aumenta el promedio de notas.
 - Las señales ausentes no se inventan.
 
-## Patrones combinados
+## Interacciones cinematográficas
 
-La versión 2.3.0 detecta algunas combinaciones de rasgos que se asocian con notas distintas de lo que explicarían sus componentes por separado. Por ejemplo, puede estudiar si un género unido a un tema presenta un resultado diferente del efecto individual del género y del tema.
+La versión 2.4.0 sustituye la lista fija de combinaciones por una búsqueda general de parejas entre características presentes en películas distintas. Explora todas las parejas de categorías diferentes disponibles en los datos, sin limitarse a una lista escrita a mano como género + dirección o género + tema.
 
-- Se comparan familias acotadas: género con temas, dirección, país, época, duración o idioma; además, dirección con temas y país con temas.
-- Cada película aporta una sola observación por combinación. Los revisionados se promedian dentro de cada título y no multiplican el tamaño de la muestra.
-- Se calcula primero la nota media observada en la combinación y se compara con una expectativa aditiva construida a partir del promedio personal y de las diferencias individuales de cada rasgo.
-- La diferencia adicional se modera mediante `n / (n + 5)`. Es una regularización para reducir extremos cuando hay pocas películas, no una probabilidad ni una prueba de significación.
-- Solo se muestran combinaciones respaldadas por al menos cuatro películas distintas y cuya diferencia adicional ajustada alcanza 0,35 puntos en valor absoluto.
-- Cada resultado incluye categoría, combinación, nota observada, expectativa aditiva, diferencia ajustada, dispersión, número de películas y hasta tres títulos de evidencia. El tamaño de muestra corresponde a todas las películas que respaldan la combinación, no solo a los ejemplos visibles.
-- Se muestran asociaciones positivas y negativas. Una asociación no demuestra que la combinación cause una mejor o peor valoración.
-- Las combinaciones se calculan con características verificables de TMDB; si faltan datos o la muestra es insuficiente, no se inventa un hallazgo.
+Las señales disponibles incluyen:
+
+- Datos estructurados existentes: género, dirección, reparto, país, época, idioma, duración y palabras clave de TMDB.
+- Términos y expresiones consecutivas extraídos de la sinopsis. Se etiquetan como señales léxicas, no como temas confirmados ni como embeddings semánticos.
+
+Cada película aporta una sola observación a cada pareja. Los revisionados se promedian dentro del título, por lo que no aumentan el tamaño de muestra.
+
+### Cómo se calcula
+
+1. Espectro ajusta un perfil aditivo de efectos individuales.
+2. Divide los títulos en cinco bloques deterministas. Para cada bloque, estima la expectativa de las películas excluidas sin utilizar sus valoraciones para ajustar ese perfil.
+3. Calcula el residuo de cada título: nota observada menos nota esperada por el modelo aditivo.
+4. Agrupa esos residuos para todas las parejas de características que coexisten y que aparecen en al menos dos películas distintas.
+5. Calcula diferencia media, dispersión, número de títulos, prueba t bilateral y consistencia de la dirección entre bloques.
+6. Corrige conjuntamente los valores p mediante Benjamini–Yekutieli, un procedimiento conservador ante dependencias entre las comparaciones.
+
+Solo se presentan parejas con al menos cuatro películas distintas, q ajustado ≤ 0,05, presencia en al menos tres bloques y consistencia de dirección ≥ 0,75. Se muestran hasta ocho resultados ordenados por evidencia corregida. Estos límites sirven para descartar patrones que no pueden replicarse en diferentes bloques; no convierten una asociación en causalidad.
+
+### Qué muestra cada hallazgo
+
+- Características y categorías que forman la interacción.
+- Nota media observada y expectativa estimada por separado.
+- Diferencia residual, dispersión y número de películas distintas que respaldan el patrón.
+- Valor p y valor q después de corregir las comparaciones múltiples.
+- Cantidad de bloques donde aparece y consistencia de su dirección.
+- Hasta tres películas de evidencia, con su nota y desviación respecto de la expectativa.
+
+El valor q es una medida de evidencia estadística corregida, no la probabilidad de que te guste una película. La consistencia entre bloques indica estabilidad interna, no validación temporal ni causalidad. Las pruebas t son una aproximación sobre residuos y siguen dependiendo de la calidad, independencia y distribución de las observaciones. La ausencia de patrones que superen los controles es un resultado válido.
+
+La versión 2.4.0 todavía no reemplaza el estimador de nota de las recomendaciones por un bosque aleatorio, una Factorization Machine o una red neuronal. Esos modelos se compararán por separado con validación temporal y baselines antes de incorporarlos.
+
+
 ## Encaje y nota prevista
 
 Cada candidata local puede mostrar dos estimaciones distintas:
@@ -108,7 +132,7 @@ El buscador resalta nodos y conexiones; al seleccionar una película se muestran
 
 ## Huella e instantáneas
 
-La huella incluye visionados, calificaciones, fechas, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.3.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie. Las instantáneas antiguas se conservan, pero no se reutilizan para el nuevo contrato que incluye patrones combinados.
+La huella incluye visionados, calificaciones, fechas, sinopsis, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.4.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie. Las instantáneas antiguas se conservan, pero no se reutilizan para el nuevo contrato que incluye interacciones generales y términos de sinopsis.
 
 Antes de calcular, el repositorio comprueba si ya existe una instantánea de la versión y huella actuales. Así evita repetir el análisis cuando la entrada no ha cambiado.
 
@@ -120,6 +144,8 @@ Antes de calcular, el repositorio comprueba si ya existe una instantánea de la 
 - Las recomendaciones solo pueden salir de candidatas que Prisma ya tenga localmente. Las películas Pendientes se incluyen cuando disponen de metadatos suficientes; las Vistas y los títulos con visionados quedan excluidos. Espectro no realiza búsquedas ilimitadas por su cuenta.
 - Una afinidad es una asociación en los datos registrados, no una relación causal ni una preferencia permanente.
 - Los comentarios escritos todavía no se interpretan como señales semánticas.
+
+La arquitectura de evolución, evaluación de modelos, semántica local y ejecución Android se describe en [Arquitectura de inteligencia cinematográfica](./SPECTRO-INTELLIGENCE-ARCHITECTURE.md).
 
 ## Principios
 
