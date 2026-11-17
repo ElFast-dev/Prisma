@@ -246,7 +246,7 @@ export async function importExternalMovies(
 
   if (result.newLibraryEntries > 0) {
     requestAutomaticEnrichment();
-    void startSpectroMetadataEnrichment();
+    void startSpectroMetadataEnrichment().catch(() => undefined);
   }
   return result;
 }
