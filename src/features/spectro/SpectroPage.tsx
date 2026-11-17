@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  BrainCircuit, CheckCircle2, Fingerprint, RefreshCw, Sparkles, WifiOff
+  BrainCircuit, CheckCircle2, Fingerprint, RefreshCw, WifiOff
 } from "lucide-react";
 import { EmptyState } from "../../components/EmptyState";
 import { getSpectroAnalysis } from "../../infrastructure/database/spectroRepository";
@@ -50,13 +50,7 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
   return (
     <section className="spectro-patterns-section card-surface" aria-labelledby="spectro-patterns-title">
       <div className="content-caption">
-        <div>
-          <h2 id="spectro-patterns-title">Interacciones estadísticas</h2>
-          <p className="muted-copy spectro-patterns-intro">
-            Interacciones encontradas al explorar las combinaciones de rasgos disponibles, no una lista cerrada de parejas.
-          </p>
-        </div>
-        <Sparkles size={19} className="accent-icon" aria-hidden="true" />
+        <h2 id="spectro-patterns-title">Interacciones estadísticas</h2>
       </div>
       {patterns.length ? (
         <div className="spectro-pattern-grid">
@@ -145,7 +139,7 @@ function SpectroMetadataStatus({ snapshot }: {
       <section className="spectro-metadata-status card-surface" role="status">
         <div className="spectro-metadata-heading">
           <Fingerprint size={17} className="accent-icon" />
-          <strong>Hay metadatos que pueden completarse</strong>
+          <strong>Metadatos pendientes</strong>
         </div>
         <p className="muted-copy">
           Conecta tu credencial TMDB en Ajustes para completar automáticamente géneros, equipo y temas, sin abrir cada ficha.
@@ -224,11 +218,9 @@ function SpectroRatingQuestionCard({
   return (
     <section className="spectro-question-card card-surface" aria-labelledby="spectro-question-title">
       <div className="spectro-question-heading">
-        <span className="spectro-question-icon"><BrainCircuit size={19} /></span>
         <div>
-          <p className="spectro-question-eyebrow">Una pregunta para afinar tu perfil</p>
           <h2 id="spectro-question-title">¿Qué nota le darías a {question.title}?</h2>
-          <p className="muted-copy">Visionado del {formatQuestionDate(question.watchedOn)} · No necesitas abrir la ficha.</p>
+          <p className="muted-copy">Visionado registrado: {formatQuestionDate(question.watchedOn)}.</p>
         </div>
       </div>
       <div className="spectro-question-rating" role="group" aria-label="Calificación del 1 al 10">
