@@ -82,7 +82,7 @@ Solo se presentan parejas con al menos cuatro películas distintas, q ajustado �
 
 El valor q es una medida de evidencia estadística corregida, no la probabilidad de que te guste una película. La consistencia entre bloques indica estabilidad interna, no validación temporal ni causalidad. Las pruebas t son una aproximación sobre residuos y siguen dependiendo de la calidad, independencia y distribución de las observaciones. La ausencia de patrones que superen los controles es un resultado válido.
 
-La versión 2.6.0 ya sustituye la nota prevista anterior por Kernel Ridge RBF. No incorpora aún árboles, boosting, Factorization Machines ni redes neuronales. Se compararán en evaluaciones temporales separadas; el orden principal sigue basándose en el encaje hasta que un modelo de ranking demuestre una mejora reproducible.
+La versión 2.5.0 sustituyó la nota prevista anterior por Kernel Ridge RBF. La versión 2.6.0 cambia el orden de las recomendaciones para priorizar esa nota prevista y utiliza el encaje como desempate. No incorpora aún árboles, boosting, Factorization Machines ni redes neuronales; siguen siendo alternativas para futuras comparaciones.
 
 
 ## Encaje y nota prevista
@@ -101,7 +101,7 @@ La política se contrastó con una evaluación temporal exploratoria de cinco co
 
 Cada candidata puede mostrar hasta tres películas similares del historial. La similitud se calcula por coseno entre características estructuradas y términos de sinopsis normalizados. El porcentaje es una medida de cercanía descriptiva, no la probabilidad de que te guste ni una valoración prevista.
 
-Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial de un modelo candidato. Una prueba exploratoria anterior con un prototipo RBF de representación relacionada mostró una mejora pequeña frente a Ridge en MAE, pero no una superioridad concluyente en NDCG. Esa prueba no valida los parámetros ni la representación exacta integrada en esta versión. El predictor 2.6.0 todavía necesita una evaluación temporal independiente antes de considerarse calibrado o superior al estimador histórico.
+Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial. Una evaluación temporal exploratoria de cinco cortes del historial local favoreció el orden por nota RBF frente al antiguo orden por encaje; Ridge obtuvo un resultado de ranking ligeramente superior al RBF. Por tanto, la política 2.6.0 es una mejora observada en este historial, no una prueba de que RBF sea universalmente superior. El predictor 2.5.0 y su ranking 2.6.0 todavía necesitan más evaluación, replicación y calibración antes de considerarse resultados generales.
 
 Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) describen las señales que justifican el encaje; no son la confianza calibrada de Kernel Ridge ni probabilidades o intervalos de confianza estadísticos.
 
