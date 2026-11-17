@@ -978,7 +978,7 @@ function SpectroRecommendationsPage({ analysis }: { analysis: SpectroAnalysis })
           <Sparkles size={19} className="accent-icon" />
         </div>
         <p className="spectro-method-note">
-          Encaje: 0–100, una comparación relativa de señales, no una probabilidad. Nota estimada: modelo RBF local entrenado con tus películas calificadas; no es una garantía ni un intervalo de confianza.
+          Ordenadas por la nota personal estimada. El encaje (0–100) complementa la predicción como índice relativo, no como probabilidad. El modelo RBF aprende de tus películas calificadas; la nota no es una garantía ni un intervalo de confianza.
         </p>
         {analysis.recommendations.length ? (
           <div className="spectro-recommendation-grid">

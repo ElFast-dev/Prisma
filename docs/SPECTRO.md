@@ -4,7 +4,7 @@ Espectro es el análisis cinematográfico personal de Prisma. Se ejecuta en el d
 
 ## Versión del algoritmo
 
-La versión activa es **2.5.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.5.0.
+La versión activa es **2.6.0** (`SPECTRO_ALGORITHM_VERSION`). Todo cambio de lógica que pueda alterar los resultados debe incrementar esta versión. Las instantáneas se identifican por versión y huella de entrada; las versiones anteriores nunca sustituyen un cálculo 2.6.0.
 
 ## Información que utiliza
 
@@ -82,7 +82,7 @@ Solo se presentan parejas con al menos cuatro películas distintas, q ajustado �
 
 El valor q es una medida de evidencia estadística corregida, no la probabilidad de que te guste una película. La consistencia entre bloques indica estabilidad interna, no validación temporal ni causalidad. Las pruebas t son una aproximación sobre residuos y siguen dependiendo de la calidad, independencia y distribución de las observaciones. La ausencia de patrones que superen los controles es un resultado válido.
 
-La versión 2.5.0 ya sustituye la nota prevista anterior por Kernel Ridge RBF. No incorpora aún árboles, boosting, Factorization Machines ni redes neuronales. Se compararán en evaluaciones temporales separadas; el orden principal sigue basándose en el encaje hasta que un modelo de ranking demuestre una mejora reproducible.
+La versión 2.5.0 sustituyó la nota prevista anterior por Kernel Ridge RBF. La versión 2.6.0 cambia el orden de las recomendaciones para priorizar esa nota prevista y utiliza el encaje como desempate. No incorpora aún árboles, boosting, Factorization Machines ni redes neuronales; siguen siendo alternativas para futuras comparaciones.
 
 
 ## Encaje y nota prevista
@@ -95,11 +95,13 @@ La escala se centra en 50 y transforma la diferencia ponderada mediante `50 + 12
 
 **Nota prevista (0–10).** Es un modelo local de regresión Kernel Ridge con kernel RBF. Entrena sobre la media de las calificaciones de cada película distinta y representa géneros, países, dirección, reparto, palabras clave, idioma, década, duración y términos de las sinopsis. El vocabulario TF‑IDF se ajusta solo con películas calificadas; las candidatas no intervienen en el entrenamiento. La solución del sistema regularizado usa Cholesky. Si faltan rasgos, hay menos de tres títulos o el sistema no puede resolverse de forma estable, utiliza el promedio personal como respaldo.
 
-La nota prevista ya no se obtiene sumando las afinidades individuales. El encaje, en cambio, conserva el cálculo relativo anterior. Por prudencia, el orden principal de las recomendaciones sigue priorizando el encaje; la nota prevista desempata candidatas con encaje similar hasta que una evaluación de ranking independiente justifique otra política.
+La nota prevista ya no se obtiene sumando las afinidades individuales. El encaje conserva el cálculo relativo anterior, pero las recomendaciones se ordenan ahora primero por la nota personal prevista por Kernel Ridge RBF y, en caso de empate, por encaje. El encaje sigue visible como explicación complementaria y no se presenta como probabilidad.
+
+La política se contrastó con una evaluación temporal exploratoria de cinco cortes expansivos del historial local, que favoreció el orden por nota RBF frente al encaje anterior. Ridge obtuvo un resultado de ranking ligeramente superior, por lo que RBF no se considera ganador universal. La evaluación es pequeña y pertenece a un solo historial; no constituye validación externa ni confianza calibrada. Las métricas de ese perfil se mantienen fuera de la documentación pública. Se seguirá midiendo estabilidad y calidad de primeras recomendaciones al incorporar nuevas valoraciones.
 
 Cada candidata puede mostrar hasta tres películas similares del historial. La similitud se calcula por coseno entre características estructuradas y términos de sinopsis normalizados. El porcentaje es una medida de cercanía descriptiva, no la probabilidad de que te guste ni una valoración prevista.
 
-Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial de un modelo candidato. Una prueba exploratoria anterior con un prototipo RBF de representación relacionada mostró una mejora pequeña frente a Ridge en MAE, pero no una superioridad concluyente en NDCG. Esa prueba no valida los parámetros ni la representación exacta integrada en esta versión. El predictor 2.5.0 todavía necesita una evaluación temporal independiente antes de considerarse calibrado o superior al estimador histórico.
+Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial. Una evaluación temporal exploratoria de cinco cortes del historial local favoreció el orden por nota RBF frente al antiguo orden por encaje; Ridge obtuvo un resultado de ranking ligeramente superior al RBF. Por tanto, la política 2.6.0 es una mejora observada en este historial, no una prueba de que RBF sea universalmente superior. El predictor 2.5.0 y su ranking 2.6.0 todavía necesitan más evaluación, replicación y calibración antes de considerarse resultados generales.
 
 Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) describen las señales que justifican el encaje; no son la confianza calibrada de Kernel Ridge ni probabilidades o intervalos de confianza estadísticos.
 
@@ -138,7 +140,7 @@ El buscador resalta nodos y conexiones; al seleccionar una película se muestran
 
 ## Huella e instantáneas
 
-La huella incluye visionados, calificaciones, fechas, sinopsis, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.5.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie. Las instantáneas antiguas se conservan, pero no se reutilizan para el nuevo contrato que incluye interacciones generales y términos de sinopsis.
+La huella incluye visionados, calificaciones, fechas, sinopsis, metadatos utilizados (incluidas las palabras clave), identificadores de candidatas y favoritos. Los cambios de metadatos o de películas elegibles invalidan la instantánea. El identificador utiliza dos hashes ligeros concatenados; no es una firma criptográfica. La versión 2.6.0 usa una clave de instantánea distinta de las versiones anteriores, sin migrar ni eliminar registros Dexie. Las instantáneas antiguas se conservan, pero no se reutilizan para el nuevo contrato que incluye interacciones generales y términos de sinopsis.
 
 Antes de calcular, el repositorio comprueba si ya existe una instantánea de la versión y huella actuales. Así evita repetir el análisis cuando la entrada no ha cambiado.
 
