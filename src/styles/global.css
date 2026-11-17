@@ -1040,3 +1040,5 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .spectro-donut { width: 92px; }
   .spectro-affinity-chart-row { grid-template-columns: minmax(0, 1fr) 30% 34px; gap: 5px; }
 }
+
+.spectro-heatmap-scroll { overflow-x: auto; max-width: 100%; padding-bottom: 2px; scrollbar-width: thin; }
