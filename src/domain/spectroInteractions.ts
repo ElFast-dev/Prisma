@@ -460,7 +460,7 @@ export function buildSpectroInteractions(
   return summaries
     .map((item) => {
       const qValue = qValues.get(item.key) ?? 1;
-      const confidence = qValue <= 0.01 && item.foldConsistency >= 0.8
+      const confidence: SpectroInteractionPattern["confidence"] = qValue <= 0.01 && item.foldConsistency >= 0.8
         ? "sólida"
         : qValue <= FALSE_DISCOVERY_RATE && item.foldConsistency >= 0.75
           ? "moderada"
