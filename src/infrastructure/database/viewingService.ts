@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { LibraryEntry, LibraryStatus, Viewing } from "../../domain/types";
 import { validateViewingDraft, type ViewingDraft } from "../../domain/viewingRules";
 import { prismaDb } from "./database";
+import { requestAutomaticEnrichment } from "./enrichmentService";
 
 const viewingSchema = z.object({
   movieId: z.string().min(1),
@@ -27,7 +28,7 @@ export async function addViewing(
   const parsed = viewingSchema.parse(input);
   const draft = validateViewingDraft(parsed);
 
-  return prismaDb.transaction(
+  const viewing = await prismaDb.transaction(
     "rw",
     prismaDb.movies,
     prismaDb.libraryEntries,
@@ -76,10 +77,12 @@ export async function addViewing(
       return viewing;
     }
   );
+  requestAutomaticEnrichment();
+  return viewing;
 }
 
 export async function moveMovieToPending(movieId: string): Promise<LibraryStatusUndoToken | null> {
-  return prismaDb.transaction("rw", prismaDb.movies, prismaDb.libraryEntries, async () => {
+  const result = await prismaDb.transaction("rw", prismaDb.movies, prismaDb.libraryEntries, async () => {
     const movie = await prismaDb.movies.get(movieId);
     if (!movie) throw new Error("La película no existe en la base de datos local.");
 
@@ -108,6 +111,8 @@ export async function moveMovieToPending(movieId: string): Promise<LibraryStatus
       appliedAt
     };
   });
+  if (result) requestAutomaticEnrichment();
+  return result;
 }
 
 export async function removeMovieFromPending(movieId: string): Promise<boolean> {
