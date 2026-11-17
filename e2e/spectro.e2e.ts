@@ -111,7 +111,7 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
-  await expect(page.getByText("Espectro 2.5.0")).toBeVisible();
+  await expect(page.getByText("Espectro 2.6.0")).toBeVisible();
   await expect(page.getByText("Películas en el mapa")).toBeVisible();
   await expect(page.locator('a[href="#/spectro/map"]')).toBeVisible();
   await expect(page.locator('a[href="#/spectro/affinities"]')).toBeVisible();
@@ -169,6 +169,7 @@ test("organiza Espectro como Personal y ofrece un mapa interactivo de películas
   await page.locator('a[href="#/spectro/recommendations"]').click();
   await expect(page.getByRole("heading", { name: "Recomendaciones" })).toBeVisible();
   await expect(page.locator(".spectro-recommendation-copy > strong").filter({ hasText: "Candidata Prisma ficticia" })).toBeVisible();
+  await expect(page.getByText(/Ordenadas por la nota personal estimada/)).toBeVisible();
   const recommendationReasons = page.locator(".spectro-recommendation-reasons");
   await expect(recommendationReasons.getByText("Género: Drama", { exact: true }).first()).toBeVisible();
   await expect(recommendationReasons.getByText("Dirección: Directora Prisma", { exact: true }).first()).toBeVisible();
