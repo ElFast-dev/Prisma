@@ -12,7 +12,7 @@ export type {
   SpectroNetworkCluster
 } from "./spectroNetwork";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.5.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.6.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;
@@ -107,6 +107,22 @@ export interface SpectroRecommendation {
   confidence: SpectroConfidence;
   reasons: SpectroRecommendationReason[];
   similarMovies: SpectroMoviePrediction["neighbors"];
+}
+
+/**
+ * Ordena candidatas por la estimación personal de nota; el encaje relativo
+ * complementa y desempata, pero no sustituye la predicción del modelo.
+ */
+export function rankSpectroRecommendations<T extends {
+  movie: Pick<MovieRecord, "title">;
+  fitPercentage: number;
+  predictedRating: number;
+}>(recommendations: readonly T[]): T[] {
+  return [...recommendations].sort((a, b) => (
+    b.predictedRating - a.predictedRating
+    || b.fitPercentage - a.fitPercentage
+    || a.movie.title.localeCompare(b.movie.title)
+  ));
 }
 
 export interface SpectroGraphEvidence {
@@ -1017,12 +1033,7 @@ function buildRecommendations(
   }
 
   const seen = new Set<string>();
-  const recommendations = ranked
-    .sort((a, b) => (
-      b.fitPercentage - a.fitPercentage
-      || b.predictedRating - a.predictedRating
-      || a.movie.title.localeCompare(b.movie.title)
-    ))
+  const recommendations = rankSpectroRecommendations(ranked)
     .filter((item) => {
       if (seen.has(item.movie.id)) return false;
       seen.add(item.movie.id);
