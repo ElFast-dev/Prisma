@@ -40,6 +40,24 @@ const RIDGE_REGULARIZATION = 0.25;
 const MINIMUM_TEXT_DOCUMENT_FREQUENCY = 2;
 const MAXIMUM_TEXT_FEATURES = 1200;
 const MAXIMUM_NEIGHBORS = 3;
+const STOPWORDS = new Set([
+  "a", "al", "algo", "algunas", "algunos", "ante", "antes", "como", "con", "contra",
+  "cual", "cuando", "de", "del", "desde", "donde", "durante", "e", "el", "ella",
+  "ellas", "ello", "ellos", "en", "entre", "era", "es", "esa", "esas", "ese", "eso",
+  "esos", "esta", "estaba", "estaban", "estas", "este", "esto", "estos", "fue",
+  "fueron", "ha", "habia", "han", "hasta", "hay", "la", "las", "le", "les", "lo",
+  "los", "mas", "me", "mi", "mis", "mientras", "muy", "no", "nos", "nuestra",
+  "nuestro", "o", "para", "pero", "por", "porque", "que", "quien", "se", "sin",
+  "sobre", "su", "sus", "tambien", "te", "tiene", "tienen", "todo", "tras", "tu",
+  "tus", "un", "una", "uno", "unos", "unas", "y", "ya", "the", "and", "for",
+  "from", "with", "into", "that", "this", "their", "they", "them", "when", "where",
+  "who", "what", "which", "while", "after", "before", "over", "under", "about",
+  "through", "his", "her", "its", "are", "was", "were", "has", "have", "had",
+  "not", "but", "you", "your", "our", "out", "all", "any", "can", "will",
+  "dans", "avec", "pour", "par", "une", "des", "les", "sur", "son", "ses",
+  "est", "sont", "qui", "que", "aux", "leur", "leurs", "elle", "elles", "ils",
+  "ont", "ete", "etre", "avoir", "mais", "pas", "plus", "apres", "avant"
+]);
 
 const normalizeText = (value: string): string => value
   .trim()
@@ -84,7 +102,8 @@ const structuredFeatures = (movie: MovieRecord): Set<string> => {
 
 const overviewTerms = (overview: string | undefined): Map<string, number> => {
   const normalized = normalizeText(overview ?? "");
-  const tokens = normalized.match(/[\p{L}\p{N}_]{2,}/gu) ?? [];
+  const tokens = (normalized.match(/[\\p{L}\\p{N}_]{2,}/gu) ?? [])
+    .filter((token) => !STOPWORDS.has(token));
   const terms = new Map<string, number>();
 
   for (const token of tokens) {
