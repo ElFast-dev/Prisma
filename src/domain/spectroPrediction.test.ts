@@ -107,20 +107,23 @@ describe("predicción personal no lineal de Espectro", () => {
     expect(result?.featureCount).toBe(0);
   });
 
-  it("evita entrenar con puntuaciones inválidas y elimina duplicados por título", () => {
+  it("promedia revisionados y excluye puntuaciones inválidas del entrenamiento", () => {
     const training = trainingMovies();
     const duplicated = [
       ...training,
       { movie: training[0].movie, rating: 1 },
       { movie: movie("invalid-rating", "Nota inválida", "acción"), rating: 99 }
     ];
+    const averaged = training.map((item, index) => (
+      index === 0 ? { ...item, rating: (item.rating + 1) / 2 } : item
+    ));
     const candidate = movie("candidate-memory", "Candidata de memoria", "memoria");
-    const once = predictSpectroMovies(training, [candidate]).get(candidate.id);
-    const twice = predictSpectroMovies(duplicated, [candidate]).get(candidate.id);
+    const expected = predictSpectroMovies(averaged, [candidate]).get(candidate.id);
+    const actual = predictSpectroMovies(duplicated, [candidate]).get(candidate.id);
 
-    expect(twice?.predictedRating).toBeCloseTo(once?.predictedRating ?? 0, 8);
-    expect(twice?.neighbors.map((item) => item.title)).toEqual(
-      once?.neighbors.map((item) => item.title)
+    expect(actual?.predictedRating).toBeCloseTo(expected?.predictedRating ?? 0, 8);
+    expect(actual?.neighbors.map((item) => item.title)).toEqual(
+      expected?.neighbors.map((item) => item.title)
     );
   });
 
