@@ -29,6 +29,7 @@ interface SpectroMetadataItem {
   attempts: number;
   updatedAt: string;
   lastError?: string;
+  retryable?: boolean;
 }
 
 interface SpectroMetadataTarget {
@@ -82,7 +83,8 @@ function parseItem(record?: AppMetadata): SpectroMetadataItem | undefined {
       status: value.status as ItemStatus,
       attempts: Number.isFinite(value.attempts) ? Math.max(0, Number(value.attempts)) : 0,
       updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "",
-      lastError: typeof value.lastError === "string" ? value.lastError : undefined
+      lastError: typeof value.lastError === "string" ? value.lastError : undefined,
+      retryable: value.retryable !== false
     };
   } catch {
     return undefined;
@@ -140,7 +142,7 @@ export function getSpectroMetadataRetryDelay(
   previous: Pick<SpectroMetadataItem, "status" | "updatedAt"> | undefined,
   now = Date.now()
 ): number | null {
-  if (previous?.status !== "error") return null;
+  if (previous?.status !== "error" || previous.retryable === false) return null;
   const updatedAt = Date.parse(previous.updatedAt);
   if (!Number.isFinite(updatedAt)) return null;
   return Math.max(0, updatedAt + ERROR_RETRY_AFTER_MS - now);
@@ -215,6 +217,7 @@ async function collectTargets(forceRetry = false): Promise<SpectroMetadataQueue>
       if (!isSpectroMetadataIncomplete(movie)) return [];
       const previous = states.get(movie.tmdbId);
       if (previous?.status === "complete" || previous?.status === "not-found") return [];
+      if (previous?.status === "error" && previous.retryable === false && !forceRetry) return [];
       if (!forceRetry && isSpectroMetadataRetryDeferred(previous)) {
         deferredMovies += 1;
         const retryDelay = getSpectroMetadataRetryDelay(previous);
@@ -354,14 +357,16 @@ async function persistItemState(
   movie: MovieRecord,
   status: ItemStatus,
   attempts: number,
-  lastError?: string
+  lastError?: string,
+  retryable = true
 ): Promise<void> {
   const item: SpectroMetadataItem = {
     tmdbId: movie.tmdbId,
     status,
     attempts,
     updatedAt: new Date().toISOString(),
-    lastError
+    lastError,
+    retryable
   };
   await prismaDb.appMetadata.put({
     key: itemKey(movie.tmdbId),
@@ -391,11 +396,11 @@ async function enrichOne(target: SpectroMetadataTarget): Promise<"updated" | "in
         return "not-found";
       }
       if (classification === "authentication") {
-        await persistItemState(target.movie, "error", attempts, message);
+        await persistItemState(target.movie, "error", attempts, message, false);
         return "authentication";
       }
       if (classification === "permanent") {
-        await persistItemState(target.movie, "error", attempts, message);
+        await persistItemState(target.movie, "error", attempts, message, false);
         return "failed";
       }
       if (attempt < 2) {
