@@ -19,9 +19,6 @@ export interface SpectroMoviePrediction {
 }
 
 interface TextFeature {
-  key: string;
-  documentFrequency: number;
-  totalFrequency: number;
   index: number;
   inverseDocumentFrequency: number;
 }
@@ -38,7 +35,6 @@ type SparseVector = Map<number, number>;
 const KERNEL_GAMMA = 0.5;
 const RIDGE_REGULARIZATION = 0.25;
 const MINIMUM_TEXT_DOCUMENT_FREQUENCY = 2;
-const MAXIMUM_TEXT_FEATURES = 1200;
 const MAXIMUM_NEIGHBORS = 3;
 const STOPWORDS = new Set([
   "a", "al", "algo", "algunas", "algunos", "ante", "antes", "como", "con", "contra",
@@ -120,7 +116,6 @@ const overviewTerms = (overview: string | undefined): Map<string, number> => {
 function buildVocabulary(training: readonly SpectroPredictionTrainingMovie[]): PredictionVocabulary {
   const structured = new Map<string, number>();
   const documentFrequency = new Map<string, number>();
-  const totalFrequency = new Map<string, number>();
   let hasRuntime = false;
 
   for (const item of training) {
@@ -133,28 +128,22 @@ function buildVocabulary(training: readonly SpectroPredictionTrainingMovie[]): P
       hasRuntime = true;
     }
 
-    for (const [key, count] of overviewTerms(item.movie.overview)) {
+    for (const key of overviewTerms(item.movie.overview).keys()) {
       documentFrequency.set(key, (documentFrequency.get(key) ?? 0) + 1);
-      totalFrequency.set(key, (totalFrequency.get(key) ?? 0) + count);
     }
   }
 
+  // No impone un vocabulario cerrado: elimina términos únicos que no permiten
+  // estimar IDF estable y conserva todas las expresiones repetidas en el corpus.
   const selected = [...documentFrequency.entries()]
     .filter(([, frequency]) => frequency >= MINIMUM_TEXT_DOCUMENT_FREQUENCY)
-    .sort((a, b) => (
-      (totalFrequency.get(b[0]) ?? 0) - (totalFrequency.get(a[0]) ?? 0)
-      || a[0].localeCompare(b[0])
-    ))
-    .slice(0, MAXIMUM_TEXT_FEATURES);
+    .sort((a, b) => a[0].localeCompare(b[0]));
 
   const text = new Map<string, TextFeature>();
   let dimension = structured.size;
   for (const [key, frequency] of selected) {
     const idf = Math.log((training.length + 1) / (frequency + 1)) + 1;
     text.set(key, {
-      key,
-      documentFrequency: frequency,
-      totalFrequency: totalFrequency.get(key) ?? 0,
       index: dimension,
       inverseDocumentFrequency: idf
     });
