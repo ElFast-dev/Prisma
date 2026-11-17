@@ -52,7 +52,7 @@ function ChartCard({
   );
 }
 
-function EmptyChart({ children = "Todavía no hay datos suficientes para esta gráfica." }: { children?: string }) {
+function EmptyChart({ children = "No hay datos suficientes para esta gráfica." }: { children?: string }) {
   return <p className="spectro-chart-empty">{children}</p>;
 }
 
@@ -426,7 +426,7 @@ export function SpectroAnalyticsPanel({
             <ChartCard title="Estado de la Biblioteca" description="Películas con historial, pendientes y otros títulos guardados localmente.">
               <DonutChart items={analytics.libraryBreakdown} />
             </ChartCard>
-            <ChartCard title="Cobertura de metadatos" description="Cobertura real de los metadatos de tus películas vistas.">
+            <ChartCard title="Cobertura de metadatos">
               <div className="spectro-coverage-grid">
                 {[
                   ["Géneros", analytics.coverage.withGenres],
@@ -468,7 +468,7 @@ export function SpectroAnalyticsPanel({
               <RatingColumns items={analytics.ratingDistribution} />
               <p className="spectro-chart-footnote">{number(analytics.coverage.ratedViewings)} notas registradas · {number(analytics.coverage.unratedViewings)} visionados sin nota.</p>
             </ChartCard>
-            <ChartCard title="Calificación media por mes" description="Media de las notas de las sesiones registradas en cada mes.">
+            <ChartCard title="Calificación media por mes">
               <MonthlyRatingChart points={analytics.monthly} />
             </ChartCard>
             <ChartCard title="Revisionados" description="Títulos con más de una sesión registrada." tag={number(summary.moviesWithRewatches) + " títulos"}>
@@ -498,7 +498,7 @@ export function SpectroAnalyticsPanel({
             <ChartCard title="Países de producción" description="Un título puede sumar a más de un país.">
               <HorizontalBars items={analytics.countryCounts} />
             </ChartCard>
-            <ChartCard title="Idiomas originales" description="Idioma original registrado para las películas vistas.">
+            <ChartCard title="Idiomas originales">
               <HorizontalBars items={analytics.languageCounts} />
             </ChartCard>
             <ChartCard title="Dirección" description="Directores con más títulos en tu historial.">
