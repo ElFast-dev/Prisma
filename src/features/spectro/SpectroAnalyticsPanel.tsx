@@ -297,7 +297,7 @@ function MovieRatingList({
   items,
   mode
 }: {
-  items: Array<{ movieId: string; title: string }>;
+  items: Array<{ movieId: string; title: string; averageRating: number | null }>;
   mode: "top" | "bottom";
 }) {
   if (!items.length) return <EmptyChart>Necesitas visionados con calificación para comparar películas.</EmptyChart>;
@@ -307,7 +307,7 @@ function MovieRatingList({
         <li key={item.movieId}>
           <span className="spectro-movie-rating-rank">{index + 1}</span>
           <span title={item.title}>{item.title}</span>
-          <strong>{mode === "top" ? "Mejor valoradas" : "Menor valoración"}</strong>
+          <strong>{item.averageRating === null ? "—" : item.averageRating.toFixed(1) + "/10"}</strong>
         </li>
       ))}
     </ol>
@@ -382,8 +382,6 @@ export function SpectroAnalyticsPanel({
   const analytics = useMemo(() => calculateSpectroAnalytics(data), [data]);
   const summary = analytics.summary;
   const estimatedHours = (summary.estimatedMinutes / 60).toLocaleString("es-PA", { maximumFractionDigits: 1 });
-  const highestRating = analytics.ratingDistribution.reduce((best, item) => item.count > best.count ? item : best, analytics.ratingDistribution[0]);
-  const favoriteAffinities = analysis.favoriteSignals.length;
 
   const selectedSection = SECTIONS.find((item) => item.id === activeSection);
 
