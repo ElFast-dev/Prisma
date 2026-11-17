@@ -79,7 +79,7 @@ export async function addViewing(
     }
   );
   requestAutomaticEnrichment();
-  void startSpectroMetadataEnrichment();
+  void startSpectroMetadataEnrichment().catch(() => undefined);
   return viewing;
 }
 
@@ -115,7 +115,7 @@ export async function moveMovieToPending(movieId: string): Promise<LibraryStatus
   });
   if (result) {
     requestAutomaticEnrichment();
-    void startSpectroMetadataEnrichment();
+    void startSpectroMetadataEnrichment().catch(() => undefined);
   }
   return result;
 }
