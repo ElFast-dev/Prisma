@@ -165,18 +165,28 @@ function buildVocabulary(training: readonly SpectroPredictionTrainingMovie[]): P
   return { structured, text, runtimeIndex, dimension };
 }
 
+function normalizeChannel(vector: Map<number, number>): void {
+  let squaredNorm = 0;
+  for (const value of vector.values()) squaredNorm += value * value;
+  if (squaredNorm === 0) return;
+  const inverseNorm = 1 / Math.sqrt(squaredNorm);
+  for (const [index, value] of vector) vector.set(index, value * inverseNorm);
+}
+
 function vectorize(movie: MovieRecord, vocabulary: PredictionVocabulary): SparseVector {
-  const vector = new Map<number, number>();
+  const structured = new Map<number, number>();
+  const text = new Map<number, number>();
+
   for (const key of structuredFeatures(movie)) {
     const index = vocabulary.structured.get(key);
-    if (index !== undefined) vector.set(index, 1);
+    if (index !== undefined) structured.set(index, 1);
   }
 
   for (const [key, count] of overviewTerms(movie.overview)) {
     const feature = vocabulary.text.get(key);
     if (!feature) continue;
     const sublinearTermFrequency = 1 + Math.log(count);
-    vector.set(
+    text.set(
       feature.index,
       sublinearTermFrequency * feature.inverseDocumentFrequency
     );
@@ -185,15 +195,24 @@ function vectorize(movie: MovieRecord, vocabulary: PredictionVocabulary): Sparse
   if (vocabulary.runtimeIndex !== null) {
     const runtime = movie.runtimeMinutes;
     if (Number.isFinite(runtime) && runtime !== undefined && runtime > 0) {
-      vector.set(vocabulary.runtimeIndex, runtime / 180);
+      structured.set(vocabulary.runtimeIndex, runtime / 180);
     }
   }
 
-  let squaredNorm = 0;
-  for (const value of vector.values()) squaredNorm += value * value;
-  if (squaredNorm > 0) {
-    const inverseNorm = 1 / Math.sqrt(squaredNorm);
-    for (const [index, value] of vector) vector.set(index, value * inverseNorm);
+  // Equilibra metadatos estructurados y sinopsis. El reparto o una sinopsis larga
+  // no ganan peso por aportar simplemente más elementos al vector.
+  normalizeChannel(structured);
+  normalizeChannel(text);
+  const hasStructured = structured.size > 0;
+  const hasText = text.size > 0;
+  const channelWeight = hasStructured && hasText ? Math.SQRT1_2 : 1;
+  const vector = new Map<number, number>();
+
+  for (const [index, value] of structured) {
+    vector.set(index, value * channelWeight);
+  }
+  for (const [index, value] of text) {
+    vector.set(index, value * channelWeight);
   }
 
   return vector;
