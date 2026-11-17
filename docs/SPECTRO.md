@@ -69,7 +69,7 @@ Cada película aporta una sola observación a cada pareja. Los revisionados se p
 5. Calcula diferencia media, dispersión, número de títulos, prueba t bilateral y consistencia de la dirección entre bloques.
 6. Corrige conjuntamente los valores p mediante Benjamini–Yekutieli, un procedimiento conservador ante dependencias entre las comparaciones.
 
-Solo se presentan parejas con al menos cuatro películas distintas, q ajustado ≤ 0,05, presencia en al menos tres bloques y consistencia de dirección ≥ 0,75. Se muestran hasta ocho resultados ordenados por evidencia corregida. Estos límites sirven para descartar patrones que no pueden replicarse en diferentes bloques; no convierten una asociación en causalidad.
+Solo se presentan parejas con al menos cuatro películas distintas, q ajustado ≤ 0,05, al menos dos películas de soporte en cada uno de tres o más bloques y consistencia de dirección ≥ 0,75. Se muestran hasta ocho resultados ordenados por evidencia corregida. Estos límites sirven para descartar patrones que no pueden replicarse en diferentes bloques; no convierten una asociación en causalidad.
 
 ### Qué muestra cada hallazgo
 
