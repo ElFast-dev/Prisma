@@ -15,6 +15,7 @@ export function saveTmdbAccessToken(token: string): void {
     throw new Error("Introduce una credencial de TMDB.");
   }
   window.localStorage.setItem(TOKEN_KEY, normalized);
+  window.dispatchEvent(new Event("prisma:tmdb-credentials-updated"));
 }
 
 export function clearTmdbAccessToken(): void {
