@@ -39,7 +39,7 @@ Cuando Espectro detecta campos cinematográficos que faltan, solicita a TMDB los
 
 El proceso actualiza exclusivamente campos cinematográficos del registro de película: títulos, sinopsis, estreno, duración, géneros, países, idioma, palabras clave, póster, fondo, dirección y reparto. No modifica visionados, secuencias, calificaciones, fechas, comentarios, favoritos, estados de Biblioteca, colecciones, perfil ni preferencias.
 
-## Afinidades y respaldo
+## Criterios de señal y respaldo
 
 - El promedio personal y cada afinidad se calculan por película distinta. Los revisionados se promedian dentro de cada título y no multiplican la muestra.
 - Una afinidad aparece con un mínimo de dos películas distintas. Con dos títulos se etiqueta como inicial y no se usa para recomendar.
@@ -85,58 +85,30 @@ El valor q es una medida de evidencia estadística corregida, no la probabilidad
 La versión 2.5.0 sustituyó la nota prevista anterior por Kernel Ridge RBF. La versión 2.6.0 cambia el orden de las recomendaciones para priorizar esa nota prevista y utiliza el encaje como desempate. No incorpora aún árboles, boosting, Factorization Machines ni redes neuronales; siguen siendo alternativas para futuras comparaciones.
 
 
-## Encaje y nota prevista
+## Modelo predictivo interno
 
-Cada candidata local puede mostrar dos estimaciones distintas:
+El motor conserva estimaciones locales de candidatas como capacidad analítica, pero Espectro ya no las presenta en una pantalla independiente de recomendaciones. La experiencia visible se centra en explicar el gusto registrado y en mostrar solo señales que cuentan con respaldo.
 
-**Encaje (0–100 %).** Es una puntuación relativa que resume señales positivas y negativas de ocho familias: género, dirección, reparto, temas, país, época, idioma y duración. Las coincidencias se limitan dentro de cada familia para que muchos actores, géneros o palabras clave no multipliquen artificialmente su peso. Las afinidades negativas restan encaje. Los favoritos añaden un refuerzo explícito moderado a las familias coincidentes.
+**Encaje.** Es una puntuación relativa que resume señales positivas y negativas de ocho familias: género, dirección, reparto, temas, país, época, idioma y duración. Las coincidencias se limitan dentro de cada familia y los favoritos añaden un refuerzo explícito moderado. No es una probabilidad de que una película guste.
 
-La escala se centra en 50 y transforma la diferencia ponderada mediante `50 + 12,5 × diferencia`, limitada al intervalo 0–100. Un valor superior a 50 indica un encaje neto positivo. **No es una probabilidad de que la película guste ni una garantía.**
+**Nota prevista (0–10).** El motor utiliza regresión Kernel Ridge con kernel RBF. Entrena sobre la media de las calificaciones de cada película distinta y representa géneros, países, dirección, reparto, palabras clave, idioma, década, duración y términos de las sinopsis. El vocabulario TF‑IDF se ajusta solo con películas calificadas; las candidatas no intervienen en el entrenamiento. La solución regularizada usa Cholesky y recurre al promedio personal cuando hay menos de tres títulos, faltan rasgos comparables o el sistema no puede resolverse de forma estable.
 
-**Nota prevista (0–10).** Es un modelo local de regresión Kernel Ridge con kernel RBF. Entrena sobre la media de las calificaciones de cada película distinta y representa géneros, países, dirección, reparto, palabras clave, idioma, década, duración y términos de las sinopsis. El vocabulario TF‑IDF se ajusta solo con películas calificadas; las candidatas no intervienen en el entrenamiento. La solución del sistema regularizado usa Cholesky. Si faltan rasgos, hay menos de tres títulos o el sistema no puede resolverse de forma estable, utiliza el promedio personal como respaldo.
+El orden interno de candidatas prioriza la nota prevista y utiliza el encaje como desempate. Esta salida no constituye una lista visible dentro de Espectro. Los títulos comparables del historial se calculan por similitud coseno y son cercanía descriptiva, no probabilidad ni una valoración prevista.
 
-La nota prevista ya no se obtiene sumando las afinidades individuales. El encaje conserva el cálculo relativo anterior, pero las recomendaciones se ordenan ahora primero por la nota personal prevista por Kernel Ridge RBF y, en caso de empate, por encaje. El encaje sigue visible como explicación complementaria y no se presenta como probabilidad.
+La evaluación temporal del modelo sigue siendo exploratoria y personal. Ridge puede superar a RBF en algunas métricas; por eso no se presenta el predictor como calibrado, definitivo ni universalmente superior. Los niveles Inicial, Moderada, Sólida, Variable y Explícita describen el respaldo de señales concretas; no son intervalos de confianza ni la confianza calibrada del modelo RBF.
 
-La política se contrastó con una evaluación temporal exploratoria de cinco cortes expansivos del historial local, que favoreció el orden por nota RBF frente al encaje anterior. Ridge obtuvo un resultado de ranking ligeramente superior, por lo que RBF no se considera ganador universal. La evaluación es pequeña y pertenece a un solo historial; no constituye validación externa ni confianza calibrada. Las métricas de ese perfil se mantienen fuera de la documentación pública. Se seguirá midiendo estabilidad y calidad de primeras recomendaciones al incorporar nuevas valoraciones.
+## Experiencia unificada de Espectro
 
-Cada candidata puede mostrar hasta tres películas similares del historial. La similitud se calcula por coseno entre características estructuradas y términos de sinopsis normalizados. El porcentaje es una medida de cercanía descriptiva, no la probabilidad de que te guste ni una valoración prevista.
+Espectro se presenta como una sola lectura continua del perfil cinematográfico, no como un menú de informes separados. La página reúne cuatro piezas, en este orden:
 
-Los hiperparámetros actuales (gamma 0,5 y regularización 0,25) son una configuración inicial. Una evaluación temporal exploratoria de cinco cortes del historial local favoreció el orden por nota RBF frente al antiguo orden por encaje; Ridge obtuvo un resultado de ranking ligeramente superior al RBF. Por tanto, la política 2.6.0 es una mejora observada en este historial, no una prueba de que RBF sea universalmente superior. El predictor 2.5.0 y su ranking 2.6.0 todavía necesitan más evaluación, replicación y calibración antes de considerarse resultados generales.
+1. **Tu retrato actual.** Número de películas distintas calificadas, promedio personal por título y combinaciones que han superado las pruebas estadísticas. Los revisionados no inflan el número de películas.
+2. **Señales de tu gusto.** Rasgos con respaldo moderado o sólido, separados entre los que aparecen en valoraciones más altas y más bajas. Cada señal muestra categoría, media observada, títulos de soporte y nivel de respaldo. Las muestras pequeñas o variables no se elevan a preferencias confirmadas.
+3. **Favoritos explícitos.** Los rasgos presentes en las películas que el propietario marcó como favoritas se muestran por separado. Un favorito no se transforma en una nota ni se mezcla con las inferencias de las valoraciones.
+4. **Combinaciones que destacan.** Interacciones que se apartan de la expectativa aditiva, solo cuando superan la validación cruzada y la corrección Benjamini–Yekutieli. La ausencia de combinaciones válidas es un resultado legítimo.
 
-Los niveles de respaldo (Inicial, Moderada, Sólida, Variable y Explícita) describen las señales que justifican el encaje; no son la confianza calibrada de Kernel Ridge ni probabilidades o intervalos de confianza estadísticos.
+La pregunta contextual de una calificación pendiente y el estado de enriquecimiento de metadatos ayudan a completar el retrato sin exigir abrir fichas ni alterar las experiencias existentes.
 
-## Grafo cinematográfico y trazabilidad
-
-El apartado «Mapa cinematográfico» representa una red calculada desde las películas locales y sus metadatos. No es una ilustración prediseñada ni un algoritmo de recomendaciones oculto detrás de ella: cada nodo y cada vínculo corresponden a datos que Prisma puede señalar.
-
-- Cada película es un nodo; los otros nodos representan géneros, directores, actores y palabras clave temáticas procedentes de TMDB.
-- Cada arista conecta una película con uno de sus rasgos. Su fuerza está entre 0 y 1 y se expresa visualmente mediante grosor y brillo. Una señal positiva, negativa, explícita (favorito) o neutral determina su color.
-- El tamaño de las películas y los rasgos representa influencia relativa dentro de su tipo de nodo. Para una película combina sus conexiones ponderadas y cuántas recomendaciones locales alcanza; para un rasgo combina la fuerza de sus conexiones y cuántas recomendaciones lo utilizan. No es una probabilidad.
-- La fuerza de una conexión respaldada por una candidata utiliza la magnitud de su contribución. En una película sin motivo de recomendación directo, utiliza la diferencia ajustada de su afinidad y el tamaño de la muestra. Si todavía no hay señales aprendidas, la conexión se dibuja tenue.
-- Los favoritos permanecen como declaración explícita de Biblioteca. Se distinguen con una marca en el nodo de película y nunca se convierten en una calificación inventada.
-- Las candidatas recomendadas también aparecen como películas locales en el mapa. El apartado Recomendaciones expone por separado su encaje, nota prevista y contribuciones que explican cada resultado.
-
-### Agrupación por similitud
-
-Las películas se agrupan a partir de cuatro familias que existen en el mapa: género, dirección, reparto y temas. Para cada par de películas se calcula el solapamiento Jaccard en cada familia y se combina con estos pesos: género 0,30; dirección 0,20; actores 0,18; temas 0,32.
-
-Dos títulos se conectan cuando alcanzan similitud de 0,31 y comparten al menos dos rasgos, o cuando alcanzan 0,55 con un rasgo compartido. Los grupos se construyen uniendo componentes y se limitan a 24 películas por grupo para evitar que una cadena de similitudes arrastre todo el catálogo. Las posiciones se distribuyen de forma determinista dentro de cada zona.
-
-- Para proteger la lectura del mapa, los títulos sin conexiones similares suficientes se distribuyen en zonas deterministas de hasta ocho películas; no se les atribuye una similitud inventada.
-- La generación de parejas depende de cuántas películas comparten cada rasgo: un rasgo muy frecuente produce más combinaciones que evaluar. La prueba de escala utiliza un catálogo ficticio de 821 títulos y no sustituye una comprobación visual con datos reales.
-
-Las películas con visionados aparecen como exploradas. Los títulos locales sin visionados y los rasgos conectados únicamente con títulos no vistos se atenúan. Esto describe lo que todavía no has explorado en Prisma, no el catálogo mundial de TMDB. Cuando faltan palabras clave, el mapa no inventa temas.
-
-El buscador resalta nodos y conexiones; al seleccionar una película se muestran sus rasgos, la fuerza de cada vínculo y sus estimaciones disponibles. Al seleccionar un rasgo se enumeran las películas que lo comparten. Así es posible recorrer la red sin abrir cada ficha.
-
-
-## Evolución temporal
-
-- La evolución mensual conserva las calificaciones de visionados reales y muestra solo meses con actividad.
-- Los cambios de afinidad comparan los últimos doce meses disponibles con los doce anteriores, tomando como referencia la fecha de calificación más reciente.
-- Cada película aporta como máximo una observación por periodo; los revisionados se promedian dentro de ese periodo.
-- Solo se muestra un cambio para un rasgo con al menos tres películas distintas en cada periodo.
-- Si no existe muestra suficiente, Espectro indica que no hay periodos comparables en lugar de dibujar una tendencia ficticia.
+Se retiraron de la navegación de Espectro las pantallas Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. Los enlaces antiguos a esas rutas se normalizan hacia la página unificada. El motor conserva la procedencia y los cálculos que siguen siendo útiles, pero la interfaz deja de obligar a recorrer gráficos y listados independientes.
 
 ## Huella e instantáneas
 
