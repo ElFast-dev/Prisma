@@ -210,7 +210,7 @@ test("completa metadatos y temas de Espectro desde TMDB sin abrir fichas", async
   await seedIncompleteSpectroHistory(page);
 
   await page.goto("#/spectro");
-  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeAttached();
+  await expect(page.getByRole("heading", { name: "Tu mirada cinematográfica" })).toBeVisible();
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
   await expect.poll(() => requestedPaths.filter((path) => path.endsWith("/keywords")).length).toBe(4);
   await expect(page.getByText("Espectro incorporó metadatos de 4 películas.")).toBeVisible();
