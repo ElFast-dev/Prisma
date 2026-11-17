@@ -307,11 +307,23 @@ export function predictSpectroMovies(
   trainingInput: readonly SpectroPredictionTrainingMovie[],
   candidates: readonly MovieRecord[]
 ): Map<string, SpectroMoviePrediction> {
-  const training = [...new Map(
-    trainingInput
-      .filter((item) => Number.isFinite(item.rating) && item.rating >= 0 && item.rating <= 10)
-      .map((item) => [item.movie.id, item])
-  ).values()];
+  const ratingsByMovie = new Map<string, {
+    movie: MovieRecord;
+    ratings: number[];
+  }>();
+  for (const item of trainingInput) {
+    if (!Number.isFinite(item.rating) || item.rating < 0 || item.rating > 10) continue;
+    const existing = ratingsByMovie.get(item.movie.id) ?? {
+      movie: item.movie,
+      ratings: []
+    };
+    existing.ratings.push(item.rating);
+    ratingsByMovie.set(item.movie.id, existing);
+  }
+  const training = [...ratingsByMovie.values()].map((item) => ({
+    movie: item.movie,
+    rating: item.ratings.reduce((sum, rating) => sum + rating, 0) / item.ratings.length
+  }));
 
   const predictions = new Map<string, SpectroMoviePrediction>();
   if (training.length === 0) return predictions;
