@@ -283,14 +283,14 @@ function titleRatings(viewings: Viewing[], movieById: Map<string, MovieRecord>):
         a.watchedOn.localeCompare(b.watchedOn)
         || a.sequenceNumber - b.sequenceNumber
       ));
-    if (!movie || !rated.length) return [];
+    if (!movie) return [];
     return [{
       movieId,
       title: movie.title,
       viewings: entries.length,
       averageRating: mean(rated.map((entry) => entry.rating as number)),
-      firstRating: rated[0].rating ?? null,
-      latestRating: rated[rated.length - 1].rating ?? null
+      firstRating: rated[0]?.rating ?? null,
+      latestRating: rated[rated.length - 1]?.rating ?? null
     }];
   });
 }
