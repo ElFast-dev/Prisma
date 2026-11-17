@@ -51,7 +51,7 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
     <section className="spectro-patterns-section card-surface" aria-labelledby="spectro-patterns-title">
       <div className="content-caption">
         <div>
-          <h2 id="spectro-patterns-title">Combinaciones que destacan</h2>
+          <h2 id="spectro-patterns-title">Interacciones estadísticas</h2>
           <p className="muted-copy spectro-patterns-intro">
             Interacciones encontradas al explorar las combinaciones de rasgos disponibles, no una lista cerrada de parejas.
           </p>
@@ -307,9 +307,9 @@ function SpectroHome({
         <section className="spectro-insufficient card-surface" role="status">
           <Fingerprint size={23} className="accent-icon" />
           <div>
-            <h2>Tu perfil estadístico todavía está tomando forma</h2>
+            <h2>Pocas películas calificadas</h2>
             <p>
-              Has calificado {analysis.movieCount} películas distintas. Algunas comparaciones necesitan al menos tres títulos y otras requieren muestras mayores. Las gráficas de actividad y distribución siguen disponibles desde ahora.
+              Hay {analysis.movieCount} películas distintas calificadas. Las afinidades requieren al menos tres títulos; otras comparaciones necesitan muestras mayores.
             </p>
           </div>
         </section>
