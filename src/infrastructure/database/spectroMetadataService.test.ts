@@ -4,6 +4,7 @@ import { TmdbHttpError } from "../tmdb/TmdbClient";
 import {
   classifySpectroMetadataError,
   getSpectroMetadataPriority,
+  getSpectroMetadataRetryDelay,
   isSpectroMetadataIncomplete,
   isSpectroMetadataRetryDeferred
 } from "./spectroMetadataService";
@@ -105,11 +106,15 @@ describe("Espectro · pausa de reintentos", () => {
     }, now)).toBe(true);
   });
 
-  it("permite el reintento automático al cumplir las 12 horas", () => {
-    expect(isSpectroMetadataRetryDeferred({
+  it("calcula el plazo restante y permite consultar al cumplir las 12 horas", () => {
+    expect(getSpectroMetadataRetryDelay({
+      status: "error",
+      updatedAt: new Date(now - 60 * 60 * 1000).toISOString()
+    }, now)).toBe(11 * 60 * 60 * 1000);
+    expect(getSpectroMetadataRetryDelay({
       status: "error",
       updatedAt: new Date(now - 12 * 60 * 60 * 1000).toISOString()
-    }, now)).toBe(false);
+    }, now)).toBe(0);
   });
 
   it("no difiere registros completos, no encontrados ni fechas inválidas", () => {
