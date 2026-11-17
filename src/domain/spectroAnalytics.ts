@@ -39,6 +39,7 @@ export interface SpectroRewatchTitle {
   movieId: string;
   title: string;
   viewings: number;
+  averageRating: number | null;
   firstRating: number | null;
   latestRating: number | null;
 }
@@ -287,6 +288,7 @@ function titleRatings(viewings: Viewing[], movieById: Map<string, MovieRecord>):
       movieId,
       title: movie.title,
       viewings: entries.length,
+      averageRating: mean(rated.map((entry) => entry.rating as number)),
       firstRating: rated[0].rating ?? null,
       latestRating: rated[rated.length - 1].rating ?? null
     }];
@@ -322,14 +324,10 @@ export function calculateSpectroAnalytics(input: SpectroAnalyticsInput): Spectro
     return movie ? [movie] : [];
   });
   const titleRatingsList = titleRatings(input.viewings, movieById);
-  const ratedMovies = titleRatingsList.filter((item) => item.firstRating !== null);
-  const ratings = input.viewings.flatMap((viewing) => (
-    viewing.rating === undefined ? [] : [viewing.rating]
-  ));
-  const averageMovieRating = mean(ratedMovies.map((item) => {
-    const entries = input.viewings.filter((viewing) => viewing.movieId === item.movieId && viewing.rating !== undefined);
-    return mean(entries.map((entry) => entry.rating as number)) ?? 0;
-  }));
+  const ratedMovies = titleRatingsList.filter((item) => item.averageRating !== null);
+  const averageMovieRating = mean(ratedMovies.flatMap((item) => (
+    item.averageRating === null ? [] : [item.averageRating]
+  )));
   const validDates = input.viewings.map((viewing) => viewing.watchedOn).filter(validDate);
   const activeDays = new Set(validDates).size;
   const viewingsWithRuntime = input.viewings.filter((viewing) => {
@@ -376,26 +374,13 @@ export function calculateSpectroAnalytics(input: SpectroAnalyticsInput): Spectro
       ? [item.latestRating - item.firstRating]
       : []
   ));
-  const totalUniqueViewings = viewedIds.size;
   const topRatedMovies = [...titleRatingsList]
-    .filter((item) => item.firstRating !== null)
-    .sort((a, b) => {
-      const ratingA = input.viewings.filter((v) => v.movieId === a.movieId && v.rating !== undefined)
-        .reduce((sum, v, _, all) => sum + (v.rating ?? 0) / all.length, 0);
-      const ratingB = input.viewings.filter((v) => v.movieId === b.movieId && v.rating !== undefined)
-        .reduce((sum, v, _, all) => sum + (v.rating ?? 0) / all.length, 0);
-      return ratingB - ratingA || a.title.localeCompare(b.title, "es");
-    })
+    .filter((item) => item.averageRating !== null)
+    .sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0) || a.title.localeCompare(b.title, "es"))
     .slice(0, 8);
   const lowestRatedMovies = [...titleRatingsList]
-    .filter((item) => item.firstRating !== null)
-    .sort((a, b) => {
-      const ratingA = input.viewings.filter((v) => v.movieId === a.movieId && v.rating !== undefined)
-        .reduce((sum, v, _, all) => sum + (v.rating ?? 0) / all.length, 0);
-      const ratingB = input.viewings.filter((v) => v.movieId === b.movieId && v.rating !== undefined)
-        .reduce((sum, v, _, all) => sum + (v.rating ?? 0) / all.length, 0);
-      return ratingA - ratingB || a.title.localeCompare(b.title, "es");
-    })
+    .filter((item) => item.averageRating !== null)
+    .sort((a, b) => (a.averageRating ?? 0) - (b.averageRating ?? 0) || a.title.localeCompare(b.title, "es"))
     .slice(0, 8);
   const genreCounts = buildCategories(viewedMovies, (movie) => uniqueLabels(movie.genres));
   const decadeCounts = buildCategories(viewedMovies, (movie) => (
