@@ -1,4 +1,5 @@
 import type { CatalogCacheEntry } from "../../domain/types";
+import { buildDiscoverMovieParams, normalizeDiscoverFilters, type DiscoverFilters } from "../../domain/discoverFilters";
 import { prismaDb } from "../database/database";
 import { TmdbClient } from "./TmdbClient";
 
@@ -86,7 +87,7 @@ function client(token?: string): TmdbClient {
 function cacheTtlMs(cacheKey: string): number {
   const hours = 60 * 60 * 1000;
   const days = 24 * hours;
-  if (cacheKey.startsWith("search:") || cacheKey.startsWith("trending:")) return 6 * hours;
+  if (cacheKey.startsWith("search:") || cacheKey.startsWith("trending:") || cacheKey.startsWith("discover:")) return 6 * hours;
   if (cacheKey.startsWith("movie:details:")) return 30 * days;
   if (cacheKey.startsWith("movie:credits:")) return 90 * days;
   if (cacheKey.startsWith("movie:keywords:")) return 90 * days;
@@ -160,6 +161,29 @@ export async function getTrendingMovies(
     "trending/movie/week",
     { page, language: LANGUAGE }
   );
+  return {
+    movies: result.data.results ?? [],
+    totalPages: result.data.total_pages ?? 1,
+    stale: result.stale,
+    fetchedAt: result.fetchedAt
+  };
+}
+
+export async function discoverMovies(
+  token: string,
+  filters: DiscoverFilters,
+  page = 1
+): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; stale: boolean; fetchedAt: string }> {
+  const normalizedFilters = normalizeDiscoverFilters(filters);
+  const params = buildDiscoverMovieParams(normalizedFilters, page, LANGUAGE);
+  const cacheKey = "discover:movie:" + JSON.stringify(normalizedFilters) + ":" + page;
+  const result = await getCached<TmdbListResponse>(
+    token,
+    cacheKey,
+    "discover/movie",
+    params
+  );
+
   return {
     movies: result.data.results ?? [],
     totalPages: result.data.total_pages ?? 1,

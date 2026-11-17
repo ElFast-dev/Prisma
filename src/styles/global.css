@@ -1042,3 +1042,22 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 }
 
 .spectro-heatmap-scroll { overflow-x: auto; max-width: 100%; padding-bottom: 2px; scrollbar-width: thin; }
+
+/* Descubrir · filtros del catálogo TMDB */
+.discover-active-filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -4px 0 12px; padding: 8px 11px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+.discover-active-filters > span { display: inline-flex; align-items: center; gap: 7px; color: var(--color-accent); font-size: 10px; font-weight: 650; }
+.discover-active-filters > button { border: 0; background: transparent; padding: 5px; color: var(--color-text-muted); font: inherit; font-size: 10px; cursor: pointer; }
+.discover-filtered-count { margin: -3px 0 12px; color: var(--color-text-muted); font-size: 10px; }
+.discover-filter-error { margin: 5px 0 0; color: var(--color-danger); font-size: 11px; line-height: 1.45; }
+.discover-filter-sheet { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+.discover-filter-sheet input.library-refinement-select { appearance: textfield; }
+.discover-filter-sheet input.library-refinement-select::-webkit-outer-spin-button,
+.discover-filter-sheet input.library-refinement-select::-webkit-inner-spin-button { margin: 0; appearance: none; }
+.discover-filter-sheet .library-year-range { align-items: end; }
+.discover-filter-sheet .library-sheet-section { margin: 13px 0; }
+@media (min-width: 560px) {
+  .discover-filter-sheet { max-height: min(92vh, 860px); }
+}
+
+.discover-load-more { display: flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; margin: 16px auto 10px; }
+.discover-load-more:disabled { opacity: .65; }
