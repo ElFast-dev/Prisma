@@ -67,8 +67,8 @@ export interface SpectroPatternEvidence {
 }
 
 /**
- * Asociación observada entre dos rasgos, descontando sus efectos individuales.
- * Es descriptiva y no representa causalidad ni significación estadística.
+ * Interacción entre dos rasgos estimada desde residuos fuera de muestra.
+ * La evidencia estadística se corrige por comparaciones múltiples; no implica causalidad.
  */
 export interface SpectroPattern {
   key: string;
