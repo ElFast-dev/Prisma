@@ -65,7 +65,7 @@ Cada película aporta una sola observación a cada pareja. Los revisionados se p
 1. Espectro ajusta un perfil aditivo de efectos individuales.
 2. Divide los títulos en cinco bloques deterministas. Para cada bloque, estima la expectativa de las películas excluidas sin utilizar sus valoraciones para ajustar ese perfil.
 3. Calcula el residuo de cada título: nota observada menos nota esperada por el modelo aditivo.
-4. Agrupa esos residuos para todas las parejas de características que coexisten y que aparecen en al menos dos películas distintas.
+4. Agrupa esos residuos para todas las parejas de características cuyos rasgos aparecen en al menos cuatro películas distintas.
 5. Calcula diferencia media, dispersión, número de títulos, prueba t bilateral y consistencia de la dirección entre bloques.
 6. Corrige conjuntamente los valores p mediante Benjamini–Yekutieli, un procedimiento conservador ante dependencias entre las comparaciones.
 
