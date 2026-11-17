@@ -1,4 +1,4 @@
-import type { MovieRecord, Viewing } from "./types";
+import type { CollectionMovie, LibraryEntry, MovieRecord, Viewing } from "./types";
 import {
   buildSpectroNetworkGraph,
   type SpectroNetworkGraph
@@ -10,10 +10,12 @@ export type {
   SpectroNetworkCluster
 } from "./spectroNetwork";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.2.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.3.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;
+export const SPECTRO_MINIMUM_PATTERN_MOVIES = 4;
+export const SPECTRO_MAX_PATTERNS = 8;
 export const SPECTRO_MAX_GRAPH_RECOMMENDATIONS = 5;
 
 export type SpectroConfidence = "inicial" | "moderada" | "sólida" | "variable" | "declarada";
@@ -56,6 +58,29 @@ export interface SpectroAffinityTrend {
   previousSampleSize: number;
   recentSampleSize: number;
   direction: SpectroTrendDirection;
+}
+
+export interface SpectroPatternEvidence {
+  title: string;
+  rating: number;
+}
+
+/**
+ * Asociación observada entre dos rasgos, descontando sus efectos individuales.
+ * Es descriptiva y no representa causalidad ni significación estadística.
+ */
+export interface SpectroPattern {
+  key: string;
+  category: string;
+  label: string;
+  averageRating: number;
+  expectedRating: number;
+  difference: number;
+  adjustedDifference: number;
+  dispersion: number;
+  sampleSize: number;
+  confidence: SpectroConfidence;
+  supportingMovies: SpectroPatternEvidence[];
 }
 
 export interface SpectroRecommendationReason {
@@ -133,6 +158,7 @@ export interface SpectroAnalysis {
   favoriteSignals: SpectroFavoriteSignal[];
   evolution: SpectroMonth[];
   affinityTrends: SpectroAffinityTrend[];
+  patterns: SpectroPattern[];
   recommendations: SpectroRecommendation[];
   decisionGraph: SpectroDecisionGraph;
   networkGraph: SpectroNetworkGraph;
@@ -149,6 +175,34 @@ export interface SpectroInput {
 interface RatedMovie {
   movie: MovieRecord;
   averageRating: number;
+}
+
+/**
+ * Selecciona títulos locales válidos para recomendaciones.
+ * Pendientes sí son candidatas; Vistas, visionados previos y títulos guardados
+ * solo en colecciones quedan excluidos. No exige que los datos personales cambien.
+ */
+export function selectSpectroCandidates(
+  movies: MovieRecord[],
+  viewings: Viewing[],
+  libraryEntries: LibraryEntry[],
+  collectionMovies: CollectionMovie[]
+): MovieRecord[] {
+  const viewedIds = new Set(viewings.map((viewing) => viewing.movieId));
+  const pendingIds = new Set(
+    libraryEntries.filter((entry) => entry.status === "pending").map((entry) => entry.movieId)
+  );
+  const savedIds = new Set(libraryEntries.map((entry) => entry.movieId));
+  const collectedIds = new Set(collectionMovies.map((entry) => entry.movieId));
+
+  return movies.filter((movie) => (
+    !viewedIds.has(movie.id)
+    && (
+      pendingIds.has(movie.id)
+      || (!savedIds.has(movie.id) && !collectedIds.has(movie.id))
+    )
+    && Boolean(movie.genreIds?.length || movie.genres.length)
+  ));
 }
 
 interface Feature {
@@ -371,6 +425,136 @@ function confidenceFor(sampleSize: number, dispersion: number): SpectroConfidenc
   if (sampleSize >= 5 && dispersion <= 1.75) return "sólida";
   if (dispersion <= 2.75) return "moderada";
   return "variable";
+}
+
+const SPECTRO_PATTERN_FAMILIES = [
+  ["Género", "Temas"],
+  ["Género", "Dirección"],
+  ["Género", "País"],
+  ["Género", "Época"],
+  ["Género", "Duración"],
+  ["Género", "Idioma original"],
+  ["Dirección", "Temas"],
+  ["País", "Temas"]
+] as const;
+
+const SPECTRO_PATTERN_FEATURE_LIMITS: Record<string, number> = {
+  "Género": 4,
+  "Temas": 8,
+  "Dirección": 2,
+  "País": 2,
+  "Época": 1,
+  "Duración": 1,
+  "Idioma original": 1
+};
+
+interface PatternAccumulator {
+  key: string;
+  category: string;
+  label: string;
+  firstFeatureKey: string;
+  secondFeatureKey: string;
+  items: RatedMovie[];
+}
+
+/**
+ * Busca interacciones entre familias de rasgos. El efecto esperado es la suma
+ * de las diferencias individuales frente al promedio personal; la desviación
+ * observada se reduce con n/(n+5) para moderar grupos pequeños.
+ */
+function buildSpectroPatterns(
+  ratedMovies: RatedMovie[],
+  overallAverage: number
+): SpectroPattern[] {
+  if (ratedMovies.length < SPECTRO_MINIMUM_PATTERN_MOVIES) return [];
+
+  const individualFeatures = groupFeatureRatings(ratedMovies);
+  const pairs = new Map<string, PatternAccumulator>();
+
+  for (const item of ratedMovies) {
+    const groupsByCategory = new Map(
+      movieFeatureGroups(item.movie).map((group) => [group.category, group.features] as const)
+    );
+    const seenPairs = new Set<string>();
+
+    for (const [firstCategory, secondCategory] of SPECTRO_PATTERN_FAMILIES) {
+      const firstFeatures = (groupsByCategory.get(firstCategory) ?? [])
+        .slice(0, SPECTRO_PATTERN_FEATURE_LIMITS[firstCategory] ?? 1);
+      const secondFeatures = (groupsByCategory.get(secondCategory) ?? [])
+        .slice(0, SPECTRO_PATTERN_FEATURE_LIMITS[secondCategory] ?? 1);
+
+      for (const first of firstFeatures) {
+        for (const second of secondFeatures) {
+          const key = first.key + "::" + second.key;
+          if (seenPairs.has(key)) continue;
+          seenPairs.add(key);
+
+          const existing = pairs.get(key) ?? {
+            key,
+            category: firstCategory + " + " + secondCategory,
+            label: first.label + " + " + second.label,
+            firstFeatureKey: first.key,
+            secondFeatureKey: second.key,
+            items: []
+          };
+          existing.items.push(item);
+          pairs.set(key, existing);
+        }
+      }
+    }
+  }
+
+  const patterns: SpectroPattern[] = [];
+  for (const pair of pairs.values()) {
+    const sampleSize = pair.items.length;
+    if (sampleSize < SPECTRO_MINIMUM_PATTERN_MOVIES) continue;
+
+    const first = individualFeatures.get(pair.firstFeatureKey);
+    const second = individualFeatures.get(pair.secondFeatureKey);
+    if (!first || !second) continue;
+
+    const ratings = pair.items.map((item) => item.averageRating);
+    const averageRating = mean(ratings);
+    const expectedRating = overallAverage
+      + (mean(first.ratings) - overallAverage)
+      + (mean(second.ratings) - overallAverage);
+    const difference = averageRating - expectedRating;
+    const adjustedDifference = difference * sampleSize / (sampleSize + 5);
+    if (Math.abs(adjustedDifference) < 0.35) continue;
+
+    const dispersion = standardDeviation(ratings, averageRating);
+    const supportingMovies = [...pair.items]
+      .sort((a, b) => adjustedDifference >= 0
+        ? b.averageRating - a.averageRating || a.movie.title.localeCompare(b.movie.title)
+        : a.averageRating - b.averageRating || a.movie.title.localeCompare(b.movie.title))
+      .slice(0, 3)
+      .map((item) => ({
+        title: item.movie.title,
+        rating: round(item.averageRating)
+      }));
+
+    patterns.push({
+      key: pair.key,
+      category: pair.category,
+      label: pair.label,
+      averageRating: round(averageRating),
+      expectedRating: round(expectedRating),
+      difference: round(difference),
+      adjustedDifference: round(adjustedDifference),
+      dispersion: round(dispersion),
+      sampleSize,
+      confidence: confidenceFor(sampleSize, dispersion),
+      supportingMovies
+    });
+  }
+
+  return patterns
+    .sort((a, b) => (
+      Math.abs(b.adjustedDifference) - Math.abs(a.adjustedDifference)
+      || b.sampleSize - a.sampleSize
+      || a.label.localeCompare(b.label)
+    ))
+    .slice(0, SPECTRO_MAX_PATTERNS);
 }
 
 function buildAffinities(
@@ -1023,6 +1207,7 @@ export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
     favoriteSignals,
     evolution: buildEvolution(input.viewings),
     affinityTrends: buildAffinityTrends(input.viewings, movieById),
+    patterns: enough && overall !== null ? buildSpectroPatterns(ratedMovies, overall) : [],
     recommendations: recommendationResult.recommendations,
     decisionGraph: recommendationResult.graph,
     networkGraph: buildSpectroNetworkGraph({

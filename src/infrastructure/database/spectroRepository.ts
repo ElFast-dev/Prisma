@@ -2,6 +2,7 @@ import type { SpectroSnapshot } from "../../domain/types";
 import {
   analyzeSpectro,
   getSpectroInputFingerprint,
+  selectSpectroCandidates,
   SPECTRO_ALGORITHM_VERSION,
   type SpectroAnalysis
 } from "../../domain/spectro";
@@ -15,15 +16,7 @@ export async function getSpectroAnalysis(): Promise<SpectroAnalysis> {
     prismaDb.collectionMovies.toArray()
   ]);
 
-  const viewedMovieIds = new Set(viewings.map((viewing) => viewing.movieId));
-  const savedMovieIds = new Set(libraryEntries.map((entry) => entry.movieId));
-  const collectedMovieIds = new Set(collectionMovies.map((entry) => entry.movieId));
-  const candidates = movies.filter((movie) => (
-    !viewedMovieIds.has(movie.id)
-    && !savedMovieIds.has(movie.id)
-    && !collectedMovieIds.has(movie.id)
-    && Boolean(movie.genreIds?.length || movie.genres.length)
-  ));
+  const candidates = selectSpectroCandidates(movies, viewings, libraryEntries, collectionMovies);
   const favoriteMovieIds = libraryEntries
     .filter((entry) => entry.isFavorite)
     .map((entry) => entry.movieId);
@@ -44,6 +37,7 @@ export async function getSpectroAnalysis(): Promise<SpectroAnalysis> {
       && payload.inputFingerprint === inputFingerprint
       && Array.isArray(payload.decisionGraph?.nodes)
       && Array.isArray(payload.decisionGraph?.edges)
+      && Array.isArray(payload.patterns)
       && Array.isArray(payload.networkGraph?.nodes)
       && Array.isArray(payload.networkGraph?.edges)
       && Array.isArray(payload.networkGraph?.clusters)
