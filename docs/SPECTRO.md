@@ -97,18 +97,31 @@ El orden interno de candidatas prioriza la nota prevista y utiliza el encaje com
 
 La evaluación temporal del modelo sigue siendo exploratoria y personal. Ridge puede superar a RBF en algunas métricas; por eso no se presenta el predictor como calibrado, definitivo ni universalmente superior. Los niveles Inicial, Moderada, Sólida, Variable y Explícita describen el respaldo de señales concretas; no son intervalos de confianza ni la confianza calibrada del modelo RBF.
 
-## Experiencia unificada de Espectro
+## Experiencia de analítica visual
 
-Espectro se presenta como una sola lectura continua del perfil cinematográfico, no como un menú de informes separados. La página reúne cuatro piezas, en este orden:
+Espectro se presenta como un centro de analítica personal con seis secciones navegables. Las gráficas se calculan en el dispositivo a partir de las tablas locales de películas, visionados, Biblioteca y colecciones; no se envían calificaciones, fechas, comentarios ni preferencias personales a TMDB.
 
-1. **Tu retrato actual.** Número de películas distintas calificadas, promedio personal por título y combinaciones que han superado las pruebas estadísticas. Los revisionados no inflan el número de películas.
-2. **Señales de tu gusto.** Rasgos con respaldo moderado o sólido, separados entre los que aparecen en valoraciones más altas y más bajas. Cada señal muestra categoría, media observada, títulos de soporte y nivel de respaldo. Las muestras pequeñas o variables no se elevan a preferencias confirmadas.
-3. **Favoritos explícitos.** Los rasgos presentes en las películas que el propietario marcó como favoritas se muestran por separado. Un favorito no se transforma en una nota ni se mezcla con las inferencias de las valoraciones.
-4. **Combinaciones que destacan.** Interacciones que se apartan de la expectativa aditiva, solo cuando superan la validación cruzada y la corrección Benjamini–Yekutieli. La ausencia de combinaciones válidas es un resultado legítimo.
+1. **Resumen.** Indicadores principales; línea temporal mensual de sesiones; distribución de calificaciones; proporción de títulos vistos, pendientes y otros títulos locales; cobertura de metadatos disponible.
+2. **Actividad.** Evolución de sesiones mes a mes, meses sin actividad entre registros, distribución por día de la semana y mapa de calor por día/hora local. El mapa horario solo utiliza visionados con hora local válida guardada.
+3. **Calificaciones.** Histograma de notas de 1 a 10 por sesión, promedio mensual de las notas de cada sesión, títulos más y menos valorados por media de sus propias sesiones, películas revisionadas y cambio entre su primera y última nota disponible.
+4. **Universo cinematográfico.** Géneros, décadas de estreno, países de producción, idiomas originales, dirección, reparto principal, duración y palabras clave temáticas. Las categorías cuentan títulos únicos; una película puede participar en más de una categoría.
+5. **Perfil.** Diferencias ajustadas de afinidad contra el promedio personal, señales de favoritos declarados e interacciones cinematográficas validadas. Las muestras pequeñas o variables se etiquetan y no se convierten en certezas.
+6. **Biblioteca.** Distribución de películas vistas, pendientes y otros títulos guardados; tamaño de cada colección; comentarios, sesiones sin nota y favoritos explícitos.
 
-La pregunta contextual de una calificación pendiente y el estado de enriquecimiento de metadatos ayudan a completar el retrato sin exigir abrir fichas ni alterar las experiencias existentes.
+### Reglas de cómputo y lectura
 
-Se retiraron de la navegación de Espectro las pantallas Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. Los enlaces antiguos a esas rutas se normalizan hacia la página unificada. El motor conserva la procedencia y los cálculos que siguen siendo útiles, pero la interfaz deja de obligar a recorrer gráficos y listados independientes.
+- Una sesión de visionado siempre cuenta como una sesión. Una película con cuatro revisionados suma cuatro sesiones, pero sigue siendo un solo título en las estadísticas de catálogo.
+- El promedio global por película promedia primero las notas de cada título; así un título muy revisionado no domina el perfil por cantidad de sesiones.
+- El histograma de notas refleja las sesiones individuales. El promedio por título y los listados de películas mejor/menos valoradas reflejan la media de las sesiones calificadas de cada película.
+- Las tendencias mensuales se construyen por la fecha local `watchedOn` registrada. Los meses intermedios sin registros aparecen con cero para que no parezca que el tiempo desapareció.
+- La distribución horaria utiliza `watchedAtLocalTime` si existe y es válida. No intenta deducir horas faltantes a partir de fechas, zona horaria o creación del registro.
+- Los géneros, años, países, directores, reparto, idioma, duración y temas dependen de metadatos cinematográficos que pueden no estar completos. Cada sección muestra cobertura observada para evitar interpretar un dato ausente como una categoría con cero películas.
+- La duración acumulada es una estimación: duración registrada de cada película multiplicada por sus sesiones; las sesiones sin duración quedan contabilizadas como faltantes.
+- Los favoritos son selecciones expresas y no se convierten en calificaciones. Pendientes, estado de visionado y favoritos son dimensiones distintas de Biblioteca.
+- La lectura de afinidades compara cada rasgo con el promedio de notas por película, usando el ajuste conservador del motor Espectro. Son asociaciones descriptivas, no probabilidades ni causas.
+- Los patrones conjuntos conservan los controles estadísticos y la validación cruzada del motor. No se inventan hallazgos cuando la muestra no respalda ninguno.
+
+No se añade una dependencia de gráficas: las visualizaciones usan SVG y CSS locales para mantener el funcionamiento sin conexión y el tamaño de la aplicación contenido. El panel lee datos de IndexedDB y no modifica visionados, valoraciones, fechas, comentarios, favoritos, estados, colecciones, perfil o preferencias.
 
 ## Huella e instantáneas
 
