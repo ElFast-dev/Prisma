@@ -164,7 +164,7 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
         <div>
           <h2 id="spectro-patterns-title">Combinaciones que destacan</h2>
           <p className="muted-copy spectro-patterns-intro">
-            Rasgos que, al aparecer juntos, se asocian con notas distintas de lo que explicarían por separado.
+            Interacciones encontradas al explorar las combinaciones de rasgos disponibles, no una lista cerrada de parejas.
           </p>
         </div>
         <Sparkles size={19} className="accent-icon" aria-hidden="true" />
@@ -185,10 +185,12 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
               <div className="spectro-pattern-metrics">
                 <span>Nota observada <strong>{pattern.averageRating.toFixed(1)}/10</strong></span>
                 <span>Esperada por separado <strong>{pattern.expectedRating.toFixed(1)}/10</strong></span>
+                <span>q corregido <strong>{(pattern.qValue * 100).toFixed(1)}%</strong></span>
               </div>
               <div className="spectro-pattern-support">
                 <span>{pattern.sampleSize} películas distintas</span>
                 <span>Variación {pattern.dispersion.toFixed(1)}</span>
+                <span>{pattern.foldCount}/5 bloques · {(pattern.foldConsistency * 100).toFixed(0)}% de consistencia</span>
                 <span className={"spectro-confidence is-" + pattern.confidence}>{confidenceLabel(pattern.confidence)}</span>
               </div>
               <div className="spectro-pattern-evidence">
@@ -197,7 +199,7 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
                   {pattern.supportingMovies.map((movie) => (
                     <li key={movie.title}>
                       <span>{movie.title}</span>
-                      <strong>{movie.rating.toFixed(1)}/10</strong>
+                      <strong>{movie.rating.toFixed(1)}/10 · residuo {signed(movie.residual)}</strong>
                     </li>
                   ))}
                 </ul>
@@ -207,12 +209,13 @@ function SpectroPatternsPanel({ patterns }: { patterns: SpectroAnalysis["pattern
         </div>
       ) : (
         <p className="muted-copy spectro-patterns-empty">
-          Todavía no hay combinaciones con al menos cuatro películas distintas y una diferencia adicional suficientemente consistente.
+          No se han encontrado interacciones que superen la validación cruzada y la corrección por múltiples comparaciones. Esto evita presentar coincidencias aisladas como descubrimientos.
         </p>
       )}
       <p className="spectro-method-note">
-        La diferencia adicional compara la combinación con la suma de sus rasgos por separado y se modera cuando la muestra es pequeña.
-        Es una asociación descriptiva, no una prueba de causalidad ni de significación estadística.
+        La expectativa se calcula con un modelo aditivo entrenado sin incluir los títulos que evalúa (cinco bloques cruzados).
+        Los valores p se corrigen con Benjamini–Yekutieli para controlar falsos descubrimientos entre parejas dependientes.
+        Se muestran solo señales con q ≤ 5 % y consistencia entre bloques; siguen siendo asociaciones, no causas.
       </p>
     </section>
   );
