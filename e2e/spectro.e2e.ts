@@ -114,6 +114,8 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   const analysisWorker = await analysisWorkerPromise;
   expect(analysisWorker.url()).toContain("spectroAnalysis");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tu forma de vivir el cine" })).toBeVisible();
+  await expect(page.getByText("Análisis local")).toBeVisible();
   await expect(page.locator(".spectro-data-metric")).toHaveCount(6);
   await expect(page.getByRole("tab", { name: /Resumen/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("heading", { name: "Visionados por mes" })).toBeVisible();
@@ -618,4 +620,62 @@ test("permite recorrer las pestañas de Espectro con el teclado", async ({ page 
   await page.keyboard.press("Home");
   await expect(summary).toBeFocused();
   await expect(summary).toHaveAttribute("aria-selected", "true");
+});
+
+
+test("aplaza las consultas de metadatos hasta que se abre Espectro", async ({ page }) => {
+  const requestedPaths: string[] = [];
+  await page.addInitScript(() => {
+    localStorage.setItem("prisma.tmdb.accessToken", "fixture-token");
+  });
+  await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    requestedPaths.push(pathname);
+    const tmdbId = Number(pathname.split("/").filter(Boolean)[2]);
+    if (pathname.endsWith("/credits")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: tmdbId, cast: [], crew: [] })
+      });
+      return;
+    }
+    if (pathname.endsWith("/keywords")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: tmdbId, keywords: [] })
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: tmdbId,
+        title: "Película ficticia " + tmdbId,
+        original_title: "Fixture movie",
+        overview: "Datos ficticios de la prueba.",
+        release_date: "2020-01-01",
+        runtime: 100,
+        status: "Released",
+        genres: [{ id: 18, name: "Drama" }],
+        production_countries: [{ iso_3166_1: "JP", name: "Japón" }],
+        original_language: "ja",
+        poster_path: null,
+        backdrop_path: null
+      })
+    });
+  });
+
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await seedIncompleteSpectroHistory(page);
+  await page.waitForTimeout(600);
+  expect(requestedPaths).toHaveLength(0);
+
+  await page.goto("#/spectro");
+  await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
+  await expect.poll(() => requestedPaths.filter((path) => path.endsWith("/keywords")).length).toBe(4);
+  await expect(page.getByRole("heading", { name: "Tu forma de vivir el cine" })).toBeVisible();
 });
