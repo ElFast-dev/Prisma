@@ -6,6 +6,7 @@ import {
 import type { MovieRecord, Viewing } from "../../domain/types";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
+import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import { ViewingForm } from "../../components/ViewingForm";
 import { getMovieBundle, getImageConfiguration, getTmdbImageUrl, type TmdbMovieBundle, type TmdbPerson } from "../../infrastructure/tmdb/TmdbService";
 import { getCatalogRegion, getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
@@ -87,6 +88,13 @@ export function MovieDetailPage() {
   const [undoMessage, setUndoMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const movieMenuDialogRef = useAccessibleDialog(movieMenuOpen, () => setMovieMenuOpen(false));
+  const collectionPickerDialogRef = useAccessibleDialog(collectionPickerOpen, () => {
+    if (!collectionBusyId) setCollectionPickerOpen(false);
+  });
+  const pendingConfirmDialogRef = useAccessibleDialog(pendingConfirm, () => {
+    if (!busy) setPendingConfirm(false);
+  });
   const region = getCatalogRegion();
 
   const refreshLocalState = useCallback(async (movieId: string) => {
@@ -325,7 +333,7 @@ export function MovieDetailPage() {
         <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setMovieMenuOpen(false);
         }}>
-          <section className="bottom-sheet movie-options-sheet" role="dialog" aria-modal="true" aria-labelledby="movie-options-title">
+          <section ref={movieMenuDialogRef} tabIndex={-1} className="bottom-sheet movie-options-sheet" role="dialog" aria-modal="true" aria-labelledby="movie-options-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
               <div><p className="eyebrow">PRISMA</p><h2 id="movie-options-title">Más opciones</h2></div>
@@ -348,7 +356,7 @@ export function MovieDetailPage() {
         <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget && !collectionBusyId) setCollectionPickerOpen(false);
         }}>
-          <section className="bottom-sheet movie-collection-sheet" role="dialog" aria-modal="true" aria-labelledby="collection-picker-title">
+          <section ref={collectionPickerDialogRef} tabIndex={-1} className="bottom-sheet movie-collection-sheet" role="dialog" aria-modal="true" aria-labelledby="collection-picker-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
               <div><p className="eyebrow">TU CINE</p><h2 id="collection-picker-title">Agregar a colección</h2></div>
@@ -411,7 +419,7 @@ export function MovieDetailPage() {
           <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
             if (event.target === event.currentTarget && !busy) setPendingConfirm(false);
           }}>
-            <section className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="pending-dialog-title">
+            <section ref={pendingConfirmDialogRef} tabIndex={-1} className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="pending-dialog-title">
               <div className="sheet-handle" />
               <div className="sheet-header"><h2 id="pending-dialog-title">{isWatched ? "¿Mover a Pendientes?" : "¿Agregar a Pendientes?"}</h2></div>
               <p className="muted-copy">{isWatched ? "La película dejará Vistas y aparecerá en Pendientes. Tus " + watchedCount + " visionados, fechas y calificaciones se conservarán." : "La película se añadirá a tu lista Pendientes. Podrás retirarla después."}</p>

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Star, X } from "lucide-react";
+import { useAccessibleDialog } from "./useAccessibleDialog";
 import type { Viewing } from "../domain/types";
 import { toLocalDateString } from "../domain/viewingRules";
 import { addViewing, updateViewing } from "../infrastructure/database/viewingService";
@@ -20,6 +21,7 @@ export function ViewingForm({ movieId, movieTitle, nextNumber, initialViewing, o
   const [review, setReview] = useState(initialViewing?.review ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const dialogRef = useAccessibleDialog(true, () => { if (!saving) onClose(); });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,7 +55,7 @@ export function ViewingForm({ movieId, movieTitle, nextNumber, initialViewing, o
     <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !saving) onClose();
     }}>
-      <section className="bottom-sheet viewing-sheet" role="dialog" aria-modal="true" aria-labelledby="viewing-form-title">
+      <section ref={dialogRef} tabIndex={-1} className="bottom-sheet viewing-sheet" role="dialog" aria-modal="true" aria-labelledby="viewing-form-title">
         <div className="sheet-handle" />
         <div className="sheet-header">
           <div>
