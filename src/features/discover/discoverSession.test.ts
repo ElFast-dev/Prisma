@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_DISCOVER_FILTERS } from "../../domain/discoverFilters";
 import type { TmdbMovieSummary } from "../../infrastructure/tmdb/TmdbService";
-import { readDiscoverSession, writeDiscoverSession } from "./discoverSession";
+import { getDiscoverFeedKey, readDiscoverSession, writeDiscoverSession } from "./discoverSession";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -16,6 +16,13 @@ class MemoryStorage {
 }
 
 describe("Discover session", () => {
+  it("reuses filtered catalog pages when only the local title search changes", () => {
+    const filters = { ...DEFAULT_DISCOVER_FILTERS, genreId: "18" };
+    expect(getDiscoverFeedKey("prisma", filters)).toBe(getDiscoverFeedKey("otra", filters));
+    expect(getDiscoverFeedKey("prisma", DEFAULT_DISCOVER_FILTERS))
+      .not.toBe(getDiscoverFeedKey("otra", DEFAULT_DISCOVER_FILTERS));
+  });
+
   it("restores applied filters, search text, pagination and loaded titles", () => {
     const storage = new MemoryStorage();
     const movies: TmdbMovieSummary[] = [
