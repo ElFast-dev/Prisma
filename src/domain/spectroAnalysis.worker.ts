@@ -1,8 +1,11 @@
-import { analyzeSpectro, type SpectroInput } from "./spectro";
-import type { SpectroAnalysisWorkerResponse } from "./spectroWorkerProtocol";
+import { calculateSpectroWorkspace } from "./spectroWorkspace";
+import type {
+  SpectroAnalysisWorkerRequest,
+  SpectroAnalysisWorkerResponse
+} from "./spectroWorkerProtocol";
 
 interface SpectroAnalysisWorkerScope {
-  onmessage: ((event: MessageEvent<SpectroInput>) => void) | null;
+  onmessage: ((event: MessageEvent<SpectroAnalysisWorkerRequest>) => void) | null;
   postMessage: (message: SpectroAnalysisWorkerResponse) => void;
 }
 
@@ -10,8 +13,8 @@ const workerScope = self as unknown as SpectroAnalysisWorkerScope;
 
 workerScope.onmessage = (event) => {
   try {
-    const analysis = analyzeSpectro(event.data);
-    workerScope.postMessage({ ok: true, analysis });
+    const result = calculateSpectroWorkspace(event.data);
+    workerScope.postMessage({ ok: true, result });
   } catch (cause) {
     workerScope.postMessage({
       ok: false,
