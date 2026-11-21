@@ -1152,3 +1152,96 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   font-size: 12px;
   line-height: 1.55;
 }
+
+
+/* Descubrir · filtros rápidos, criterios editables y recuento de resultados */
+.discover-active-filters {
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.discover-filter-summary-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding-top: 7px;
+  color: var(--color-accent);
+}
+.discover-filter-chips {
+  display: flex;
+  flex: 1 1 220px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.discover-filter-chip {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 99px;
+  background: var(--color-card);
+  padding: 5px 9px;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.discover-filter-chip span { overflow-wrap: anywhere; }
+.discover-filter-chip svg { flex: 0 0 auto; color: var(--color-text-muted); }
+.discover-filter-chip:hover { border-color: var(--color-accent); background: var(--color-active); }
+.discover-filter-chip:focus-visible,
+.discover-clear-filters:focus-visible,
+.discover-presets button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.discover-clear-filters {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  padding: 6px 3px;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.discover-clear-filters:hover { color: var(--color-text); }
+.discover-results-meta {
+  margin: -4px 0 12px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.discover-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.discover-presets button {
+  min-height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-card);
+  padding: 7px 10px;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.discover-presets button:hover {
+  border-color: var(--color-accent);
+  background: var(--color-active);
+  color: var(--color-accent);
+}
+@media (max-width: 420px) {
+  .discover-active-filters { gap: 7px; }
+  .discover-filter-chips { flex-basis: calc(100% - 24px); }
+  .discover-clear-filters { margin-left: auto; }
+}
