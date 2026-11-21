@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForPrismaDatabase } from "./support/fixtures";
 
 async function seedSpectroHistory(page: import("@playwright/test").Page): Promise<void> {
   await page.evaluate(async () => {
@@ -162,6 +163,7 @@ test("redirige enlaces guardados de las antiguas vistas de Espectro", async ({ p
 });
 
 async function seedIncompleteSpectroHistory(page: import("@playwright/test").Page): Promise<void> {
+  await waitForPrismaDatabase(page);
   await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("prisma_database");
