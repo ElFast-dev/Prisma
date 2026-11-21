@@ -34,7 +34,7 @@ test("Ajustes organiza sus opciones en secciones independientes", async ({ page 
   await navigation.getByRole("link", { name: /Privacidad/ }).click();
   await expect(page.getByRole("heading", { name: "Privacidad", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Credencial TMDB" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Datos locales" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Datos locales", exact: true })).toBeVisible();
 });
 
 test("la vista de Biblioteca se puede cambiar desde sus ajustes", async ({ page }) => {
