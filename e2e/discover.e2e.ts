@@ -179,12 +179,12 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
   await expect.poll(() => discoverRequests.length).toBe(1);
 
   await movie.click();
-  await expect(page).toHaveURL(/#\\/movie\\/101$/);
+  await expect(page).toHaveURL(/#\/movie\/101$/);
   const backButton = page.getByRole("link", { name: "Volver" });
   await expect(backButton).toBeVisible();
   await backButton.click();
 
-  await expect(page).toHaveURL(/#\\/discover$/);
+  await expect(page).toHaveURL(/#\/discover$/);
   await expect(page.locator("#discover-search")).toHaveValue("prisma");
   await expect(page.getByRole("button", { name: "Abrir filtros" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".discover-filter-chip")).toContainText(["Género: Drama", "Año: 2015–actualidad"]);
