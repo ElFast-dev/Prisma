@@ -185,3 +185,59 @@ test("el restablecimiento permite eliminar también la credencial TMDB", async (
   await expect(page.getByRole("status")).toContainText("También se eliminó la credencial TMDB");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("prisma.tmdb.accessToken"))).toBeNull();
 });
+
+
+test("permite solicitar persistencia del almacenamiento cuando hay datos locales", async ({ page }) => {
+  await page.addInitScript(() => {
+    let persisted = false;
+    Object.defineProperty(navigator.storage, "persisted", {
+      configurable: true,
+      value: async () => persisted
+    });
+    Object.defineProperty(navigator.storage, "estimate", {
+      configurable: true,
+      value: async () => ({ usage: 512000, quota: 10485760 })
+    });
+    Object.defineProperty(navigator.storage, "persist", {
+      configurable: true,
+      value: async () => {
+        persisted = true;
+        return true;
+      }
+    });
+  });
+
+  await page.goto("#/settings/data");
+  await page.evaluate(async () => {
+    const request = indexedDB.open("prisma_database");
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const now = new Date().toISOString();
+    const transaction = db.transaction(["movies", "libraryEntries"], "readwrite");
+    transaction.objectStore("movies").put({
+      id: "tmdb-storage-fixture", tmdbId: 987650, title: "Película local de prueba",
+      genres: [], countries: [], lastViewingSequence: 0, createdAt: now, updatedAt: now
+    });
+    transaction.objectStore("libraryEntries").put({
+      movieId: "tmdb-storage-fixture", status: "pending", isFavorite: false, addedAt: now, updatedAt: now
+    });
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error ?? new Error("No se pudieron preparar los datos locales."));
+    });
+    db.close();
+  });
+
+  await page.goto("#/settings/privacy");
+  const section = page.getByRole("region", { name: "Protección de datos locales" });
+  await expect(section).toBeVisible();
+  await expect(section.getByText(/almacenamiento todavía no tiene protección persistente/i)).toBeVisible();
+  await expect(section.getByText(/Uso estimado: 500 KB de 10 MB/)).toBeVisible();
+
+  await section.getByRole("button", { name: "Solicitar protección del almacenamiento" }).click();
+  await expect(section.getByRole("status")).toContainText("El navegador concedió almacenamiento persistente");
+  await expect(section.getByRole("button", { name: "Solicitar protección del almacenamiento" })).toHaveCount(0);
+});
