@@ -39,7 +39,7 @@ describe("calculateSpectroWorkspace", () => {
       }
     });
 
-    expect(result.analysis.movieCount).toBe(1);
+    expect(result.analysis?.movieCount).toBe(1);
     expect(result.analytics.summary.totalViewings).toBe(1);
     expect(result.analytics.summary.uniqueMoviesWatched).toBe(1);
     expect(result.analytics.summary.averageMovieRating).toBe(9);
