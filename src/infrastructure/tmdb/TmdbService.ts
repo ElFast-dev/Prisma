@@ -187,7 +187,7 @@ export async function getImageConfiguration(token: string): Promise<TmdbConfigur
 export async function getTrendingMovies(
   token: string,
   page = 1
-): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; stale: boolean; fetchedAt: string }> {
+): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; totalResults: number; stale: boolean; fetchedAt: string }> {
   const result = await getCached<TmdbListResponse>(
     token,
     "trending:movie:week:" + page,
@@ -197,6 +197,7 @@ export async function getTrendingMovies(
   return {
     movies: result.data.results ?? [],
     totalPages: result.data.total_pages ?? 1,
+    totalResults: result.data.total_results ?? result.data.results?.length ?? 0,
     stale: result.stale,
     fetchedAt: result.fetchedAt
   };
@@ -206,7 +207,7 @@ export async function discoverMovies(
   token: string,
   filters: DiscoverFilters,
   page = 1
-): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; stale: boolean; fetchedAt: string }> {
+): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; totalResults: number; stale: boolean; fetchedAt: string }> {
   const normalizedFilters = normalizeDiscoverFilters(filters);
   const params = buildDiscoverMovieParams(normalizedFilters, page, LANGUAGE);
   const cacheKey = "discover:movie:" + JSON.stringify(normalizedFilters) + ":" + page;
@@ -220,6 +221,7 @@ export async function discoverMovies(
   return {
     movies: result.data.results ?? [],
     totalPages: result.data.total_pages ?? 1,
+    totalResults: result.data.total_results ?? result.data.results?.length ?? 0,
     stale: result.stale,
     fetchedAt: result.fetchedAt
   };
@@ -229,7 +231,7 @@ export async function searchMovies(
   token: string,
   query: string,
   page = 1
-): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; stale: boolean; fetchedAt: string }> {
+): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; totalResults: number; stale: boolean; fetchedAt: string }> {
   const normalized = query.trim();
   if (!normalized) return { movies: [], totalPages: 0, stale: false, fetchedAt: new Date().toISOString() };
   const result = await getCached<TmdbListResponse>(
@@ -241,6 +243,7 @@ export async function searchMovies(
   return {
     movies: result.data.results ?? [],
     totalPages: result.data.total_pages ?? 1,
+    totalResults: result.data.total_results ?? result.data.results?.length ?? 0,
     stale: result.stale,
     fetchedAt: result.fetchedAt
   };
