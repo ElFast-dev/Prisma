@@ -14,11 +14,13 @@ El desarrollo nuevo se concentrará en hacer Espectro más inteligente y útil, 
 
 Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, perfil, logros, Espectro, integración TMDB, copias de seguridad, funcionamiento offline y publicación como PWA para Android.
 
-Las etapas 1–15 están completadas. Espectro 2.3 organiza su análisis en cuatro apartados: Mapa cinematográfico, Afinidades, Evolución y Recomendaciones. El mapa conecta películas con géneros, directores, actores y temas; agrupa títulos similares y diferencia las zonas ya exploradas de las pendientes. El algoritmo calcula encaje relativo 0–100 % y nota prevista por separado, detecta combinaciones de rasgos con evidencia y prioriza películas Pendientes para completar metadatos locales mediante TMDB sin abrir fichas.
+Espectro 2.6.0 presenta seis secciones de analítica local: Resumen, Actividad, Calificaciones, Universo, Perfil y Biblioteca. Muestra actividad de visionado, distribución de notas, metadatos cinematográficos, afinidades personales, interacciones estadísticas y estado de la Biblioteca.
 
-Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película. La etapa 16.4 superó CI, E2E móvil y la verificación pública de GitHub Pages y del manifiesto PWA. Permanece documentada la revisión visual manual en un dispositivo Android físico.
+El motor calcula afinidades con respaldo y mantiene un predictor local para candidatas que ya existen en Prisma. La nota prevista y el encaje son estimaciones, no probabilidades; no hay una pantalla separada de recomendaciones ni búsquedas ilimitadas en TMDB. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales.
 
-Las siguientes mejoras se centran exclusivamente en Espectro. No se plantea introducir nuevos destinos principales ni reconstruir el resto de la aplicación.
+El análisis intensivo se ejecuta en un Web Worker para mantener la interfaz disponible mientras Espectro calcula. Los datos, las valoraciones y el historial permanecen en el dispositivo. Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película.
+
+La aplicación está publicada como PWA en GitHub Pages. La suite automatizada cubre TypeScript, pruebas unitarias, build, smoke, navegadores Chromium/Firefox/WebKit y funcionamiento offline. Sigue siendo recomendable una revisión visual manual en un dispositivo Android físico.
 
 ## Tecnologías
 

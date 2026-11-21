@@ -24,7 +24,6 @@ export default defineConfig({
         start_url: "/Prisma/#/discover",
         scope: "/Prisma/",
         display: "standalone",
-        orientation: "portrait",
         background_color: "#0E1117",
         theme_color: "#0E1117",
         icons: [

@@ -20,6 +20,8 @@ test("publica un manifiesto instalable y activa el Service Worker", async ({ pag
     scope: "/Prisma/",
     display: "standalone"
   });
+  expect(manifest).not.toHaveProperty("orientation");
+  expect(manifest).not.toHaveProperty("orientation");
 
   await page.waitForFunction(
     () => navigator.serviceWorker.controller?.state === "activated",
