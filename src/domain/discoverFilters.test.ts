@@ -3,6 +3,7 @@ import {
   buildDiscoverMovieParams,
   countActiveDiscoverFilters,
   DEFAULT_DISCOVER_FILTERS,
+  DISCOVER_LANGUAGES,
   discoverFilterTitleMatch,
   hasActiveDiscoverFilters,
   normalizeDiscoverFilters
@@ -76,6 +77,12 @@ describe("Discover filters", () => {
 
     expect(hasActiveDiscoverFilters(filters)).toBe(true);
     expect(countActiveDiscoverFilters(filters)).toBe(3);
+  });
+
+  it("offers a broad set of original-language options for filtering", () => {
+    expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("pl");
+    expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("tr");
+    expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("ar");
   });
 
   it("matches a title or original title without accents or case sensitivity", () => {

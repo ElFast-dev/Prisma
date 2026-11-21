@@ -61,7 +61,21 @@ export const DISCOVER_LANGUAGES = [
   { id: "de", label: "Alemán" },
   { id: "pt", label: "Portugués" },
   { id: "hi", label: "Hindi" },
-  { id: "zh", label: "Chino" }
+  { id: "zh", label: "Chino" },
+  { id: "ru", label: "Ruso" },
+  { id: "tr", label: "Turco" },
+  { id: "th", label: "Tailandés" },
+  { id: "sv", label: "Sueco" },
+  { id: "no", label: "Noruego" },
+  { id: "da", label: "Danés" },
+  { id: "nl", label: "Neerlandés" },
+  { id: "pl", label: "Polaco" },
+  { id: "cs", label: "Checo" },
+  { id: "ro", label: "Rumano" },
+  { id: "he", label: "Hebreo" },
+  { id: "ar", label: "Árabe" },
+  { id: "id", label: "Indonesio" },
+  { id: "tl", label: "Filipino" }
 ] as const;
 
 const SORT_OPTIONS = new Set<DiscoverSort>([
