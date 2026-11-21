@@ -1245,3 +1245,83 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .discover-filter-chips { flex-basis: calc(100% - 24px); }
   .discover-clear-filters { margin-left: auto; }
 }
+
+/* Carga de Espectro y recuperación segura de secciones */
+.spectro-loading-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.spectro-loading-metric,
+.spectro-loading-chart {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  padding: 13px;
+}
+.spectro-loading-metric span,
+.spectro-loading-metric strong,
+.spectro-loading-metric i,
+.spectro-loading-chart strong,
+.spectro-loading-chart span {
+  display: block;
+  height: 9px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-active), var(--color-border), var(--color-active));
+  background-size: 200% 100%;
+  animation: spectro-loading-shimmer 1.5s ease-in-out infinite;
+}
+.spectro-loading-metric span { width: 46%; height: 7px; }
+.spectro-loading-metric strong { width: 62%; height: 22px; }
+.spectro-loading-metric i { width: 76%; height: 6px; }
+.spectro-loading-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+.spectro-loading-chart { min-height: 132px; align-content: start; }
+.spectro-loading-chart strong { width: 55%; height: 12px; margin-bottom: 8px; }
+.spectro-loading-chart span { width: 100%; }
+.spectro-loading-chart span:nth-of-type(2) { width: 82%; }
+.spectro-loading-chart span:nth-of-type(3) { width: 66%; }
+.spectro-loading-note { margin: 0; color: var(--color-text-muted); font-size: 10px; text-align: center; }
+@keyframes spectro-loading-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+.app-error-state {
+  display: grid;
+  min-height: min(62vh, 560px);
+  align-content: center;
+  justify-items: center;
+  gap: 13px;
+  text-align: center;
+}
+.app-error-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 17px;
+  background: var(--color-surface);
+  color: var(--color-warning);
+}
+.app-error-state h1 { margin: 0; font-size: 20px; }
+.app-error-state > p { max-width: 440px; margin: 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.6; }
+.app-error-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }
+.app-error-actions .button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; text-decoration: none; }
+@media (min-width: 700px) {
+  .spectro-loading-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .spectro-loading-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spectro-loading-metric span,
+  .spectro-loading-metric strong,
+  .spectro-loading-metric i,
+  .spectro-loading-chart strong,
+  .spectro-loading-chart span { animation: none; }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { WifiOff } from "lucide-react";
 import { BottomNavigation } from "./components/BottomNavigation";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { DiscoverPage } from "./features/discover/DiscoverPage";
 import {
   CollectionsPage,
@@ -15,7 +16,6 @@ import { MovieDetailPage } from "./features/movie/MovieDetailPage";
 import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
 import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
 import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
-import { startSpectroMetadataEnrichment } from "./infrastructure/database/spectroMetadataService";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
@@ -148,20 +148,15 @@ export default function App() {
   useEffect(() => {
     const resumeEnrichment = () => requestAutomaticEnrichment();
     const retryWithUpdatedCredentials = () => requestAutomaticEnrichment(true);
-    const resumeSpectroMetadata = () => { void startSpectroMetadataEnrichment().catch(() => undefined); };
-    const retrySpectroMetadataWithUpdatedCredentials = () => { void startSpectroMetadataEnrichment(true); };
 
+    // El enriquecimiento de Espectro se inicia al abrir esa sección, no durante
+    // el arranque de toda Prisma, para reducir el trabajo inicial de la aplicación.
     requestAutomaticEnrichment();
-    resumeSpectroMetadata();
     window.addEventListener("online", resumeEnrichment);
-    window.addEventListener("online", resumeSpectroMetadata);
     window.addEventListener("prisma:tmdb-credentials-updated", retryWithUpdatedCredentials);
-    window.addEventListener("prisma:tmdb-credentials-updated", retrySpectroMetadataWithUpdatedCredentials);
     return () => {
       window.removeEventListener("online", resumeEnrichment);
-      window.removeEventListener("online", resumeSpectroMetadata);
       window.removeEventListener("prisma:tmdb-credentials-updated", retryWithUpdatedCredentials);
-      window.removeEventListener("prisma:tmdb-credentials-updated", retrySpectroMetadataWithUpdatedCredentials);
     };
   }, []);
 
@@ -224,7 +219,7 @@ export default function App() {
         </div>
       )}
       <main className={showNavigation ? "main-content with-navigation" : "main-content"}>
-        {page}
+        <AppErrorBoundary key={path}>{page}</AppErrorBoundary>
       </main>
       {showNavigation && (
         <BottomNavigation
