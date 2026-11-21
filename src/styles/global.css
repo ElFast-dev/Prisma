@@ -1325,3 +1325,24 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .spectro-loading-chart strong,
   .spectro-loading-chart span { animation: none; }
 }
+/* Transiciones entre secciones cargadas bajo demanda */
+.route-loading-state {
+  display: flex;
+  min-height: min(42vh, 320px);
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+.route-loading-spinner {
+  flex: 0 0 auto;
+  color: var(--color-accent);
+  animation: route-loading-rotate 1s linear infinite;
+}
+@keyframes route-loading-rotate {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-spinner { animation: none; }
+}
