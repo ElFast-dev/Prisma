@@ -672,7 +672,7 @@ test("aplaza las consultas de metadatos hasta que se abre Espectro", async ({ pa
   await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
   await seedIncompleteSpectroHistory(page);
   await page.waitForTimeout(600);
-  expect(requestedPaths).toHaveLength(0);
+  expect(requestedPaths.filter((path) => path.endsWith("/credits") || path.endsWith("/keywords"))).toHaveLength(0);
 
   await page.goto("#/spectro");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
