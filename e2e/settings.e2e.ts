@@ -190,19 +190,15 @@ test("el restablecimiento permite eliminar también la credencial TMDB", async (
 test("permite solicitar persistencia del almacenamiento cuando hay datos locales", async ({ page }) => {
   await page.addInitScript(() => {
     let persisted = false;
-    Object.defineProperty(navigator.storage, "persisted", {
+    Object.defineProperty(navigator, "storage", {
       configurable: true,
-      value: async () => persisted
-    });
-    Object.defineProperty(navigator.storage, "estimate", {
-      configurable: true,
-      value: async () => ({ usage: 512000, quota: 10485760 })
-    });
-    Object.defineProperty(navigator.storage, "persist", {
-      configurable: true,
-      value: async () => {
-        persisted = true;
-        return true;
+      value: {
+        persisted: async () => persisted,
+        estimate: async () => ({ usage: 512000, quota: 10485760 }),
+        persist: async () => {
+          persisted = true;
+          return true;
+        }
       }
     });
   });
