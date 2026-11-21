@@ -3,6 +3,7 @@ import { Search, X, Film, LoaderCircle, WifiOff, SlidersHorizontal } from "lucid
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
+import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import {
   countActiveDiscoverFilters,
   DEFAULT_DISCOVER_FILTERS,
@@ -39,6 +40,7 @@ const SORT_OPTIONS = [
 export function DiscoverPage() {
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersDialogRef = useAccessibleDialog(filtersOpen, () => setFiltersOpen(false));
   const [appliedFilters, setAppliedFilters] = useState<DiscoverFilters>(DEFAULT_DISCOVER_FILTERS);
   const [draftFilters, setDraftFilters] = useState<DiscoverFilters>(DEFAULT_DISCOVER_FILTERS);
   const [movies, setMovies] = useState<TmdbMovieSummary[]>([]);
@@ -280,7 +282,7 @@ export function DiscoverPage() {
         <div className="sheet-backdrop library-sheet-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setFiltersOpen(false);
         }}>
-          <section className="bottom-sheet library-bottom-sheet library-filter-sheet discover-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="discover-filters-title">
+          <section ref={filtersDialogRef} tabIndex={-1} className="bottom-sheet library-bottom-sheet library-filter-sheet discover-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="discover-filters-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
               <h2 id="discover-filters-title">Filtros</h2>

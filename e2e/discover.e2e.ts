@@ -135,3 +135,28 @@ test("muestra dos columnas de pósteres en móvil", async ({ page }) => {
   expect(Math.abs(first!.y - second!.y)).toBeLessThan(1);
   expect(second!.x).toBeGreaterThan(first!.x);
 });
+
+
+test("mantiene el foco dentro de los filtros y lo devuelve al cerrarlos", async ({ page }) => {
+  await configureTmdbMock(page);
+  await page.goto("#/discover");
+
+  const trigger = page.getByRole("button", { name: "Abrir filtros" });
+  await trigger.focus();
+  await trigger.click();
+
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  const close = dialog.getByRole("button", { name: "Cerrar filtros" });
+  const apply = dialog.getByRole("button", { name: "Aplicar filtros" });
+  await expect(dialog).toBeVisible();
+  await expect(close).toBeFocused();
+
+  await page.keyboard.press("Shift+Tab");
+  await expect(apply).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(close).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});

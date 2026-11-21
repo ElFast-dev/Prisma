@@ -16,6 +16,7 @@ import { parseExternalMovieImport, type ExternalMovieImportPlan } from "../../do
 import { EnrichmentPanel } from "./EnrichmentPanel";
 import { StorageProtectionPanel } from "./StorageProtectionPanel";
 import { PwaInstallPanel } from "./PwaInstallPanel";
+import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import { navigateBack } from "../../navigation/routeHistory";
 import { getUserPreferences, saveLibraryView } from "../../infrastructure/database/preferencesService";
 
@@ -52,6 +53,12 @@ export function SettingsPage() {
   const [resetConfirmation, setResetConfirmation] = useState("");
   const [resetAlsoDeleteTmdb, setResetAlsoDeleteTmdb] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  const externalImportDialogRef = useAccessibleDialog(Boolean(externalImportPlan), () => {
+    if (!backupBusy) cancelExternalImport();
+  });
+  const resetDialogRef = useAccessibleDialog(resetDialogOpen, () => {
+    if (!backupBusy && !resetBusy) setResetDialogOpen(false);
+  });
 
   useEffect(() => {
     const stored = getTmdbAccessToken();
@@ -492,7 +499,7 @@ export function SettingsPage() {
           <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
             if (event.target === event.currentTarget && !backupBusy) cancelExternalImport();
           }}>
-            <section className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="external-import-title">
+            <section ref={externalImportDialogRef} tabIndex={-1} className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="external-import-title">
               <div className="sheet-handle" />
               <div className="sheet-header">
                 <div>
@@ -558,7 +565,7 @@ export function SettingsPage() {
         <div className="sheet-backdrop reset-data-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget && !backupBusy && !resetBusy) setResetDialogOpen(false);
         }}>
-          <section className="bottom-sheet reset-data-sheet" role="dialog" aria-modal="true" aria-labelledby="reset-data-title">
+          <section ref={resetDialogRef} tabIndex={-1} className="bottom-sheet reset-data-sheet" role="dialog" aria-modal="true" aria-labelledby="reset-data-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
               <div>

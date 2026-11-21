@@ -6,6 +6,7 @@ import {
   Film, Clapperboard, Clock3 as AchievementClock,
   SlidersHorizontal
 } from "lucide-react";
+import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import type {
   Collection,
   HistoryBrowsePreferences,
@@ -181,6 +182,7 @@ export function LibraryPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [preferencesError, setPreferencesError] = useState("");
+  const libraryFiltersDialogRef = useAccessibleDialog(filtersOpen, () => setFiltersOpen(false));
 
   useEffect(() => {
     let active = true;
@@ -367,7 +369,7 @@ export function LibraryPage() {
         <div className="sheet-backdrop library-sheet-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setFiltersOpen(false);
         }}>
-          <section className="bottom-sheet library-bottom-sheet library-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="library-filters-title">
+          <section ref={libraryFiltersDialogRef} tabIndex={-1} className="bottom-sheet library-bottom-sheet library-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="library-filters-title">
             <div className="sheet-handle" />
             <div className="sheet-header">
               <h2 id="library-filters-title">Filtros</h2>
@@ -524,6 +526,7 @@ export function HistoryPage() {
   const [error, setError] = useState("");
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [preferencesError, setPreferencesError] = useState("");
+  const historyFiltersDialogRef = useAccessibleDialog(filtersOpen, () => setFiltersOpen(false));
 
   const loadHistory = useCallback(async () => {
     const viewings = await prismaDb.viewings.toArray();
@@ -956,6 +959,8 @@ export function HistoryPage() {
           }}
         >
           <section
+            ref={historyFiltersDialogRef}
+            tabIndex={-1}
             className="bottom-sheet history-bottom-sheet"
             role="dialog"
             aria-modal="true"
