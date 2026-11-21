@@ -239,27 +239,6 @@ test("permite solicitar persistencia del almacenamiento cuando hay datos locales
 });
 
 
-test("ofrece una experiencia de instalación dentro de Ajustes", async ({ page }) => {
-  await page.goto("#/settings");
-  const panel = page.getByRole("region", { name: "Instalación de Prisma" });
-  await expect(panel).toBeVisible();
-  await expect(panel.getByText(/menú del navegador/)).toBeVisible();
-
-  await page.evaluate(() => {
-    const event = new Event("beforeinstallprompt", { cancelable: true });
-    Object.assign(event, {
-      prompt: async () => ({ outcome: "accepted", platform: "web" })
-    });
-    window.dispatchEvent(event);
-  });
-
-  const installButton = panel.getByRole("button", { name: "Instalar Prisma" });
-  await expect(installButton).toBeVisible();
-  await installButton.click();
-  await expect(panel.getByText("El navegador aceptó la instalación de Prisma.")).toBeVisible();
-  await expect(panel.getByRole("button", { name: "Instalar Prisma" })).toHaveCount(0);
-});
-
 
 test("ofrece una experiencia de instalación dentro de Ajustes", async ({ page }) => {
   await page.goto("#/settings");
