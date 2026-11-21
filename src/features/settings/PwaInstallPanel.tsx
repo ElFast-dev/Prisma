@@ -69,9 +69,9 @@ export function PwaInstallPanel() {
             </button>
           )}
           <p className="pwa-install-instructions">{instructions}</p>
-          {message && <p className="pwa-install-feedback" role="status">{message}</p>}
         </>
       )}
+      {message && <p className="pwa-install-feedback" role="status">{message}</p>}
     </section>
   );
 }
