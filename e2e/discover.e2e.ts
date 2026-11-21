@@ -35,6 +35,50 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
       });
       return;
     }
+    if (url.pathname === "/3/movie/101") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 101,
+          title: "Prisma: una historia",
+          original_title: "Prisma Story",
+          overview: "Sinopsis de prueba para comprobar la navegación a la ficha.",
+          release_date: "2020-01-01",
+          poster_path: null,
+          backdrop_path: null,
+          runtime: 110,
+          status: "Released",
+          genres: [{ id: 18, name: "Drama" }],
+          original_language: "es"
+        })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/101/credits") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ cast: [], crew: [] })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/101/recommendations") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ page: 1, total_pages: 1, total_results: 0, results: [] })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/101/watch/providers") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: 101, results: {} })
+      });
+      return;
+    }
     if (url.pathname === "/3/discover/movie") {
       discoverRequests.push(url);
       await route.fulfill({
@@ -181,7 +225,7 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
 
   await movie.click();
   await expect(page).toHaveURL(/#\/movie\/101$/);
-  const backButton = page.getByRole("link", { name: "Volver" });
+  const backButton = page.getByRole("link", { name: "Volver", exact: true });
   await expect(backButton).toBeVisible();
   await backButton.click();
 
