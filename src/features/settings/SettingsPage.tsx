@@ -16,7 +16,6 @@ import { parseExternalMovieImport, type ExternalMovieImportPlan } from "../../do
 import { EnrichmentPanel } from "./EnrichmentPanel";
 import { StorageProtectionPanel } from "./StorageProtectionPanel";
 import { PwaInstallPanel } from "./PwaInstallPanel";
-import { PwaInstallPanel } from "./PwaInstallPanel";
 import { navigateBack } from "../../navigation/routeHistory";
 import { getUserPreferences, saveLibraryView } from "../../infrastructure/database/preferencesService";
 
@@ -320,7 +319,6 @@ export function SettingsPage() {
           <h1>{activeSection?.title ?? "Ajustes"}</h1>
         </div>
       </header>
-      {!activeSection && <PwaInstallPanel />}
       {!activeSection && <PwaInstallPanel />}
       {!activeSection && (
         <nav className="navigation-cards settings-navigation-cards" aria-label="Secciones de Ajustes">
