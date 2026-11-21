@@ -154,7 +154,7 @@ export function DiscoverPage() {
 
   useEffect(() => {
     const requestedFeedKey = getDiscoverFeedKey(query, appliedFilters);
-    if (loadedFeedKeyRef.current === requestedFeedKey && state === "ready") return;
+    if (loadedFeedKeyRef.current === requestedFeedKey) return;
     const timer = window.setTimeout(() => void loadFirstPage(query, appliedFilters), query.trim() ? 420 : 0);
     return () => window.clearTimeout(timer);
   }, [query, appliedFilters, loadFirstPage]);
@@ -322,10 +322,32 @@ export function DiscoverPage() {
       ) : (
         <>
           {filtersActive && state === "ready" && (
-            <div className="discover-active-filters" role="status">
-              <span><SlidersHorizontal size={14} /> {activeFilterCount} {activeFilterCount === 1 ? "filtro activo" : "filtros activos"}</span>
-              <button type="button" onClick={clearAppliedFilters}>Limpiar</button>
+            <div className="discover-active-filters" role="group" aria-label="Filtros aplicados">
+              <span className="discover-filter-summary-icon" aria-hidden="true"><SlidersHorizontal size={14} /></span>
+              <span className="sr-only">{activeFilterCount} {activeFilterCount === 1 ? "filtro activo" : "filtros activos"}</span>
+              <div className="discover-filter-chips">
+                {activeFilterChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    className="discover-filter-chip"
+                    type="button"
+                    aria-label={"Quitar filtro " + chip.label}
+                    onClick={() => clearAppliedFilter(chip.key)}
+                  >
+                    <span>{chip.label}</span><X size={13} />
+                  </button>
+                ))}
+              </div>
+              <button className="discover-clear-filters" type="button" onClick={clearAppliedFilters}>Limpiar todo</button>
             </div>
+          )}
+          {state === "ready" && movies.length > 0 && (
+            <p className="discover-results-meta" role="status">
+              {filtersActive && query.trim()
+                ? visibleMovies.length + " de " + movies.length + " títulos cargados coinciden"
+                : totalResults.toLocaleString("es-PA") + " resultados en TMDB"}
+              {" · Página " + page + " de " + totalPages}
+            </p>
           )}
           {showingCachedData && (
             <p className="cached-feed-note" role="status">
@@ -348,9 +370,6 @@ export function DiscoverPage() {
             />
           ) : (
             <>
-              {filtersActive && query.trim() && (
-                <p className="discover-filtered-count">{visibleMovies.length} títulos coinciden con tu búsqueda dentro de los resultados filtrados.</p>
-              )}
               <div className="poster-grid">
                 {visibleMovies.map((movie) => (
                   <MoviePosterCard
@@ -383,6 +402,15 @@ export function DiscoverPage() {
             <div className="sheet-header">
               <h2 id="discover-filters-title">Filtros</h2>
               <button className="icon-button" type="button" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><X size={19} /></button>
+            </div>
+
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Atajos de búsqueda</span><span>Puedes ajustarlos después</span></div>
+              <div className="discover-presets">
+                <button type="button" onClick={() => applyDiscoverPreset("rated")}>Muy valoradas</button>
+                <button type="button" onClick={() => applyDiscoverPreset("recent")}>Estrenos recientes</button>
+                <button type="button" onClick={() => applyDiscoverPreset("classics")}>Cine clásico</button>
+              </div>
             </div>
 
             <div className="library-sheet-section">
