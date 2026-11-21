@@ -1061,3 +1061,38 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 
 .discover-load-more { display: flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; margin: 16px auto 10px; }
 .discover-load-more:disabled { opacity: .65; }
+
+
+/* Navegación adaptable: rail lateral en pantallas amplias. */
+@media (min-width: 900px) {
+  .app-shell.has-primary-navigation > .main-content.with-navigation {
+    width: min(calc(100% - 128px), 1080px);
+    margin: 0 0 0 max(112px, calc((100vw - 1080px + 112px) / 2));
+    padding-bottom: 36px;
+  }
+  .app-shell.has-primary-navigation > .bottom-nav {
+    inset: 0 auto 0 0;
+    width: 96px;
+    height: 100dvh;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 8px;
+  }
+  .app-shell.has-primary-navigation .bottom-nav-pill {
+    width: 80px;
+    flex-direction: column;
+    gap: 6px;
+    border-radius: 26px;
+    padding: 8px;
+  }
+  .app-shell.has-primary-navigation .bottom-nav-item {
+    width: 100%;
+    min-height: 68px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 4px;
+    font-size: 11px;
+    text-align: center;
+  }
+}

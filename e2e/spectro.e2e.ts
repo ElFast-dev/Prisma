@@ -589,3 +589,30 @@ test("mantiene los datos locales disponibles cuando falta la credencial TMDB", a
   expect(requests).toBe(0);
   await expect(page.getByRole("tab", { name: /Resumen/ })).toBeVisible();
 });
+
+
+test("permite recorrer las pestañas de Espectro con el teclado", async ({ page }) => {
+  await page.goto("#/personal");
+  await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
+  await seedSpectroHistory(page);
+  await page.goto("#/spectro");
+  const summary = page.getByRole("tab", { name: /Resumen/ });
+  const activity = page.getByRole("tab", { name: /Actividad/ });
+  const profile = page.getByRole("tab", { name: /Perfil/ });
+  const library = page.getByRole("tab", { name: /Biblioteca/ });
+  await expect(summary).toHaveAttribute("tabindex", "0");
+  await expect(activity).toHaveAttribute("tabindex", "-1");
+  await summary.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(activity).toBeFocused();
+  await expect(activity).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("End");
+  await expect(library).toBeFocused();
+  await expect(library).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(profile).toBeFocused();
+  await expect(profile).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Home");
+  await expect(summary).toBeFocused();
+  await expect(summary).toHaveAttribute("aria-selected", "true");
+});

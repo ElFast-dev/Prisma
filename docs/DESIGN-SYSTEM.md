@@ -57,6 +57,12 @@ Esta regla es obligatoria para todas las pantallas nuevas y existentes.
 
 Antes de integrar una pantalla, revisar y retirar cualquier texto que no ayude a comprender los datos o completar una tarea.
 
+## Navegación adaptable
+
+- Móvil: navegación principal inferior con Personal, Descubrir y Espectro.
+- Pantallas de 900 px o más: rail lateral con los mismos tres destinos y sus iconos.
+- Las rutas secundarias no muestran la navegación principal.
+
 ## Interacción
 
-Controles táctiles amplios, estados de foco visibles, reducción de movimiento y confirmación de operaciones importantes.
+Controles táctiles amplios, estados de foco visibles, reducción de movimiento y confirmación de operaciones importantes. Las pestañas horizontales admiten flechas izquierda/derecha, Home y End, con foco itinerante.

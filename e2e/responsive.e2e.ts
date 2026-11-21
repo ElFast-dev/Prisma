@@ -46,3 +46,21 @@ for (const viewport of viewports) {
     }
   });
 }
+
+
+test("adapta la navegación principal a un rail lateral en escritorio", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("#/personal");
+  const navigation = page.getByRole("navigation", { name: "Navegación principal" });
+  await expect(navigation).toBeVisible();
+  const rail = await navigation.boundingBox();
+  const main = await page.locator("main.main-content").boundingBox();
+  const direction = await page.locator(".bottom-nav-pill").evaluate((element) => getComputedStyle(element).flexDirection);
+  expect(rail).not.toBeNull();
+  expect(main).not.toBeNull();
+  expect(rail!.x).toBe(0);
+  expect(rail!.y).toBe(0);
+  expect(rail!.height).toBeGreaterThanOrEqual(799);
+  expect(direction).toBe("column");
+  expect(main!.x).toBeGreaterThan(rail!.width);
+});
