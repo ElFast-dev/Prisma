@@ -177,6 +177,7 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
   await expect(movie).toBeVisible();
   await expect(page.locator(".discover-filter-chip")).toHaveCount(2);
   await expect.poll(() => discoverRequests.length).toBe(1);
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem("prisma:discover-session:v1"))).toContain('"query":"prisma"');
 
   await movie.click();
   await expect(page).toHaveURL(/#\/movie\/101$/);
