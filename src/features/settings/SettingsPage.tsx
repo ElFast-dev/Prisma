@@ -14,6 +14,7 @@ import { importExternalMovies, type ExternalMovieImportPriority } from "../../in
 import { parsePrismaBackup } from "../../domain/backup";
 import { parseExternalMovieImport, type ExternalMovieImportPlan } from "../../domain/externalMovieImport";
 import { EnrichmentPanel } from "./EnrichmentPanel";
+import { StorageProtectionPanel } from "./StorageProtectionPanel";
 import { navigateBack } from "../../navigation/routeHistory";
 import { getUserPreferences, saveLibraryView } from "../../infrastructure/database/preferencesService";
 
@@ -640,6 +641,7 @@ export function SettingsPage() {
         <p className="settings-security-note">Importante: al ser una aplicación web, una persona que tenga acceso a este navegador puede inspeccionar el almacenamiento y las solicitudes. Usa una credencial propia de TMDB y no la reutilices en otros servicios.</p>
         <a className="text-link" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Gestionar credenciales de TMDB ↗</a>
       </section>
+      <StorageProtectionPanel />
       <section className="settings-section card-surface settings-about-card">
         <div>
           <h2>Datos locales</h2>
