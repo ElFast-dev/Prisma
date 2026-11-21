@@ -1,11 +1,10 @@
-import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { SpectroAnalysis } from "../../domain/spectro";
-import {
-  calculateSpectroAnalytics,
-  type SpectroAnalyticsInput,
-  type SpectroCategoryPoint,
-  type SpectroMonthlyPoint,
-  type SpectroRatingPoint
+import type {
+  SpectroAnalytics,
+  SpectroCategoryPoint,
+  SpectroMonthlyPoint,
+  SpectroRatingPoint
 } from "../../domain/spectroAnalytics";
 
 type SectionKey = "resumen" | "actividad" | "calificaciones" | "cine" | "perfil" | "biblioteca";
@@ -372,11 +371,11 @@ function Metric({ label, value, detail }: { label: string; value: string; detail
 }
 
 export function SpectroAnalyticsPanel({
-  data,
+  analytics,
   analysis,
   patterns
 }: {
-  data: SpectroAnalyticsInput;
+  analytics: SpectroAnalytics;
   analysis: SpectroAnalysis;
   patterns: ReactNode;
 }) {
@@ -397,12 +396,22 @@ export function SpectroAnalyticsPanel({
     tabRefs.current[nextIndex]?.focus();
   };
 
-  const analytics = useMemo(() => calculateSpectroAnalytics(data), [data]);
   const summary = analytics.summary;
   const estimatedHours = (summary.estimatedMinutes / 60).toLocaleString("es-PA", { maximumFractionDigits: 1 });
 
   return (
     <section className="spectro-analytics" aria-label="Analítica personal de Espectro">
+      <header className="spectro-analytics-header">
+        <div>
+          <span className="spectro-analytics-kicker">TU PERFIL CINEMATOGRÁFICO</span>
+          <h2>Tu forma de vivir el cine</h2>
+          <p>
+            Una lectura de tus visionados, valoraciones y películas guardadas.
+            Los cálculos se realizan en este dispositivo y no son una evaluación externa de tus gustos.
+          </p>
+        </div>
+        <span className="spectro-local-indicator"><i aria-hidden="true" /> Análisis local</span>
+      </header>
       <div className="spectro-data-metrics">
         <Metric label="Visionados" value={number(summary.totalViewings)} detail={number(summary.additionalViewings) + " sesiones adicionales"} />
         <Metric label="Películas únicas" value={number(summary.uniqueMoviesWatched)} detail={number(summary.ratedMovies) + " con nota"} />
