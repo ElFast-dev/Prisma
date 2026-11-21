@@ -160,3 +160,59 @@ test("mantiene el foco dentro de los filtros y lo devuelve al cerrarlos", async 
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
 });
+
+
+test("conserva filtros, búsqueda y resultados al regresar de una ficha", async ({ page }) => {
+  const { discoverRequests } = await configureTmdbMock(page);
+  await page.goto("#/discover");
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.locator("#discover-genre").selectOption("18");
+  await dialog.locator("#discover-year-from").fill("2015");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+  await page.locator("#discover-search").fill("prisma");
+
+  const movie = page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" });
+  await expect(movie).toBeVisible();
+  await expect(page.locator(".discover-filter-chip")).toHaveCount(2);
+  await expect.poll(() => discoverRequests.length).toBe(1);
+
+  await movie.click();
+  await expect(page).toHaveURL(/#\\/movie\\/101$/);
+  const backButton = page.getByRole("link", { name: "Volver" });
+  await expect(backButton).toBeVisible();
+  await backButton.click();
+
+  await expect(page).toHaveURL(/#\\/discover$/);
+  await expect(page.locator("#discover-search")).toHaveValue("prisma");
+  await expect(page.getByRole("button", { name: "Abrir filtros" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".discover-filter-chip")).toContainText(["Género: Drama", "Año: 2015–actualidad"]);
+  await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
+  await expect.poll(() => discoverRequests.length).toBe(1);
+});
+
+test("ofrece atajos de búsqueda y permite quitar un filtro sin borrar los demás", async ({ page }) => {
+  const { discoverRequests } = await configureTmdbMock(page);
+  await page.goto("#/discover");
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.getByRole("button", { name: "Muy valoradas" }).click();
+  await expect(dialog.locator("#discover-min-rating")).toHaveValue("7.5");
+  await expect(dialog.locator("#discover-min-votes")).toHaveValue("500");
+  await expect(dialog.locator("#discover-sort")).toHaveValue("vote_average.desc");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+
+  await expect.poll(() => discoverRequests.length).toBe(1);
+  expect(discoverRequests[0].searchParams.get("vote_average.gte")).toBe("7.5");
+  expect(discoverRequests[0].searchParams.get("vote_count.gte")).toBe("500");
+  expect(discoverRequests[0].searchParams.get("sort_by")).toBe("vote_average.desc");
+
+  await page.getByRole("button", { name: "Quitar filtro Valoración: ≥ 7.5" }).click();
+  await expect.poll(() => discoverRequests.length).toBe(2);
+  expect(discoverRequests[1].searchParams.get("vote_average.gte")).toBeNull();
+  expect(discoverRequests[1].searchParams.get("vote_count.gte")).toBe("500");
+  expect(discoverRequests[1].searchParams.get("sort_by")).toBe("vote_average.desc");
+  await expect(page.locator(".discover-filter-chip")).toContainText(["Votos: ≥ 500", "Orden: Mejor valoradas"]);
+});
