@@ -238,6 +238,6 @@ test("permite solicitar persistencia del almacenamiento cuando hay datos locales
   await expect(section.getByText(/Uso estimado: 500 KB de 10 MB/)).toBeVisible();
 
   await section.getByRole("button", { name: "Solicitar protección del almacenamiento" }).click();
-  await expect(section.getByRole("status")).toContainText("El navegador concedió almacenamiento persistente");
+  await expect(section.locator(".storage-protection-feedback")).toContainText("El navegador concedió almacenamiento persistente");
   await expect(section.getByRole("button", { name: "Solicitar protección del almacenamiento" })).toHaveCount(0);
 });
