@@ -120,10 +120,18 @@ test("muestra dos columnas de pósteres en móvil", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await configureTmdbMock(page);
   await page.goto("#/discover");
-  const grid = page.locator(".poster-grid");
-  await expect(grid).toBeVisible();
-  const columnCount = await grid.evaluate((element) =>
-    getComputedStyle(element).gridTemplateColumns.split(" ").length
-  );
-  expect(columnCount).toBe(2);
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.locator("#discover-genre").selectOption("18");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  const first = await posters.nth(0).boundingBox();
+  const second = await posters.nth(1).boundingBox();
+  expect(first).not.toBeNull();
+  expect(second).not.toBeNull();
+  expect(Math.abs(first!.y - second!.y)).toBeLessThan(1);
+  expect(second!.x).toBeGreaterThan(first!.x);
 });
