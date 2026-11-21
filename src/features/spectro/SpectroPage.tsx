@@ -3,8 +3,7 @@ import {
   BrainCircuit, CheckCircle2, Fingerprint, RefreshCw, WifiOff
 } from "lucide-react";
 import { EmptyState } from "../../components/EmptyState";
-import { getSpectroAnalysis } from "../../infrastructure/database/spectroRepository";
-import { getSpectroAnalyticsData } from "../../infrastructure/database/spectroAnalyticsRepository";
+import { getSpectroWorkspace } from "../../infrastructure/database/spectroRepository";
 import {
   getSpectroMetadataSnapshot,
   startSpectroMetadataEnrichment,
@@ -18,7 +17,7 @@ import {
   type SpectroRatingQuestion
 } from "../../infrastructure/database/spectroQuestionService";
 import type { SpectroAffinity, SpectroAnalysis } from "../../domain/spectro";
-import type { SpectroAnalyticsInput } from "../../domain/spectroAnalytics";
+import type { SpectroAnalytics } from "../../domain/spectroAnalytics";
 import { SpectroAnalyticsPanel } from "./SpectroAnalyticsPanel";
 
 type LoadState = "loading" | "ready" | "error";
@@ -261,7 +260,7 @@ function SpectroRatingQuestionCard({
 
 function SpectroHome({
   analysis,
-  analyticsData,
+  analytics,
   metadata,
   question,
   questionBusy,
@@ -270,7 +269,7 @@ function SpectroHome({
   onQuestionDismiss
 }: {
   analysis: SpectroAnalysis;
-  analyticsData: SpectroAnalyticsInput;
+  analytics: SpectroAnalytics;
   metadata: SpectroMetadataSnapshot;
   question: SpectroRatingQuestion | null;
   questionBusy: boolean;
@@ -281,7 +280,12 @@ function SpectroHome({
   return (
     <div className="page spectro-page">
       <header className="spectro-page-intro">
+        <div className="spectro-page-kicker"><BrainCircuit size={14} /> ANÁLISIS CINEMATOGRÁFICO PERSONAL</div>
         <h1>Espectro</h1>
+        <p>
+          Descubre qué conecta tus películas, cómo evolucionan tus gustos y qué patrones aparecen
+          en tu historial. Tu información personal se analiza localmente en este dispositivo.
+        </p>
       </header>
 
       {question && (
@@ -308,7 +312,7 @@ function SpectroHome({
       )}
 
       <SpectroAnalyticsPanel
-        data={analyticsData}
+        analytics={analytics}
         analysis={analysis}
         patterns={<SpectroPatternsPanel patterns={analysis.patterns} />}
       />
@@ -322,7 +326,7 @@ function SpectroHome({
 
 export function SpectroPage() {
   const [analysis, setAnalysis] = useState<SpectroAnalysis | null>(null);
-  const [analyticsData, setAnalyticsData] = useState<SpectroAnalyticsInput | null>(null);
+  const [analytics, setAnalytics] = useState<SpectroAnalytics | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState<SpectroMetadataSnapshot>(EMPTY_METADATA);
@@ -330,18 +334,19 @@ export function SpectroPage() {
   const [questionBusy, setQuestionBusy] = useState(false);
   const [questionError, setQuestionError] = useState("");
   const lastRefreshAt = useRef(0);
+  const analysisRequestId = useRef(0);
 
   const refreshAnalysis = useCallback(async () => {
+    const requestId = ++analysisRequestId.current;
     try {
-      const [result, analytics] = await Promise.all([
-        getSpectroAnalysis(),
-        getSpectroAnalyticsData()
-      ]);
-      setAnalysis(result);
-      setAnalyticsData(analytics);
+      const result = await getSpectroWorkspace();
+      if (requestId !== analysisRequestId.current) return;
+      setAnalysis(result.analysis);
+      setAnalytics(result.analytics);
       setState("ready");
       setError("");
     } catch (cause) {
+      if (requestId !== analysisRequestId.current) return;
       setError(cause instanceof Error ? cause.message : "No se pudo calcular Espectro.");
       setState("error");
     }
@@ -393,7 +398,9 @@ export function SpectroPage() {
       if (active) setMetadata(value);
     });
     const onOnline = () => { void startSpectroMetadataEnrichment(); };
+    const onCredentialsUpdated = () => { void startSpectroMetadataEnrichment(true); };
     window.addEventListener("online", onOnline);
+    window.addEventListener("prisma:tmdb-credentials-updated", onCredentialsUpdated);
 
     void refreshAnalysis().then(async () => {
       if (!active) return;
@@ -407,6 +414,7 @@ export function SpectroPage() {
       active = false;
       unsubscribe();
       window.removeEventListener("online", onOnline);
+      window.removeEventListener("prisma:tmdb-credentials-updated", onCredentialsUpdated);
     };
   }, [refreshAnalysis]);
 
@@ -419,9 +427,32 @@ export function SpectroPage() {
   }, [metadata.processedMovies, metadata.status, refreshAnalysis]);
 
   if (state === "loading") {
-    return <div className="page"><div className="detail-loading"><span>Preparando tus gráficas…</span></div></div>;
+    return (
+      <div className="page spectro-page" aria-busy="true">
+        <header className="spectro-page-intro">
+          <div className="spectro-page-kicker"><BrainCircuit size={14} /> ANÁLISIS CINEMATOGRÁFICO PERSONAL</div>
+          <h1>Espectro</h1>
+          <p>Preparando tu perfil local y las estadísticas de tu historial.</p>
+        </header>
+        <div className="spectro-loading-summary" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div className="spectro-loading-metric" key={index}>
+              <span /><strong /><i />
+            </div>
+          ))}
+        </div>
+        <div className="spectro-loading-charts" aria-hidden="true">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div className="spectro-loading-chart" key={index}>
+              <strong /><span /><span /><span />
+            </div>
+          ))}
+        </div>
+        <p className="spectro-loading-note" role="status">Calculando sin bloquear la navegación de Prisma…</p>
+      </div>
+    );
   }
-  if (state === "error" || !analysis || !analyticsData) {
+  if (state === "error" || !analysis || !analytics) {
     return (
       <div className="page spectro-page">
         <EmptyState
@@ -437,7 +468,7 @@ export function SpectroPage() {
   return (
     <SpectroHome
       analysis={analysis}
-      analyticsData={analyticsData}
+      analytics={analytics}
       metadata={metadata}
       question={question}
       questionBusy={questionBusy}
