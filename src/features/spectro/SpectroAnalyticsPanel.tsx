@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { SpectroAnalysis } from "../../domain/spectro";
 import {
   calculateSpectroAnalytics,
@@ -381,6 +381,22 @@ export function SpectroAnalyticsPanel({
   patterns: ReactNode;
 }) {
   const [activeSection, setActiveSection] = useState<SectionKey>("resumen");
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    let nextIndex: number;
+    switch (event.key) {
+      case "ArrowRight": nextIndex = (currentIndex + 1) % SECTIONS.length; break;
+      case "ArrowLeft": nextIndex = (currentIndex - 1 + SECTIONS.length) % SECTIONS.length; break;
+      case "Home": nextIndex = 0; break;
+      case "End": nextIndex = SECTIONS.length - 1; break;
+      default: return;
+    }
+    event.preventDefault();
+    setActiveSection(SECTIONS[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
+
   const analytics = useMemo(() => calculateSpectroAnalytics(data), [data]);
   const summary = analytics.summary;
   const estimatedHours = (summary.estimatedMinutes / 60).toLocaleString("es-PA", { maximumFractionDigits: 1 });
@@ -396,17 +412,20 @@ export function SpectroAnalyticsPanel({
         <Metric label="Favoritos" value={number(summary.favorites)} detail={number(summary.pending) + " películas pendientes"} />
       </div>
 
-      <nav className="spectro-analytics-nav" role="tablist" aria-label="Apartados de analítica">
-        {SECTIONS.map((section) => (
+      <nav className="spectro-analytics-nav" role="tablist" aria-orientation="horizontal" aria-label="Apartados de analítica">
+        {SECTIONS.map((section, index) => (
           <button
+            ref={(element) => { tabRefs.current[index] = element; }}
             className={activeSection === section.id ? "spectro-analytics-tab is-active" : "spectro-analytics-tab"}
             id={"spectro-tab-" + section.id}
             key={section.id}
             type="button"
             role="tab"
+            tabIndex={activeSection === section.id ? 0 : -1}
             aria-selected={activeSection === section.id}
             aria-controls="spectro-analytics-panel"
             onClick={() => setActiveSection(section.id)}
+            onKeyDown={(event) => handleTabKeyDown(event, index)}
           >
             {section.label}
           </button>

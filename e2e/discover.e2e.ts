@@ -114,3 +114,16 @@ test("impide aplicar rangos de duración y año invertidos", async ({ page }) =>
   await expect(dialog).toHaveCount(0);
   await expect(page.locator(".poster-card")).toHaveCount(1);
 });
+
+
+test("muestra dos columnas de pósteres en móvil", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await configureTmdbMock(page);
+  await page.goto("#/discover");
+  const grid = page.locator(".poster-grid");
+  await expect(grid).toBeVisible();
+  const columnCount = await grid.evaluate((element) =>
+    getComputedStyle(element).gridTemplateColumns.split(" ").length
+  );
+  expect(columnCount).toBe(2);
+});

@@ -216,7 +216,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={showNavigation ? "app-shell has-primary-navigation" : "app-shell"}>
       {!isOnline && (
         <div className="offline-banner" role="status">
           <WifiOff size={16} />
