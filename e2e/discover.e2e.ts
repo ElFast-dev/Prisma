@@ -225,7 +225,8 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
 
   await movie.click();
   await expect(page).toHaveURL(/#\/movie\/101$/);
-  const backButton = page.getByRole("link", { name: "Volver", exact: true });
+  await expect(page.getByRole("heading", { name: "Prisma: una historia" })).toBeVisible();
+  const backButton = page.getByRole("link", { name: "Volver a la pantalla anterior" });
   await expect(backButton).toBeVisible();
   await backButton.click();
 
