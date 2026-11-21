@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { MovieRecord, Viewing } from "./types";
-import { analyzeSpectro } from "./spectro";
 import { calculateSpectroWorkspace } from "./spectroWorkspace";
 
 const timestamp = "2026-01-01T12:00:00.000Z";
@@ -46,22 +45,18 @@ describe("calculateSpectroWorkspace", () => {
     expect(result.analytics.summary.averageMovieRating).toBe(9);
   });
 
-  it("reutiliza una instantánea de análisis válida en lugar de recalcularla", () => {
-    const analysisInput = { movies: [movie], viewings: [viewing], candidates: [] };
-    const cachedAnalysis = analyzeSpectro(analysisInput);
+  it("permite omitir el análisis cuando la capa local ya tiene una instantánea válida", () => {
     const result = calculateSpectroWorkspace({
-      analysisInput,
       analyticsInput: {
         movies: [movie],
         viewings: [viewing],
         libraryEntries: [],
         collections: [],
         collectionMovies: []
-      },
-      cachedAnalysis
+      }
     });
 
-    expect(result.analysis).toBe(cachedAnalysis);
+    expect(result.analysis).toBeUndefined();
     expect(result.analytics.summary.totalViewings).toBe(1);
   });
 });
