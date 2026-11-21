@@ -18,8 +18,10 @@ const listeners = new Set<(state: PwaInstallState) => void>();
 
 function isRunningStandalone(): boolean {
   if (typeof window === "undefined" || typeof navigator === "undefined") return false;
-  const standaloneDisplay = window.matchMedia("(display-mode: standalone)").matches
-    || window.matchMedia("(display-mode: fullscreen)").matches;
+  const standaloneDisplay = typeof window.matchMedia === "function" && (
+    window.matchMedia("(display-mode: standalone)").matches
+    || window.matchMedia("(display-mode: fullscreen)").matches
+  );
   const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
   return standaloneDisplay || iosStandalone;
 }
@@ -47,14 +49,16 @@ if (typeof window !== "undefined") {
     publishState();
   });
 
-  const displayMode = window.matchMedia("(display-mode: standalone)");
-  displayMode.addEventListener("change", () => {
-    if (isRunningStandalone()) {
-      installed = true;
-      deferredPrompt = null;
-    }
-    publishState();
-  });
+  if (typeof window.matchMedia === "function") {
+    const displayMode = window.matchMedia("(display-mode: standalone)");
+    displayMode.addEventListener?.("change", () => {
+      if (isRunningStandalone()) {
+        installed = true;
+        deferredPrompt = null;
+      }
+      publishState();
+    });
+  }
 }
 
 export function getPwaInstallState(): PwaInstallState {
