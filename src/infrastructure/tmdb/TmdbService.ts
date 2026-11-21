@@ -233,7 +233,7 @@ export async function searchMovies(
   page = 1
 ): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; totalResults: number; stale: boolean; fetchedAt: string }> {
   const normalized = query.trim();
-  if (!normalized) return { movies: [], totalPages: 0, stale: false, fetchedAt: new Date().toISOString() };
+  if (!normalized) return { movies: [], totalPages: 0, totalResults: 0, stale: false, fetchedAt: new Date().toISOString() };
   const result = await getCached<TmdbListResponse>(
     token,
     "search:movie:" + normalized.toLocaleLowerCase() + ":" + page,
