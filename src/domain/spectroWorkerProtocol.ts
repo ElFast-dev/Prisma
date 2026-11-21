@@ -1,7 +1,7 @@
-import type { SpectroWorkspaceInput, SpectroWorkspaceResult } from "./spectroWorkspace";
+import type { SpectroWorkspaceCalculation, SpectroWorkspaceInput } from "./spectroWorkspace";
 
 export type SpectroAnalysisWorkerResponse =
-  | { ok: true; result: SpectroWorkspaceResult }
+  | { ok: true; result: SpectroWorkspaceCalculation }
   | { ok: false; error: string };
 
 export type SpectroAnalysisWorkerRequest = SpectroWorkspaceInput;
