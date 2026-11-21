@@ -10,9 +10,14 @@ import {
 } from "./spectroAnalytics";
 
 export interface SpectroWorkspaceInput {
-  analysisInput: SpectroInput;
+  /** Solo se envía al trabajador cuando no existe una instantánea válida. */
+  analysisInput?: SpectroInput;
   analyticsInput: SpectroAnalyticsInput;
-  cachedAnalysis?: SpectroAnalysis;
+}
+
+export interface SpectroWorkspaceCalculation {
+  analysis?: SpectroAnalysis;
+  analytics: SpectroAnalytics;
 }
 
 export interface SpectroWorkspaceResult {
@@ -22,13 +27,14 @@ export interface SpectroWorkspaceResult {
 
 /**
  * Calcula el espacio completo de Espectro fuera del hilo de interfaz cuando
- * se ejecuta dentro del Web Worker. Puede reutilizar el análisis versionado.
+ * se ejecuta dentro del Web Worker. La instantánea de análisis se puede omitir
+ * si la capa local ya dispone de una copia versionada y válida.
  */
 export function calculateSpectroWorkspace(
   input: SpectroWorkspaceInput
-): SpectroWorkspaceResult {
+): SpectroWorkspaceCalculation {
   return {
-    analysis: input.cachedAnalysis ?? analyzeSpectro(input.analysisInput),
+    ...(input.analysisInput ? { analysis: analyzeSpectro(input.analysisInput) } : {}),
     analytics: calculateSpectroAnalytics(input.analyticsInput)
   };
 }
