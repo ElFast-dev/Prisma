@@ -2,6 +2,9 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type Reac
 import { LoaderCircle, WifiOff } from "lucide-react";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
+import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
+import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
 
 const DiscoverPage = lazy(() => import("./features/discover/DiscoverPage")
   .then((module) => ({ default: module.DiscoverPage })));
@@ -21,9 +24,6 @@ const SpectroPage = lazy(() => import("./features/spectro/SpectroPage")
   .then((module) => ({ default: module.SpectroPage })));
 const MovieDetailPage = lazy(() => import("./features/movie/MovieDetailPage")
   .then((module) => ({ default: module.MovieDetailPage })));
-import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
-import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
-import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
 
 function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
