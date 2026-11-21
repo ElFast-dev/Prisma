@@ -12,6 +12,7 @@ import type {
 import {
   calculateSpectroWorkspace,
   type SpectroWorkspaceInput,
+  type SpectroWorkspaceCalculation,
   type SpectroWorkspaceResult
 } from "../../domain/spectroWorkspace";
 import { prismaDb } from "./database";
@@ -34,7 +35,7 @@ function isValidCachedAnalysis(
 
 function calculateWorkspaceWithoutBlocking(
   input: SpectroWorkspaceInput
-): Promise<SpectroWorkspaceResult> {
+): Promise<SpectroWorkspaceCalculation> {
   const calculateFallback = () => calculateSpectroWorkspace(input);
 
   if (typeof Worker === "undefined") {
@@ -141,19 +142,28 @@ export async function getSpectroWorkspace(): Promise<SpectroWorkspaceResult> {
     : undefined;
 
   const input: SpectroWorkspaceInput = {
-    analysisInput,
-    analyticsInput: { movies, viewings, libraryEntries, collections, collectionMovies },
-    cachedAnalysis
+    ...(!cachedAnalysis ? { analysisInput } : {}),
+    analyticsInput: { movies, viewings, libraryEntries, collections, collectionMovies }
   };
-  const result = await calculateWorkspaceWithoutBlocking(input);
+  const calculated = await calculateWorkspaceWithoutBlocking(input);
+  const analysis = cachedAnalysis ?? calculated.analysis;
+
+  if (!analysis) {
+    throw new Error("Prisma no recibió un resultado válido del análisis de Espectro.");
+  }
+
+  const result: SpectroWorkspaceResult = {
+    analysis,
+    analytics: calculated.analytics
+  };
 
   if (!cachedAnalysis) {
     const snapshot: SpectroSnapshot = {
       id: snapshotId,
-      algorithmVersion: result.analysis.algorithmVersion,
-      inputFingerprint: result.analysis.inputFingerprint,
-      computedAt: result.analysis.computedAt,
-      analysisPayload: result.analysis
+      algorithmVersion: analysis.algorithmVersion,
+      inputFingerprint: analysis.inputFingerprint,
+      computedAt: analysis.computedAt,
+      analysisPayload: analysis
     };
     await prismaDb.spectroSnapshots.put(snapshot);
   }
