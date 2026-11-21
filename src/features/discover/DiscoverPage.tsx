@@ -25,6 +25,7 @@ import {
 } from "../../infrastructure/tmdb/TmdbService";
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
+import { getDiscoverFeedKey, readDiscoverSession, writeDiscoverSession } from "./discoverSession";
 
 type FeedState = "loading" | "ready" | "error" | "unconfigured";
 
@@ -38,22 +39,34 @@ const SORT_OPTIONS = [
 ] as const;
 
 export function DiscoverPage() {
-  const [query, setQuery] = useState("");
+  const restoredSession = useMemo(() => readDiscoverSession(), []);
+  const hasRestoredMovies = Boolean(restoredSession?.movies.length && getTmdbAccessToken());
+  const [query, setQuery] = useState(restoredSession?.query ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersDialogRef = useAccessibleDialog(filtersOpen, () => setFiltersOpen(false));
-  const [appliedFilters, setAppliedFilters] = useState<DiscoverFilters>(DEFAULT_DISCOVER_FILTERS);
-  const [draftFilters, setDraftFilters] = useState<DiscoverFilters>(DEFAULT_DISCOVER_FILTERS);
-  const [movies, setMovies] = useState<TmdbMovieSummary[]>([]);
-  const [state, setState] = useState<FeedState>("loading");
+  const [appliedFilters, setAppliedFilters] = useState<DiscoverFilters>(
+    restoredSession?.appliedFilters ?? DEFAULT_DISCOVER_FILTERS
+  );
+  const [draftFilters, setDraftFilters] = useState<DiscoverFilters>(
+    restoredSession?.appliedFilters ?? DEFAULT_DISCOVER_FILTERS
+  );
+  const [movies, setMovies] = useState<TmdbMovieSummary[]>(restoredSession?.movies ?? []);
+  const [state, setState] = useState<FeedState>(hasRestoredMovies ? "ready" : "loading");
   const [error, setError] = useState("");
-  const [showingCachedData, setShowingCachedData] = useState(false);
-  const [cachedFetchedAt, setCachedFetchedAt] = useState("");
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [showingCachedData, setShowingCachedData] = useState(restoredSession?.showingCachedData ?? false);
+  const [cachedFetchedAt, setCachedFetchedAt] = useState(restoredSession?.cachedFetchedAt ?? "");
+  const [page, setPage] = useState(restoredSession?.page ?? 1);
+  const [totalPages, setTotalPages] = useState(restoredSession?.totalPages ?? 1);
+  const [totalResults, setTotalResults] = useState(restoredSession?.totalResults ?? 0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [imageBase, setImageBase] = useState("https://image.tmdb.org/t/p/");
+  const [imageBase, setImageBase] = useState(restoredSession?.imageBase ?? "https://image.tmdb.org/t/p/");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
+  const loadedFeedKeyRef = useRef(
+    hasRestoredMovies && restoredSession
+      ? getDiscoverFeedKey(restoredSession.query, restoredSession.appliedFilters)
+      : ""
+  );
 
   const activeFilterCount = countActiveDiscoverFilters(appliedFilters);
   const filtersActive = activeFilterCount > 0;
@@ -62,16 +75,42 @@ export function DiscoverPage() {
     if (!filtersActive || !query.trim()) return movies;
     return movies.filter((movie) => discoverFilterTitleMatch(movie.title, movie.original_title, query));
   }, [filtersActive, movies, query]);
+  const activeFilterChips = useMemo(() => {
+    const chips: { key: string; label: string }[] = [];
+    const genre = DISCOVER_GENRES.find((item) => String(item.id) === appliedFilters.genreId);
+    const language = DISCOVER_LANGUAGES.find((item) => item.id === appliedFilters.originalLanguage);
+    const sort = SORT_OPTIONS.find((item) => item.id === appliedFilters.sortBy);
+    if (genre) chips.push({ key: "genre", label: "Género: " + genre.label });
+    if (appliedFilters.runtimeMin || appliedFilters.runtimeMax) {
+      chips.push({
+        key: "runtime",
+        label: "Duración: " + (appliedFilters.runtimeMin || "0") + "–" + (appliedFilters.runtimeMax || "∞") + " min"
+      });
+    }
+    if (appliedFilters.yearFrom || appliedFilters.yearTo) {
+      chips.push({
+        key: "year",
+        label: "Año: " + (appliedFilters.yearFrom || "1888") + "–" + (appliedFilters.yearTo || "actualidad")
+      });
+    }
+    if (appliedFilters.minVoteAverage) chips.push({ key: "rating", label: "Valoración: ≥ " + appliedFilters.minVoteAverage });
+    if (appliedFilters.minVoteCount) chips.push({ key: "votes", label: "Votos: ≥ " + Number(appliedFilters.minVoteCount).toLocaleString("es-PA") });
+    if (language) chips.push({ key: "language", label: "Idioma: " + language.label });
+    if (sort && appliedFilters.sortBy !== "popularity.desc") chips.push({ key: "sort", label: "Orden: " + sort.label });
+    return chips;
+  }, [appliedFilters]);
 
   const loadFirstPage = useCallback(async (searchText: string, filters: DiscoverFilters) => {
+    const currentRequest = ++requestId.current;
+    loadedFeedKeyRef.current = getDiscoverFeedKey(searchText, filters);
     const token = getTmdbAccessToken();
     if (!token) {
       setState("unconfigured");
       setMovies([]);
+      setTotalResults(0);
       return;
     }
 
-    const currentRequest = ++requestId.current;
     setState("loading");
     setError("");
     setMovies([]);
@@ -79,6 +118,7 @@ export function DiscoverPage() {
     setCachedFetchedAt("");
     setPage(1);
     setTotalPages(1);
+    setTotalResults(0);
     setLoadingMore(false);
 
     try {
@@ -99,6 +139,7 @@ export function DiscoverPage() {
       if (currentRequest !== requestId.current) return;
       setMovies(feed.movies);
       setTotalPages(feed.totalPages);
+      setTotalResults(feed.totalResults);
       setPage(1);
       setImageBase(imageConfig.secure_base_url);
       setShowingCachedData(feed.stale);
@@ -112,6 +153,8 @@ export function DiscoverPage() {
   }, []);
 
   useEffect(() => {
+    const requestedFeedKey = getDiscoverFeedKey(query, appliedFilters);
+    if (loadedFeedKeyRef.current === requestedFeedKey && state === "ready") return;
     const timer = window.setTimeout(() => void loadFirstPage(query, appliedFilters), query.trim() ? 420 : 0);
     return () => window.clearTimeout(timer);
   }, [query, appliedFilters, loadFirstPage]);
@@ -123,6 +166,26 @@ export function DiscoverPage() {
     window.addEventListener("online", refreshAfterReconnect);
     return () => window.removeEventListener("online", refreshAfterReconnect);
   }, [loadFirstPage, query, appliedFilters]);
+
+  useEffect(() => {
+    const feedIsCurrent = loadedFeedKeyRef.current === getDiscoverFeedKey(query, appliedFilters)
+      && state === "ready";
+    writeDiscoverSession({
+      query,
+      appliedFilters,
+      movies: feedIsCurrent ? movies : [],
+      page: feedIsCurrent ? page : 1,
+      totalPages: feedIsCurrent ? totalPages : 1,
+      totalResults: feedIsCurrent ? totalResults : 0,
+      imageBase,
+      showingCachedData: feedIsCurrent && showingCachedData,
+      cachedFetchedAt: feedIsCurrent ? cachedFetchedAt : ""
+    });
+  }, [
+    query, appliedFilters, movies, page, totalPages, totalResults, imageBase,
+    showingCachedData, cachedFetchedAt, state
+  ]);
+
 
   const loadMore = useCallback(async () => {
     const token = getTmdbAccessToken();
@@ -146,6 +209,7 @@ export function DiscoverPage() {
         setCachedFetchedAt(result.fetchedAt);
       }
       setPage(nextPage);
+      setTotalResults(result.totalResults);
     } catch {
       if (currentRequest === requestId.current) {
         setError("No se pudieron cargar más películas. Comprueba tu conexión.");
@@ -187,6 +251,38 @@ export function DiscoverPage() {
 
   function clearDraftFilters() {
     setDraftFilters(DEFAULT_DISCOVER_FILTERS);
+  }
+
+  function clearAppliedFilter(key: string) {
+    const next = { ...appliedFilters };
+    switch (key) {
+      case "genre": next.genreId = ""; break;
+      case "runtime": next.runtimeMin = ""; next.runtimeMax = ""; break;
+      case "year": next.yearFrom = ""; next.yearTo = ""; break;
+      case "rating": next.minVoteAverage = ""; break;
+      case "votes": next.minVoteCount = ""; break;
+      case "language": next.originalLanguage = ""; break;
+      case "sort": next.sortBy = "popularity.desc"; break;
+      default: return;
+    }
+    const normalized = normalizeDiscoverFilters(next);
+    setAppliedFilters(normalized);
+    setDraftFilters(normalized);
+  }
+
+  function applyDiscoverPreset(preset: "rated" | "recent" | "classics") {
+    const currentYear = new Date().getFullYear();
+    if (preset === "rated") {
+      updateDraft({ minVoteAverage: "7.5", minVoteCount: "500", sortBy: "vote_average.desc" });
+    } else if (preset === "recent") {
+      updateDraft({
+        yearFrom: String(currentYear - 4),
+        yearTo: String(currentYear),
+        sortBy: "primary_release_date.desc"
+      });
+    } else {
+      updateDraft({ yearFrom: "", yearTo: "1989", sortBy: "vote_average.desc" });
+    }
   }
 
   function clearAppliedFilters() {
