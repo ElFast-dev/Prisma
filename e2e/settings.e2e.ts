@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForPrismaDatabase } from "./support/fixtures";
 
 test("Ajustes organiza sus opciones en secciones independientes", async ({ page }) => {
   await page.goto("#/settings");
@@ -204,6 +205,7 @@ test("permite solicitar persistencia del almacenamiento cuando hay datos locales
   });
 
   await page.goto("#/settings/data");
+  await waitForPrismaDatabase(page);
   await page.evaluate(async () => {
     const request = indexedDB.open("prisma_database");
     const db = await new Promise<IDBDatabase>((resolve, reject) => {

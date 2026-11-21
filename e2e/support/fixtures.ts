@@ -1,5 +1,31 @@
 import type { Page } from "@playwright/test";
 
+/**
+ * Espera a que Dexie complete la creación de los almacenes locales. No abre
+ * una base inexistente: consultar databases() evita crear accidentalmente
+ * una IndexedDB vacía antes de la inicialización de la aplicación.
+ */
+export async function waitForPrismaDatabase(page: Page): Promise<void> {
+  await page.waitForFunction(async () => {
+    if (typeof indexedDB.databases !== "function") return false;
+    const entries = await indexedDB.databases();
+    const current = entries.find((entry) => entry.name === "prisma_database" && entry.version);
+    if (!current?.version) return false;
+
+    return new Promise<boolean>((resolve) => {
+      const request = indexedDB.open("prisma_database", current.version);
+      request.onsuccess = () => {
+        const database = request.result;
+        const ready = ["movies", "libraryEntries", "viewings", "collections", "appMetadata"]
+          .every((name) => database.objectStoreNames.contains(name));
+        database.close();
+        resolve(ready);
+      };
+      request.onerror = () => resolve(false);
+    });
+  }, undefined, { timeout: 10_000 });
+}
+
 export const e2eMovie = {
   id: "tmdb-987654",
   tmdbId: 987654,
@@ -35,6 +61,7 @@ export const e2eLibraryEntry = {
  * La página debe haber inicializado Prisma antes de llamar a esta función.
  */
 export async function seedLibraryMovie(page: Page): Promise<void> {
+  await waitForPrismaDatabase(page);
   await page.evaluate(async ({ movie, entry }) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("prisma_database");
@@ -56,6 +83,7 @@ export async function seedLibraryMovie(page: Page): Promise<void> {
 }
 
 export async function removeLibraryMovieFixture(page: Page): Promise<void> {
+  await waitForPrismaDatabase(page);
   await page.evaluate(async (movieId) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("prisma_database");

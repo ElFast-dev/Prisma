@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { waitForPrismaDatabase } from "./support/fixtures";
 
 test.beforeEach(async ({ page }) => {
   // Cada prueba usa un contexto nuevo con IndexedDB aislada.
   await page.goto("#/personal");
+  await waitForPrismaDatabase(page);
   const navigation = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(navigation.getByRole("link", { name: "Personal", exact: true }))
     .toHaveAttribute("aria-current", "page");
