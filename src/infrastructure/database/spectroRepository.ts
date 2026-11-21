@@ -4,9 +4,74 @@ import {
   getSpectroInputFingerprint,
   selectSpectroCandidates,
   SPECTRO_ALGORITHM_VERSION,
-  type SpectroAnalysis
+  type SpectroAnalysis,
+  type SpectroInput
 } from "../../domain/spectro";
+import type { SpectroAnalysisWorkerResponse } from "../../domain/spectroWorkerProtocol";
 import { prismaDb } from "./database";
+
+function analyzeSpectroWithoutBlocking(input: SpectroInput): Promise<SpectroAnalysis> {
+  // Los navegadores sin Web Workers mantienen compatibilidad usando el cálculo local.
+  if (typeof Worker === "undefined") {
+    return Promise.resolve(analyzeSpectro(input));
+  }
+
+  let worker: Worker;
+  try {
+    worker = new Worker(
+      new URL("../../domain/spectroAnalysis.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+  } catch {
+    // Si el navegador no permite crear el worker (por ejemplo, una política CSP),
+    // Prisma sigue funcionando con el método síncrono anterior.
+    return Promise.resolve(analyzeSpectro(input));
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      worker.onmessage = null;
+      worker.onerror = null;
+      worker.onmessageerror = null;
+      worker.terminate();
+      callback();
+    };
+
+    worker.onmessage = (event: MessageEvent<SpectroAnalysisWorkerResponse>) => {
+      const response = event.data;
+      if (response.ok) {
+        finish(() => resolve(response.analysis));
+      } else {
+        finish(() => reject(new Error(response.error)));
+      }
+    };
+
+    worker.onerror = (event) => {
+      event.preventDefault();
+      finish(() => reject(new Error(
+        event.message || "No se pudo completar el análisis de Espectro en segundo plano."
+      )));
+    };
+
+    worker.onmessageerror = () => {
+      finish(() => reject(new Error(
+        "Prisma no pudo leer el resultado del análisis de Espectro."
+      )));
+    };
+
+    try {
+      worker.postMessage(input);
+    } catch (cause) {
+      finish(() => reject(cause instanceof Error
+        ? cause
+        : new Error("No se pudo enviar el historial al análisis de Espectro.")));
+    }
+  });
+}
 
 export async function getSpectroAnalysis(): Promise<SpectroAnalysis> {
   const [viewings, movies, libraryEntries, collectionMovies] = await Promise.all([
@@ -46,7 +111,7 @@ export async function getSpectroAnalysis(): Promise<SpectroAnalysis> {
     }
   }
 
-  const analysis = analyzeSpectro(input);
+  const analysis = await analyzeSpectroWithoutBlocking(input);
   const snapshot: SpectroSnapshot = {
     id: snapshotId,
     algorithmVersion: analysis.algorithmVersion,

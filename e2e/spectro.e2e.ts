@@ -109,7 +109,10 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await expect(page.getByRole("heading", { name: "Personal" })).toBeVisible();
   await seedSpectroHistory(page);
 
+  const analysisWorkerPromise = page.waitForEvent("worker");
   await page.goto("#/spectro");
+  const analysisWorker = await analysisWorkerPromise;
+  expect(analysisWorker.url()).toContain("spectroAnalysis");
   await expect(page.getByRole("heading", { name: "Espectro", exact: true })).toBeVisible();
   await expect(page.locator(".spectro-data-metric")).toHaveCount(6);
   await expect(page.getByRole("tab", { name: /Resumen/ })).toHaveAttribute("aria-selected", "true");
