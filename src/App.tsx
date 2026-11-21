@@ -1,18 +1,26 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { WifiOff } from "lucide-react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { LoaderCircle, WifiOff } from "lucide-react";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
-import { DiscoverPage } from "./features/discover/DiscoverPage";
-import {
-  CollectionsPage,
-  HistoryPage,
-  LibraryPage,
-  PersonalPage,
-  ProfilePage
-} from "./features/personal/PersonalPages";
-import { SettingsPage } from "./features/settings/SettingsPage";
-import { SpectroPage } from "./features/spectro/SpectroPage";
-import { MovieDetailPage } from "./features/movie/MovieDetailPage";
+
+const DiscoverPage = lazy(() => import("./features/discover/DiscoverPage")
+  .then((module) => ({ default: module.DiscoverPage })));
+const PersonalPage = lazy(() => import("./features/personal/PersonalPages")
+  .then((module) => ({ default: module.PersonalPage })));
+const LibraryPage = lazy(() => import("./features/personal/PersonalPages")
+  .then((module) => ({ default: module.LibraryPage })));
+const HistoryPage = lazy(() => import("./features/personal/PersonalPages")
+  .then((module) => ({ default: module.HistoryPage })));
+const CollectionsPage = lazy(() => import("./features/personal/PersonalPages")
+  .then((module) => ({ default: module.CollectionsPage })));
+const ProfilePage = lazy(() => import("./features/personal/PersonalPages")
+  .then((module) => ({ default: module.ProfilePage })));
+const SettingsPage = lazy(() => import("./features/settings/SettingsPage")
+  .then((module) => ({ default: module.SettingsPage })));
+const SpectroPage = lazy(() => import("./features/spectro/SpectroPage")
+  .then((module) => ({ default: module.SpectroPage })));
+const MovieDetailPage = lazy(() => import("./features/movie/MovieDetailPage")
+  .then((module) => ({ default: module.MovieDetailPage })));
 import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
 import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
 import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
@@ -21,6 +29,25 @@ function currentPath(): string {
   const path = window.location.hash.replace(/^#/, "");
   if (path.startsWith("/spectro/")) return "/spectro";
   return path || "/discover";
+}
+
+function RouteLoadingFallback({ path }: { path: string }) {
+  const label = path.startsWith("/movie/")
+    ? "la película"
+    : path.startsWith("/spectro")
+      ? "Espectro"
+      : path.startsWith("/personal")
+        ? "Personal"
+        : path.startsWith("/settings")
+          ? "Ajustes"
+          : "Descubrir";
+
+  return (
+    <div className="page route-loading-state" role="status" aria-live="polite" aria-busy="true">
+      <LoaderCircle size={20} className="route-loading-spinner" aria-hidden="true" />
+      <span>Abriendo {label}…</span>
+    </div>
+  );
 }
 
 export default function App() {
@@ -219,7 +246,11 @@ export default function App() {
         </div>
       )}
       <main className={showNavigation ? "main-content with-navigation" : "main-content"}>
-        <AppErrorBoundary key={path}>{page}</AppErrorBoundary>
+        <AppErrorBoundary key={path}>
+          <Suspense fallback={<RouteLoadingFallback path={path} />}>
+            {page}
+          </Suspense>
+        </AppErrorBoundary>
       </main>
       {showNavigation && (
         <BottomNavigation
