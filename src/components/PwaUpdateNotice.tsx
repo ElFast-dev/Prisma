@@ -10,25 +10,36 @@ export function PwaUpdateNotice() {
   );
   const [dialogWarning, setDialogWarning] = useState(false);
 
-  if (!snapshot.available || snapshot.dismissed) return null;
+  if ((!snapshot.available && !snapshot.reloadRequired) || snapshot.dismissed) return null;
+
+  function canSafelyReload(): boolean {
+    if (document.querySelector('[role="dialog"][aria-modal="true"], form[data-prisma-unsaved="true"]')) {
+      setDialogWarning(true);
+      return false;
+    }
+    setDialogWarning(false);
+    return true;
+  }
 
   async function handleApply() {
     // No se permite recargar mientras haya una hoja o diálogo abierto:
     // algunos formularios mantienen cambios sin guardar en memoria.
-    if (document.querySelector('[role="dialog"][aria-modal="true"], form[data-prisma-unsaved="true"]')) {
-      setDialogWarning(true);
-      return;
-    }
-
-    setDialogWarning(false);
+    if (!canSafelyReload()) return;
     await pwaUpdateManager.apply();
+  }
+
+  function handleReloadThisTab() {
+    if (!canSafelyReload()) return;
+    window.location.reload();
   }
 
   return (
     <aside className="pwa-update-notice" aria-label="Actualización de Prisma" role="status" aria-live="polite">
       <div className="pwa-update-copy">
-        <strong>Hay una actualización disponible</strong>
-        <span>Guarda los cambios pendientes antes de actualizar Prisma.</span>
+        <strong>{snapshot.reloadRequired ? "Actualización instalada" : "Hay una actualización disponible"}</strong>
+        <span>{snapshot.reloadRequired
+          ? "Esta pestaña necesita recargarse para utilizar la nueva versión."
+          : "Guarda los cambios pendientes antes de instalar la actualización."}</span>
         {dialogWarning && (
           <span className="pwa-update-warning" role="alert">
             Guarda y cierra primero el formulario abierto o guarda los cambios de conexión.
@@ -37,15 +48,23 @@ export function PwaUpdateNotice() {
         {snapshot.error && <span className="pwa-update-warning" role="alert">{snapshot.error}</span>}
       </div>
       <div className="pwa-update-actions">
-        <button className="button button-primary" type="button"
-          onClick={() => void handleApply()} disabled={snapshot.applying}>
-          <Download size={15} />
-          {snapshot.applying ? "Actualizando…" : "Actualizar Prisma"}
-        </button>
-        <button className="button button-secondary" type="button"
-          onClick={pwaUpdateManager.dismiss} disabled={snapshot.applying}>
-          <X size={15} /> Más tarde
-        </button>
+        {snapshot.reloadRequired ? (
+          <button className="button button-primary" type="button" onClick={handleReloadThisTab}>
+            <Download size={15} /> Recargar esta pestaña
+          </button>
+        ) : (
+          <>
+            <button className="button button-primary" type="button"
+              onClick={() => void handleApply()} disabled={snapshot.applying}>
+              <Download size={15} />
+              {snapshot.applying ? "Instalando actualización…" : "Actualizar Prisma"}
+            </button>
+            <button className="button button-secondary" type="button"
+              onClick={pwaUpdateManager.dismiss} disabled={snapshot.applying}>
+              <X size={15} /> Más tarde
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );
