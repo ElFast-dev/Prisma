@@ -174,7 +174,11 @@ function runRecommendationSimulation() {
   const sparse = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-preferred-sparse"
   );
-  const weakEvidenceCandidate = analysis.recommendations.find(\n    (item) => item.movie.id === "simulation-low-evidence"\n  );\n  const weakEvidencePrediction = predictions.get("simulation-low-evidence");\n  const favoriteOverride = analysis.recommendations.find(
+  const weakEvidenceCandidate = analysis.recommendations.find(
+    (item) => item.movie.id === "simulation-low-evidence"
+  );
+  const weakEvidencePrediction = predictions.get("simulation-low-evidence");
+  const favoriteOverride = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-favorite-override"
   );
   const favoriteOverridePrediction = predictions.get("simulation-favorite-override");
