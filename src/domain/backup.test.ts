@@ -66,8 +66,8 @@ describe("parsePrismaBackup", () => {
       },
       updatedAt: "2026-10-01T00:00:00.000Z"
     };
-    backup.data.preferences = [legacyPreferences];
-    const parsed = parsePrismaBackup(JSON.stringify(backup));
+    const withLegacy = { ...backup, data: { ...backup.data, preferences: [legacyPreferences] } };
+    const parsed = parsePrismaBackup(JSON.stringify(withLegacy));
     expect(parsed.data.preferences[0].historyFilters?.ratingMin).toBeUndefined();
     expect(parsed.data.preferences[0].libraryFilters?.runtimeMin).toBeUndefined();
   });
