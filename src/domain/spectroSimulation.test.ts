@@ -109,6 +109,19 @@ function runRecommendationSimulation() {
     candidate("simulation-rejected-metadata", "Acción y venganza", "rejected", "unrepresented"),
     candidate("simulation-unrepresented", "El observatorio remoto", "unknown", "unrepresented"),
     {
+      ...candidate("simulation-low-evidence", "Coincidencia mínima", "rejected", "complete"),
+      overview: "guerra",
+      genres: ["Drama"],
+      genreIds: [18],
+      countries: [],
+      directors: [],
+      castMembers: [],
+      keywords: [],
+      originalLanguage: undefined,
+      releaseYear: undefined,
+      runtimeMinutes: undefined
+    },
+    {
       ...candidate("simulation-favorite-override", "Una historia bélica favorita", "rejected", "complete"),
       genres: ["Aventura"],
       genreIds: [12],
@@ -161,7 +174,7 @@ function runRecommendationSimulation() {
   const sparse = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-preferred-sparse"
   );
-  const favoriteOverride = analysis.recommendations.find(
+  const weakEvidenceCandidate = analysis.recommendations.find(\n    (item) => item.movie.id === "simulation-low-evidence"\n  );\n  const weakEvidencePrediction = predictions.get("simulation-low-evidence");\n  const favoriteOverride = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-favorite-override"
   );
   const favoriteOverridePrediction = predictions.get("simulation-favorite-override");
@@ -192,6 +205,11 @@ function runRecommendationSimulation() {
         && preferred.predictedRating > rejectedStoryPrediction.predictedRating
       ),
       rejectedNarrativeExcluded: !recommendationIds.includes("simulation-rejected-story"),
+      weakEvidenceDoesNotTriggerNegativeFilter: Boolean(
+        weakEvidenceCandidate
+        && weakEvidencePrediction
+        && weakEvidencePrediction.maximumSimilarity < 0.4
+      ),
       explicitFavoriteOverridesNegativePrediction: Boolean(
         favoriteOverride
         && favoriteOverridePrediction
@@ -219,7 +237,7 @@ describe("simulación reproducible de calidad de Espectro", () => {
 
     expect(report.algorithmVersion).toBe("2.8.0");
     expect(report.ratedMovies).toBe(16);
-    expect(report.candidateCount).toBe(6);
+    expect(report.candidateCount).toBe(7);
     expect(report.holdout.trainingMovies).toBe(12);
     expect(report.holdout.heldOutMovies).toBe(4);
     expect(report.holdout.noMovieIdOverlap).toBe(true);
@@ -227,6 +245,7 @@ describe("simulación reproducible de calidad de Espectro", () => {
     expect(report.checks.likedSynopsisRanksAboveRejectedSynopsis).toBe(true);
     expect(report.checks.synopsisPredictionGap).toBeGreaterThan(1.5);
     expect(report.checks.rejectedNarrativeExcluded).toBe(true);
+    expect(report.checks.weakEvidenceDoesNotTriggerNegativeFilter).toBe(true);
     expect(report.checks.explicitFavoriteOverridesNegativePrediction).toBe(true);
     expect(report.checks.sparseInternationalCandidateCanBeRecommended).toBe(true);
     expect(report.checks.rejectedMetadataCandidateExcluded).toBe(true);
