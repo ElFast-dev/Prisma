@@ -1139,7 +1139,7 @@ export function HistoryPage() {
                     className="text-field"
                     type="number"
                     min="1"
-                    max="10"
+                    max={ratingMax || "10"}
                     step="0.5"
                     placeholder="Sin mínimo"
                     value={ratingMin}
@@ -1151,7 +1151,7 @@ export function HistoryPage() {
                   <input
                     className="text-field"
                     type="number"
-                    min="1"
+                    min={ratingMin || "1"}
                     max="10"
                     step="0.5"
                     placeholder="Sin máximo"

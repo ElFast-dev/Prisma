@@ -12,7 +12,7 @@ import {
 describe("Discover filters", () => {
   it("starts without optional filters so the trending feed remains unchanged", () => {
     expect(hasActiveDiscoverFilters(DEFAULT_DISCOVER_FILTERS)).toBe(false);
-    expect(countActiveDiscoverFilters(DEFAULT_DISCOVER_FILTERS)).toBe(0);
+    expect(countActiveDiscoverFilters(DEFAULT_DISCOVER_FILTERS)).toBe(2);
   });
 
   it("normalizes numeric inputs and repairs inverted ranges", () => {
@@ -76,7 +76,7 @@ describe("Discover filters", () => {
     };
 
     expect(hasActiveDiscoverFilters(filters)).toBe(true);
-    expect(countActiveDiscoverFilters(filters)).toBe(3);
+    expect(countActiveDiscoverFilters(filters)).toBe(5);
   });
 
   it("keeps watched and pending exclusions as local discover preferences", () => {

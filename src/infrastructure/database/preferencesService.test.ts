@@ -123,6 +123,21 @@ describe("persistencia local de preferencias", () => {
     expect(fakeDatabase.read()).toMatchObject({ libraryFilters, historyFilters });
   });
 
+  it("restablece un rango personalizado de nota invertido", async () => {
+    await saveHistoryFilters({
+      query: "",
+      notes: "all",
+      rating: "all",
+      ratingMin: "9",
+      ratingMax: "7",
+      fromDate: "",
+      toDate: ""
+    });
+    const saved = await getUserPreferences();
+    expect(saved.historyFilters?.ratingMin).toBe("");
+    expect(saved.historyFilters?.ratingMax).toBe("");
+  });
+
   it("normaliza filas antiguas sin perder región, movimiento reducido ni vista de Biblioteca", async () => {
     fakeDatabase.seed({
       id: "local", theme: "dark", reducedMotion: true, language: "es", region: "MX",

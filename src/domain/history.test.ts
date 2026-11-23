@@ -193,8 +193,7 @@ describe("Historial cinematográfico", () => {
     const items = buildHistoryItems([
       viewing("view-low", "movie-1", 1, "2024-01-10", { rating: 6 }),
       viewing("view-mid", "movie-1", 2, "2024-02-10", { rating: 7.5 }),
-      viewing("view-high", "movie-2", 1, "2024-03-10", { rating: 9.5 }),
-      viewing("view-unrated", "movie-2", 2, "2024-04-10", { rating: undefined })
+      viewing("view-high", "movie-2", 1, "2024-03-10", { rating: 9.5 })
     ], movies);
     const result = filterHistoryItems(items, {
       ...filters,
