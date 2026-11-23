@@ -44,3 +44,13 @@ Si alguna pantalla que ya habías abierto no se muestra, anota cuál y en qué p
 6. Repite la prueba offline después de la actualización.
 
 No borres los datos de la aplicación ni desinstales Prisma durante esta prueba.
+
+
+## Actualización con dos pestañas abiertas
+
+1. Abre Prisma en dos pestañas del mismo navegador.
+2. Deja un formulario de colección o perfil sin guardar en una de ellas.
+3. Cuando haya una actualización disponible, instálala desde la otra pestaña.
+4. Comprueba que la pestaña que contiene cambios no se recarga automáticamente.
+5. Guarda o cancela el formulario y pulsa «Recargar esta pestaña».
+6. Comprueba que ambas pestañas pueden continuar en la versión nueva sin perder los datos guardados.
