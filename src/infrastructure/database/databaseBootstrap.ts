@@ -23,9 +23,13 @@ export function createDatabaseOpener(
     if (isOpen()) return Promise.resolve();
     if (opening) return opening;
 
-    const operation = Promise.resolve()
-      .then(openDatabase)
-      .then(() => undefined);
+    let openResult: Promise<unknown>;
+    try {
+      openResult = openDatabase();
+    } catch (error) {
+      openResult = Promise.reject(error);
+    }
+    const operation = openResult.then(() => undefined);
 
     opening = operation;
     const clearPending = () => {
