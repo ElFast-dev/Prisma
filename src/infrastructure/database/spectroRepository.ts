@@ -24,6 +24,7 @@ import {
   type SpectroWorkspaceResult
 } from "../../domain/spectroWorkspace";
 import { prismaDb } from "./database";
+import { isSpectroMetadataIncomplete } from "./spectroMetadataService";
 
 function isValidCachedAnalysis(
   value: unknown,
@@ -227,14 +228,7 @@ export async function getSpectroDiscoverRecommendations(
     const prioritizedSummaries = summaries.slice(0, 12);
     await runWithConcurrency(prioritizedSummaries, 4, async (summary) => {
       const current = localMovies.get(summary.id);
-      const hasFeatureMetadata = Boolean(
-        current?.directors?.length
-        && current.castMembers?.length
-        && current.countries.length
-        && current.keywords?.length
-        && current.runtimeMinutes
-      );
-      if (hasFeatureMetadata) return;
+      if (current && !isSpectroMetadataIncomplete(current)) return;
       try {
         metadataById.set(summary.id, await getMovieAnalysisMetadata(token, summary.id));
       } catch {
