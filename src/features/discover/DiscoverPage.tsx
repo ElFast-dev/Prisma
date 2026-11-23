@@ -52,7 +52,7 @@ async function filterSearchResults(
 
   const filtered = results.filter((movie) => {
     if (filters.genreId && !movie.genre_ids?.includes(Number(filters.genreId))) return false;
-    const year = movie.release_date && /^\\d{4}/.test(movie.release_date)
+    const year = movie.release_date && /^\d{4}/.test(movie.release_date)
       ? Number(movie.release_date.slice(0, 4))
       : undefined;
     if (filters.yearFrom && (year === undefined || year < Number(filters.yearFrom))) return false;

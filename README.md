@@ -16,7 +16,7 @@ Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, per
 
 Espectro 2.6.0 presenta seis secciones de analítica local: Resumen, Actividad, Calificaciones, Universo, Perfil y Biblioteca. Muestra actividad de visionado, distribución de notas, metadatos cinematográficos, afinidades personales, interacciones estadísticas y estado de la Biblioteca.
 
-El motor calcula afinidades con respaldo y mantiene un predictor local para candidatas que ya existen en Prisma. La nota prevista y el encaje son estimaciones, no probabilidades; no hay una pantalla separada de recomendaciones ni búsquedas ilimitadas en TMDB. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales.
+El motor calcula afinidades con respaldo y mantiene un predictor local. Descubrir reutiliza ese perfil para priorizar los resultados de TMDB; las valoraciones previstas y el encaje son estimaciones, no probabilidades. La búsqueda sigue consultando TMDB y los filtros personales de visibilidad se aplican localmente. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales.
 
 El análisis intensivo se ejecuta en un Web Worker para mantener la interfaz disponible mientras Espectro calcula. Los datos, las valoraciones y el historial permanecen en el dispositivo. Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película.
 

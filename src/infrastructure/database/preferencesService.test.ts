@@ -108,6 +108,8 @@ describe("persistencia local de preferencias", () => {
       query: "Amélie",
       notes: "with-notes" as const,
       rating: "9-10" as const,
+      ratingMin: "8",
+      ratingMax: "10",
       fromDate: "2024-01-01",
       toDate: "2025-12-31"
     };
@@ -136,7 +138,7 @@ describe("persistencia local de preferencias", () => {
     expect(migrated.historyBrowse?.viewMode).toBe("timeline");
     expect(migrated.historyBrowse?.selectedDate).toBeNull();
     expect(migrated.historyFilters).toEqual({
-      query: "", notes: "all", rating: "all", fromDate: "", toDate: ""
+      query: "", notes: "all", rating: "all", ratingMin: "", ratingMax: "", fromDate: "", toDate: ""
     });
     expect(fakeDatabase.read()).toMatchObject({
       region: "MX", reducedMotion: true, libraryFilters: DEFAULT_LIBRARY_FILTERS

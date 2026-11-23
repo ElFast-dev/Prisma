@@ -196,7 +196,7 @@ export async function getSpectroDiscoverRecommendations(
 
   const candidates: MovieRecord[] = summaries.map((summary) => {
     const current = localMovies.get(summary.id);
-    const releaseYear = summary.release_date && /^\\d{4}/.test(summary.release_date)
+    const releaseYear = summary.release_date && /^\d{4}/.test(summary.release_date)
       ? Number(summary.release_date.slice(0, 4))
       : current?.releaseYear;
 

@@ -517,7 +517,13 @@ export function LibraryPage() {
                     filtersState.status !== "all" ? libraryStatusOptions.find((option) => option.id === filtersState.status)?.label : "",
                     filtersState.genre,
                     filtersState.yearFrom || filtersState.yearTo
-                      ? (filtersState.yearFrom || "…") + "–" + (filtersState.yearTo || "…")
+                      ? "Año " + (filtersState.yearFrom || "…") + "–" + (filtersState.yearTo || "…")
+                      : "",
+                    filtersState.runtimeMin || filtersState.runtimeMax
+                      ? "Duración " + (filtersState.runtimeMin || "…") + "–" + (filtersState.runtimeMax || "…") + " min"
+                      : "",
+                    filtersState.myRatingMin || filtersState.myRatingMax
+                      ? "Mi nota " + (filtersState.myRatingMin || "…") + "–" + (filtersState.myRatingMax || "…")
                       : "",
                     filtersState.query.trim() ? "Búsqueda" : ""]
                     .filter(Boolean).join(" · ")}
