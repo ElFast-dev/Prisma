@@ -34,7 +34,7 @@ La aplicación está publicada como PWA en GitHub Pages. La suite automatizada c
 
 ## Desarrollo local
 
-Requisitos: Node.js LTS y npm.
+Requisitos: Node.js 22.14.0 o posterior (línea 22) y npm.
 
 ```bash
 npm install
