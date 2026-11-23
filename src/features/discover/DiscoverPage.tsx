@@ -20,7 +20,8 @@ import {
   getTmdbImageUrl,
   getTrendingMovies,
   searchMovies,
-  getMovieRuntime,
+  getMovieDetailsForEnrichment,
+  type TmdbMovieDetails,
   type TmdbMovieSummary
 } from "../../infrastructure/tmdb/TmdbService";
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
@@ -39,13 +40,15 @@ async function filterSearchResults(
   filters: DiscoverFilters
 ): Promise<TmdbMovieSummary[]> {
   const needsRuntime = Boolean(filters.runtimeMin || filters.runtimeMax);
-  const runtimeById = new Map<number, number | undefined>();
-  if (needsRuntime) {
+  const needsRevenue = filters.sortBy === "revenue.desc";
+  const needsDetails = needsRuntime || needsRevenue;
+  const detailsById = new Map<number, TmdbMovieDetails | undefined>();
+  if (needsDetails) {
     await runWithConcurrency(results, 4, async (movie) => {
       try {
-        runtimeById.set(movie.id, await getMovieRuntime(token, movie.id));
+        detailsById.set(movie.id, await getMovieDetailsForEnrichment(token, movie.id));
       } catch {
-        runtimeById.set(movie.id, undefined);
+        detailsById.set(movie.id, undefined);
       }
     });
   }
@@ -61,8 +64,8 @@ async function filterSearchResults(
     if (filters.minVoteCount && (movie.vote_count ?? 0) < Number(filters.minVoteCount)) return false;
     if (filters.originalLanguage && movie.original_language !== filters.originalLanguage) return false;
     if (needsRuntime) {
-      const runtime = runtimeById.get(movie.id);
-      if (runtime === undefined) return false;
+      const runtime = detailsById.get(movie.id)?.runtime;
+      if (!Number.isFinite(runtime) || !runtime || runtime <= 0) return false;
       if (filters.runtimeMin && runtime < Number(filters.runtimeMin)) return false;
       if (filters.runtimeMax && runtime > Number(filters.runtimeMax)) return false;
     }
@@ -74,6 +77,16 @@ async function filterSearchResults(
     case "vote_average.desc": sorted.sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0)); break;
     case "primary_release_date.desc": sorted.sort((a, b) => (b.release_date ?? "").localeCompare(a.release_date ?? "")); break;
     case "primary_release_date.asc": sorted.sort((a, b) => (a.release_date ?? "").localeCompare(b.release_date ?? "")); break;
+    case "revenue.desc": sorted.sort((a, b) => {
+      const left = detailsById.get(a.id)?.revenue;
+      const right = detailsById.get(b.id)?.revenue;
+      const leftValid = typeof left === "number" && Number.isFinite(left) && left >= 0;
+      const rightValid = typeof right === "number" && Number.isFinite(right) && right >= 0;
+      if (!leftValid && !rightValid) return (b.popularity ?? 0) - (a.popularity ?? 0);
+      if (!leftValid) return 1;
+      if (!rightValid) return -1;
+      return right - left;
+    }); break;
     case "original_title.asc": sorted.sort((a, b) => (a.original_title ?? a.title).localeCompare(b.original_title ?? b.title, "es", { sensitivity: "base" })); break;
     default: sorted.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0)); break;
   }
