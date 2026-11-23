@@ -1350,9 +1350,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 
 /* Actualización PWA bajo control de la persona usuaria. */
 .pwa-update-notice {
-  position: sticky;
+  position: relative;
   z-index: 35;
-  top: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
