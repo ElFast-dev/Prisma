@@ -407,7 +407,7 @@ export function DiscoverPage() {
       case "language": next.originalLanguage = ""; break;
       case "watched": next.hideWatched = false; break;
       case "pending": next.hidePending = false; break;
-      case "sort": next.sortBy = "popularity.desc"; break;
+      case "sort": next.sortBy = "spectro"; break;
       default: return;
     }
     const normalized = normalizeDiscoverFilters(next);
