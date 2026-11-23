@@ -96,24 +96,23 @@ describe("predicción personal no lineal de Espectro", () => {
 
   it("reduce la influencia artificial cuando una película internacional solo comparte un rasgo", () => {
     const training = trainingMovies();
-    const sparseInternational = movie(
-      "candidate-bangladesh",
-      "Candidata de cine bengalí",
-      "desconocido",
-      0,
-      {
-        genres: ["Drama"],
-        genreIds: [18],
-        countries: ["Bangladesh"],
-        directors: ["Directora no representada"],
-        castMembers: ["Reparto no representado"],
-        keywords: ["botánica", "observatorio remoto"],
-        originalLanguage: "bn",
-        releaseYear: 1965,
-        runtimeMinutes: 0,
-        overview: "Una comunidad protege semillas ancestrales en una región montañosa."
-      }
-    );
+    const sparseInternational: MovieRecord = {
+      ...movie(
+        "candidate-bangladesh",
+        "Candidata de cine bengalí",
+        "desconocido"
+      ),
+      genres: ["Drama"],
+      genreIds: [18],
+      countries: ["Bangladesh"],
+      directors: ["Directora no representada"],
+      castMembers: ["Reparto no representado"],
+      keywords: ["botánica", "observatorio remoto"],
+      originalLanguage: "bn",
+      releaseYear: 1965,
+      runtimeMinutes: 0,
+      overview: "Una comunidad protege semillas ancestrales en una región montañosa."
+    };
     const result = predictSpectroMovies(training, [sparseInternational]).get(sparseInternational.id);
     const personalAverage = training.reduce((sum, item) => sum + item.rating, 0) / training.length;
 
