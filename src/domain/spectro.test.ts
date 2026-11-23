@@ -69,7 +69,7 @@ describe("analyzeSpectro 2.7", () => {
   });
 
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.7.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.8.0");
   });
 
   it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {
@@ -605,9 +605,9 @@ describe("patrones cinematográficos combinados", () => {
     const movies: MovieRecord[] = [];
     const viewings: Viewing[] = [];
     const groups = [
-      { genre: "Drama", genreId: 18, theme: "Memoria", rating: 10, prefix: "drama-memory" },
+      { genre: "Drama", genreId: 18, theme: "Cultura", rating: 10, prefix: "drama-memory" },
       { genre: "Drama", genreId: 18, theme: "Amistad", rating: 6, prefix: "drama-friendship" },
-      { genre: "Comedia", genreId: 35, theme: "Memoria", rating: 6, prefix: "comedy-memory" },
+      { genre: "Comedia", genreId: 35, theme: "Cultura", rating: 6, prefix: "comedy-memory" },
       { genre: "Comedia", genreId: 35, theme: "Amistad", rating: 6, prefix: "comedy-friendship" }
     ];
 
@@ -616,7 +616,7 @@ describe("patrones cinematográficos combinados", () => {
         const id = "movie-" + (100 + movies.length);
         const item = movie(id, group.genre, group.genreId, 2020, {
           title: group.prefix + " " + (index + 1),
-          keywords: [group.theme]
+          overview: group.theme
         });
         movies.push(item);
         viewings.push(viewing(
@@ -631,8 +631,8 @@ describe("patrones cinematográficos combinados", () => {
     // Un revisionado modifica el promedio de la película, pero no aumenta la muestra.
     viewings.push(viewing("pattern-repeat", "movie-100", "2026-02-01", 8));
     const result = analyzeSpectro({ movies, viewings, candidates: [] });
-    const positive = result.patterns.find((pattern) => pattern.key === "genre:18::theme:memoria");
-    const negative = result.patterns.find((pattern) => pattern.key === "genre:35::theme:memoria");
+    const positive = result.patterns.find((pattern) => pattern.key === "genre:18::synopsis:term:cultura");
+    const negative = result.patterns.find((pattern) => pattern.key === "genre:35::synopsis:term:cultura");
 
     expect(positive).toBeDefined();
     expect(positive?.sampleSize).toBe(20);
