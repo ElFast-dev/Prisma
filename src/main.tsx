@@ -2,20 +2,28 @@ import React from "react";
 import { registerSW } from "virtual:pwa-register";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { prismaDb } from "./infrastructure/database/database";
+import { DatabaseBootstrap } from "./components/DatabaseBootstrap";
+import { pwaUpdateManager } from "./infrastructure/pwa/updateManager";
+import { installVitePreloadRecovery } from "./infrastructure/pwa/preloadRecovery";
 import "./styles/tokens.css";
 import "./styles/global.css";
 import "./styles/catalog.css";
 
-// Abre IndexedDB antes de pintar las rutas cargadas bajo demanda. Así la primera
-// pantalla local recibe las tablas listas sin esperar a su propio primer efecto.
-void prismaDb.open().catch(() => undefined);
+// Un fallo al descargar una pantalla antigua permite una recarga de recuperación,
+// limitada por pestaña para evitar bucles si el recurso sigue sin estar disponible.
+installVitePreloadRecovery();
 
-// Comprueba versiones nuevas al arrancar la PWA y activa la versión publicada.
-registerSW({ immediate: true });
+// Una nueva versión se anuncia; el usuario decide cuándo recargar la aplicación.
+const updateServiceWorker = registerSW({
+  immediate: true,
+  onNeedRefresh: () => pwaUpdateManager.notifyUpdateAvailable()
+});
+pwaUpdateManager.setUpdateService(updateServiceWorker);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <DatabaseBootstrap>
+      <App />
+    </DatabaseBootstrap>
   </React.StrictMode>
 );
