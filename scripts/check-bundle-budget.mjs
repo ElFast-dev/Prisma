@@ -23,8 +23,8 @@ function assetName(reference) {
 }
 
 const html = await readFile(join(DIST, "index.html"), "utf8");
-const scriptReference = html.match(/<script\\b[^>]*\\bsrc="([^"]+\\.js)"/i)?.[1];
-const cssReference = html.match(/<link\\b[^>]*\\bhref="([^"]+\\.css)"/i)?.[1];
+const scriptReference = html.match(/<script\b[^>]*\bsrc="([^"]+\.js)"/i)?.[1];
+const cssReference = html.match(/<link\b[^>]*\bhref="([^"]+\.css)"/i)?.[1];
 
 if (!scriptReference || !cssReference) {
   throw new Error("No se pudieron identificar los recursos iniciales en dist/index.html.");
