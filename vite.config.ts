@@ -34,6 +34,10 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // La primera instalación debe controlar la página actual para habilitar offline.
+        // Las actualizaciones posteriores siguen esperando consentimiento explícito.
+        clientsClaim: true,
+        skipWaiting: false,
         cleanupOutdatedCaches: true,
         navigateFallback: "index.html",
         globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,webmanifest}"],
