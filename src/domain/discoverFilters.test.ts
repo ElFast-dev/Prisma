@@ -140,6 +140,10 @@ describe("Discover filters", () => {
     expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("pl");
     expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("tr");
     expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("ar");
+    expect(DISCOVER_LANGUAGES.map((language) => language.id)).toEqual([...new Set(DISCOVER_LANGUAGES.map((language) => language.id))]);
+    for (const language of ["bn", "fa", "ta", "te", "uk", "ur", "vi", "el", "fi", "ca"]) {
+      expect(DISCOVER_LANGUAGES.map((item) => item.id)).toContain(language);
+    }
   });
 
   it("matches a title or original title without accents or case sensitivity", () => {
