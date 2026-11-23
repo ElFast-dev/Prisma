@@ -80,10 +80,11 @@ function restoreMovies(value: unknown): TmdbMovieSummary[] {
 export function getDiscoverFeedKey(query: string, filters: DiscoverFilters): string {
   const normalizedFilters = normalizeDiscoverFilters(filters);
   const normalizedQuery = query.trim().toLocaleLowerCase("es");
+  const { hideWatched: _hideWatched, hidePending: _hidePending, ...catalogFilters } = normalizedFilters;
   const source = normalizedQuery
     ? "search:" + normalizedQuery
     : hasActiveDiscoverFilters(normalizedFilters) ? "discover" : "trending";
-  return source + ":" + JSON.stringify(normalizedFilters);
+  return source + ":" + JSON.stringify(catalogFilters);
 }
 
 /**
