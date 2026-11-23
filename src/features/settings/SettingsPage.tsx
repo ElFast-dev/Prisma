@@ -315,7 +315,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page" data-prisma-update-blocked={backupBusy || resetBusy ? "true" : undefined}>
       <header className="section-heading">
         <div className="heading-with-back">
           <button type="button" className="back-link"
