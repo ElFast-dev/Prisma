@@ -49,9 +49,25 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
           poster_path: null,
           backdrop_path: null,
           runtime: 110,
+          revenue: 100,
           status: "Released",
           genres: [{ id: 18, name: "Drama" }],
           original_language: "es"
+        })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/103") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 103,
+          title: "Prisma: la otra historia",
+          original_title: "Prisma: the other story",
+          release_date: "2020-02-01",
+          runtime: 105,
+          revenue: 300
         })
       });
       return;
@@ -88,7 +104,7 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
         body: JSON.stringify({
           page: Number(url.searchParams.get("page") ?? "1"),
           total_pages: 1,
-          total_results: 1,
+          total_results: 2,
           results: [{
             id: 101,
             title: "Prisma: una historia",
@@ -101,6 +117,18 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
             vote_count: 900,
             original_language: "ja",
             popularity: 20
+          }, {
+            id: 103,
+            title: "Prisma: la otra historia",
+            original_title: "Prisma: the other story",
+            overview: "Otra sinopsis de prueba.",
+            release_date: "2020-02-01",
+            poster_path: null,
+            genre_ids: [18],
+            vote_average: 7.8,
+            vote_count: 850,
+            original_language: "ja",
+            popularity: 18
           }]
         })
       });
@@ -169,6 +197,22 @@ test("filtra Descubrir por género, duración, año, valoración, idioma y orden
   await expect(page.locator(".poster-card")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Abrir ficha de Otra historia" })).toHaveCount(0);
+});
+
+test("ordena los resultados de búsqueda por recaudación real", async ({ page }) => {
+  await configureTmdbMock(page);
+  await page.goto("#/discover");
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.locator("#discover-sort").selectOption("revenue.desc");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+
+  await page.locator("#discover-search").fill("prisma");
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  await expect(posters.first()).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
 });
 
 test("impide aplicar rangos de duración y año invertidos", async ({ page }) => {
