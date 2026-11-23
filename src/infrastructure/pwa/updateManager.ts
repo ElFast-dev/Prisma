@@ -4,12 +4,14 @@ export interface PwaUpdateSnapshot {
   available: boolean;
   applying: boolean;
   dismissed: boolean;
+  reloadRequired: boolean;
   error?: string;
 }
 
 export interface PwaUpdateManager {
   setUpdateService: (service: UpdateServiceWorker) => void;
   notifyUpdateAvailable: () => void;
+  notifyReloadRequired: () => void;
   getSnapshot: () => PwaUpdateSnapshot;
   subscribe: (listener: () => void) => () => void;
   dismiss: () => void;
@@ -19,7 +21,8 @@ export interface PwaUpdateManager {
 const INITIAL_SNAPSHOT: PwaUpdateSnapshot = {
   available: false,
   applying: false,
-  dismissed: false
+  dismissed: false,
+  reloadRequired: false
 };
 
 /** Estado observable de actualización, independiente de la interfaz React. */
@@ -38,7 +41,12 @@ export function createPwaUpdateManager(): PwaUpdateManager {
       updateService = service;
     },
     notifyUpdateAvailable() {
-      publish({ available: true, applying: false, dismissed: false });
+      publish({ available: true, applying: false, dismissed: false, reloadRequired: false });
+    },
+    notifyReloadRequired() {
+      // Workbox llama onNeedReload en cada pestaña controlada por el nuevo SW.
+      // Nunca delegamos esta recarga a su comportamiento predeterminado.
+      publish({ available: false, applying: false, dismissed: false, reloadRequired: true });
     },
     getSnapshot() {
       return snapshot;
