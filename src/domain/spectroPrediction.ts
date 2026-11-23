@@ -18,6 +18,15 @@ export interface SpectroMoviePrediction {
   featureCount: number;
 }
 
+export type SpectroPredictionKernel = "rbf" | "linear";
+
+/** Parámetros opcionales para experimentos offline; las llamadas normales conservan RBF y sus valores actuales. */
+export interface SpectroPredictionOptions {
+  kernel?: SpectroPredictionKernel;
+  gamma?: number;
+  regularization?: number;
+}
+
 interface TextFeature {
   index: number;
   inverseDocumentFrequency: number;
@@ -217,10 +226,20 @@ function cosineSimilarity(left: SparseVector, right: SparseVector): number {
   return Math.max(0, Math.min(1, dot));
 }
 
-function rbfKernel(similarity: number, hasFeatures = true): number {
+function rbfKernel(similarity: number, hasFeatures = true, gamma = KERNEL_GAMMA): number {
   if (!hasFeatures) return 0;
   const squaredDistance = Math.max(0, 2 - 2 * similarity);
-  return Math.exp(-KERNEL_GAMMA * squaredDistance);
+  return Math.exp(-gamma * squaredDistance);
+}
+
+function kernelValue(
+  similarity: number,
+  hasFeatures: boolean,
+  kernel: SpectroPredictionKernel,
+  gamma: number
+): number {
+  if (!hasFeatures) return 0;
+  return kernel === "linear" ? similarity : rbfKernel(similarity, true, gamma);
 }
 
 /**
@@ -306,15 +325,30 @@ function nearestNeighbors(
 }
 
 /**
- * Entrena un Kernel Ridge RBF con características estructuradas y TF-IDF local.
+ * Entrena Kernel Ridge con características estructuradas y TF-IDF local.
+ * RBF y sus parámetros actuales siguen siendo el comportamiento por defecto;
+ * el kernel lineal configurable se reserva para comparar baselines offline.
  *
  * El vocabulario se ajusta exclusivamente con películas calificadas. Los
  * candidatos no pueden introducir términos ni estadísticas de entrenamiento.
  */
 export function predictSpectroMovies(
   trainingInput: readonly SpectroPredictionTrainingMovie[],
-  candidates: readonly MovieRecord[]
+  candidates: readonly MovieRecord[],
+  options: SpectroPredictionOptions = {}
 ): Map<string, SpectroMoviePrediction> {
+  const kernel = options.kernel ?? "rbf";
+  const gamma = options.gamma ?? KERNEL_GAMMA;
+  const regularization = options.regularization ?? RIDGE_REGULARIZATION;
+  if (kernel !== "rbf" && kernel !== "linear") {
+    throw new Error("El kernel de Espectro debe ser RBF o lineal.");
+  }
+  if (!Number.isFinite(gamma) || gamma <= 0) {
+    throw new Error("Gamma debe ser un número positivo y finito.");
+  }
+  if (!Number.isFinite(regularization) || regularization <= 0) {
+    throw new Error("La regularización debe ser un número positivo y finito.");
+  }
   const ratingsByMovie = new Map<string, {
     movie: MovieRecord;
     ratings: number[];
@@ -345,14 +379,16 @@ export function predictSpectroMovies(
       const matrix = new Float64Array(size * size);
       for (let row = 0; row < size; row += 1) {
         for (let column = 0; column <= row; column += 1) {
-          const kernel = rbfKernel(
+          const kernelScore = kernelValue(
             cosineSimilarity(trainingVectors[row], trainingVectors[column]),
-            trainingVectors[row].size > 0 && trainingVectors[column].size > 0
+            trainingVectors[row].size > 0 && trainingVectors[column].size > 0,
+            kernel,
+            gamma
           );
-          matrix[row * size + column] = kernel;
-          matrix[column * size + row] = kernel;
+          matrix[row * size + column] = kernelScore;
+          matrix[column * size + row] = kernelScore;
         }
-        matrix[row * size + row] += RIDGE_REGULARIZATION;
+        matrix[row * size + row] += regularization;
       }
 
       const centeredRatings = Float64Array.from(
@@ -373,7 +409,12 @@ export function predictSpectroMovies(
       let adjustment = 0;
       for (let index = 0; index < size; index += 1) {
         const similarity = cosineSimilarity(vector, trainingVectors[index]);
-        adjustment += rbfKernel(similarity, vector.size > 0 && trainingVectors[index].size > 0) * coefficients[index];
+        adjustment += kernelValue(
+          similarity,
+          vector.size > 0 && trainingVectors[index].size > 0,
+          kernel,
+          gamma
+        ) * coefficients[index];
       }
       predictedRating = Math.max(1, Math.min(10, fallbackRating + adjustment));
     }
