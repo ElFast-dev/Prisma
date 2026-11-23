@@ -9,6 +9,9 @@ Prisma utiliza el modo de actualización solicitada de `vite-plugin-pwa`. Cuando
 - La acción de actualizar se bloquea mientras haya un diálogo modal abierto, porque algunos formularios conservan cambios sin guardar en memoria.
 - «Más tarde» mantiene la versión activa y aplaza la recarga.
 - La activación usa la función de actualización proporcionada por `virtual:pwa-register`.
+- `onNeedReload` sustituye la recarga automática predeterminada de vite-plugin-pwa en cada pestaña abierta.
+- Cada pestaña muestra «Recargar esta pestaña» cuando el nuevo Service Worker toma el control. La recarga ocurre solo tras una acción explícita en esa pestaña.
+- Una pestaña con formulario o diálogo abierto puede esperar sin que otra pestaña fuerce su recarga.
 
 La actualización no sustituye las copias de seguridad ni sincroniza los datos entre dispositivos.
 
