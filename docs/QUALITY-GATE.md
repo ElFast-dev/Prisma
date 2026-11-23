@@ -56,6 +56,10 @@ El workflow `.github/workflows/codeql.yml` ejecuta CodeQL para JavaScript/TypeSc
 
 CodeQL es informativo en esta fase: sus resultados se revisan y se corrigen de acuerdo con su severidad, pero no se añade a los checks obligatorios de protección de `main` sin una decisión independiente. La auditoría de npm sigue siendo un control distinto: CodeQL analiza patrones de seguridad en el código fuente y no sustituye el inventario de dependencias.
 
+## Presupuesto de rendimiento
+
+El workflow `.github/workflows/performance-budget.yml` informa el tamaño comprimido del JavaScript y CSS iniciales y del mayor chunk diferido. Sus umbrales son informativos y generan advertencias; no se añaden como requisitos de protección de `main`. Este control estático de empaquetado no sustituye mediciones de Core Web Vitals, Lighthouse ni la revisión en Android físico.
+
 ## Avisos de dependencias
 
 Los avisos moderados abiertos de `glob` y `minimatch` de la cadena Workbox están documentados en `docs/DEPENDENCY-SECURITY.md` y en el issue #6. El control actual `npm audit --audit-level=high` puede pasar mientras persistan avisos moderados; un resultado verde no significa que el árbol esté libre de avisos.
