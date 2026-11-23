@@ -5,13 +5,14 @@ import {
   type TmdbMovieSummary
 } from "../tmdb/TmdbService";
 import { getTmdbAccessToken } from "../tmdb/settings";
-import { runWithConcurrency } from "../../domain/asyncPool";
+import { runWithConcurrency, shareInFlight } from "../../domain/asyncPool";
 import {
   getSpectroInputFingerprint,
   selectSpectroCandidates,
   rankSpectroCandidates,
   SPECTRO_ALGORITHM_VERSION,
-  type SpectroAnalysis
+  type SpectroAnalysis,
+  type SpectroInput
 } from "../../domain/spectro";
 import type {
   SpectroAnalysisWorkerResponse,
@@ -181,6 +182,64 @@ export async function getSpectroWorkspace(): Promise<SpectroWorkspaceResult> {
 }
 
 
+const discoverAnalysisRequests = new Map<string, Promise<SpectroAnalysis>>();
+const EMPTY_DISCOVER_ANALYTICS_INPUT: SpectroWorkspaceInput["analyticsInput"] = {
+  movies: [],
+  viewings: [],
+  libraryEntries: [],
+  collections: [],
+  collectionMovies: []
+};
+
+/**
+ * Descubrir solo necesita las afinidades de Espectro para ordenar candidatas.
+ * Evita construir los seis paneles analíticos cuando todavía no existe una
+ * instantánea y comparte el cálculo si varias páginas llegan simultáneamente.
+ */
+async function getDiscoverSpectroAnalysis(
+  input: SpectroInput,
+  inputFingerprint: string,
+  snapshotId: string
+): Promise<SpectroAnalysis> {
+  const cached = await prismaDb.spectroSnapshots.get(snapshotId);
+  if (
+    cached
+    && cached.algorithmVersion === SPECTRO_ALGORITHM_VERSION
+    && cached.inputFingerprint === inputFingerprint
+    && isValidCachedAnalysis(cached.analysisPayload, inputFingerprint)
+  ) return cached.analysisPayload;
+
+  return shareInFlight(discoverAnalysisRequests, snapshotId, async () => {
+    // Otra pantalla puede haber escrito la instantánea mientras esta solicitud esperaba.
+    const latest = await prismaDb.spectroSnapshots.get(snapshotId);
+    if (
+      latest
+      && latest.algorithmVersion === SPECTRO_ALGORITHM_VERSION
+      && latest.inputFingerprint === inputFingerprint
+      && isValidCachedAnalysis(latest.analysisPayload, inputFingerprint)
+    ) return latest.analysisPayload;
+
+    const calculated = await calculateWorkspaceWithoutBlocking({
+      analysisInput: input,
+      analyticsInput: EMPTY_DISCOVER_ANALYTICS_INPUT
+    });
+    const analysis = calculated.analysis;
+    if (!analysis) {
+      throw new Error("Prisma no recibió un resultado válido del análisis de Espectro.");
+    }
+
+    const snapshot: SpectroSnapshot = {
+      id: snapshotId,
+      algorithmVersion: analysis.algorithmVersion,
+      inputFingerprint: analysis.inputFingerprint,
+      computedAt: analysis.computedAt,
+      analysisPayload: analysis
+    };
+    await prismaDb.spectroSnapshots.put(snapshot);
+    return analysis;
+  });
+}
+
 /**
  * Clasifica resultados externos con el perfil local ya calculado por Espectro.
  * No guarda candidatas ni transmite señales personales a TMDB.
@@ -207,13 +266,11 @@ export async function getSpectroDiscoverRecommendations(
   const analysisInput = { movies, viewings, candidates: localCandidates, favoriteMovieIds };
   const inputFingerprint = getSpectroInputFingerprint(analysisInput);
   const snapshotId = SPECTRO_ALGORITHM_VERSION + ":" + inputFingerprint;
-  const cachedSnapshot = await prismaDb.spectroSnapshots.get(snapshotId);
-  const analysis = cachedSnapshot
-    && cachedSnapshot.algorithmVersion === SPECTRO_ALGORITHM_VERSION
-    && cachedSnapshot.inputFingerprint === inputFingerprint
-    && isValidCachedAnalysis(cachedSnapshot.analysisPayload, inputFingerprint)
-    ? cachedSnapshot.analysisPayload
-    : (await getSpectroWorkspace()).analysis;
+  const analysis = await getDiscoverSpectroAnalysis(
+    analysisInput,
+    inputFingerprint,
+    snapshotId
+  );
   const localMovies = new Map(movies.map((movie) => [movie.tmdbId, movie]));
   const metadataById = new Map<number, TmdbMovieAnalysisMetadata>();
   const token = getTmdbAccessToken();
