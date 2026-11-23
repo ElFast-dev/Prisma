@@ -175,6 +175,34 @@ describe("predicción personal no lineal de Espectro", () => {
     expect(updated?.predictedRating).not.toBe(initial?.predictedRating);
   });
 
+  it("reentrena el modelo cuando cambian los metadatos cinematográficos", () => {
+    const training = trainingMovies();
+    const candidate = movie("candidate-memory-metadata", "Candidata de memoria", "memoria", 33);
+    const initial = predictSpectroMovies(training, [candidate]).get(candidate.id);
+    const updatedTraining = training.map((item) => ({
+      ...item,
+      movie: item.movie.id.startsWith("rated-memory-")
+        ? {
+          ...item.movie,
+          genres: ["Ciencia ficción"],
+          genreIds: [878],
+          countries: ["Canadá"],
+          directors: ["Nueva directora"],
+          castMembers: ["Nuevo reparto"],
+          keywords: ["espacio", "nave", "extraterrestres"],
+          originalLanguage: "en",
+          runtimeMinutes: 170,
+          overview: "Una tripulación explora una estación espacial y descubre vida extraterrestre."
+        }
+        : item.movie
+    }));
+    const updated = predictSpectroMovies(updatedTraining, [candidate]).get(candidate.id);
+
+    expect(initial).toBeDefined();
+    expect(updated).toBeDefined();
+    expect(updated?.predictedRating).not.toBe(initial?.predictedRating);
+  });
+
   it("no entrena un modelo cuando no hay candidatas que clasificar", () => {
     expect(predictSpectroMovies(trainingMovies(), [])).toEqual(new Map());
   });
