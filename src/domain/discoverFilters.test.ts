@@ -15,6 +15,16 @@ describe("Discover filters", () => {
     expect(countActiveDiscoverFilters(DEFAULT_DISCOVER_FILTERS)).toBe(2);
   });
 
+  it("uses Spectro by default and preserves explicit catalog sorting", () => {
+    expect(DEFAULT_DISCOVER_FILTERS.sortBy).toBe("spectro");
+    expect(hasActiveDiscoverFilters(DEFAULT_DISCOVER_FILTERS)).toBe(false);
+    expect(buildDiscoverMovieParams(DEFAULT_DISCOVER_FILTERS, 1).sort_by).toBe("popularity.desc");
+
+    const explicitPopularity = normalizeDiscoverFilters({ sortBy: "popularity.desc" });
+    expect(hasActiveDiscoverFilters(explicitPopularity)).toBe(true);
+    expect(buildDiscoverMovieParams(explicitPopularity, 1).sort_by).toBe("popularity.desc");
+  });
+
   it("normalizes numeric inputs and repairs inverted ranges", () => {
     expect(normalizeDiscoverFilters({
       ...DEFAULT_DISCOVER_FILTERS,
