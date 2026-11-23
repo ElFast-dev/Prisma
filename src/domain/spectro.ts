@@ -1021,11 +1021,21 @@ function buildRecommendations(
       .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
 
     const modelPrediction = modelPredictions.get(movie.id);
+    const predictedRating = modelPrediction?.predictedRating
+      ?? round(clamp(overallAverage + netRatingDifference, 0, 10));
+    const hasDeclaredFavorite = accumulators.some((item) => item.reason.source === "favoritos");
+    // Una afinidad estructurada positiva no debe sobreponerse a evidencia comparable
+    // que predice una nota materialmente inferior al promedio personal. La puerta
+    // se desactiva con evidencia débil o con un favorito explícito.
+    const hasReliableNegativePrediction = modelPrediction !== undefined
+      && modelPrediction.maximumSimilarity >= 0.25
+      && predictedRating < overallAverage - 0.25;
+    if (hasReliableNegativePrediction && !hasDeclaredFavorite) continue;
+
     ranked.push({
       movie,
       fitPercentage,
-      predictedRating: modelPrediction?.predictedRating
-        ?? round(clamp(overallAverage + netRatingDifference, 0, 10)),
+      predictedRating,
       confidence: recommendationConfidence(reasons),
       reasons,
       similarMovies: modelPrediction?.neighbors ?? []
