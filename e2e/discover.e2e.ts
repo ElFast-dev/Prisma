@@ -127,7 +127,7 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
             genre_ids: [18],
             vote_average: 7.8,
             vote_count: 850,
-            original_language: "ja",
+            original_language: "en",
             popularity: 18
           }]
         })
