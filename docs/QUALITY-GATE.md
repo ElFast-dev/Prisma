@@ -8,7 +8,7 @@ Las pruebas protegen el producto; no sustituyen el desarrollo ni deben convertir
 
 Se conservan los dos controles de protección ya configurados por el propietario:
 
-1. **TypeScript · Unit tests · Build**: instalación reproducible (`npm ci`), TypeScript, pruebas unitarias, auditoría con umbral alto/crítico, compilación y smoke test local del build.
+1. **TypeScript · Unit tests · Build**: instalación reproducible (`npm ci`), TypeScript, pruebas unitarias, auditoría npm a todas las severidades (`npm audit --audit-level=low`), compilación y smoke test local del build.
 2. **Browser E2E · Playwright**: recorridos funcionales en Chromium, Firefox y WebKit.
 
 Estos checks conservan sus nombres para no romper la protección existente de `main`.
@@ -60,8 +60,10 @@ CodeQL es informativo en esta fase: sus resultados se revisan y se corrigen de a
 
 El workflow `.github/workflows/performance-budget.yml` informa el tamaño comprimido del JavaScript y CSS iniciales y del mayor chunk diferido. Sus umbrales son informativos y generan advertencias; no se añaden como requisitos de protección de `main`. Este control estático de empaquetado no sustituye mediciones de Core Web Vitals, Lighthouse ni la revisión en Android físico.
 
-## Avisos de dependencias
+## Auditoría de dependencias
 
-Los avisos moderados abiertos de `glob` y `minimatch` de la cadena Workbox están documentados en `docs/DEPENDENCY-SECURITY.md` y en el issue #6. El control actual `npm audit --audit-level=high` puede pasar mientras persistan avisos moderados; un resultado verde no significa que el árbol esté libre de avisos.
+El control obligatorio ejecuta `npm audit --audit-level=low` después de `npm ci`. Así, los avisos moderados, altos y críticos bloquean la validación y no quedan ocultos por un umbral de severidad superior.
 
-No se deben forzar cambios incompatibles de dependencias transitivas ni bajar el umbral para ocultar avisos. Cada remediación necesita una solución compatible upstream y validar instalación, build, manifiesto y funcionamiento offline.
+La rama `security/migrate-pwa-workbox` sustituye la cadena PWA antigua por Workbox 8.0.15. El lockfile de esa rama fue auditado en GitHub Actions: 125 paquetes y cero vulnerabilidades. La migración solo se considera completada en producción después de que el PR supere también TypeScript, pruebas unitarias, build, Playwright, smoke, PWA offline y CodeQL.
+
+No se deben forzar majors incompatibles mediante overrides. Cada actualización de dependencias debe conservar instalación reproducible y validar manifiesto, recursos precargados y funcionamiento offline.
