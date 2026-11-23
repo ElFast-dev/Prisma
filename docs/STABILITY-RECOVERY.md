@@ -12,6 +12,7 @@ Prisma utiliza el modo de actualización solicitada de `vite-plugin-pwa`. Cuando
 - `onNeedReload` sustituye la recarga automática predeterminada de vite-plugin-pwa en cada pestaña abierta.
 - Cada pestaña muestra «Recargar esta pestaña» cuando el nuevo Service Worker toma el control. La recarga ocurre solo tras una acción explícita en esa pestaña.
 - Una pestaña con formulario o diálogo abierto puede esperar sin que otra pestaña fuerce su recarga.
+- La recarga automática ante un módulo obsoleto también respeta los mismos bloqueos.
 
 La actualización no sustituye las copias de seguridad ni sincroniza los datos entre dispositivos.
 
@@ -23,6 +24,7 @@ Vite emite `vite:preloadError` cuando falla una importación dinámica. Prisma:
 2. No cancela el error si ya se intentó recuperar recientemente o si no se puede guardar el marcador.
 3. Deja que `AppErrorBoundary` muestre el estado de error cuando una recarga adicional no sería segura.
 4. Elimina el marcador después de que una pantalla diferida se carga correctamente.
+5. Si hay un diálogo, formulario sin guardar u operación local activa, no fuerza la recarga; deja que la sección afectada muestre su estado de error recuperable.
 
 Esto evita un ciclo de recargas cuando el recurso sigue sin estar disponible.
 
