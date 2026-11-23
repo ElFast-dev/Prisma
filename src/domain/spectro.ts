@@ -12,7 +12,7 @@ export type {
   SpectroNetworkCluster
 } from "./spectroNetwork";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.7.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.8.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;
@@ -471,8 +471,8 @@ function synopsisFeatures(movie: MovieRecord): Feature[] {
   const words = (movie.overview ?? "")
     .toLocaleLowerCase()
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
-    .match(/[\\p{L}\\p{N}]{3,}/gu) ?? [];
+    .replace(/[\u0300-\u036f]/g, "")
+    .match(/[\p{L}\p{M}\p{N}]{3,}/gu) ?? [];
   const tokens = words.filter((word) => !SYNOPSIS_STOPWORDS.has(word));
   const features = new Map<string, Feature>();
 
