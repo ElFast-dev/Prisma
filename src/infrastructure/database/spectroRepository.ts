@@ -185,12 +185,28 @@ export async function getSpectroDiscoverRecommendations(
     return { movieCount: 0, recommendations: [] };
   }
 
-  const [workspace, movies, viewings, libraryEntries] = await Promise.all([
-    getSpectroWorkspace(),
+  // Descubrir reutiliza la instantánea local de Espectro y evita recalcular
+  // los seis paneles de analítica cada vez que se consulta otra página de TMDB.
+  const [movies, viewings, libraryEntries, collectionMovies] = await Promise.all([
     prismaDb.movies.toArray(),
     prismaDb.viewings.toArray(),
-    prismaDb.libraryEntries.toArray()
+    prismaDb.libraryEntries.toArray(),
+    prismaDb.collectionMovies.toArray()
   ]);
+  const favoriteMovieIds = libraryEntries
+    .filter((entry) => entry.isFavorite)
+    .map((entry) => entry.movieId);
+  const localCandidates = selectSpectroCandidates(movies, viewings, libraryEntries, collectionMovies);
+  const analysisInput = { movies, viewings, candidates: localCandidates, favoriteMovieIds };
+  const inputFingerprint = getSpectroInputFingerprint(analysisInput);
+  const snapshotId = SPECTRO_ALGORITHM_VERSION + ":" + inputFingerprint;
+  const cachedSnapshot = await prismaDb.spectroSnapshots.get(snapshotId);
+  const analysis = cachedSnapshot
+    && cachedSnapshot.algorithmVersion === SPECTRO_ALGORITHM_VERSION
+    && cachedSnapshot.inputFingerprint === inputFingerprint
+    && isValidCachedAnalysis(cachedSnapshot.analysisPayload, inputFingerprint)
+    ? cachedSnapshot.analysisPayload
+    : (await getSpectroWorkspace()).analysis;
   const localMovies = new Map(movies.map((movie) => [movie.tmdbId, movie]));
   const now = new Date().toISOString();
 
@@ -226,17 +242,14 @@ export async function getSpectroDiscoverRecommendations(
     };
   });
 
-  const favoriteMovieIds = libraryEntries
-    .filter((entry) => entry.isFavorite)
-    .map((entry) => entry.movieId);
   const recommendations = rankSpectroCandidates(
     { movies, viewings, favoriteMovieIds },
     candidates,
-    workspace.analysis,
+    analysis,
     { includeWatched: true }
   );
 
-  return { movieCount: workspace.analysis.movieCount, recommendations };
+  return { movieCount: analysis.movieCount, recommendations };
 }
 
 /** Conserva la API previa para consumidores que solo necesitan el análisis. */
