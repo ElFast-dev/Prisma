@@ -407,9 +407,9 @@ export function DiscoverPage() {
           setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
         }
       });
-      if (result.stale) {
+      if (rawResult.stale) {
         setShowingCachedData(true);
-        setCachedFetchedAt(result.fetchedAt);
+        setCachedFetchedAt(rawResult.fetchedAt);
       }
       setPage(nextPage);
       setTotalResults(rawResult.totalResults);
