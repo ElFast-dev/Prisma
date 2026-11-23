@@ -1,4 +1,5 @@
 export type DiscoverSort =
+  | "spectro"
   | "popularity.desc"
   | "vote_average.desc"
   | "primary_release_date.desc"
@@ -32,7 +33,7 @@ export const DEFAULT_DISCOVER_FILTERS: DiscoverFilters = {
   originalLanguage: "",
   hideWatched: true,
   hidePending: true,
-  sortBy: "popularity.desc"
+  sortBy: "spectro"
 };
 
 export const DISCOVER_GENRES = [
@@ -84,6 +85,7 @@ export const DISCOVER_LANGUAGES = [
 ] as const;
 
 const SORT_OPTIONS = new Set<DiscoverSort>([
+  "spectro",
   "popularity.desc",
   "vote_average.desc",
   "primary_release_date.desc",
@@ -125,7 +127,7 @@ export function normalizeDiscoverFilters(
     hidePending: filters?.hidePending !== false,
     sortBy: SORT_OPTIONS.has(filters?.sortBy as DiscoverSort)
       ? filters?.sortBy as DiscoverSort
-      : "popularity.desc"
+      : "spectro"
   };
 
   if (normalized.runtimeMin && normalized.runtimeMax
@@ -163,7 +165,7 @@ export function hasActiveDiscoverFilters(filters: DiscoverFilters): boolean {
     || filters.minVoteAverage
     || filters.minVoteCount
     || filters.originalLanguage
-    || filters.sortBy !== "popularity.desc"
+    || filters.sortBy !== "spectro"
   );
 }
 
@@ -177,7 +179,7 @@ export function countActiveDiscoverFilters(filters: DiscoverFilters): number {
     filters.originalLanguage,
     filters.hideWatched ? "hide-watched" : "",
     filters.hidePending ? "hide-pending" : "",
-    filters.sortBy !== "popularity.desc" ? filters.sortBy : ""
+    filters.sortBy !== "spectro" ? filters.sortBy : ""
   ].filter(Boolean).length;
 }
 
@@ -191,7 +193,7 @@ export function buildDiscoverMovieParams(
     language,
     include_adult: false,
     include_video: false,
-    sort_by: filters.sortBy
+    sort_by: filters.sortBy === "spectro" ? "popularity.desc" : filters.sortBy
   };
 
   if (filters.genreId) params.with_genres = filters.genreId;
