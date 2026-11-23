@@ -264,7 +264,13 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
 
   const movie = page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" });
   await expect(movie).toBeVisible();
-  await expect(page.locator(".discover-filter-chip")).toHaveCount(2);
+  await expect(page.locator(".discover-filter-chip")).toHaveCount(4);
+  await expect(page.locator(".discover-filter-chip")).toContainText([
+    "Género: Drama",
+    "Año: 2015–actualidad",
+    "Ocultar vistas",
+    "Ocultar pendientes"
+  ]);
   await expect.poll(() => discoverRequests.length).toBe(1);
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem("prisma:discover-session:v1"))).toContain('"query":"prisma"');
 
@@ -278,7 +284,13 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
   await expect(page).toHaveURL(/#\/discover$/);
   await expect(page.locator("#discover-search")).toHaveValue("prisma");
   await expect(page.getByRole("button", { name: "Abrir filtros" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".discover-filter-chip")).toContainText(["Género: Drama", "Año: 2015–actualidad"]);
+  await expect(page.locator(".discover-filter-chip")).toHaveCount(4);
+  await expect(page.locator(".discover-filter-chip")).toContainText([
+    "Género: Drama",
+    "Año: 2015–actualidad",
+    "Ocultar vistas",
+    "Ocultar pendientes"
+  ]);
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
   await expect.poll(() => discoverRequests.length).toBe(1);
 });
