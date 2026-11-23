@@ -40,6 +40,7 @@ La navegación de nivel superior continúa siendo Personal, Descubrir y Espectro
 ### 3.0 Descubrir impulsado por Espectro
 
 - Usar el perfil y el predictor locales de Espectro para priorizar resultados de búsqueda y exploración.
+- Reutilizar entre páginas el modelo de predicción entrenado con el historial local mediante una caché en memoria acotada; invalidarla si cambian las notas o metadatos de entrenamiento, sin persistir ni transmitir el perfil.
 - Mantener la búsqueda textual real de TMDB: escribir un título ejecuta una búsqueda, no limita la coincidencia a una página ya cargada.
 - Combinar búsqueda y filtros avanzados; cuando TMDB no permite combinar texto y todos los criterios en un solo endpoint, aplicar filtros adicionales a los resultados y completar metadatos faltantes bajo demanda.
 - Permitir ocultar por separado películas ya vistas y pendientes consultando solo la Biblioteca local.
