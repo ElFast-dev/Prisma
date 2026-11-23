@@ -125,8 +125,6 @@ export function DiscoverPage() {
     restoredSession?.appliedFilters ?? DEFAULT_DISCOVER_FILTERS
   );
   const [movies, setMovies] = useState<TmdbMovieSummary[]>(restoredSession?.movies ?? []);
-  const moviesRef = useRef(movies);
-  moviesRef.current = movies;
   const [recommendations, setRecommendations] = useState<SpectroRecommendation[]>([]);
   const [spectroState, setSpectroState] = useState<DiscoverSpectroState>("loading");
   const [watchedTmdbIds, setWatchedTmdbIds] = useState<number[]>([]);
@@ -142,6 +140,7 @@ export function DiscoverPage() {
   const [imageBase, setImageBase] = useState(restoredSession?.imageBase ?? "https://image.tmdb.org/t/p/");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
+  const feedRevisionRef = useRef(0);
   const loadedFeedKeyRef = useRef(
     hasRestoredMovies && restoredSession
       ? getDiscoverFeedKey(restoredSession.query, restoredSession.appliedFilters)
@@ -197,6 +196,7 @@ export function DiscoverPage() {
 
   const loadFirstPage = useCallback(async (searchText: string, filters: DiscoverFilters) => {
     const currentRequest = ++requestId.current;
+    feedRevisionRef.current += 1;
     loadedFeedKeyRef.current = getDiscoverFeedKey(searchText, filters);
     const token = getTmdbAccessToken();
     if (!token) {
@@ -280,6 +280,7 @@ export function DiscoverPage() {
     let active = true;
     const sessionRequest = requestId.current;
     const sessionFeedKey = loadedFeedKeyRef.current;
+    const sessionRevision = feedRevisionRef.current;
     const sessionMovies = movies;
     if (sessionMovies.length > 0) {
       void Promise.all([
@@ -292,7 +293,7 @@ export function DiscoverPage() {
           !active
           || sessionRequest !== requestId.current
           || sessionFeedKey !== loadedFeedKeyRef.current
-          || moviesRef.current !== sessionMovies
+          || sessionRevision !== feedRevisionRef.current
         ) return;
         setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
         setPendingTmdbIds(libraryStatus.pendingTmdbIds);
@@ -307,7 +308,7 @@ export function DiscoverPage() {
           active
           && sessionRequest === requestId.current
           && sessionFeedKey === loadedFeedKeyRef.current
-          && moviesRef.current === sessionMovies
+          && sessionRevision === feedRevisionRef.current
         ) {
           setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
         }
@@ -371,6 +372,9 @@ export function DiscoverPage() {
         ? { ...rawResult, movies: await filterSearchResults(token, rawResult.movies, appliedFilters) }
         : rawResult;
       if (currentRequest !== requestId.current) return;
+      // Una página que ya llegó invalida el cálculo de la instantánea restaurada.
+      // Así no puede reemplazar recomendaciones que se hayan calculado después.
+      feedRevisionRef.current += 1;
       setMovies((current) => {
         const seen = new Set(current.map((movie) => movie.id));
         return [...current, ...result.movies.filter((movie) => !seen.has(movie.id))];
