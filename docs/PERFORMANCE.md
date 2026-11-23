@@ -4,12 +4,12 @@
 
 Build de producción de Prisma en el commit `8ac2e602ff976c6a2d65c381b78f74db799f5fe6` (23 de noviembre de 2026), medido desde la salida de GitHub Actions:
 
-| Recurso | Tamaño sin comprimir | Gzip |
+| Recurso | Tamaño sin comprimir (kB) | Gzip (kB) |
 |---|---:|---:|
-| JavaScript inicial | 362.69 kB | 114.98 KiB |
-| CSS inicial | 108.24 kB | 18.61 KiB |
-| Pantalla Espectro (chunk diferido) | 78.86 kB | 23.67 KiB |
-| Servicio de metadatos Espectro (chunk diferido) | 93.75 kB | 27.00 KiB |
+| JavaScript inicial | 362.69 kB | 114.98 kB |
+| CSS inicial | 108.24 kB | 18.61 kB |
+| Pantalla Espectro (chunk diferido) | 78.86 kB | 23.67 kB |
+| Servicio de metadatos Espectro (chunk diferido) | 93.75 kB | 27.00 kB |
 
 Espectro y las pantallas principales se cargan bajo demanda; su código no se suma al recurso JavaScript inicial. El análisis principal de Espectro también se compila como Web Worker separado.
 
@@ -21,7 +21,7 @@ Espectro y las pantallas principales se cargan bajo demanda; su código no se su
 | CSS inicial | 25 KiB |
 | Cada chunk diferido (mayor chunk reportado) | 45 KiB |
 
-El script `scripts/check-bundle-budget.mjs` usa solo módulos nativos de Node y calcula gzip desde el build real. Si un umbral se supera, emite una anotación de advertencia en GitHub Actions; no falla el build ni crea un requisito obligatorio de protección de rama. Los límites dejan margen sobre la línea base actual y deberán revisarse cuando cambie el producto, no elevarse automáticamente para ocultar una regresión.
+El script `scripts/check-bundle-budget.mjs` usa solo módulos nativos de Node y calcula gzip desde el build real en KiB (1 KiB = 1024 bytes). Los valores históricos de la tabla conservan la unidad decimal kB que imprime Vite. Si un umbral se supera, emite una anotación de advertencia en GitHub Actions; no falla el build ni crea un requisito obligatorio de protección de rama. Los límites dejan margen sobre la línea base actual y deberán revisarse cuando cambie el producto, no elevarse automáticamente para ocultar una regresión.
 
 ## Qué no mide
 
