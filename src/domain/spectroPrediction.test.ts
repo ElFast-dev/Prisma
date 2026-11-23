@@ -144,4 +144,38 @@ describe("predicción personal no lineal de Espectro", () => {
 
     expect(first).toEqual(second);
   });
+
+  it("conserva las predicciones al consultar candidatas en páginas separadas", () => {
+    const training = trainingMovies();
+    const memory = movie("candidate-memory-page", "Candidata de memoria", "memoria", 30);
+    const action = movie("candidate-action-page", "Candidata de acción", "acción", 31);
+
+    const memoryPage = predictSpectroMovies(training, [memory]).get(memory.id);
+    const actionPage = predictSpectroMovies(training, [action]).get(action.id);
+    const combinedPages = predictSpectroMovies(training, [memory, action]);
+
+    expect(memoryPage).toEqual(combinedPages.get(memory.id));
+    expect(actionPage).toEqual(combinedPages.get(action.id));
+  });
+
+  it("reentrena el modelo cuando cambian las valoraciones locales", () => {
+    const training = trainingMovies();
+    const candidate = movie("candidate-memory-updated", "Candidata de memoria", "memoria", 32);
+    const initial = predictSpectroMovies(training, [candidate]).get(candidate.id);
+    const updatedTraining = training.map((item) => ({
+      ...item,
+      rating: item.movie.id.startsWith("rated-memory-")
+        ? 10
+        : item.movie.id.startsWith("rated-action-") ? 1 : item.rating
+    }));
+    const updated = predictSpectroMovies(updatedTraining, [candidate]).get(candidate.id);
+
+    expect(initial).toBeDefined();
+    expect(updated).toBeDefined();
+    expect(updated?.predictedRating).not.toBe(initial?.predictedRating);
+  });
+
+  it("no entrena un modelo cuando no hay candidatas que clasificar", () => {
+    expect(predictSpectroMovies(trainingMovies(), [])).toEqual(new Map());
+  });
 });
