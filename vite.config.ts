@@ -8,8 +8,8 @@ export default defineConfig({
     react(),
     ViteWorkboxPWAPlugin({
       strategy: "generate-sw",
-      baseUrl: "/Prisma/",
       generateSW: {
+        baseUrl: "/Prisma/",
         swDest: "sw.js",
         // Static files, the Vite entry points and the manifest are all precached.
         globPatterns: ["**/*.{js,css,html,svg,ico,png,webmanifest}"],
