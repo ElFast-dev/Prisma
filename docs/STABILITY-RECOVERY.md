@@ -5,6 +5,8 @@
 Prisma utiliza el modo de actualización solicitada de `vite-plugin-pwa`. Cuando se instala una versión nueva, la aplicación muestra un aviso; no recarga automáticamente todas las pestañas.
 
 - La persona usuaria decide cuándo aplicar la actualización.
+- Workbox utiliza `clientsClaim: true` para que la primera instalación controle la página y habilite el modo offline.
+- `skipWaiting: false` mantiene las nuevas versiones en espera hasta que la persona confirma la actualización.
 - El aviso indica que se deben guardar los cambios pendientes.
 - La acción de actualizar se bloquea mientras haya un diálogo modal abierto, porque algunos formularios conservan cambios sin guardar en memoria.
 - «Más tarde» mantiene la versión activa y aplaza la recarga.
