@@ -82,7 +82,7 @@ function restoreMovies(value: unknown): TmdbMovieSummary[] {
 export function getDiscoverFeedKey(query: string, filters: DiscoverFilters): string {
   const normalizedFilters = normalizeDiscoverFilters(filters);
   const normalizedQuery = query.trim().toLocaleLowerCase("es");
-  const catalogFilters = { ...normalizedFilters };
+  const catalogFilters: Partial<DiscoverFilters> = { ...normalizedFilters };
   delete catalogFilters.hideWatched;
   delete catalogFilters.hidePending;
   const source = normalizedQuery

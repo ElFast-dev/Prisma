@@ -37,6 +37,41 @@ describe("parsePrismaBackup", () => {
     expect(result.data.collectionMovies).toHaveLength(1);
   });
 
+  it("accepts legacy personal filters without the new optional ranges", () => {
+    const backup = validBackup();
+    const legacyPreferences = {
+      id: "local",
+      theme: "dark",
+      reducedMotion: false,
+      language: "es",
+      region: "PA",
+      libraryView: "list",
+      historyFilters: {
+        query: "Alien",
+        notes: "all",
+        rating: "all",
+        fromDate: "",
+        toDate: ""
+      },
+      libraryFilters: {
+        status: "all",
+        releaseStatus: "all",
+        query: "",
+        genre: "",
+        yearFrom: "",
+        yearTo: "",
+        sort: "added",
+        sortDirection: "desc",
+        shuffleSeed: 1
+      },
+      updatedAt: "2026-10-01T00:00:00.000Z"
+    };
+    backup.data.preferences = [legacyPreferences];
+    const parsed = parsePrismaBackup(JSON.stringify(backup));
+    expect(parsed.data.preferences[0].historyFilters?.ratingMin).toBeUndefined();
+    expect(parsed.data.preferences[0].libraryFilters?.runtimeMin).toBeUndefined();
+  });
+
   it("rejects unsupported formats and versions", () => {
     const backup = { ...validBackup(), formatVersion: 2 };
     expect(() => parsePrismaBackup(JSON.stringify(backup))).toThrow("no es una copia Prisma válida");

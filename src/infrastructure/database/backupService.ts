@@ -68,6 +68,13 @@ export async function restoreLocalBackup(backup: PrismaBackup): Promise<void> {
       if (data.preferences.length) {
         const preferences = data.preferences.map((preference) => ({
           ...preference,
+          historyFilters: preference.historyFilters
+            ? {
+              ...preference.historyFilters,
+              ratingMin: preference.historyFilters.ratingMin ?? "",
+              ratingMax: preference.historyFilters.ratingMax ?? ""
+            }
+            : undefined,
           libraryFilters: normalizeLibraryFilters(preference.libraryFilters)
         }));
         await prismaDb.preferences.bulkPut(preferences);

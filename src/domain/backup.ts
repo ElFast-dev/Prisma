@@ -94,6 +94,8 @@ const preferencesSchema = z.object({
     query: z.string().max(200),
     notes: z.enum(["all", "with-notes", "without-notes"]),
     rating: z.enum(["all", "9-10", "7-8", "1-6"]),
+    ratingMin: z.string().optional(),
+    ratingMax: z.string().optional(),
     fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")),
     toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal(""))
   }).strict().optional(),
