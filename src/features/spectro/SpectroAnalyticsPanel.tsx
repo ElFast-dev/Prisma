@@ -51,6 +51,35 @@ function ChartCard({
   );
 }
 
+type ChartDataRow = { label: string; value: string; detail?: string };
+
+/** Alternativa estructurada para que los datos de cada gráfica se puedan explorar sin depender del SVG. */
+function ChartDataTable({ caption, rows }: { caption: string; rows: ChartDataRow[] }) {
+  if (!rows.length) return null;
+  return (
+    <details className="spectro-chart-data">
+      <summary>Ver datos de la gráfica en tabla</summary>
+      <div className="spectro-chart-data-table-wrap">
+        <table className="spectro-chart-data-table">
+          <caption>{caption}</caption>
+          <thead>
+            <tr><th scope="col">Categoría</th><th scope="col">Valor</th><th scope="col">Detalle</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label}>
+                <th scope="row">{row.label}</th>
+                <td>{row.value}</td>
+                <td>{row.detail ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}
+
 function EmptyChart({ children = "No hay datos suficientes para esta gráfica." }: { children?: string }) {
   return <p className="spectro-chart-empty">{children}</p>;
 }
@@ -67,7 +96,8 @@ function HorizontalBars({
   if (!items.length) return <EmptyChart />;
   const maximum = Math.max(1, ...items.map((item) => item.count));
   return (
-    <div className="spectro-horizontal-bars">
+    <>
+      <div className="spectro-horizontal-bars">
       {items.map((item, index) => (
         <div className="spectro-horizontal-bar-row" key={item.label}>
           <div className="spectro-horizontal-bar-heading">
@@ -84,14 +114,22 @@ function HorizontalBars({
         </div>
       ))}
     </div>
+      <ChartDataTable caption="Distribución por categoría" rows={items.map((item) => ({ label: item.label, value: number(item.count) + " " + suffix, detail: showPercentage ? item.percentage.toLocaleString("es-PA", { maximumFractionDigits: 1 }) + "% del total" : undefined }))} />
+    </>
   );
+}
+
+function analyticsRatingShare(count: number, items: SpectroRatingPoint[]): string {
+  const total = items.reduce((sum, item) => sum + item.count, 0);
+  return total ? (count / total * 100).toLocaleString("es-PA", { maximumFractionDigits: 1 }) + "% del total" : "Sin visionados";
 }
 
 function RatingColumns({ items }: { items: SpectroRatingPoint[] }) {
   if (!items.some((item) => item.count > 0)) return <EmptyChart />;
   const maximum = Math.max(1, ...items.map((item) => item.count));
   return (
-    <div className="spectro-rating-columns" role="img" aria-label="Distribución de calificaciones de uno a diez por visionado">
+    <>
+      <div className="spectro-rating-columns" role="img" aria-label="Distribución de calificaciones de uno a diez por visionado">
       {items.map((item) => (
         <div className="spectro-rating-column" key={item.rating} title={item.rating + "/10: " + item.count + " visionados"}>
           <span className="spectro-rating-column-count">{item.count || ""}</span>
@@ -102,6 +140,8 @@ function RatingColumns({ items }: { items: SpectroRatingPoint[] }) {
         </div>
       ))}
     </div>
+      <ChartDataTable caption="Cantidad de visionados por calificación" rows={items.map((item) => ({ label: item.rating + "/10", value: number(item.count) + " visionados", detail: analyticsRatingShare(item.count, items) }))} />
+    </>
   );
 }
 
@@ -125,7 +165,8 @@ function MonthlyActivityChart({ points }: { points: SpectroMonthlyPoint[] }) {
   const labelStep = Math.max(1, Math.ceil(points.length / 12));
 
   return (
-    <div className="spectro-svg-scroll">
+    <>
+      <div className="spectro-svg-scroll">
       <svg className="spectro-line-chart" viewBox={"0 0 " + width + " " + height} role="img" aria-label="Visionados por mes a lo largo del historial">
         <line className="spectro-chart-axis" x1={left} y1={top + plotHeight} x2={width - right} y2={top + plotHeight} />
         <polygon className="spectro-chart-area" points={area} />
@@ -144,6 +185,8 @@ function MonthlyActivityChart({ points }: { points: SpectroMonthlyPoint[] }) {
         <text className="spectro-chart-label" x="13" y={top + plotHeight}>{0}</text>
       </svg>
     </div>
+      <ChartDataTable caption="Visionados y películas únicas por mes" rows={points.map((item) => ({ label: item.label, value: number(item.viewings) + " visionados", detail: number(item.uniqueMovies) + " películas distintas" }))} />
+    </>
   );
 }
 
@@ -166,7 +209,8 @@ function MonthlyRatingChart({ points }: { points: SpectroMonthlyPoint[] }) {
   const step = Math.max(1, Math.ceil(rated.length / 10));
 
   return (
-    <div className="spectro-svg-scroll">
+    <>
+      <div className="spectro-svg-scroll">
       <svg className="spectro-line-chart" viewBox={"0 0 " + width + " " + height} role="img" aria-label="Promedio de calificaciones por mes">
         {[0, 2, 4, 6, 8, 10].map((value) => {
           const y = top + plotHeight - (value / 10) * plotHeight;
@@ -190,6 +234,8 @@ function MonthlyRatingChart({ points }: { points: SpectroMonthlyPoint[] }) {
         ))}
       </svg>
     </div>
+      <ChartDataTable caption="Promedio de calificaciones por mes" rows={rated.map((item) => ({ label: item.label, value: (item.averageRating ?? 0).toFixed(1) + "/10", detail: number(item.ratedViewings) + " notas registradas" }))} />
+    </>
   );
 }
 
@@ -200,7 +246,8 @@ function DonutChart({ items }: { items: SpectroCategoryPoint[] }) {
   const circumference = Math.PI * 86;
   let consumed = 0;
   return (
-    <div className="spectro-donut-layout">
+    <>
+      <div className="spectro-donut-layout">
       <svg className="spectro-donut" viewBox="0 0 120 120" role="img" aria-label={visible.map((item) => item.label + ": " + item.count).join(", ")}>
         <circle className="spectro-donut-track" cx="60" cy="60" r="43" />
         {visible.map((item, index) => {
@@ -235,6 +282,8 @@ function DonutChart({ items }: { items: SpectroCategoryPoint[] }) {
         ))}
       </div>
     </div>
+      <ChartDataTable caption="Distribución de la categoría" rows={visible.map((item) => ({ label: item.label, value: number(item.count) + " registros", detail: item.percentage.toLocaleString("es-PA", { maximumFractionDigits: 1 }) + "% del total" }))} />
+    </>
   );
 }
 
@@ -243,7 +292,8 @@ function HourHeatmap({ cells, total }: { cells: number[][]; total: number }) {
   const maximum = Math.max(1, ...cells.flat());
   const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   return (
-    <div className="spectro-heatmap-wrap">
+    <>
+      <div className="spectro-heatmap-wrap">
       <div className="spectro-heatmap-scroll">
       <div className="spectro-heatmap">
         <div className="spectro-heatmap-corner" />
@@ -271,6 +321,8 @@ function HourHeatmap({ cells, total }: { cells: number[][]; total: number }) {
       <div className="spectro-heatmap-scale"><span>Menos</span><i className="is-0" /><i className="is-1" /><i className="is-2" /><i className="is-3" /><i className="is-4" /><span>Más</span></div>
       <p className="spectro-chart-footnote">{number(total)} visionados con hora local registrada. La hora del día se interpreta como fue guardada en Prisma.</p>
     </div>
+      <ChartDataTable caption="Visionados por día y hora local" rows={cells.flatMap((row, dayIndex) => row.map((count, hour) => ({ label: days[dayIndex] + " · " + String(hour).padStart(2, "0") + ":00", value: number(count) + " visionados" })))} />
+    </>
   );
 }
 
@@ -278,7 +330,8 @@ function RewatchBars({ items }: { items: Array<{ title: string; viewings: number
   if (!items.length) return <EmptyChart>Cuando registres la segunda sesión de una película, aparecerá aquí.</EmptyChart>;
   const max = Math.max(1, ...items.map((item) => item.viewings));
   return (
-    <div className="spectro-horizontal-bars">
+    <>
+      <div className="spectro-horizontal-bars">
       {items.map((item) => (
         <div className="spectro-horizontal-bar-row" key={item.title}>
           <div className="spectro-horizontal-bar-heading">
@@ -291,6 +344,8 @@ function RewatchBars({ items }: { items: Array<{ title: string; viewings: number
         </div>
       ))}
     </div>
+      <ChartDataTable caption="Películas revisionadas y número de sesiones" rows={items.map((item) => ({ label: item.title, value: number(item.viewings) + " sesiones" }))} />
+    </>
   );
 }
 
@@ -332,7 +387,8 @@ function AffinityBars({ analysis }: { analysis: SpectroAnalysis }) {
   if (!all.length) return <EmptyChart>Con tres películas calificadas o más, Espectro podrá empezar a estimar afinidades. Las muestras pequeñas se muestran con cautela.</EmptyChart>;
   const max = Math.max(0.15, ...all.map((item) => Math.abs(item.adjustedDifference)));
   return (
-    <div className="spectro-affinity-chart">
+    <>
+      <div className="spectro-affinity-chart">
       {all.map((item) => (
         <div className="spectro-affinity-chart-row" key={item.key}>
           <div className="spectro-affinity-chart-label">
@@ -357,6 +413,8 @@ function AffinityBars({ analysis }: { analysis: SpectroAnalysis }) {
       ))}
       <p className="spectro-chart-footnote">Diferencia ajustada respecto a tu promedio por título. No equivale a una probabilidad ni demuestra causalidad.</p>
     </div>
+      <ChartDataTable caption="Afinidades ajustadas y respaldo" rows={all.map((item) => ({ label: item.category + ": " + item.label, value: (item.adjustedDifference > 0 ? "+" : "") + item.adjustedDifference.toFixed(2), detail: number(item.sampleSize) + " películas · " + item.confidence }))} />
+    </>
   );
 }
 
