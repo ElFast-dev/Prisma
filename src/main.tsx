@@ -16,7 +16,9 @@ installVitePreloadRecovery();
 // Una nueva versión se anuncia; el usuario decide cuándo recargar la aplicación.
 const updateServiceWorker = registerSW({
   immediate: true,
-  onNeedRefresh: () => pwaUpdateManager.notifyUpdateAvailable()
+  onNeedRefresh: () => pwaUpdateManager.notifyUpdateAvailable(),
+  // Cada pestaña espera confirmación explícita cuando el nuevo SW toma control.
+  onNeedReload: () => pwaUpdateManager.notifyReloadRequired()
 });
 pwaUpdateManager.setUpdateService(updateServiceWorker);
 
