@@ -5,24 +5,35 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { initializeRouteHistory, isPrimaryRoute, recordRouteChange } from "./navigation/routeHistory";
 import { readRouteScrollPosition, saveRouteScrollPosition } from "./navigation/scrollRestoration";
 import { requestAutomaticEnrichment } from "./infrastructure/database/enrichmentService";
+import { clearPreloadRecoveryFlag } from "./infrastructure/pwa/preloadRecovery";
+import { PwaUpdateNotice } from "./components/PwaUpdateNotice";
 
-const DiscoverPage = lazy(() => import("./features/discover/DiscoverPage")
+function loadRoute<T>(loader: () => Promise<T>): Promise<T> {
+  return loader().then((module) => {
+    // Una importación correcta confirma que la aplicación puede cargar recursos
+    // de la versión actual y libera el límite de recuperación anterior.
+    clearPreloadRecoveryFlag();
+    return module;
+  });
+}
+
+const DiscoverPage = lazy(() => loadRoute(() => import("./features/discover/DiscoverPage"))
   .then((module) => ({ default: module.DiscoverPage })));
-const PersonalPage = lazy(() => import("./features/personal/PersonalPages")
+const PersonalPage = lazy(() => loadRoute(() => import("./features/personal/PersonalPages"))
   .then((module) => ({ default: module.PersonalPage })));
-const LibraryPage = lazy(() => import("./features/personal/PersonalPages")
+const LibraryPage = lazy(() => loadRoute(() => import("./features/personal/PersonalPages"))
   .then((module) => ({ default: module.LibraryPage })));
-const HistoryPage = lazy(() => import("./features/personal/PersonalPages")
+const HistoryPage = lazy(() => loadRoute(() => import("./features/personal/PersonalPages"))
   .then((module) => ({ default: module.HistoryPage })));
-const CollectionsPage = lazy(() => import("./features/personal/PersonalPages")
+const CollectionsPage = lazy(() => loadRoute(() => import("./features/personal/PersonalPages"))
   .then((module) => ({ default: module.CollectionsPage })));
-const ProfilePage = lazy(() => import("./features/personal/PersonalPages")
+const ProfilePage = lazy(() => loadRoute(() => import("./features/personal/PersonalPages"))
   .then((module) => ({ default: module.ProfilePage })));
-const SettingsPage = lazy(() => import("./features/settings/SettingsPage")
+const SettingsPage = lazy(() => loadRoute(() => import("./features/settings/SettingsPage"))
   .then((module) => ({ default: module.SettingsPage })));
-const SpectroPage = lazy(() => import("./features/spectro/SpectroPage")
+const SpectroPage = lazy(() => loadRoute(() => import("./features/spectro/SpectroPage"))
   .then((module) => ({ default: module.SpectroPage })));
-const MovieDetailPage = lazy(() => import("./features/movie/MovieDetailPage")
+const MovieDetailPage = lazy(() => loadRoute(() => import("./features/movie/MovieDetailPage"))
   .then((module) => ({ default: module.MovieDetailPage })));
 
 function currentPath(): string {
@@ -239,6 +250,7 @@ export default function App() {
 
   return (
     <div className={showNavigation ? "app-shell has-primary-navigation" : "app-shell"}>
+      <PwaUpdateNotice />
       {!isOnline && (
         <div className="offline-banner" role="status">
           <WifiOff size={16} />

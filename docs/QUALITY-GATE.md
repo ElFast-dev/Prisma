@@ -39,3 +39,12 @@ La instalación y la experiencia real en Android se informan por separado. Chrom
 ## Regla de producto
 
 La hoja de ruta funcional mantiene su prioridad. Las herramientas de calidad se incorporan progresivamente y no adelantan, sustituyen ni bloquean etapas de producto que no dependan de ellas.
+
+
+## Estabilidad de actualización y almacenamiento
+
+Los cambios del ciclo de vida PWA deben usar actualización solicitada por la persona usuaria. La interfaz no debe recargar mientras haya diálogos modales o formularios marcados con cambios sin guardar.
+
+Los fallos de importaciones dinámicas deben tener una recuperación limitada y verificable; no se permiten bucles de recarga.
+
+La inicialización de IndexedDB debe completarse antes de montar las pantallas. Ante un error de apertura, Prisma informa y permite reintentar sin borrar ni reconstruir datos. La suite cubre la coordinación de aperturas, los errores recuperables y las rutas de importación diferida.

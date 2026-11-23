@@ -1401,7 +1401,7 @@ export function CollectionsPage() {
           )}
 
           {createOpen && (
-            <form className="collection-create-panel card-surface" onSubmit={(event) => void handleCreateCollection(event)}>
+            <form className="collection-create-panel card-surface" data-prisma-unsaved="true" onSubmit={(event) => void handleCreateCollection(event)}>
               <div className="section-intro-row">
                 <h2>Nueva colección</h2>
                 <button className="icon-button" type="button" aria-label="Cerrar formulario" onClick={() => setCreateOpen(false)}>
@@ -1606,7 +1606,7 @@ export function CollectionsPage() {
           )}
 
           {editingCollection && (
-            <form className="collection-create-panel card-surface" onSubmit={(event) => void handleSaveCollection(event)}>
+            <form className="collection-create-panel card-surface" data-prisma-unsaved="true" onSubmit={(event) => void handleSaveCollection(event)}>
               <div className="section-intro-row">
                 <div>
                   <h2>Editar colección</h2>
@@ -1835,7 +1835,7 @@ export function ProfilePage() {
 
       {profileError && <p className="form-error profile-error" role="alert">{profileError}</p>}
       {editing && (
-        <form className="profile-edit-panel card-surface" onSubmit={(event) => void handleSaveProfile(event)}>
+        <form className="profile-edit-panel card-surface" data-prisma-unsaved="true" onSubmit={(event) => void handleSaveProfile(event)}>
           <div className="section-intro-row"><h2>Tu identidad</h2><button className="icon-button" type="button" aria-label="Cancelar edición" disabled={saving} onClick={() => { setEditing(false); setProfileError(""); }}><X size={18} /></button></div>
           <div className="profile-edit-avatar-row">
             <div className="avatar-placeholder avatar-large">
