@@ -48,6 +48,9 @@ async function seedSpectroHistory(page: import("@playwright/test").Page): Promis
           movieId: id,
           sequenceNumber: 1,
           watchedOn: date,
+          // Horas deterministas para que el mapa horario tenga datos reales de prueba.
+          watchedAtLocalTime: String(index * 3).padStart(2, "0") + ":15",
+          timeZone: "America/Panama",
           rating,
           createdAt: now,
           updatedAt: now,
