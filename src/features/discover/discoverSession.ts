@@ -118,19 +118,18 @@ export function readDiscoverSession(
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || parsed.version !== 1) return null;
+    if (!isRecord(parsed) || (parsed.version !== 1 && parsed.version !== 2)) return null;
 
     const query = typeof parsed.query === "string" ? parsed.query.slice(0, 200) : "";
     const storedFilters = isRecord(parsed.appliedFilters)
       ? parsed.appliedFilters as Partial<DiscoverFilters>
       : null;
-    // En sesiones anteriores, popularity.desc era el orden implícito.
-    // Ahora se representa como modo Espectro y "Más populares" es una elección explícita.
-    const appliedFilters = normalizeDiscoverFilters(
-      storedFilters?.sortBy === "popularity.desc"
-        ? { ...storedFilters, sortBy: "spectro" }
-        : storedFilters
-    );
+    // La versión 1 usaba popularity.desc como valor predeterminado. Desde la
+    // versión 2 el orden elegido es explícito y no debe reinterpretarse al restaurar.
+    const filtersToRestore = parsed.version === 1 && storedFilters?.sortBy === "popularity.desc"
+      ? { ...storedFilters, sortBy: "spectro" }
+      : storedFilters;
+    const appliedFilters = normalizeDiscoverFilters(filtersToRestore);
     const page = positiveInteger(parsed.page, 1, 500);
     const totalPages = Math.max(page, positiveInteger(parsed.totalPages, 1, 500));
 
@@ -157,7 +156,7 @@ export function writeDiscoverSession(
   if (!storage) return;
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 1,
+      version: 2,
       query: snapshot.query.slice(0, 200),
       appliedFilters: normalizeDiscoverFilters(snapshot.appliedFilters),
       movies: snapshot.movies.slice(0, MAX_SAVED_MOVIES),
