@@ -7,7 +7,6 @@ import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import {
   countActiveDiscoverFilters,
   DEFAULT_DISCOVER_FILTERS,
-  discoverFilterTitleMatch,
   DISCOVER_GENRES,
   DISCOVER_LANGUAGES,
   getDiscoverFilterErrors,
@@ -21,10 +20,10 @@ import {
   getTmdbImageUrl,
   getTrendingMovies,
   searchMovies,
+  getMovieRuntime,
   type TmdbMovieSummary
 } from "../../infrastructure/tmdb/TmdbService";
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
-import { getMovieRuntime } from "../../infrastructure/tmdb/TmdbService";
 import { getDiscoverLibraryStatus } from "../../infrastructure/database/movieRepository";
 import { getSpectroDiscoverRecommendations } from "../../infrastructure/database/spectroRepository";
 import { runWithConcurrency } from "../../domain/asyncPool";
@@ -242,6 +241,28 @@ export function DiscoverPage() {
     }
   }, []);
 
+
+  useEffect(() => {
+    let active = true;
+    if (movies.length > 0) {
+      void Promise.all([
+        getDiscoverLibraryStatus(),
+        getSpectroDiscoverRecommendations(movies)
+      ]).then(([libraryStatus, personalized]) => {
+        if (!active) return;
+        setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
+        setPendingTmdbIds(libraryStatus.pendingTmdbIds);
+        setRecommendations(personalized.recommendations);
+        setSpectroState(personalized.movieCount < 3
+          ? "insufficient"
+          : personalized.recommendations.length ? "ready" : "no-matches");
+      }).catch(() => {
+        if (active) setSpectroState("unavailable");
+      });
+    }
+    return () => { active = false; };
+  }, []);
+
   useEffect(() => {
     const requestedFeedKey = getDiscoverFeedKey(query, appliedFilters);
     if (loadedFeedKeyRef.current === requestedFeedKey) return;
@@ -396,8 +417,9 @@ export function DiscoverPage() {
   }
 
   function clearAppliedFilters() {
-    setAppliedFilters(DEFAULT_DISCOVER_FILTERS);
-    setDraftFilters(DEFAULT_DISCOVER_FILTERS);
+    const cleared = { ...DEFAULT_DISCOVER_FILTERS, hideWatched: false, hidePending: false };
+    setAppliedFilters(cleared);
+    setDraftFilters(cleared);
     setQuery("");
   }
 
@@ -487,8 +509,8 @@ export function DiscoverPage() {
             <EmptyState
               icon={<Search size={25} />}
               title="No encontramos películas"
-              description={filtersActive && query.trim()
-                ? "No hay títulos que coincidan con el texto dentro de esta combinación de filtros. Prueba otro término o amplía los criterios."
+              description={query.trim()
+                ? "No hay títulos que coincidan con esta búsqueda y sus criterios. Prueba otro término o amplía los filtros."
                 : "Prueba otra combinación de filtros o revisa la escritura."}
               action={<button className="button button-secondary" type="button" onClick={clearAppliedFilters}>Limpiar búsqueda y filtros</button>}
             />

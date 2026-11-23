@@ -72,6 +72,8 @@ function restoreMovies(value: unknown): TmdbMovieSummary[] {
       ...(typeof item.backdrop_path === "string" || item.backdrop_path === null ? { backdrop_path: item.backdrop_path } : {}),
       ...(Array.isArray(item.genre_ids) ? { genre_ids: item.genre_ids.filter((id): id is number => Number.isSafeInteger(id)) } : {}),
       ...(typeof item.vote_average === "number" && Number.isFinite(item.vote_average) ? { vote_average: item.vote_average } : {}),
+      ...(typeof item.vote_count === "number" && Number.isFinite(item.vote_count) ? { vote_count: item.vote_count } : {}),
+      ...(typeof item.original_language === "string" ? { original_language: item.original_language.slice(0, 8) } : {}),
       ...(typeof item.popularity === "number" && Number.isFinite(item.popularity) ? { popularity: item.popularity } : {})
     }];
   }).slice(0, MAX_SAVED_MOVIES);
@@ -80,7 +82,9 @@ function restoreMovies(value: unknown): TmdbMovieSummary[] {
 export function getDiscoverFeedKey(query: string, filters: DiscoverFilters): string {
   const normalizedFilters = normalizeDiscoverFilters(filters);
   const normalizedQuery = query.trim().toLocaleLowerCase("es");
-  const { hideWatched: _hideWatched, hidePending: _hidePending, ...catalogFilters } = normalizedFilters;
+  const catalogFilters = { ...normalizedFilters };
+  delete catalogFilters.hideWatched;
+  delete catalogFilters.hidePending;
   const source = normalizedQuery
     ? "search:" + normalizedQuery
     : hasActiveDiscoverFilters(normalizedFilters) ? "discover" : "trending";
