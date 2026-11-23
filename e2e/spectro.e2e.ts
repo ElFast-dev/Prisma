@@ -423,9 +423,19 @@ test("reanuda automáticamente metadatos temporales cuyo plazo de espera ya venc
   });
 
   const requestedPaths: string[] = [];
+  let releaseMetadataRequests: (() => void) | undefined;
+  const metadataRequestGate = new Promise<void>((resolve) => {
+    releaseMetadataRequests = resolve;
+  });
+  let signalFirstMetadataRequest: (() => void) | undefined;
+  const firstMetadataRequest = new Promise<void>((resolve) => {
+    signalFirstMetadataRequest = resolve;
+  });
   await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     requestedPaths.push(pathname);
+    signalFirstMetadataRequest?.();
+    await metadataRequestGate;
     if (pathname.endsWith("/keywords")) {
       await route.fulfill({
         status: 200,
@@ -522,7 +532,9 @@ test("reanuda automáticamente metadatos temporales cuyo plazo de espera ya venc
   });
 
   await page.goto("#/spectro");
+  await firstMetadataRequest;
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
+  releaseMetadataRequests?.();
   await expect(page.getByText("Espectro incorporó metadatos de 1 películas.")).toBeVisible();
   expect(requestedPaths).toContain("/3/movie/987401");
   expect(requestedPaths).toContain("/3/movie/987401/credits");
