@@ -48,3 +48,16 @@ Los cambios del ciclo de vida PWA deben usar actualización solicitada por la pe
 Los fallos de importaciones dinámicas deben tener una recuperación limitada y verificable; no se permiten bucles de recarga.
 
 La inicialización de IndexedDB debe completarse antes de montar las pantallas. Ante un error de apertura, Prisma informa y permite reintentar sin borrar ni reconstruir datos. La suite cubre la coordinación de aperturas, los errores recuperables y las rutas de importación diferida.
+
+
+## Análisis estático de seguridad
+
+El workflow `.github/workflows/codeql.yml` ejecuta CodeQL para JavaScript/TypeScript en Pull Requests, pushes a `main`, semanalmente y bajo demanda.
+
+CodeQL es informativo en esta fase: sus resultados se revisan y se corrigen de acuerdo con su severidad, pero no se añade a los checks obligatorios de protección de `main` sin una decisión independiente. La auditoría de npm sigue siendo un control distinto: CodeQL analiza patrones de seguridad en el código fuente y no sustituye el inventario de dependencias.
+
+## Avisos de dependencias
+
+Los avisos moderados abiertos de `glob` y `minimatch` de la cadena Workbox están documentados en `docs/DEPENDENCY-SECURITY.md` y en el issue #6. El control actual `npm audit --audit-level=high` puede pasar mientras persistan avisos moderados; un resultado verde no significa que el árbol esté libre de avisos.
+
+No se deben forzar cambios incompatibles de dependencias transitivas ni bajar el umbral para ocultar avisos. Cada remediación necesita una solución compatible upstream y validar instalación, build, manifiesto y funcionamiento offline.
