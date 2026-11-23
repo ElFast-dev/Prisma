@@ -20,6 +20,21 @@ export interface DiscoverSessionSnapshot {
   cachedFetchedAt: string;
 }
 
+export type DiscoverSpectroState = "loading" | "insufficient" | "ready" | "no-matches" | "unavailable";
+
+export function getDiscoverSpectroState(movieCount: number, recommendationCount: number): DiscoverSpectroState {
+  if (movieCount < 3) return "insufficient";
+  return recommendationCount > 0 ? "ready" : "no-matches";
+}
+
+/** Una respuesta tardía de otra página no debe degradar recomendaciones ya disponibles. */
+export function preserveDiscoverSpectroReadyState(
+  current: DiscoverSpectroState,
+  next: DiscoverSpectroState
+): DiscoverSpectroState {
+  return current === "ready" && next !== "ready" ? current : next;
+}
+
 interface SessionStorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
