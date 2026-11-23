@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Dependency security audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=low
       - name: TypeScript check
         run: npm run typecheck
       - name: Unit tests
