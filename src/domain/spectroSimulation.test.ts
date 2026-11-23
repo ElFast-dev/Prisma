@@ -146,15 +146,20 @@ function runRecommendationSimulation() {
     })),
     checks: {
       likedSynopsisRanksAboveRejectedSynopsis: Boolean(
-        preferred && rejectedStory && preferred.predictedRating > rejectedStory.predictedRating
+        preferred
+        && rejectedStoryPrediction
+        && preferred.predictedRating > rejectedStoryPrediction.predictedRating
       ),
+      rejectedNarrativeExcluded: !recommendationIds.includes("simulation-rejected-story"),
       sparseInternationalCandidateCanBeRecommended: Boolean(sparse),
       rejectedMetadataCandidateExcluded: !recommendationIds.includes("simulation-rejected-metadata"),
       unrepresentedCandidateExcluded: !recommendationIds.includes("simulation-unrepresented"),
       synopsisPredictionGap: Number((
         (predictions.get("simulation-preferred-complete")?.predictedRating ?? 0)
-        - (predictions.get("simulation-rejected-story")?.predictedRating ?? 0)
-      ).toFixed(2))
+        - (rejectedStoryPrediction?.predictedRating ?? 0)
+      ).toFixed(2)),
+      rejectedStoryPrediction: rejectedStoryPrediction?.predictedRating ?? null,
+      rejectedStoryMaximumSimilarity: rejectedStoryPrediction?.maximumSimilarity ?? null
     }
   };
 }
@@ -169,6 +174,7 @@ describe("simulación reproducible de calidad de Espectro", () => {
     expect(report.candidateCount).toBe(5);
     expect(report.checks.likedSynopsisRanksAboveRejectedSynopsis).toBe(true);
     expect(report.checks.synopsisPredictionGap).toBeGreaterThan(1.5);
+    expect(report.checks.rejectedNarrativeExcluded).toBe(true);
     expect(report.checks.sparseInternationalCandidateCanBeRecommended).toBe(true);
     expect(report.checks.rejectedMetadataCandidateExcluded).toBe(true);
     expect(report.checks.unrepresentedCandidateExcluded).toBe(true);
