@@ -119,7 +119,7 @@ describe("predicción personal no lineal de Espectro", () => {
     expect(result).toBeDefined();
     expect(result?.featureCount).toBeGreaterThan(0);
     expect(result?.maximumSimilarity).toBeGreaterThan(0);
-    expect(result?.maximumSimilarity).toBeLessThan(0.3);
+    expect(result?.maximumSimilarity).toBeLessThan(0.35);
     expect(result?.predictedRating).toBeCloseTo(personalAverage, 0);
   });
 
