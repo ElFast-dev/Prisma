@@ -14,6 +14,8 @@ Prisma debe poder recorrerse sin depender del ratón y respetar las preferencias
 
 e2e/accessibility.e2e.ts verifica el salto al contenido principal, el foco visible, el landmark principal y el respeto a prefers-reduced-motion. Estas pruebas complementan las pruebas E2E responsivas; no constituyen por sí solas una certificación WCAG ni sustituyen pruebas con lectores de pantalla.
 
+Las gráficas complejas deben disponer de una alternativa estructurada. El panel de Espectro ofrece una tabla desplegable con los valores y categorías de cada visualización; la navegación se comprueba en `e2e/spectro.e2e.ts`. Esta mejora no sustituye el recorrido completo con TalkBack.
+
 ## Comprobación manual pendiente en dispositivo
 
 En Android, recorrer la navegación, formularios, diálogos y mapa de Espectro con TalkBack; verificar orden y retorno del foco, anuncios de estados/progreso, zoom del navegador, orientación vertical/horizontal y objetivos táctiles. Registrar el dispositivo, versión de Android/navegador y cualquier incidencia antes de dar por cerrada la revisión física.

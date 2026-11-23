@@ -2,7 +2,7 @@
 
 ## Estado actual: etapas 1–15 completadas
 
-Las etapas 1–15 están completadas. Espectro 2.2 incorpora el mapa cinematográfico y la organización por apartados. CI, E2E móvil, PWA/offline y publicación en GitHub Pages están verificados; la etapa 16.4 permanece abierta únicamente para la revisión visual en un Android físico.
+Las etapas 1–15 están completadas. Espectro 2.6 ofrece un panel local de seis apartados, un predictor RBF y descubrimiento de interacciones con evidencia. CI, E2E, PWA/offline y publicación en GitHub Pages están automatizados; la etapa 16.4 conserva pendiente únicamente la comprobación física con TalkBack y la revisión táctil en Android.
 
 - [x] Repositorio público inicializado.
 - [x] Configuración React, TypeScript y Vite.
@@ -53,11 +53,13 @@ Las etapas 1–15 están completadas. Espectro 2.2 incorpora el mapa cinematogr�
     - [x] Zonas atenuadas para películas locales por explorar; selección, búsqueda y zoom del mapa táctil.
     - [x] Portada de Espectro organizada como Personal, con páginas separadas de mapa, afinidades, evolución y recomendaciones.
     - [x] Palabras clave temáticas consultadas y guardadas con caché TMDB local, sin abrir fichas ni inventar etiquetas.
+    - [x] Alternativas tabulares desplegables para gráficas complejas, con prueba E2E de acceso a los datos.
     - [x] Validar pruebas unitarias, TypeScript, build, smoke test, Playwright móvil y PWA/offline en CI.
     - [x] Publicar en GitHub Pages y verificar en remoto el HTML, JavaScript, CSS y manifiesto PWA.
     - [ ] Revisar manualmente el mapa en un Android físico: legibilidad, contraste, zoom, desplazamiento táctil y actualización de la PWA instalada.
 - [ ] 17. Optimización integral.
   - [x] 17.1 Presupuesto informativo del JS/CSS iniciales y de los chunks diferidos, medido tras compresión gzip y ejecutado en CI.
+  - [x] 17.2 Alternativas tabulares accesibles para las gráficas de Espectro.
 
 Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
 
