@@ -194,7 +194,7 @@ const structuredFeatures = (movie: MovieRecord): Set<string> => {
 
 const overviewTerms = (overview: string | undefined): Map<string, number> => {
   const normalized = normalizeText(overview ?? "");
-  const tokens = (normalized.match(/[\\p{L}\\p{N}_]{2,}/gu) ?? [])
+  const tokens = (normalized.match(/[\p{L}\p{M}\p{N}_]{2,}/gu) ?? [])
     .filter((token) => !STOPWORDS.has(token));
   const terms = new Map<string, number>();
 
