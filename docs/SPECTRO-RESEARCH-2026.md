@@ -59,7 +59,7 @@ Para Prisma, esto impone una limitación importante: el aprendizaje es de un ún
 
 La evaluación de una nota predicha y la evaluación de una lista ordenada responden a preguntas distintas. Para las notas deben medirse MAE y RMSE; para una lista, métricas top-K como NDCG, Recall o Hit Rate. Revisiones de métricas de recomendación separan utilidad, novedad, diversidad, inesperado/serendipia y medidas dependientes del usuario. <https://link.springer.com/article/10.1007/s13042-017-0762-9> · <https://pmc.ncbi.nlm.nih.gov/articles/PMC10073543/>
 
-La exactitud no basta para una experiencia cinematográfica. La diversificación puede reducir redundancia entre películas, pero el equilibrio con relevancia es una decisión multiobjetivo, no una mejora gratuita. La literatura advierte que diversidad, novedad, cobertura y serendipia no son equivalentes ni necesariamente correlacionan. <https://doi.org/10.1016/j.knosys.2017.02.009> · <https://www.sciencedirect.com/science/article/pii/S0950705117300680>
+La exactitud no basta para una experiencia cinematográfica. La diversificación puede reducir redundancia entre películas, pero el equilibrio con relevancia es una decisión multiobjetivo, no una mejora gratuita. La literatura advierte que diversidad, novedad, cobertura y serendipia no son equivalentes ni necesariamente correlacionan. En un estudio de RecSys 2025 sobre cómo las personas interpretan los objetivos, más del 30 % confundió diversidad y novedad con exploración; por eso Prisma debe explicar las opciones con lenguaje concreto, no asumir que esas etiquetas son autoexplicativas. <https://doi.org/10.1145/3705328.3748066> <https://doi.org/10.1016/j.knosys.2017.02.009> · <https://www.sciencedirect.com/science/article/pii/S0950705117300680>
 
 En 2026 se propuso BIG-PU, una medida de exploración basada en información de preferencia, evaluada en tres conjuntos de datos. Es una línea interesante para comparar exploración, pero no justifica incorporar esa métrica sin definir primero qué significa explorar en la biblioteca concreta y sin un conjunto fiable de juicios futuros. <https://doi.org/10.1016/j.eswa.2025.131077>
 
@@ -89,7 +89,7 @@ Transformers.js puede ejecutar modelos ONNX en el navegador, normalmente con WAS
 
 La revisión de sistemas de recomendación explicables de Zhang y Chen diferencia explicaciones directamente interpretables de explicaciones post-hoc. Para Espectro, los motivos más seguros son rasgos reales, contribuciones trazables y películas concretas que respaldan cada afinidad. <https://doi.org/10.1561/1500000066>
 
-Una explicación generada por un LLM puede sonar convincente sin reproducir fielmente el cálculo. Las revisiones recientes sobre explicación mediante LLM señalan que la evidencia aplicada todavía es incipiente; no existe razón para enviar historial local a un modelo externo ni para añadir texto generado como si fuera evidencia del predictor. <https://www.frontiersin.org/journals/big-data/articles/10.3389/fdata.2025.1513055/full>
+Una explicación generada por un LLM puede sonar convincente sin reproducir fielmente el cálculo. Las revisiones recientes sobre explicación mediante LLM señalan que la evidencia aplicada todavía es incipiente; no existe razón para enviar historial local a un modelo externo ni para añadir texto generado como si fuera evidencia del predictor. <https://pmc.ncbi.nlm.nih.gov/articles/PMC11808143/>
 
 ### 2.8 Accesibilidad y visualización
 
@@ -164,3 +164,4 @@ El navegador guarda IndexedDB y Cache Storage en modo best-effort por defecto; e
 19. ONNX Runtime Web, documentación de ejecución y backends. https://onnxruntime.ai/docs/tutorials/web/
 20. Google, *Understanding Core Web Vitals*. https://developers.google.com/search/docs/appearance/core-web-vitals
 21. MDN, *Storage quotas and eviction criteria*. https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria
+22. (RecSys 2025), *How Do Users Perceive Recommender Systems’ Objectives?* Estudio sobre la interpretación de relevancia, diversidad, novedad y exploración. https://doi.org/10.1145/3705328.3748066
