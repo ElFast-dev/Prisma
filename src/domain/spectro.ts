@@ -1026,9 +1026,9 @@ function buildRecommendations(
     const hasDeclaredFavorite = accumulators.some((item) => item.reason.source === "favoritos");
     // Una afinidad estructurada positiva no debe sobreponerse a evidencia comparable
     // que predice una nota materialmente inferior al promedio personal. La puerta
-    // se desactiva con evidencia débil o con un favorito explícito.
+    // se desactiva con evidencia débil (p. ej., una coincidencia aislada) o con un favorito explícito.
     const hasReliableNegativePrediction = modelPrediction !== undefined
-      && modelPrediction.maximumSimilarity >= 0.25
+      && modelPrediction.maximumSimilarity >= 0.4
       && predictedRating < overallAverage - 0.25;
     if (hasReliableNegativePrediction && !hasDeclaredFavorite) continue;
 
