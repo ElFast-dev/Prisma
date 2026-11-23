@@ -250,6 +250,16 @@ export default function App() {
 
   return (
     <div className={showNavigation ? "app-shell has-primary-navigation" : "app-shell"}>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
+        Saltar al contenido principal
+      </a>
       <PwaUpdateNotice />
       {!isOnline && (
         <div className="offline-banner" role="status">
@@ -257,7 +267,11 @@ export default function App() {
           <span>Sin conexión · Prisma mostrará los datos disponibles en este dispositivo.</span>
         </div>
       )}
-      <main className={showNavigation ? "main-content with-navigation" : "main-content"}>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={showNavigation ? "main-content with-navigation" : "main-content"}
+      >
         <AppErrorBoundary key={path}>
           <Suspense fallback={<RouteLoadingFallback path={path} />}>
             {page}
