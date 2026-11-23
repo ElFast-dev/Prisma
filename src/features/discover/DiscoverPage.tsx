@@ -125,6 +125,8 @@ export function DiscoverPage() {
     restoredSession?.appliedFilters ?? DEFAULT_DISCOVER_FILTERS
   );
   const [movies, setMovies] = useState<TmdbMovieSummary[]>(restoredSession?.movies ?? []);
+  const moviesRef = useRef(movies);
+  moviesRef.current = movies;
   const [recommendations, setRecommendations] = useState<SpectroRecommendation[]>([]);
   const [spectroState, setSpectroState] = useState<DiscoverSpectroState>("loading");
   const [watchedTmdbIds, setWatchedTmdbIds] = useState<number[]>([]);
@@ -278,14 +280,20 @@ export function DiscoverPage() {
     let active = true;
     const sessionRequest = requestId.current;
     const sessionFeedKey = loadedFeedKeyRef.current;
-    if (movies.length > 0) {
+    const sessionMovies = movies;
+    if (sessionMovies.length > 0) {
       void Promise.all([
         getDiscoverLibraryStatus(),
-        getSpectroDiscoverRecommendations(movies)
+        getSpectroDiscoverRecommendations(sessionMovies)
       ]).then(([libraryStatus, personalized]) => {
         // La sesión restaurada solo puede completar su propio feed, nunca una
-        // búsqueda más reciente iniciada mientras se calculaba Espectro.
-        if (!active || sessionRequest !== requestId.current || sessionFeedKey !== loadedFeedKeyRef.current) return;
+        // búsqueda o página más reciente iniciada mientras se calculaba Espectro.
+        if (
+          !active
+          || sessionRequest !== requestId.current
+          || sessionFeedKey !== loadedFeedKeyRef.current
+          || moviesRef.current !== sessionMovies
+        ) return;
         setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
         setPendingTmdbIds(libraryStatus.pendingTmdbIds);
         setRecommendations(rankSpectroRecommendations(personalized.recommendations));
@@ -295,7 +303,12 @@ export function DiscoverPage() {
         );
         setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
       }).catch(() => {
-        if (active && sessionRequest === requestId.current && sessionFeedKey === loadedFeedKeyRef.current) {
+        if (
+          active
+          && sessionRequest === requestId.current
+          && sessionFeedKey === loadedFeedKeyRef.current
+          && moviesRef.current === sessionMovies
+        ) {
           setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
         }
       });
