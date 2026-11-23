@@ -10,6 +10,7 @@ import {
   DISCOVER_GENRES,
   DISCOVER_LANGUAGES,
   getDiscoverFilterErrors,
+  filterDiscoverLibraryVisibility,
   hasActiveDiscoverFilters,
   normalizeDiscoverFilters,
   type DiscoverFilters
@@ -160,14 +161,12 @@ export function DiscoverPage() {
       - (ranking.get(right.id) ?? Number.MAX_SAFE_INTEGER)
     ));
   }, [movies, recommendations, appliedFilters.sortBy]);
-  const visibleMovies = useMemo(() => {
-    const watched = new Set(watchedTmdbIds);
-    const pending = new Set(pendingTmdbIds);
-    return rankedMovies.filter((movie) => (
-      !(appliedFilters.hideWatched && watched.has(movie.id))
-      && !(appliedFilters.hidePending && pending.has(movie.id))
-    ));
-  }, [rankedMovies, watchedTmdbIds, pendingTmdbIds, appliedFilters.hideWatched, appliedFilters.hidePending]);
+  const visibleMovies = useMemo(() => filterDiscoverLibraryVisibility(
+    rankedMovies,
+    new Set(watchedTmdbIds),
+    new Set(pendingTmdbIds),
+    appliedFilters
+  ), [rankedMovies, watchedTmdbIds, pendingTmdbIds, appliedFilters.hideWatched, appliedFilters.hidePending]);
   const activeFilterChips = useMemo(() => {
     const chips: { key: string; label: string }[] = [];
     const genre = DISCOVER_GENRES.find((item) => String(item.id) === appliedFilters.genreId);
