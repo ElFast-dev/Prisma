@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clearPreloadRecoveryFlag,
+  hasPendingUserWork,
   shouldReloadAfterPreloadError,
   type SessionStorageLike
 } from "./preloadRecovery";
@@ -36,6 +37,11 @@ describe("preload recovery", () => {
     clearPreloadRecoveryFlag(storage);
 
     expect(shouldReloadAfterPreloadError(storage, 100_001)).toBe(true);
+  });
+
+  it("detects modal forms and ongoing local data operations as reload blockers", () => {
+    expect(hasPendingUserWork({ querySelector: () => ({}) as Element })).toBe(true);
+    expect(hasPendingUserWork({ querySelector: () => null })).toBe(false);
   });
 
   it("falls back to the error boundary when session storage cannot be read or written", () => {
