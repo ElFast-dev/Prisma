@@ -161,7 +161,8 @@ describe("filterLibraryItems", () => {
       myRatingMin: "8",
       myRatingMax: "9"
     };
-    expect(filterLibraryItems(library, filters).map((x) => x.movie.id)).toEqual(["movie-1", "movie-3"]);
+    expect(filterLibraryItems(library, { ...filters, sort: "title", sortDirection: "asc" }).map((x) => x.movie.id))
+      .toEqual(["movie-3", "movie-1", "movie-5"]);
     expect(filterLibraryItems(library, { ...filters, runtimeMin: "125", myRatingMin: "9.5" })).toEqual([]);
   });
 

@@ -16,11 +16,17 @@ class MemoryStorage {
 }
 
 describe("Discover session", () => {
-  it("reuses filtered catalog pages when only the local title search changes", () => {
+  it("keeps the query in the feed key so TMDB performs a real text search", () => {
     const filters = { ...DEFAULT_DISCOVER_FILTERS, genreId: "18" };
-    expect(getDiscoverFeedKey("prisma", filters)).toBe(getDiscoverFeedKey("otra", filters));
+    expect(getDiscoverFeedKey("prisma", filters)).not.toBe(getDiscoverFeedKey("otra", filters));
     expect(getDiscoverFeedKey("prisma", DEFAULT_DISCOVER_FILTERS))
       .not.toBe(getDiscoverFeedKey("otra", DEFAULT_DISCOVER_FILTERS));
+  });
+
+  it("does not reload TMDB when only local watched/pending visibility changes", () => {
+    const filters = { ...DEFAULT_DISCOVER_FILTERS, genreId: "18" };
+    expect(getDiscoverFeedKey("prisma", filters))
+      .toBe(getDiscoverFeedKey("prisma", { ...filters, hideWatched: false, hidePending: false }));
   });
 
   it("restores applied filters, search text, pagination and loaded titles", () => {

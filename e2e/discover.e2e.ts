@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-async function configureTmdbMock(page: import("@playwright/test").Page): Promise<{ discoverRequests: URL[] }> {
+async function configureTmdbMock(page: import("@playwright/test").Page): Promise<{ discoverRequests: URL[]; searchRequests: URL[] }> {
   const discoverRequests: URL[] = [];
+  const searchRequests: URL[] = [];
   await page.addInitScript(() => {
     localStorage.setItem("prisma.tmdb.accessToken", "test-discover-token");
   });
@@ -79,6 +80,32 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
       });
       return;
     }
+    if (url.pathname === "/3/search/movie") {
+      searchRequests.push(url);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          page: Number(url.searchParams.get("page") ?? "1"),
+          total_pages: 1,
+          total_results: 1,
+          results: [{
+            id: 101,
+            title: "Prisma: una historia",
+            original_title: "Prisma Story",
+            overview: "Sinopsis de prueba.",
+            release_date: "2020-01-01",
+            poster_path: null,
+            genre_ids: [18],
+            vote_average: 8,
+            vote_count: 900,
+            original_language: "ja",
+            popularity: 20
+          }]
+        })
+      });
+      return;
+    }
     if (url.pathname === "/3/discover/movie") {
       discoverRequests.push(url);
       await route.fulfill({
@@ -98,11 +125,11 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
     }
     await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ status_message: "Unexpected test endpoint" }) });
   });
-  return { discoverRequests };
+  return { discoverRequests, searchRequests };
 }
 
 test("filtra Descubrir por género, duración, año, valoración, idioma y orden", async ({ page }) => {
-  const { discoverRequests } = await configureTmdbMock(page);
+  const { discoverRequests, searchRequests } = await configureTmdbMock(page);
   await page.goto("#/discover");
   await expect(page.locator("#discover-search")).toBeVisible();
 
@@ -135,8 +162,10 @@ test("filtra Descubrir por género, duración, año, valoración, idioma y orden
   expect(params.get("sort_by")).toBe("vote_average.desc");
   await expect(page.getByRole("button", { name: "Abrir filtros" })).toHaveAttribute("aria-pressed", "true");
 
-  // Cuando hay filtros activos, el texto reduce los resultados de esa búsqueda filtrada.
+  // La búsqueda textual consulta TMDB y combina después los filtros avanzados.
   await page.locator("#discover-search").fill("prisma");
+  await expect.poll(() => searchRequests.length).toBe(1);
+  expect(searchRequests[0].searchParams.get("query")).toBe("prisma");
   await expect(page.locator(".poster-card")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Abrir ficha de Otra historia" })).toHaveCount(0);
@@ -180,6 +209,22 @@ test("muestra dos columnas de pósteres en móvil", async ({ page }) => {
   expect(second!.x).toBeGreaterThan(first!.x);
 });
 
+
+test("permite ocultar por separado las películas vistas y pendientes", async ({ page }) => {
+  await configureTmdbMock(page);
+  await page.goto("#/discover");
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  const watched = dialog.getByLabel("Ocultar películas que ya vi");
+  const pending = dialog.getByLabel("Ocultar películas pendientes");
+  await expect(watched).toBeChecked();
+  await expect(pending).toBeChecked();
+  await watched.uncheck();
+  await expect(watched).not.toBeChecked();
+  await expect(pending).toBeChecked();
+  await pending.uncheck();
+  await expect(pending).not.toBeChecked();
+});
 
 test("mantiene el foco dentro de los filtros y lo devuelve al cerrarlos", async ({ page }) => {
   await configureTmdbMock(page);
