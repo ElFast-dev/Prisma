@@ -98,31 +98,61 @@ function viewing(movie: MovieRecord, index: number, rating: number): Viewing {
 }
 
 function runRecommendationSimulation() {
-  const training = [
-    ...Array.from({ length: 8 }, (_, index) => ({
-      movie: ratedMovie(index, "preferred"),
-      rating: 9
-    })),
-    ...Array.from({ length: 8 }, (_, index) => ({
-      movie: ratedMovie(index, "rejected"),
-      rating: 3
-    }))
-  ];
+  const training = Array.from({ length: 8 }, (_, index) => [
+    { movie: ratedMovie(index, "preferred"), rating: 9 },
+    { movie: ratedMovie(index, "rejected"), rating: 3 }
+  ]).flat();
   const candidates = [
     candidate("simulation-preferred-complete", "Memoria entre generaciones", "preferred", "complete"),
     candidate("simulation-rejected-story", "Una guerra sin descanso", "rejected", "complete"),
     candidate("simulation-preferred-sparse", "La memoria de una comunidad", "preferred", "sparse"),
     candidate("simulation-rejected-metadata", "Acción y venganza", "rejected", "unrepresented"),
-    candidate("simulation-unrepresented", "El observatorio remoto", "unknown", "unrepresented")
+    candidate("simulation-unrepresented", "El observatorio remoto", "unknown", "unrepresented"),
+    {
+      ...candidate("simulation-favorite-override", "Una historia bélica favorita", "rejected", "complete"),
+      genres: ["Aventura"],
+      genreIds: [12],
+      countries: ["México"],
+      directors: ["Dirección favorita explícita"],
+      castMembers: ["Reparto favorito explícito"],
+      originalLanguage: "ko",
+      releaseYear: 1995,
+      runtimeMinutes: 160
+    }
   ];
+  const favoriteAnchor: MovieRecord = {
+    ...candidates[candidates.length - 1],
+    id: "simulation-favorite-anchor",
+    tmdbId: 882000,
+    title: "Favorito declarado",
+    overview: "Una familia encuentra una comunidad perdida y protege su memoria."
+  };
   const viewings = training.map((item, index) => viewing(item.movie, index, item.rating));
   const analysis = analyzeSpectro({
-    movies: training.map((item) => item.movie),
+    movies: [...training.map((item) => item.movie), favoriteAnchor],
     viewings,
     candidates,
+    favoriteMovieIds: [favoriteAnchor.id],
     computedAt: FIXTURE_TIME
   });
   const predictions = predictSpectroMovies(training, candidates);
+  const holdoutTraining = training.slice(0, 12);
+  const holdout = training.slice(12);
+  const holdoutPredictions = predictSpectroMovies(
+    holdoutTraining,
+    holdout.map((item) => item.movie)
+  );
+  const holdoutAbsoluteErrors = holdout.map((item) => Math.abs(
+    (holdoutPredictions.get(item.movie.id)?.predictedRating ?? 0) - item.rating
+  ));
+  const holdoutMae = holdoutAbsoluteErrors.reduce((sum, error) => sum + error, 0)
+    / holdoutAbsoluteErrors.length;
+  const holdoutBaselineRating = holdoutTraining.reduce((sum, item) => sum + item.rating, 0)
+    / holdoutTraining.length;
+  const holdoutBaselineMae = holdout.reduce(
+    (sum, item) => sum + Math.abs(holdoutBaselineRating - item.rating),
+    0
+  ) / holdout.length;
   const recommendationIds = analysis.recommendations.map((item) => item.movie.id);
   const preferred = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-preferred-complete"
@@ -131,11 +161,24 @@ function runRecommendationSimulation() {
   const sparse = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-preferred-sparse"
   );
+  const favoriteOverride = analysis.recommendations.find(
+    (item) => item.movie.id === "simulation-favorite-override"
+  );
+  const favoriteOverridePrediction = predictions.get("simulation-favorite-override");
 
   return {
     algorithmVersion: analysis.algorithmVersion,
     ratedMovies: analysis.movieCount,
     candidateCount: candidates.length,
+    holdout: {
+      trainingMovies: holdoutTraining.length,
+      heldOutMovies: holdout.length,
+      modelMae: Number(holdoutMae.toFixed(2)),
+      meanBaselineMae: Number(holdoutBaselineMae.toFixed(2)),
+      noMovieIdOverlap: holdout.every((item) => (
+        !holdoutTraining.some((trainingItem) => trainingItem.movie.id === item.movie.id)
+      ))
+    },
     recommendations: analysis.recommendations.map((item) => ({
       title: item.movie.title,
       predictedRating: item.predictedRating,
@@ -149,6 +192,13 @@ function runRecommendationSimulation() {
         && preferred.predictedRating > rejectedStoryPrediction.predictedRating
       ),
       rejectedNarrativeExcluded: !recommendationIds.includes("simulation-rejected-story"),
+      explicitFavoriteOverridesNegativePrediction: Boolean(
+        favoriteOverride
+        && favoriteOverridePrediction
+        && favoriteOverridePrediction.maximumSimilarity >= 0.4
+        && favoriteOverridePrediction.predictedRating < (analysis.averageRating ?? 10) - 0.25
+        && favoriteOverride.confidence === "declarada"
+      ),
       sparseInternationalCandidateCanBeRecommended: Boolean(sparse),
       rejectedMetadataCandidateExcluded: !recommendationIds.includes("simulation-rejected-metadata"),
       unrepresentedCandidateExcluded: !recommendationIds.includes("simulation-unrepresented"),
@@ -169,10 +219,15 @@ describe("simulación reproducible de calidad de Espectro", () => {
 
     expect(report.algorithmVersion).toBe("2.8.0");
     expect(report.ratedMovies).toBe(16);
-    expect(report.candidateCount).toBe(5);
+    expect(report.candidateCount).toBe(6);
+    expect(report.holdout.trainingMovies).toBe(12);
+    expect(report.holdout.heldOutMovies).toBe(4);
+    expect(report.holdout.noMovieIdOverlap).toBe(true);
+    expect(report.holdout.modelMae).toBeLessThan(report.holdout.meanBaselineMae);
     expect(report.checks.likedSynopsisRanksAboveRejectedSynopsis).toBe(true);
     expect(report.checks.synopsisPredictionGap).toBeGreaterThan(1.5);
     expect(report.checks.rejectedNarrativeExcluded).toBe(true);
+    expect(report.checks.explicitFavoriteOverridesNegativePrediction).toBe(true);
     expect(report.checks.sparseInternationalCandidateCanBeRecommended).toBe(true);
     expect(report.checks.rejectedMetadataCandidateExcluded).toBe(true);
     expect(report.checks.unrepresentedCandidateExcluded).toBe(true);
