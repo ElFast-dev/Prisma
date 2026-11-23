@@ -368,18 +368,29 @@ export function DiscoverPage() {
         : useFilters
           ? await discoverMovies(token, appliedFilters, nextPage)
           : await getTrendingMovies(token, nextPage);
-      const result = query.trim() && useFilters
-        ? { ...rawResult, movies: await filterSearchResults(token, rawResult.movies, appliedFilters) }
-        : rawResult;
+      const existingIds = new Set(movies.map((movie) => movie.id));
+      const newPageIds = new Set(rawResult.movies
+        .filter((movie) => !existingIds.has(movie.id))
+        .map((movie) => movie.id));
+      const seenIds = new Set<number>();
+      const mergedSummaries = [...movies, ...rawResult.movies].filter((movie) => {
+        if (seenIds.has(movie.id)) return false;
+        seenIds.add(movie.id);
+        return true;
+      });
+      // /search/movie no admite todos los criterios de ordenación de Descubrir.
+      // Reaplicamos filtros y orden sobre todo lo cargado para que añadir páginas
+      // no mezcle bloques ordenados de forma independiente.
+      const mergedMovies = query.trim() && useFilters
+        ? await filterSearchResults(token, mergedSummaries, appliedFilters)
+        : mergedSummaries;
       if (currentRequest !== requestId.current) return;
+      const newPageMovies = mergedMovies.filter((movie) => newPageIds.has(movie.id));
       // Una página que ya llegó invalida el cálculo de la instantánea restaurada.
       // Así no puede reemplazar recomendaciones que se hayan calculado después.
       feedRevisionRef.current += 1;
-      setMovies((current) => {
-        const seen = new Set(current.map((movie) => movie.id));
-        return [...current, ...result.movies.filter((movie) => !seen.has(movie.id))];
-      });
-      void getSpectroDiscoverRecommendations(result.movies).then((personalized) => {
+      setMovies(mergedMovies);
+      void getSpectroDiscoverRecommendations(newPageMovies).then((personalized) => {
         if (currentRequest !== requestId.current) return;
         setRecommendations((current) => {
           const merged = new Map(current.map((item) => [item.movie.tmdbId, item]));
@@ -409,7 +420,7 @@ export function DiscoverPage() {
     } finally {
       if (currentRequest === requestId.current) setLoadingMore(false);
     }
-  }, [appliedFilters, loadingMore, page, query, state, totalPages]);
+  }, [appliedFilters, loadingMore, movies, page, query, state, totalPages]);
 
   useEffect(() => {
     const target = sentinelRef.current;
