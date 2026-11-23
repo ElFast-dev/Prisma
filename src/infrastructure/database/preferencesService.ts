@@ -41,6 +41,19 @@ function normalizeHistoryFilters(
   let toDate = typeof current?.toDate === "string"
     && /^\d{4}-\d{2}-\d{2}$/.test(current.toDate) ? current.toDate : "";
   if (fromDate && toDate && fromDate > toDate) toDate = "";
+  const normalizeRating = (value: unknown) => {
+    if (typeof value !== "string" || value.trim() === "") return "";
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 1 && parsed <= 10
+      ? String(Math.round(parsed * 2) / 2)
+      : "";
+  };
+  let ratingMin = normalizeRating(current?.ratingMin);
+  let ratingMax = normalizeRating(current?.ratingMax);
+  if (ratingMin && ratingMax && Number(ratingMin) > Number(ratingMax)) {
+    ratingMin = "";
+    ratingMax = "";
+  }
 
   return {
     query: typeof current?.query === "string" ? current.query : "",
@@ -50,6 +63,8 @@ function normalizeHistoryFilters(
     rating: current?.rating === "9-10" || current?.rating === "7-8" || current?.rating === "1-6"
       ? current.rating
       : "all",
+    ratingMin,
+    ratingMax,
     fromDate,
     toDate
   };

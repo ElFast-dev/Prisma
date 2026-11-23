@@ -112,6 +112,8 @@ export interface HistoryFiltersPreferences {
   query: string;
   notes: "all" | "with-notes" | "without-notes";
   rating: "all" | "9-10" | "7-8" | "1-6";
+  ratingMin: string;
+  ratingMax: string;
   fromDate: string;
   toDate: string;
 }

@@ -13,6 +13,8 @@ export interface HistoryFilters {
   query: string;
   notes: HistoryNotesFilter;
   rating: HistoryRatingFilter;
+  ratingMin: string;
+  ratingMax: string;
   fromDate: string;
   toDate: string;
 }
@@ -122,6 +124,10 @@ export function filterHistoryItems(
     if (filters.rating === "9-10" && viewing.rating! < 9) return false;
     if (filters.rating === "7-8" && (viewing.rating! < 7 || viewing.rating! > 8)) return false;
     if (filters.rating === "1-6" && viewing.rating! > 6) return false;
+    const minimumRating = filters.ratingMin ? Number(filters.ratingMin) : undefined;
+    const maximumRating = filters.ratingMax ? Number(filters.ratingMax) : undefined;
+    if (minimumRating !== undefined && (viewing.rating === undefined || viewing.rating < minimumRating)) return false;
+    if (maximumRating !== undefined && (viewing.rating === undefined || viewing.rating > maximumRating)) return false;
 
     if (filters.fromDate && viewing.watchedOn < filters.fromDate) return false;
     if (filters.toDate && viewing.watchedOn > filters.toDate) return false;
