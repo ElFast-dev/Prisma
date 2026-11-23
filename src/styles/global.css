@@ -23,9 +23,35 @@ button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; }
 a { color: inherit; text-decoration: none; }
-button:focus-visible, a:focus-visible, input:focus-visible {
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
+}
+
+/* Permite saltar la navegación repetida con teclado o tecnologías de apoyo. */
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 12px;
+  transform: translateY(calc(-100% - 16px));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  padding: 11px 14px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
 }
 button:disabled { cursor: not-allowed; opacity: .48; }
 
