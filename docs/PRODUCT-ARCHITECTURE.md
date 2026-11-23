@@ -159,6 +159,8 @@ El propietario ha solicitado evaluar redes neuronales cuando puedan demostrar un
 
 No se entrenará una red compleja desde cero con una muestra personal pequeña.
 
+**Implementación actual · Espectro 2.7.0.** El predictor local utiliza Kernel Ridge con kernel RBF y características estructuradas (géneros, país, dirección, reparto, idioma, época y duración), combinadas con TF-IDF de sinopsis. El vocabulario textual se ajusta solo con películas calificadas; no se incorporan embeddings multilingües ni comprensión semántica de sinopsis. El kernel parte de similitud cero cuando no hay rasgos compartidos y la desviación de la nota se contrae según la similitud del vecino más cercano. Por tanto, las candidatas con pocos metadatos mantienen una estimación próxima al promedio personal en vez de recibir un ajuste optimista sin respaldo. Las valoraciones previstas siguen siendo estimaciones, no probabilidades.
+
 ### 5.2 Validación
 
 - Usar validación temporal cuando las fechas permitan ordenar correctamente las observaciones.
