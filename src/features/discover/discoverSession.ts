@@ -106,8 +106,15 @@ export function readDiscoverSession(
     if (!isRecord(parsed) || parsed.version !== 1) return null;
 
     const query = typeof parsed.query === "string" ? parsed.query.slice(0, 200) : "";
+    const storedFilters = isRecord(parsed.appliedFilters)
+      ? parsed.appliedFilters as Partial<DiscoverFilters>
+      : null;
+    // En sesiones anteriores, popularity.desc era el orden implícito.
+    // Ahora se representa como modo Espectro y "Más populares" es una elección explícita.
     const appliedFilters = normalizeDiscoverFilters(
-      isRecord(parsed.appliedFilters) ? parsed.appliedFilters as Partial<DiscoverFilters> : null
+      storedFilters?.sortBy === "popularity.desc"
+        ? { ...storedFilters, sortBy: "spectro" }
+        : storedFilters
     );
     const page = positiveInteger(parsed.page, 1, 500);
     const totalPages = Math.max(page, positiveInteger(parsed.totalPages, 1, 500));
