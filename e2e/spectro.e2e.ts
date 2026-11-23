@@ -130,6 +130,13 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await expect(monthlyDataTable).toBeVisible();
   await expect(monthlyDataTable.getByRole("columnheader", { name: "Categoría" })).toBeVisible();
   await expect(monthlyDataTable.getByRole("columnheader", { name: "Valor" })).toBeVisible();
+
+  const libraryChartCard = page.locator(".spectro-chart-card").filter({ has: page.getByRole("heading", { name: "Estado de la Biblioteca" }) });
+  await libraryChartCard.getByText("Ver datos de la gráfica en tabla").click();
+  const libraryDataTable = libraryChartCard.locator(".spectro-chart-data-table");
+  await expect(libraryDataTable).toBeVisible();
+  await expect(libraryDataTable.getByRole("columnheader", { name: "Detalle" })).toBeVisible();
+
   await expect(page.locator(".spectro-analytics-section-heading")).toHaveCount(0);
   await expect(page.getByText("Las cifras principales y una vista de todo tu historial.")).toHaveCount(0);
   await expect(page.getByText("Una pregunta para afinar tu perfil")).toHaveCount(0);
@@ -137,6 +144,12 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await page.getByRole("tab", { name: /Actividad/ }).click();
   await expect(page.getByRole("heading", { name: "Visionados por mes" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Visionados por día y hora" })).toBeVisible();
+  const weekdayCard = page.locator(".spectro-chart-card").filter({ has: page.getByRole("heading", { name: "Días de la semana" }) });
+  await weekdayCard.getByText("Ver datos de la gráfica en tabla").click();
+  const weekdayTable = weekdayCard.locator(".spectro-chart-data-table");
+  await expect(weekdayTable).toBeVisible();
+  await expect(weekdayTable.getByRole("row", { name: /Domingo/ })).toBeVisible();
+
   const heatmapCard = page.locator(".spectro-chart-card").filter({ has: page.getByRole("heading", { name: "Visionados por día y hora" }) });
   await heatmapCard.getByText("Ver datos de la gráfica en tabla").click();
   const heatmapTable = heatmapCard.locator(".spectro-chart-data-table");
@@ -145,6 +158,11 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
 
   await page.getByRole("tab", { name: /Calificaciones/ }).click();
   await expect(page.getByRole("heading", { name: "Distribución de calificaciones" }).first()).toBeVisible();
+  const ratingCard = page.locator(".spectro-chart-card").filter({ has: page.getByRole("heading", { name: "Distribución de calificaciones" }) });
+  await ratingCard.getByText("Ver datos de la gráfica en tabla").click();
+  const ratingTable = ratingCard.locator(".spectro-chart-data-table");
+  await expect(ratingTable).toBeVisible();
+  await expect(ratingTable.getByRole("row", { name: /10\/10/ })).toBeVisible();
   await expect(page.locator(".spectro-rating-column")).toHaveCount(10);
   await expect(page.getByRole("heading", { name: "Revisionados" })).toBeVisible();
 
