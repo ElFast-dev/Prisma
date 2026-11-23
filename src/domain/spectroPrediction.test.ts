@@ -235,4 +235,69 @@ describe("predicción personal no lineal de Espectro", () => {
   it("no entrena un modelo cuando no hay candidatas que clasificar", () => {
     expect(predictSpectroMovies(trainingMovies(), [])).toEqual(new Map());
   });
+
+  it("usa las sinopsis como señal léxica aunque falten metadatos estructurados", () => {
+    const training = trainingMovies().map(({ movie: item, rating }) => ({
+      movie: {
+        ...item,
+        genres: [],
+        genreIds: [],
+        countries: [],
+        directors: [],
+        castMembers: [],
+        keywords: [],
+        originalLanguage: undefined,
+        releaseYear: undefined,
+        runtimeMinutes: undefined
+      },
+      rating
+    }));
+    const memory = {
+      ...movie("candidate-synopsis-memory", "Candidata de memoria textual", "desconocido"),
+      overview: training[0].movie.overview
+    };
+    const action = {
+      ...movie("candidate-synopsis-action", "Candidata de acción textual", "desconocido"),
+      overview: training[1].movie.overview
+    };
+    const predictions = predictSpectroMovies(training, [memory, action]);
+    const memoryPrediction = predictions.get(memory.id);
+    const actionPrediction = predictions.get(action.id);
+
+    expect(memoryPrediction).toBeDefined();
+    expect(actionPrediction).toBeDefined();
+    expect(memoryPrediction?.featureCount).toBeGreaterThan(0);
+    expect(memoryPrediction?.maximumSimilarity).toBeGreaterThan(0.8);
+    expect(memoryPrediction?.predictedRating).toBeGreaterThan(
+      (actionPrediction?.predictedRating ?? 10) + 2
+    );
+  });
+
+  it("tokeniza sinopsis bengalí conservando letras y marcas Unicode", () => {
+    const training = Array.from({ length: 12 }, (_, index) => ({
+      movie: {
+        ...movie("rated-bengali-" + index, "Película bengalí " + index, "desconocido"),
+        overview: index < 6
+          ? "একটি পরিবার স্মৃতি ও পরিচয়ের গল্প"
+          : "একটি যুদ্ধ প্রতিশোধ ও অপরাধের গল্প"
+      },
+      rating: index < 6 ? 9 : 3
+    }));
+    const preferred = {
+      ...movie("candidate-bengali-preferred", "Candidata bengalí preferida", "desconocido"),
+      overview: "একটি পরিবার স্মৃতি ও পরিচয়ের গল্প"
+    };
+    const rejected = {
+      ...movie("candidate-bengali-rejected", "Candidata bengalí no preferida", "desconocido"),
+      overview: "একটি যুদ্ধ প্রতিশোধ ও অপরাধের গল্প"
+    };
+    const predictions = predictSpectroMovies(training, [preferred, rejected]);
+
+    expect(predictions.get(preferred.id)?.featureCount).toBeGreaterThan(0);
+    expect(predictions.get(preferred.id)?.maximumSimilarity).toBeGreaterThan(0.5);
+    expect(predictions.get(preferred.id)?.predictedRating ?? 0).toBeGreaterThan(
+      predictions.get(rejected.id)?.predictedRating ?? 10
+    );
+  });
+
 });
