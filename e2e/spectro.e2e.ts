@@ -185,7 +185,7 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await expect(page.getByRole("heading", { name: "Afinidades", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Evolución", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Recomendaciones", exact: true })).toHaveCount(0);
-  await expect(page.getByText("Espectro 2.7.0")).toBeVisible();
+  await expect(page.getByText("Espectro 2.8.0")).toBeVisible();
 });
 test("redirige enlaces guardados de las antiguas vistas de Espectro", async ({ page }) => {
   await page.goto("#/spectro/map");
