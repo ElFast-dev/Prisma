@@ -221,7 +221,11 @@ export async function getSpectroDiscoverRecommendations(
   // Las respuestas ya consultadas se reutilizan desde la caché TMDB y se limitan
   // cuatro películas simultáneas para no saturar la API al explorar páginas.
   if (token && analysis.movieCount >= 3) {
-    await runWithConcurrency(summaries, 4, async (summary) => {
+    // La función de recomendación devuelve como máximo 12 candidatas.
+    // Enriquecer más títulos no mejoraría el resultado visible y solo añadiría
+    // solicitudes de metadatos a TMDB.
+    const prioritizedSummaries = summaries.slice(0, 12);
+    await runWithConcurrency(prioritizedSummaries, 4, async (summary) => {
       const current = localMovies.get(summary.id);
       const hasFeatureMetadata = Boolean(
         current?.directors?.length
