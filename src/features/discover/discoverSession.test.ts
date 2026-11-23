@@ -73,6 +73,7 @@ describe("Discover session", () => {
       cachedFetchedAt: "2026-11-21T10:00:00.000Z"
     }, storage);
 
+    expect(JSON.parse(storage.getItem("prisma:discover-session:v1") ?? "{}").version).toBe(2);
     expect(readDiscoverSession(storage)).toEqual({
       query: "prisma",
       appliedFilters: {
@@ -155,7 +156,7 @@ describe("Discover session", () => {
     storage.setItem("prisma:discover-session:v1", "{no es json");
     expect(readDiscoverSession(storage)).toBeNull();
 
-    storage.setItem("prisma:discover-session:v1", JSON.stringify({ version: 2 }));
+    storage.setItem("prisma:discover-session:v1", JSON.stringify({ version: 3 }));
     expect(readDiscoverSession(storage)).toBeNull();
   });
 });
