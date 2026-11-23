@@ -81,7 +81,30 @@ export const DISCOVER_LANGUAGES = [
   { id: "he", label: "Hebreo" },
   { id: "ar", label: "Árabe" },
   { id: "id", label: "Indonesio" },
-  { id: "tl", label: "Filipino" }
+  { id: "tl", label: "Filipino" },
+  { id: "bn", label: "Bengalí" },
+  { id: "bg", label: "Búlgaro" },
+  { id: "ca", label: "Catalán" },
+  { id: "hr", label: "Croata" },
+  { id: "el", label: "Griego" },
+  { id: "eu", label: "Euskera" },
+  { id: "fa", label: "Persa" },
+  { id: "fi", label: "Finés" },
+  { id: "hu", label: "Húngaro" },
+  { id: "hy", label: "Armenio" },
+  { id: "ka", label: "Georgiano" },
+  { id: "kk", label: "Kazajo" },
+  { id: "ml", label: "Malayalam" },
+  { id: "sk", label: "Eslovaco" },
+  { id: "sl", label: "Esloveno" },
+  { id: "sq", label: "Albanés" },
+  { id: "sr", label: "Serbio" },
+  { id: "sw", label: "Suajili" },
+  { id: "ta", label: "Tamil" },
+  { id: "te", label: "Telugu" },
+  { id: "uk", label: "Ucraniano" },
+  { id: "ur", label: "Urdu" },
+  { id: "vi", label: "Vietnamita" }
 ] as const;
 
 const SORT_OPTIONS = new Set<DiscoverSort>([
