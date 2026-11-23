@@ -13,7 +13,7 @@ export function PwaUpdateNotice() {
   if ((!snapshot.available && !snapshot.reloadRequired) || snapshot.dismissed) return null;
 
   function canSafelyReload(): boolean {
-    if (document.querySelector('[role="dialog"][aria-modal="true"], form[data-prisma-unsaved="true"]')) {
+    if (document.querySelector('[role="dialog"][aria-modal="true"], form[data-prisma-unsaved="true"], [data-prisma-update-blocked="true"]')) {
       setDialogWarning(true);
       return false;
     }
@@ -42,7 +42,7 @@ export function PwaUpdateNotice() {
           : "Guarda los cambios pendientes antes de instalar la actualización."}</span>
         {dialogWarning && (
           <span className="pwa-update-warning" role="alert">
-            Guarda y cierra primero el formulario abierto o guarda los cambios de conexión.
+            Termina o cancela primero el formulario o la operación local que está en curso.
           </span>
         )}
         {snapshot.error && <span className="pwa-update-warning" role="alert">{snapshot.error}</span>}
