@@ -132,6 +132,24 @@ describe("Discover session", () => {
     expect(readDiscoverSession(storage)?.appliedFilters.sortBy).toBe("spectro");
   });
 
+
+  it("preserves an explicitly selected popularity sort in version 2 sessions", () => {
+    const storage = new MemoryStorage();
+    storage.setItem("prisma:discover-session:v1", JSON.stringify({
+      version: 2,
+      query: "prisma",
+      appliedFilters: { ...DEFAULT_DISCOVER_FILTERS, sortBy: "popularity.desc" },
+      movies: [{ id: 22, title: "Película guardada" }],
+      page: 1,
+      totalPages: 1,
+      totalResults: 1,
+      imageBase: "https://image.tmdb.org/t/p/",
+      showingCachedData: false
+    }));
+
+    expect(readDiscoverSession(storage)?.appliedFilters.sortBy).toBe("popularity.desc");
+  });
+
   it("ignores malformed or unsupported session data", () => {
     const storage = new MemoryStorage();
     storage.setItem("prisma:discover-session:v1", "{no es json");
