@@ -20,6 +20,7 @@ export interface TmdbMovieSummary {
 
 export interface TmdbMovieDetails extends TmdbMovieSummary {
   runtime?: number | null;
+  revenue?: number | null;
   status?: string;
   genres?: { id: number; name: string }[];
   production_countries?: { iso_3166_1: string; name: string }[];
