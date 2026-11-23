@@ -15,7 +15,7 @@ export function PwaUpdateNotice() {
   async function handleApply() {
     // No se permite recargar mientras haya una hoja o diálogo abierto:
     // algunos formularios mantienen cambios sin guardar en memoria.
-    if (document.querySelector('[role="dialog"][aria-modal="true"]')) {
+    if (document.querySelector('[role="dialog"][aria-modal="true"], form[data-prisma-unsaved="true"]')) {
       setDialogWarning(true);
       return;
     }
@@ -31,7 +31,7 @@ export function PwaUpdateNotice() {
         <span>Guarda los cambios pendientes antes de actualizar Prisma.</span>
         {dialogWarning && (
           <span className="pwa-update-warning" role="alert">
-            Guarda y cierra primero el formulario abierto.
+            Guarda y cierra primero el formulario abierto o guarda los cambios de conexión.
           </span>
         )}
         {snapshot.error && <span className="pwa-update-warning" role="alert">{snapshot.error}</span>}
