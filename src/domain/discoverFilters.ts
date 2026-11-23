@@ -183,6 +183,22 @@ export function countActiveDiscoverFilters(filters: DiscoverFilters): number {
   ].filter(Boolean).length;
 }
 
+/**
+ * Aplica las exclusiones de Biblioteca sobre el catálogo ya descargado.
+ * No modifica la consulta TMDB ni comparte datos personales con servicios externos.
+ */
+export function filterDiscoverLibraryVisibility<T extends { id: number }>(
+  movies: readonly T[],
+  watchedTmdbIds: ReadonlySet<number>,
+  pendingTmdbIds: ReadonlySet<number>,
+  filters: Pick<DiscoverFilters, "hideWatched" | "hidePending">
+): T[] {
+  return movies.filter((movie) => (
+    !(filters.hideWatched && watchedTmdbIds.has(movie.id))
+    && !(filters.hidePending && pendingTmdbIds.has(movie.id))
+  ));
+}
+
 export function buildDiscoverMovieParams(
   filters: DiscoverFilters,
   page: number,
