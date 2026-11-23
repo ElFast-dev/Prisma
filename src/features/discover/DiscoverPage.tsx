@@ -94,6 +94,7 @@ async function filterSearchResults(
 }
 
 const SORT_OPTIONS = [
+  { id: "spectro", label: "Para ti · Espectro" },
   { id: "popularity.desc", label: "Más populares" },
   { id: "vote_average.desc", label: "Mejor valoradas" },
   { id: "primary_release_date.desc", label: "Estreno más reciente" },
@@ -141,13 +142,13 @@ export function DiscoverPage() {
   const catalogFiltersActive = hasActiveDiscoverFilters(appliedFilters);
   const filterErrors = getDiscoverFilterErrors(draftFilters);
   const rankedMovies = useMemo(() => {
-    if (!recommendations.length) return movies;
+    if (appliedFilters.sortBy !== "spectro" || !recommendations.length) return movies;
     const ranking = new Map(recommendations.map((item, index) => [item.movie.tmdbId, index]));
     return [...movies].sort((left, right) => (
       (ranking.get(left.id) ?? Number.MAX_SAFE_INTEGER)
       - (ranking.get(right.id) ?? Number.MAX_SAFE_INTEGER)
     ));
-  }, [movies, recommendations]);
+  }, [movies, recommendations, appliedFilters.sortBy]);
   const visibleMovies = useMemo(() => {
     const watched = new Set(watchedTmdbIds);
     const pending = new Set(pendingTmdbIds);
@@ -179,7 +180,7 @@ export function DiscoverPage() {
     if (language) chips.push({ key: "language", label: "Idioma: " + language.label });
     if (appliedFilters.hideWatched) chips.push({ key: "watched", label: "Ocultar vistas" });
     if (appliedFilters.hidePending) chips.push({ key: "pending", label: "Ocultar pendientes" });
-    if (sort && appliedFilters.sortBy !== "popularity.desc") chips.push({ key: "sort", label: "Orden: " + sort.label });
+    if (sort && appliedFilters.sortBy !== "spectro") chips.push({ key: "sort", label: "Orden: " + sort.label });
     return chips;
   }, [appliedFilters]);
 
