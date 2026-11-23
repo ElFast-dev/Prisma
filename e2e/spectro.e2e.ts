@@ -141,7 +141,7 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await heatmapCard.getByText("Ver datos de la gráfica en tabla").click();
   const heatmapTable = heatmapCard.locator(".spectro-chart-data-table");
   await expect(heatmapTable).toBeVisible();
-  await expect(heatmapTable.getByRole("row", { name: /Dom · 00:00/ })).toBeVisible();
+  await expect(heatmapTable.getByRole("row", { name: /Dom · 00:00\s+2 visionados/ })).toBeVisible();
 
   await page.getByRole("tab", { name: /Calificaciones/ }).click();
   await expect(page.getByRole("heading", { name: "Distribución de calificaciones" }).first()).toBeVisible();
