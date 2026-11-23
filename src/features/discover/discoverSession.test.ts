@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_DISCOVER_FILTERS } from "../../domain/discoverFilters";
 import type { TmdbMovieSummary } from "../../infrastructure/tmdb/TmdbService";
-import { getDiscoverFeedKey, readDiscoverSession, writeDiscoverSession } from "./discoverSession";
+import {
+  getDiscoverFeedKey,
+  getDiscoverSpectroState,
+  preserveDiscoverSpectroReadyState,
+  readDiscoverSession,
+  writeDiscoverSession
+} from "./discoverSession";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -16,6 +22,20 @@ class MemoryStorage {
 }
 
 describe("Discover session", () => {
+  it("derives the Spectro status from personal evidence and available matches", () => {
+    expect(getDiscoverSpectroState(2, 8)).toBe("insufficient");
+    expect(getDiscoverSpectroState(3, 0)).toBe("no-matches");
+    expect(getDiscoverSpectroState(3, 2)).toBe("ready");
+  });
+
+  it("does not let a late page or error downgrade a ready Spectro ranking", () => {
+    expect(preserveDiscoverSpectroReadyState("ready", "insufficient")).toBe("ready");
+    expect(preserveDiscoverSpectroReadyState("ready", "no-matches")).toBe("ready");
+    expect(preserveDiscoverSpectroReadyState("ready", "unavailable")).toBe("ready");
+    expect(preserveDiscoverSpectroReadyState("loading", "ready")).toBe("ready");
+    expect(preserveDiscoverSpectroReadyState("unavailable", "no-matches")).toBe("no-matches");
+  });
+
   it("keeps the query in the feed key so TMDB performs a real text search", () => {
     const filters = { ...DEFAULT_DISCOVER_FILTERS, genreId: "18" };
     expect(getDiscoverFeedKey("prisma", filters)).not.toBe(getDiscoverFeedKey("otra", filters));
