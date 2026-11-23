@@ -33,3 +33,10 @@ Los avisos de dependencias de desarrollo o construcción deben identificar el pa
 La persona mantenedora revisará los informes y coordinará una corrección o una aclaración del alcance cuando sea necesario. No se establece un plazo garantizado de respuesta ni un programa de recompensas.
 
 Las correcciones de seguridad deben preservar la privacidad local-first y no incluir datos personales en commits, logs, artefactos de CI ni pruebas.
+
+
+## Análisis automatizado
+
+Prisma ejecuta CodeQL para JavaScript/TypeScript mediante GitHub Actions. Los resultados se revisan junto con los informes de Dependabot y la auditoría del árbol npm. CodeQL no sustituye la revisión de dependencias, las pruebas ni la protección de IndexedDB.
+
+Los avisos de dependencias de construcción/PWA se documentan por ruta y versión en `docs/DEPENDENCY-SECURITY.md`. La presencia de una versión afectada en un lockfile no demuestra por sí sola que la aplicación publicada tenga una ruta explotable.
