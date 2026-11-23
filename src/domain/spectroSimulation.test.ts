@@ -109,6 +109,13 @@ function runRecommendationSimulation() {
     candidate("simulation-rejected-metadata", "Acción y venganza", "rejected", "unrepresented"),
     candidate("simulation-unrepresented", "El observatorio remoto", "unknown", "unrepresented"),
     {
+      ...ratedMovie(99, "rejected"),
+      id: "simulation-action-complete",
+      tmdbId: 883099,
+      title: "Operación de medianoche",
+      lastViewingSequence: 0
+    },
+    {
       ...candidate("simulation-low-evidence", "Coincidencia mínima", "rejected", "complete"),
       overview: "guerra",
       genres: ["Drama"],
@@ -182,6 +189,28 @@ function runRecommendationSimulation() {
     (item) => item.movie.id === "simulation-favorite-override"
   );
   const favoriteOverridePrediction = predictions.get("simulation-favorite-override");
+  const reversedTraining = training.map((item) => ({
+    ...item,
+    rating: 12 - item.rating
+  }));
+  const reversedViewings = reversedTraining.map((item, index) => (
+    viewing(item.movie, index, item.rating)
+  ));
+  const reversedAnalysis = analyzeSpectro({
+    movies: training.map((item) => item.movie),
+    viewings: reversedViewings,
+    candidates,
+    computedAt: FIXTURE_TIME
+  });
+  const reversedActionRecommendation = reversedAnalysis.recommendations.find(
+    (item) => item.movie.id === "simulation-action-complete"
+  );
+  const reversedPreferredRecommendation = reversedAnalysis.recommendations.find(
+    (item) => item.movie.id === "simulation-preferred-complete"
+  );
+  const reversedPredictions = predictSpectroMovies(reversedTraining, candidates);
+  const reversedActionPrediction = reversedPredictions.get("simulation-action-complete");
+  const reversedPreferredPrediction = reversedPredictions.get("simulation-preferred-complete");
 
   return {
     algorithmVersion: analysis.algorithmVersion,
@@ -209,6 +238,14 @@ function runRecommendationSimulation() {
         && preferred.predictedRating > rejectedStoryPrediction.predictedRating
       ),
       rejectedNarrativeExcluded: !recommendationIds.includes("simulation-rejected-story"),
+      actionProfileExcludedFromOriginalPersona: !recommendationIds.includes("simulation-action-complete"),
+      reversedProfileAdaptsToDifferentTaste: Boolean(
+        reversedActionRecommendation
+        && !reversedPreferredRecommendation
+        && reversedActionPrediction
+        && reversedPreferredPrediction
+        && reversedActionPrediction.predictedRating > reversedPreferredPrediction.predictedRating
+      ),
       weakEvidenceDoesNotTriggerNegativeFilter: Boolean(
         weakEvidenceCandidate
         && weakEvidencePrediction
@@ -241,7 +278,7 @@ describe("simulación reproducible de calidad de Espectro", () => {
 
     expect(report.algorithmVersion).toBe("2.8.0");
     expect(report.ratedMovies).toBe(16);
-    expect(report.candidateCount).toBe(7);
+    expect(report.candidateCount).toBe(8);
     expect(report.holdout.trainingMovies).toBe(12);
     expect(report.holdout.heldOutMovies).toBe(4);
     expect(report.holdout.noMovieIdOverlap).toBe(true);
@@ -249,6 +286,8 @@ describe("simulación reproducible de calidad de Espectro", () => {
     expect(report.checks.likedSynopsisRanksAboveRejectedSynopsis).toBe(true);
     expect(report.checks.synopsisPredictionGap).toBeGreaterThan(1.5);
     expect(report.checks.rejectedNarrativeExcluded).toBe(true);
+    expect(report.checks.actionProfileExcludedFromOriginalPersona).toBe(true);
+    expect(report.checks.reversedProfileAdaptsToDifferentTaste).toBe(true);
     expect(report.checks.weakEvidenceDoesNotTriggerNegativeFilter).toBe(true);
     expect(report.checks.explicitFavoriteOverridesNegativePrediction).toBe(true);
     expect(report.checks.sparseInternationalCandidateCanBeRecommended).toBe(true);
