@@ -1054,6 +1054,62 @@ function buildRecommendations(
   };
 }
 
+
+/**
+ * Reutiliza las afinidades y señales de una instantánea de Espectro para
+ * ordenar candidatas externas sin recalcular patrones ni escribir en IndexedDB.
+ */
+export function rankSpectroCandidates(
+  input: Pick<SpectroInput, "movies" | "viewings" | "favoriteMovieIds">,
+  candidates: MovieRecord[],
+  analysis: SpectroAnalysis,
+  options: { includeWatched?: boolean } = {}
+): SpectroRecommendation[] {
+  const moviesById = new Map(input.movies.map((movie) => [movie.id, movie]));
+  const ratingsByMovie = new Map<string, number[]>();
+
+  for (const viewing of input.viewings) {
+    if (viewing.rating === undefined) continue;
+    const ratings = ratingsByMovie.get(viewing.movieId) ?? [];
+    ratings.push(viewing.rating);
+    ratingsByMovie.set(viewing.movieId, ratings);
+  }
+
+  const ratedMovies: RatedMovie[] = [...ratingsByMovie.entries()]
+    .flatMap(([movieId, ratings]) => {
+      const movie = moviesById.get(movieId);
+      return movie && ratings.length
+        ? [{ movie, averageRating: mean(ratings) }]
+        : [];
+    });
+
+  if (ratedMovies.length < SPECTRO_MINIMUM_MOVIES) return [];
+
+  const overallAverage = mean(ratedMovies.map((item) => item.averageRating));
+  const affinities = [
+    ...analysis.genreAffinities,
+    ...analysis.directorAffinities,
+    ...analysis.castAffinities,
+    ...analysis.countryAffinities,
+    ...analysis.decadeAffinities,
+    ...analysis.languageAffinities,
+    ...analysis.durationAffinities,
+    ...analysis.themeAffinities
+  ];
+  const watchedMovieIds = options.includeWatched
+    ? new Set<string>()
+    : new Set(input.viewings.map((viewing) => viewing.movieId));
+
+  return buildRecommendations(
+    candidates,
+    affinities,
+    analysis.favoriteSignals,
+    watchedMovieIds,
+    overallAverage,
+    ratedMovies
+  ).recommendations;
+}
+
 export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {
   const movieById = new Map(input.movies.map((movie) => [movie.id, movie]));
   const ratingsByMovie = new Map<string, number[]>();

@@ -15,6 +15,9 @@ export interface DiscoverFilters {
   minVoteAverage: string;
   minVoteCount: string;
   originalLanguage: string;
+  /** Excluir estados personales; son filtros locales, nunca parámetros de TMDB. */
+  hideWatched: boolean;
+  hidePending: boolean;
   sortBy: DiscoverSort;
 }
 
@@ -27,6 +30,8 @@ export const DEFAULT_DISCOVER_FILTERS: DiscoverFilters = {
   minVoteAverage: "",
   minVoteCount: "",
   originalLanguage: "",
+  hideWatched: true,
+  hidePending: true,
   sortBy: "popularity.desc"
 };
 
@@ -116,6 +121,8 @@ export function normalizeDiscoverFilters(
     originalLanguage: DISCOVER_LANGUAGES.some((language) => language.id === filters?.originalLanguage)
       ? filters?.originalLanguage ?? ""
       : "",
+    hideWatched: filters?.hideWatched !== false,
+    hidePending: filters?.hidePending !== false,
     sortBy: SORT_OPTIONS.has(filters?.sortBy as DiscoverSort)
       ? filters?.sortBy as DiscoverSort
       : "popularity.desc"
@@ -168,6 +175,8 @@ export function countActiveDiscoverFilters(filters: DiscoverFilters): number {
     filters.minVoteAverage,
     filters.minVoteCount,
     filters.originalLanguage,
+    filters.hideWatched ? "hide-watched" : "",
+    filters.hidePending ? "hide-pending" : "",
     filters.sortBy !== "popularity.desc" ? filters.sortBy : ""
   ].filter(Boolean).length;
 }

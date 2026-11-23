@@ -68,6 +68,38 @@ export async function getLibraryMovies(): Promise<{ movie: MovieRecord; entry: L
   });
 }
 
+
+/** Estados locales usados para ocultar películas ya vistas o pendientes en Descubrir. */
+export async function getDiscoverLibraryStatus(): Promise<{
+  watchedTmdbIds: number[];
+  pendingTmdbIds: number[];
+}> {
+  const [movies, entries, viewings] = await Promise.all([
+    prismaDb.movies.toArray(),
+    prismaDb.libraryEntries.toArray(),
+    prismaDb.viewings.toArray()
+  ]);
+  const tmdbIdByMovieId = new Map(movies.map((movie) => [movie.id, movie.tmdbId]));
+  const watched = new Set<string>(
+    entries.filter((entry) => entry.status === "watched").map((entry) => entry.movieId)
+  );
+  for (const viewing of viewings) watched.add(viewing.movieId);
+  const pending = new Set(entries
+    .filter((entry) => entry.status === "pending")
+    .map((entry) => entry.movieId));
+
+  return {
+    watchedTmdbIds: [...watched].flatMap((id) => {
+      const tmdbId = tmdbIdByMovieId.get(id);
+      return tmdbId === undefined ? [] : [tmdbId];
+    }),
+    pendingTmdbIds: [...pending].flatMap((id) => {
+      const tmdbId = tmdbIdByMovieId.get(id);
+      return tmdbId === undefined ? [] : [tmdbId];
+    })
+  };
+}
+
 export async function addToPending(movieId: string): Promise<void> {
   const movie = await prismaDb.movies.get(movieId);
   if (!movie) throw new Error("Primero debes guardar la película en el catálogo local.");

@@ -79,6 +79,18 @@ describe("Discover filters", () => {
     expect(countActiveDiscoverFilters(filters)).toBe(3);
   });
 
+  it("keeps watched and pending exclusions as local discover preferences", () => {
+    expect(DEFAULT_DISCOVER_FILTERS.hideWatched).toBe(true);
+    expect(DEFAULT_DISCOVER_FILTERS.hidePending).toBe(true);
+    expect(normalizeDiscoverFilters({ hideWatched: false, hidePending: true }))
+      .toMatchObject({ hideWatched: false, hidePending: true });
+    expect(buildDiscoverMovieParams({
+      ...DEFAULT_DISCOVER_FILTERS,
+      hideWatched: true,
+      hidePending: true
+    }, 1)).not.toHaveProperty("hideWatched");
+  });
+
   it("offers a broad set of original-language options for filtering", () => {
     expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("pl");
     expect(DISCOVER_LANGUAGES.map((language) => language.id)).toContain("tr");

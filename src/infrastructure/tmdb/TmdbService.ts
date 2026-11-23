@@ -13,6 +13,8 @@ export interface TmdbMovieSummary {
   backdrop_path?: string | null;
   genre_ids?: number[];
   vote_average?: number;
+  vote_count?: number;
+  original_language?: string;
   popularity?: number;
 }
 
@@ -344,6 +346,18 @@ export async function getMovieAnalysisMetadata(
   )].slice(0, 16);
 
   return { details: details.data, credits: credits.data, keywords: themeKeywords };
+}
+
+
+/** Consulta la duración de una película cuando un filtro la necesita. */
+export async function getMovieRuntime(
+  token: string,
+  tmdbId: number
+): Promise<number | undefined> {
+  const details = await getMovieDetailsForEnrichment(token, tmdbId);
+  return Number.isFinite(details.runtime) && details.runtime && details.runtime > 0
+    ? details.runtime
+    : undefined;
 }
 
 export async function getMovieDetailsForEnrichment(

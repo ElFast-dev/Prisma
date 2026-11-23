@@ -1,7 +1,9 @@
-import type { SpectroSnapshot } from "../../domain/types";
+import type { MovieRecord, SpectroSnapshot } from "../../domain/types";
+import type { TmdbMovieSummary } from "../tmdb/TmdbService";
 import {
   getSpectroInputFingerprint,
   selectSpectroCandidates,
+  rankSpectroCandidates,
   SPECTRO_ALGORITHM_VERSION,
   type SpectroAnalysis
 } from "../../domain/spectro";
@@ -169,6 +171,72 @@ export async function getSpectroWorkspace(): Promise<SpectroWorkspaceResult> {
   }
 
   return result;
+}
+
+
+/**
+ * Clasifica resultados externos con el perfil local ya calculado por Espectro.
+ * No guarda candidatas ni transmite señales personales a TMDB.
+ */
+export async function getSpectroDiscoverRecommendations(
+  summaries: readonly TmdbMovieSummary[]
+): Promise<{ movieCount: number; recommendations: ReturnType<typeof rankSpectroCandidates> }> {
+  if (summaries.length === 0) {
+    return { movieCount: 0, recommendations: [] };
+  }
+
+  const [workspace, movies, viewings, libraryEntries] = await Promise.all([
+    getSpectroWorkspace(),
+    prismaDb.movies.toArray(),
+    prismaDb.viewings.toArray(),
+    prismaDb.libraryEntries.toArray()
+  ]);
+  const localMovies = new Map(movies.map((movie) => [movie.tmdbId, movie]));
+  const now = new Date().toISOString();
+
+  const candidates: MovieRecord[] = summaries.map((summary) => {
+    const current = localMovies.get(summary.id);
+    const releaseYear = summary.release_date && /^\\d{4}/.test(summary.release_date)
+      ? Number(summary.release_date.slice(0, 4))
+      : current?.releaseYear;
+
+    return {
+      ...(current ?? {
+        id: "tmdb-" + summary.id,
+        tmdbId: summary.id,
+        title: summary.title,
+        genres: [],
+        countries: [],
+        lastViewingSequence: 0,
+        createdAt: now,
+        updatedAt: now
+      }),
+      id: current?.id ?? "tmdb-" + summary.id,
+      tmdbId: summary.id,
+      title: summary.title,
+      originalTitle: summary.original_title ?? current?.originalTitle,
+      overview: summary.overview ?? current?.overview,
+      releaseDate: summary.release_date ?? current?.releaseDate,
+      releaseYear,
+      voteAverage: summary.vote_average ?? current?.voteAverage,
+      genreIds: summary.genre_ids?.length ? summary.genre_ids : current?.genreIds,
+      originalLanguage: summary.original_language ?? current?.originalLanguage,
+      posterPath: summary.poster_path ?? current?.posterPath,
+      backdropPath: summary.backdrop_path ?? current?.backdropPath
+    };
+  });
+
+  const favoriteMovieIds = libraryEntries
+    .filter((entry) => entry.isFavorite)
+    .map((entry) => entry.movieId);
+  const recommendations = rankSpectroCandidates(
+    { movies, viewings, favoriteMovieIds },
+    candidates,
+    workspace.analysis,
+    { includeWatched: true }
+  );
+
+  return { movieCount: workspace.analysis.movieCount, recommendations };
 }
 
 /** Conserva la API previa para consumidores que solo necesitan el análisis. */

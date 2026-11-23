@@ -79,11 +79,11 @@ function restoreMovies(value: unknown): TmdbMovieSummary[] {
 
 export function getDiscoverFeedKey(query: string, filters: DiscoverFilters): string {
   const normalizedFilters = normalizeDiscoverFilters(filters);
-  if (hasActiveDiscoverFilters(normalizedFilters)) {
-    return "discover:" + JSON.stringify(normalizedFilters);
-  }
   const normalizedQuery = query.trim().toLocaleLowerCase("es");
-  return normalizedQuery ? "search:" + normalizedQuery : "trending";
+  const source = normalizedQuery
+    ? "search:" + normalizedQuery
+    : hasActiveDiscoverFilters(normalizedFilters) ? "discover" : "trending";
+  return source + ":" + JSON.stringify(normalizedFilters);
 }
 
 /**
