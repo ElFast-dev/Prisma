@@ -32,3 +32,15 @@ Esta comprobación se realiza en el teléfono donde Prisma está instalada. No b
 - La credencial TMDB permanece local en ese dispositivo; una instalación nueva debe configurarla de nuevo.
 
 Si alguna pantalla que ya habías abierto no se muestra, anota cuál y en qué paso ocurrió. No desinstales Prisma ni borres los datos de la aplicación durante esta prueba.
+
+
+## Actualización segura de la PWA
+
+1. Cuando haya una versión nueva, Prisma mostrará «Hay una actualización disponible».
+2. Si tienes un formulario o diálogo abierto, intenta actualizar: Prisma debe impedir la recarga y pedir que cierres el formulario primero.
+3. Guarda o cancela el formulario y ciérralo.
+4. Pulsa «Actualizar Prisma». La aplicación debe cargar la nueva versión.
+5. Comprueba que Biblioteca, Historial y Colecciones conservan sus datos.
+6. Repite la prueba offline después de la actualización.
+
+No borres los datos de la aplicación ni desinstales Prisma durante esta prueba.
