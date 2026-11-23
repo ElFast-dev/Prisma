@@ -127,7 +127,7 @@ export function readDiscoverSession(
     // La versión 1 usaba popularity.desc como valor predeterminado. Desde la
     // versión 2 el orden elegido es explícito y no debe reinterpretarse al restaurar.
     const filtersToRestore = parsed.version === 1 && storedFilters?.sortBy === "popularity.desc"
-      ? { ...storedFilters, sortBy: "spectro" }
+      ? { ...storedFilters, sortBy: "spectro" as const }
       : storedFilters;
     const appliedFilters = normalizeDiscoverFilters(filtersToRestore);
     const page = positiveInteger(parsed.page, 1, 500);
