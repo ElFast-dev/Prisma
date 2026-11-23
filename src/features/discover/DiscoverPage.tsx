@@ -27,7 +27,10 @@ import {
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
 import { getDiscoverLibraryStatus } from "../../infrastructure/database/movieRepository";
 import { getSpectroDiscoverRecommendations } from "../../infrastructure/database/spectroRepository";
-import { rankSpectroRecommendations } from "../../domain/spectro";
+import {
+  rankSpectroRecommendations,
+  type SpectroRecommendation
+} from "../../domain/spectro";
 import { runWithConcurrency } from "../../domain/asyncPool";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 import { getDiscoverFeedKey, readDiscoverSession, writeDiscoverSession } from "./discoverSession";
@@ -117,7 +120,7 @@ export function DiscoverPage() {
     restoredSession?.appliedFilters ?? DEFAULT_DISCOVER_FILTERS
   );
   const [movies, setMovies] = useState<TmdbMovieSummary[]>(restoredSession?.movies ?? []);
-  const [recommendations, setRecommendations] = useState<{ movie: { tmdbId: number }; fitPercentage: number; predictedRating: number }[]>([]);
+  const [recommendations, setRecommendations] = useState<SpectroRecommendation[]>([]);
   const [spectroState, setSpectroState] = useState<SpectroState>("loading");
   const [watchedTmdbIds, setWatchedTmdbIds] = useState<number[]>([]);
   const [pendingTmdbIds, setPendingTmdbIds] = useState<number[]>([]);
