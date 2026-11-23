@@ -100,7 +100,7 @@ export function filterLibraryItems(
   const query = normalizeSearchText(options.query.trim());
   const selectedGenre = normalizeSearchText(options.genre);
 
-  const filtered = items.filter(({ movie, entry }) => {
+  const filtered = items.filter(({ movie, entry, userRating }) => {
     const matchesLibraryStatus = options.status === "all"
       || (options.status === "favorites" ? entry.isFavorite : entry.status === options.status);
     if (!matchesLibraryStatus) return false;
@@ -128,6 +128,16 @@ export function filterLibraryItems(
     if (maximumYear !== undefined && (movie.releaseYear === undefined || movie.releaseYear > maximumYear)) {
       return false;
     }
+
+    const minimumRuntime = options.runtimeMin ? Number(options.runtimeMin) : undefined;
+    const maximumRuntime = options.runtimeMax ? Number(options.runtimeMax) : undefined;
+    if (minimumRuntime !== undefined && (movie.runtimeMinutes === undefined || movie.runtimeMinutes < minimumRuntime)) return false;
+    if (maximumRuntime !== undefined && (movie.runtimeMinutes === undefined || movie.runtimeMinutes > maximumRuntime)) return false;
+
+    const minimumPersonalRating = options.myRatingMin ? Number(options.myRatingMin) : undefined;
+    const maximumPersonalRating = options.myRatingMax ? Number(options.myRatingMax) : undefined;
+    if (minimumPersonalRating !== undefined && (userRating === undefined || userRating < minimumPersonalRating)) return false;
+    if (maximumPersonalRating !== undefined && (userRating === undefined || userRating > maximumPersonalRating)) return false;
     return true;
   });
 

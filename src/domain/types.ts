@@ -92,6 +92,10 @@ export interface LibraryBrowsePreferences {
   genre: string;
   yearFrom: string;
   yearTo: string;
+  runtimeMin: string;
+  runtimeMax: string;
+  myRatingMin: string;
+  myRatingMax: string;
   sort: LibrarySort;
   sortDirection: LibrarySortDirection;
   shuffleSeed: number;

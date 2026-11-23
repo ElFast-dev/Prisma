@@ -250,7 +250,11 @@ export function LibraryPage() {
     || Boolean(filtersState.query.trim())
     || Boolean(filtersState.genre)
     || Boolean(filtersState.yearFrom)
-    || Boolean(filtersState.yearTo);
+    || Boolean(filtersState.yearTo)
+    || Boolean(filtersState.runtimeMin)
+    || Boolean(filtersState.runtimeMax)
+    || Boolean(filtersState.myRatingMin)
+    || Boolean(filtersState.myRatingMax);
   const hasNonDefaultBrowseOptions = hasActiveFilters
     || filtersState.sort !== "added"
     || filtersState.sortDirection !== "desc";
@@ -440,6 +444,35 @@ export function LibraryPage() {
                   </select>
                 </label>
               </div>
+            </div>
+
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Duración de la película</span><span>Minutos</span></div>
+              <div className="library-year-range">
+                <label className="library-sheet-field" htmlFor="library-runtime-min">
+                  <span>Desde</span>
+                  <input id="library-runtime-min" className="library-refinement-select" type="number" min="1" max="600" placeholder="Sin mínimo" value={filtersState.runtimeMin} onChange={(event) => updateFilters({ runtimeMin: event.target.value })} />
+                </label>
+                <label className="library-sheet-field" htmlFor="library-runtime-max">
+                  <span>Hasta</span>
+                  <input id="library-runtime-max" className="library-refinement-select" type="number" min="1" max="600" placeholder="Sin máximo" value={filtersState.runtimeMax} onChange={(event) => updateFilters({ runtimeMax: event.target.value })} />
+                </label>
+              </div>
+            </div>
+
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Mi valoración</span><span>Escala 1–10</span></div>
+              <div className="library-year-range">
+                <label className="library-sheet-field" htmlFor="library-rating-min">
+                  <span>Desde</span>
+                  <input id="library-rating-min" className="library-refinement-select" type="number" min="1" max="10" step="0.5" placeholder="Sin mínimo" value={filtersState.myRatingMin} onChange={(event) => updateFilters({ myRatingMin: event.target.value })} />
+                </label>
+                <label className="library-sheet-field" htmlFor="library-rating-max">
+                  <span>Hasta</span>
+                  <input id="library-rating-max" className="library-refinement-select" type="number" min="1" max="10" step="0.5" placeholder="Sin máximo" value={filtersState.myRatingMax} onChange={(event) => updateFilters({ myRatingMax: event.target.value })} />
+                </label>
+              </div>
+              <p className="muted-copy">Solo aparecen títulos que tengan al menos una calificación personal.</p>
             </div>
 
             <div className="library-sheet-section">
