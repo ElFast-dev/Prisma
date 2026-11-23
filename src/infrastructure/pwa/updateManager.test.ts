@@ -48,6 +48,20 @@ describe("PwaUpdateManager", () => {
     await first;
   });
 
+  it("marks each open tab for an explicit reload after the new worker takes control", () => {
+    const manager = createPwaUpdateManager();
+    manager.notifyUpdateAvailable();
+
+    manager.notifyReloadRequired();
+
+    expect(manager.getSnapshot()).toMatchObject({
+      available: false,
+      applying: false,
+      dismissed: false,
+      reloadRequired: true
+    });
+  });
+
   it("can postpone an update without losing its availability", () => {
     const manager = createPwaUpdateManager();
     manager.notifyUpdateAvailable();
