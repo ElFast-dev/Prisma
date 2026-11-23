@@ -5,6 +5,7 @@ import {
   DEFAULT_DISCOVER_FILTERS,
   DISCOVER_LANGUAGES,
   discoverFilterTitleMatch,
+  filterDiscoverLibraryVisibility,
   hasActiveDiscoverFilters,
   normalizeDiscoverFilters
 } from "./discoverFilters";
@@ -99,6 +100,40 @@ describe("Discover filters", () => {
       hideWatched: true,
       hidePending: true
     }, 1)).not.toHaveProperty("hideWatched");
+  });
+
+  it("hides watched and pending titles independently from the downloaded catalog", () => {
+    const movies = [
+      { id: 10, title: "Ya vista" },
+      { id: 20, title: "Pendiente" },
+      { id: 30, title: "Vista y pendiente" },
+      { id: 40, title: "Sin guardar" }
+    ];
+    const watched = new Set([10, 30]);
+    const pending = new Set([20, 30]);
+
+    expect(filterDiscoverLibraryVisibility(movies, watched, pending, {
+      hideWatched: true,
+      hidePending: true
+    }).map((movie) => movie.id)).toEqual([40]);
+    expect(filterDiscoverLibraryVisibility(movies, watched, pending, {
+      hideWatched: false,
+      hidePending: true
+    }).map((movie) => movie.id)).toEqual([10, 40]);
+    expect(filterDiscoverLibraryVisibility(movies, watched, pending, {
+      hideWatched: true,
+      hidePending: false
+    }).map((movie) => movie.id)).toEqual([20, 40]);
+  });
+
+  it("returns every downloaded title when both local exclusions are disabled", () => {
+    const movies = [{ id: 10 }, { id: 20 }, { id: 30 }];
+    expect(filterDiscoverLibraryVisibility(
+      movies,
+      new Set([10, 20]),
+      new Set([20, 30]),
+      { hideWatched: false, hidePending: false }
+    )).toEqual(movies);
   });
 
   it("offers a broad set of original-language options for filtering", () => {
