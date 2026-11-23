@@ -137,6 +137,7 @@ export function DiscoverPage() {
   const [totalPages, setTotalPages] = useState(restoredSession?.totalPages ?? 1);
   const [totalResults, setTotalResults] = useState(restoredSession?.totalResults ?? 0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
   const [imageBase, setImageBase] = useState(restoredSession?.imageBase ?? "https://image.tmdb.org/t/p/");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
@@ -197,6 +198,7 @@ export function DiscoverPage() {
   const loadFirstPage = useCallback(async (searchText: string, filters: DiscoverFilters) => {
     const currentRequest = ++requestId.current;
     feedRevisionRef.current += 1;
+    loadingMoreRef.current = false;
     loadedFeedKeyRef.current = getDiscoverFeedKey(searchText, filters);
     const token = getTmdbAccessToken();
     if (!token) {
@@ -357,7 +359,8 @@ export function DiscoverPage() {
 
   const loadMore = useCallback(async () => {
     const token = getTmdbAccessToken();
-    if (!token || loadingMore || state !== "ready" || page >= totalPages) return;
+    if (!token || loadingMore || loadingMoreRef.current || state !== "ready" || page >= totalPages) return;
+    loadingMoreRef.current = true;
     const currentRequest = requestId.current;
     const nextPage = page + 1;
     setLoadingMore(true);
@@ -418,7 +421,10 @@ export function DiscoverPage() {
         setError("No se pudieron cargar más películas. Comprueba tu conexión.");
       }
     } finally {
-      if (currentRequest === requestId.current) setLoadingMore(false);
+      if (currentRequest === requestId.current) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
     }
   }, [appliedFilters, loadingMore, movies, page, query, state, totalPages]);
 
