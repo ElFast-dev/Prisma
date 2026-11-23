@@ -71,7 +71,8 @@ export function createPwaUpdateManager(): PwaUpdateManager {
 
       publish({ ...snapshot, applying: true, error: undefined });
       try {
-        // vite-plugin-pwa activa el Service Worker en espera y recarga la página.
+        // vite-plugin-pwa envía el mensaje skipWaiting. onNeedReload notifica a cada pestaña;
+        // la recarga real requiere confirmación de forma independiente.
         await updateService(true);
       } catch {
         publish({
