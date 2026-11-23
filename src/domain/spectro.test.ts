@@ -314,9 +314,9 @@ describe("analyzeSpectro 2.6", () => {
 
   it("usa metadatos enriquecidos de una candidata externa para cruzar dirección, reparto, país, idioma, duración y temas", () => {
     const movies = [
-      movie("movie-1", "Drama", 18, 2015),
-      movie("movie-2", "Drama", 18, 2016),
-      movie("movie-3", "Drama", 18, 2017),
+      movie("movie-1", "Drama", 18, 2015, { keywords: ["Drama"] }),
+      movie("movie-2", "Drama", 18, 2016, { keywords: ["Drama"] }),
+      movie("movie-3", "Drama", 18, 2017, { keywords: ["Drama"] }),
       movie("movie-4", "Comedia", 35, 2005, {
         countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
         originalLanguage: "es", runtimeMinutes: 85, keywords: ["Crimen"]
