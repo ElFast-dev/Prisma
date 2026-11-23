@@ -1,6 +1,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { Download, X } from "lucide-react";
 import { pwaUpdateManager } from "../infrastructure/pwa/updateManager";
+import { hasPendingUserWork } from "../infrastructure/pwa/preloadRecovery";
 
 export function PwaUpdateNotice() {
   const snapshot = useSyncExternalStore(
@@ -13,7 +14,7 @@ export function PwaUpdateNotice() {
   if ((!snapshot.available && !snapshot.reloadRequired) || snapshot.dismissed) return null;
 
   function canSafelyReload(): boolean {
-    if (document.querySelector('[role="dialog"][aria-modal="true"], form[data-prisma-unsaved="true"], [data-prisma-update-blocked="true"]')) {
+    if (hasPendingUserWork(document)) {
       setDialogWarning(true);
       return false;
     }
