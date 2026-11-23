@@ -27,12 +27,13 @@ import {
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
 import { getDiscoverLibraryStatus } from "../../infrastructure/database/movieRepository";
 import { getSpectroDiscoverRecommendations } from "../../infrastructure/database/spectroRepository";
+import { rankSpectroRecommendations } from "../../domain/spectro";
 import { runWithConcurrency } from "../../domain/asyncPool";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
 import { getDiscoverFeedKey, readDiscoverSession, writeDiscoverSession } from "./discoverSession";
 
 type FeedState = "loading" | "ready" | "error" | "unconfigured";
-type SpectroState = "insufficient" | "ready" | "no-matches" | "unavailable";
+type SpectroState = "loading" | "insufficient" | "ready" | "no-matches" | "unavailable";
 
 async function filterSearchResults(
   token: string,
@@ -117,7 +118,7 @@ export function DiscoverPage() {
   );
   const [movies, setMovies] = useState<TmdbMovieSummary[]>(restoredSession?.movies ?? []);
   const [recommendations, setRecommendations] = useState<{ movie: { tmdbId: number }; fitPercentage: number; predictedRating: number }[]>([]);
-  const [spectroState, setSpectroState] = useState<SpectroState>("insufficient");
+  const [spectroState, setSpectroState] = useState<SpectroState>("loading");
   const [watchedTmdbIds, setWatchedTmdbIds] = useState<number[]>([]);
   const [pendingTmdbIds, setPendingTmdbIds] = useState<number[]>([]);
   const [state, setState] = useState<FeedState>(hasRestoredMovies ? "ready" : "loading");
@@ -196,6 +197,8 @@ export function DiscoverPage() {
     }
 
     setState("loading");
+    setSpectroState("loading");
+    setRecommendations([]);
     setError("");
     setMovies([]);
     setShowingCachedData(false);
@@ -234,20 +237,21 @@ export function DiscoverPage() {
       setCachedFetchedAt(feed.stale ? feed.fetchedAt : "");
       setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
       setPendingTmdbIds(libraryStatus.pendingTmdbIds);
-      try {
-        const personalized = await getSpectroDiscoverRecommendations(feed.movies);
+      if (currentRequest !== requestId.current) return;
+      // Primero se presenta el catálogo; el enriquecimiento de Espectro continúa
+      // en segundo plano para no bloquear la búsqueda en las consultas de metadatos.
+      setState("ready");
+      void getSpectroDiscoverRecommendations(feed.movies).then((personalized) => {
         if (currentRequest !== requestId.current) return;
         setRecommendations(personalized.recommendations);
         setSpectroState(personalized.movieCount < 3
           ? "insufficient"
           : personalized.recommendations.length ? "ready" : "no-matches");
-      } catch {
+      }).catch(() => {
         if (currentRequest !== requestId.current) return;
         setRecommendations([]);
         setSpectroState("unavailable");
-      }
-      if (currentRequest !== requestId.current) return;
-      setState("ready");
+      });
     } catch (cause) {
       if (currentRequest !== requestId.current) return;
       setState("error");
@@ -333,20 +337,19 @@ export function DiscoverPage() {
         const seen = new Set(current.map((movie) => movie.id));
         return [...current, ...result.movies.filter((movie) => !seen.has(movie.id))];
       });
-      try {
-        const personalized = await getSpectroDiscoverRecommendations(result.movies);
+      void getSpectroDiscoverRecommendations(result.movies).then((personalized) => {
         if (currentRequest !== requestId.current) return;
         setRecommendations((current) => {
           const merged = new Map(current.map((item) => [item.movie.tmdbId, item]));
           for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
-          return [...merged.values()].sort((a, b) => b.predictedRating - a.predictedRating || b.fitPercentage - a.fitPercentage);
+          return rankSpectroRecommendations([...merged.values()]);
         });
         setSpectroState(personalized.movieCount < 3
           ? "insufficient"
           : personalized.recommendations.length ? "ready" : "no-matches");
-      } catch {
+      }).catch(() => {
         if (currentRequest === requestId.current) setSpectroState("unavailable");
-      }
+      });
       if (result.stale) {
         setShowingCachedData(true);
         setCachedFetchedAt(result.fetchedAt);
@@ -495,17 +498,19 @@ export function DiscoverPage() {
               {" · Página " + page + " de " + totalPages}
             </p>
           )}
-          {state === "ready" && (
+          {state === "ready" && movies.length > 0 && (
             <div className="discover-spectro-note" role="status">
               <BrainCircuit size={16} />
               <span>
-                {spectroState === "ready"
-                  ? "Espectro prioriza los resultados según tus afinidades, valoraciones y películas favoritas. Encaje y nota prevista son estimaciones."
-                  : spectroState === "insufficient"
-                    ? "Espectro todavía necesita al menos tres películas distintas calificadas para personalizar estas sugerencias."
-                    : spectroState === "no-matches"
-                      ? "Espectro no encontró coincidencias personales con evidencia suficiente; se conserva el orden de TMDB."
-                      : "No se pudo calcular la clasificación personal ahora. Los resultados de TMDB siguen disponibles."}
+                {spectroState === "loading"
+                  ? "Espectro está contrastando estas películas con tus afinidades y valoraciones, sin retrasar los resultados."
+                  : spectroState === "ready"
+                    ? "Espectro prioriza los resultados según tus afinidades, valoraciones y películas favoritas. Encaje y nota prevista son estimaciones."
+                    : spectroState === "insufficient"
+                      ? "Espectro todavía necesita al menos tres películas distintas calificadas para personalizar estas sugerencias."
+                      : spectroState === "no-matches"
+                        ? "Espectro no encontró coincidencias personales con evidencia suficiente; se conserva el orden de TMDB."
+                        : "No se pudo calcular la clasificación personal ahora. Los resultados de TMDB siguen disponibles."}
               </span>
             </div>
           )}
