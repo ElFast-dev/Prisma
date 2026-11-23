@@ -49,7 +49,7 @@ const viewing = (
   operationId: "op-" + id
 });
 
-describe("analyzeSpectro 2.6", () => {
+describe("analyzeSpectro 2.7", () => {
   it("ordena primero por nota prevista y usa el encaje para desempatar", () => {
     const ranked = rankSpectroRecommendations([
       { movie: { title: "Encaje alto" }, fitPercentage: 96, predictedRating: 6.4 },
@@ -69,7 +69,7 @@ describe("analyzeSpectro 2.6", () => {
   });
 
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.6.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.7.0");
   });
 
   it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {

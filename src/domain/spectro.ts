@@ -12,7 +12,7 @@ export type {
   SpectroNetworkCluster
 } from "./spectroNetwork";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.6.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.7.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;

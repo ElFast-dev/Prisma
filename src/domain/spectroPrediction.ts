@@ -314,9 +314,17 @@ function cosineSimilarity(left: SparseVector, right: SparseVector): number {
 }
 
 function rbfKernel(similarity: number, hasFeatures = true): number {
-  if (!hasFeatures) return 0;
-  const squaredDistance = Math.max(0, 2 - 2 * similarity);
-  return Math.exp(-KERNEL_GAMMA * squaredDistance);
+  if (!hasFeatures || !Number.isFinite(similarity)) return 0;
+  // En vectores unitarios, el RBF clásico deja un suelo exp(-2γ) incluso
+  // cuando no comparten ningún rasgo. Se elimina ese suelo y se normaliza
+  // [0, 1], para que solo las coincidencias reales aporten señal.
+  // La serie exp(2γs) - 1 conserva un kernel positivo semidefinido.
+  const boundedSimilarity = Math.max(0, Math.min(1, similarity));
+  const denominator = Math.expm1(2 * KERNEL_GAMMA);
+  if (!Number.isFinite(denominator) || denominator <= 0) return 0;
+  return Math.max(0, Math.min(1,
+    Math.expm1(2 * KERNEL_GAMMA * boundedSimilarity) / denominator
+  ));
 }
 
 /**
