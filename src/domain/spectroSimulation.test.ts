@@ -127,9 +127,7 @@ function runRecommendationSimulation() {
   const preferred = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-preferred-complete"
   );
-  const rejectedStory = analysis.recommendations.find(
-    (item) => item.movie.id === "simulation-rejected-story"
-  );
+  const rejectedStoryPrediction = predictions.get("simulation-rejected-story");
   const sparse = analysis.recommendations.find(
     (item) => item.movie.id === "simulation-preferred-sparse"
   );
