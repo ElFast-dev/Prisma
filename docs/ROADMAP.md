@@ -57,6 +57,7 @@ Las etapas 1–15 están completadas. Espectro 2.2 incorpora el mapa cinematogr�
     - [x] Publicar en GitHub Pages y verificar en remoto el HTML, JavaScript, CSS y manifiesto PWA.
     - [ ] Revisar manualmente el mapa en un Android físico: legibilidad, contraste, zoom, desplazamiento táctil y actualización de la PWA instalada.
 - [ ] 17. Optimización integral.
+  - [x] 17.1 Presupuesto informativo del JS/CSS iniciales y de los chunks diferidos, medido tras compresión gzip y ejecutado en CI.
 
 Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
 
