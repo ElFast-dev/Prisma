@@ -33,11 +33,16 @@ import {
 } from "../../domain/spectro";
 import { runWithConcurrency } from "../../domain/asyncPool";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
-import { getDiscoverFeedKey, readDiscoverSession, writeDiscoverSession } from "./discoverSession";
+import {
+  getDiscoverFeedKey,
+  getDiscoverSpectroState,
+  preserveDiscoverSpectroReadyState,
+  readDiscoverSession,
+  writeDiscoverSession,
+  type DiscoverSpectroState
+} from "./discoverSession";
 
 type FeedState = "loading" | "ready" | "error" | "unconfigured";
-type SpectroState = "loading" | "insufficient" | "ready" | "no-matches" | "unavailable";
-
 async function filterSearchResults(
   token: string,
   results: TmdbMovieSummary[],
@@ -121,7 +126,7 @@ export function DiscoverPage() {
   );
   const [movies, setMovies] = useState<TmdbMovieSummary[]>(restoredSession?.movies ?? []);
   const [recommendations, setRecommendations] = useState<SpectroRecommendation[]>([]);
-  const [spectroState, setSpectroState] = useState<SpectroState>("loading");
+  const [spectroState, setSpectroState] = useState<DiscoverSpectroState>("loading");
   const [watchedTmdbIds, setWatchedTmdbIds] = useState<number[]>([]);
   const [pendingTmdbIds, setPendingTmdbIds] = useState<number[]>([]);
   const [state, setState] = useState<FeedState>(hasRestoredMovies ? "ready" : "loading");
@@ -251,16 +256,15 @@ export function DiscoverPage() {
           for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
           return rankSpectroRecommendations([...merged.values()]);
         });
-        const nextSpectroState: SpectroState = personalized.movieCount < 3
-          ? "insufficient"
-          : personalized.recommendations.length ? "ready" : "no-matches";
-        setSpectroState((current) => current === "ready" && nextSpectroState !== "ready"
-          ? current
-          : nextSpectroState);
+        const nextSpectroState = getDiscoverSpectroState(
+          personalized.movieCount,
+          personalized.recommendations.length
+        );
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
       }).catch(() => {
         if (currentRequest !== requestId.current) return;
-        setRecommendations([]);
-        setSpectroState((current) => current === "ready" ? current : "unavailable");
+        // Un error tardío no debe borrar recomendaciones que ya aportó otra página.
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
       });
     } catch (cause) {
       if (currentRequest !== requestId.current) return;
@@ -272,23 +276,28 @@ export function DiscoverPage() {
 
   useEffect(() => {
     let active = true;
+    const sessionRequest = requestId.current;
+    const sessionFeedKey = loadedFeedKeyRef.current;
     if (movies.length > 0) {
       void Promise.all([
         getDiscoverLibraryStatus(),
         getSpectroDiscoverRecommendations(movies)
       ]).then(([libraryStatus, personalized]) => {
-        if (!active) return;
+        // La sesión restaurada solo puede completar su propio feed, nunca una
+        // búsqueda más reciente iniciada mientras se calculaba Espectro.
+        if (!active || sessionRequest !== requestId.current || sessionFeedKey !== loadedFeedKeyRef.current) return;
         setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
         setPendingTmdbIds(libraryStatus.pendingTmdbIds);
-        setRecommendations(personalized.recommendations);
-        const nextSpectroState: SpectroState = personalized.movieCount < 3
-          ? "insufficient"
-          : personalized.recommendations.length ? "ready" : "no-matches";
-        setSpectroState((current) => current === "ready" && nextSpectroState !== "ready"
-          ? current
-          : nextSpectroState);
+        setRecommendations(rankSpectroRecommendations(personalized.recommendations));
+        const nextSpectroState = getDiscoverSpectroState(
+          personalized.movieCount,
+          personalized.recommendations.length
+        );
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
       }).catch(() => {
-        if (active) setSpectroState("unavailable");
+        if (active && sessionRequest === requestId.current && sessionFeedKey === loadedFeedKeyRef.current) {
+          setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
+        }
       });
     }
     return () => { active = false; };
@@ -297,6 +306,9 @@ export function DiscoverPage() {
   useEffect(() => {
     const requestedFeedKey = getDiscoverFeedKey(query, appliedFilters);
     if (loadedFeedKeyRef.current === requestedFeedKey) return;
+    // Invalida de inmediato cualquier enriquecimiento de una consulta anterior,
+    // incluso durante la pausa de escritura antes de solicitar la nueva página.
+    requestId.current += 1;
     const timer = window.setTimeout(() => void loadFirstPage(query, appliedFilters), query.trim() ? 420 : 0);
     return () => window.clearTimeout(timer);
   }, [query, appliedFilters, loadFirstPage]);
@@ -357,12 +369,14 @@ export function DiscoverPage() {
           for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
           return rankSpectroRecommendations([...merged.values()]);
         });
-        setSpectroState(personalized.movieCount < 3
-          ? "insufficient"
-          : personalized.recommendations.length ? "ready" : "no-matches");
+        const nextSpectroState = getDiscoverSpectroState(
+          personalized.movieCount,
+          personalized.recommendations.length
+        );
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
       }).catch(() => {
         if (currentRequest === requestId.current) {
-          setSpectroState((current) => current === "ready" ? current : "unavailable");
+          setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
         }
       });
       if (result.stale) {
