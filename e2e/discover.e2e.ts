@@ -75,6 +75,36 @@ async function configureTmdbMock(
       });
       return;
     }
+    if (url.pathname === "/3/movie/104") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 104,
+          title: "Prisma: tercera historia",
+          original_title: "Prisma: third story",
+          release_date: "2021-01-01",
+          runtime: 105,
+          revenue: 1000
+        })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/105") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 105,
+          title: "Prisma: película fuera del rango",
+          original_title: "Prisma: outside filter range",
+          release_date: "2005-01-01",
+          runtime: 100,
+          revenue: 5000
+        })
+      });
+      return;
+    }
     if (url.pathname === "/3/movie/101/credits") {
       await route.fulfill({
         status: 200,
@@ -252,6 +282,31 @@ test("permite cargar más resultados de una búsqueda con filtros activos", asyn
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: película fuera del rango" })).toHaveCount(0);
   await expect(moreResults).toHaveCount(0);
   await expect(page.locator(".poster-card")).toHaveCount(3);
+});
+
+test("mantiene el orden global por recaudación al cargar otra página de búsqueda", async ({ page }) => {
+  await configureTmdbMock(page, { multiPageSearch: true });
+  await page.goto("#/discover");
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.locator("#discover-genre").selectOption("18");
+  await dialog.locator("#discover-year-from").fill("2010");
+  await dialog.locator("#discover-sort").selectOption("revenue.desc");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+
+  await page.locator("#discover-search").fill("prisma");
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+
+  await page.getByRole("button", { name: "Buscar en más resultados" }).click();
+  await expect(posters).toHaveCount(3);
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: película fuera del rango" })).toHaveCount(0);
 });
 
 test("ordena los resultados de búsqueda por recaudación real", async ({ page }) => {
