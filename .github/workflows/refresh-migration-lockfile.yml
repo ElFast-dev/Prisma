@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - name: Resolve package lock without running lifecycle scripts
         run: npm install --package-lock-only --ignore-scripts
+      - name: Audit dependencies at every severity
+        run: npm audit --audit-level=low
       - name: Commit generated lockfile
         run: |
           set -euo pipefail
