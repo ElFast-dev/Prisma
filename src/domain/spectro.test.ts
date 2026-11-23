@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CollectionMovie, LibraryEntry, MovieRecord, Viewing } from "./types";
 import {
   analyzeSpectro,
+  rankSpectroCandidates,
   rankSpectroRecommendations,
   selectSpectroCandidates,
   SPECTRO_ALGORITHM_VERSION
@@ -309,6 +310,53 @@ describe("analyzeSpectro 2.6", () => {
     expect(result.recommendations[0].similarMovies[0].rating).toBeGreaterThan(0);
     expect(result.decisionGraph.candidateCount).toBe(1);
     expect(result.decisionGraph.signalCount).toBeGreaterThan(0);
+  });
+
+  it("usa metadatos enriquecidos de una candidata externa para cruzar dirección, reparto, país, idioma, duración y temas", () => {
+    const movies = [
+      movie("movie-1", "Drama", 18, 2015),
+      movie("movie-2", "Drama", 18, 2016),
+      movie("movie-3", "Drama", 18, 2017),
+      movie("movie-4", "Comedia", 35, 2005, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 85, keywords: ["Crimen"]
+      }),
+      movie("movie-5", "Comedia", 35, 2006, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 88, keywords: ["Crimen"]
+      }),
+      movie("movie-6", "Comedia", 35, 2007, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 90, keywords: ["Crimen"]
+      })
+    ];
+    const ratings = [10, 9, 10, 5, 6, 5];
+    const viewings = movies.map((item, index) => viewing(
+      "enriched-view-" + (index + 1),
+      item.id,
+      "2026-02-" + String(index + 1).padStart(2, "0"),
+      ratings[index]
+    ));
+    const analysis = analyzeSpectro({ movies, viewings, candidates: [] });
+    const externalCandidate = movie("movie-7", "Drama", 18, 2024, {
+      directors: ["Directora A"],
+      castMembers: ["Actor A"],
+      countries: ["Japón"],
+      originalLanguage: "ja",
+      runtimeMinutes: 110,
+      keywords: ["Drama"]
+    });
+
+    const recommendations = rankSpectroCandidates(
+      { movies, viewings, favoriteMovieIds: [] },
+      [externalCandidate],
+      analysis
+    );
+
+    expect(recommendations).toHaveLength(1);
+    expect(recommendations[0].reasons.map((reason) => reason.category)).toEqual(
+      expect.arrayContaining(["Género", "Dirección", "Reparto", "País", "Idioma original", "Duración", "Temas"])
+    );
   });
 
   it("resta puntos por señales negativas y muestra su contribución en el grafo", () => {
