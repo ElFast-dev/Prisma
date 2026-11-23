@@ -95,6 +95,23 @@ describe("Discover session", () => {
     expect(restored?.imageBase).toBe("https://image.tmdb.org/t/p/");
   });
 
+  it("migrates older implicit popularity sorting to the Spectro default", () => {
+    const storage = new MemoryStorage();
+    storage.setItem("prisma:discover-session:v1", JSON.stringify({
+      version: 1,
+      query: "",
+      appliedFilters: { sortBy: "popularity.desc" },
+      movies: [{ id: 22, title: "Película guardada" }],
+      page: 1,
+      totalPages: 1,
+      totalResults: 1,
+      imageBase: "https://image.tmdb.org/t/p/",
+      showingCachedData: false
+    }));
+
+    expect(readDiscoverSession(storage)?.appliedFilters.sortBy).toBe("spectro");
+  });
+
   it("ignores malformed or unsupported session data", () => {
     const storage = new MemoryStorage();
     storage.setItem("prisma:discover-session:v1", "{no es json");
