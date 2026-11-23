@@ -107,7 +107,7 @@ async function configureTmdbMock(
         body: JSON.stringify({
           page: Number(url.searchParams.get("page") ?? "1"),
           total_pages: options.multiPageSearch ? 2 : 1,
-          total_results: options.multiPageSearch ? 3 : 2,
+          total_results: options.multiPageSearch ? 4 : 2,
           results: options.multiPageSearch && url.searchParams.get("page") === "2"
             ? [{
               id: 104,
@@ -121,6 +121,18 @@ async function configureTmdbMock(
               vote_count: 700,
               original_language: "es",
               popularity: 16
+            }, {
+              id: 105,
+              title: "Prisma: película fuera del rango",
+              original_title: "Prisma: outside filter range",
+              overview: "Este resultado debe quedar excluido por el año.",
+              release_date: "2005-01-01",
+              poster_path: null,
+              genre_ids: [18],
+              vote_average: 7.9,
+              vote_count: 750,
+              original_language: "es",
+              popularity: 17
             }]
             : [{
               id: 101,
@@ -237,6 +249,7 @@ test("permite cargar más resultados de una búsqueda con filtros activos", asyn
   await expect.poll(() => searchRequests.length).toBe(2);
   expect(searchRequests[1].searchParams.get("page")).toBe("2");
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: tercera historia" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: película fuera del rango" })).toHaveCount(0);
   await expect(moreResults).toHaveCount(0);
   await expect(page.locator(".poster-card")).toHaveCount(3);
 });
