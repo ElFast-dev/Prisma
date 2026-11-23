@@ -461,7 +461,14 @@ export function predictSpectroMovies(
           vector.size > 0 && trainingVector.size > 0
         ) * model.coefficients[index];
       }
-      predictedRating = Math.max(1, Math.min(10, model.fallbackRating + adjustment));
+      // La predicción del kernel se acerca al promedio personal cuando la
+      // candidata solo comparte pocos rasgos con el historial. Así una
+      // coincidencia aislada no se interpreta como evidencia fuerte.
+      const evidenceWeight = Math.max(0, Math.min(1, maximumSimilarity));
+      predictedRating = Math.max(
+        1,
+        Math.min(10, model.fallbackRating + adjustment * evidenceWeight)
+      );
     }
 
     predictions.set(movie.id, {
