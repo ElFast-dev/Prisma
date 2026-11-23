@@ -14,9 +14,9 @@ El desarrollo nuevo se concentrará en hacer Espectro más inteligente y útil, 
 
 Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, perfil, logros, Espectro, integración TMDB, copias de seguridad, funcionamiento offline y publicación como PWA para Android.
 
-Espectro 2.6.0 presenta seis secciones de analítica local: Resumen, Actividad, Calificaciones, Universo, Perfil y Biblioteca. Muestra actividad de visionado, distribución de notas, metadatos cinematográficos, afinidades personales, interacciones estadísticas y estado de la Biblioteca.
+Espectro 2.7.0 presenta seis secciones de analítica local: Resumen, Actividad, Calificaciones, Universo, Perfil y Biblioteca. Muestra actividad de visionado, distribución de notas, metadatos cinematográficos, afinidades personales, interacciones estadísticas y estado de la Biblioteca.
 
-El motor calcula afinidades con respaldo y mantiene un predictor local. Descubrir reutiliza ese perfil para priorizar los resultados de TMDB; las valoraciones previstas y el encaje son estimaciones, no probabilidades. La búsqueda sigue consultando TMDB y los filtros personales de visibilidad se aplican localmente. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales.
+El motor calcula afinidades con respaldo y mantiene un predictor local. El kernel de predicción no asigna similitud de fondo a películas sin rasgos compartidos y contrae la nota prevista según la evidencia del vecino más cercano, para evitar sobreestimar títulos con metadatos escasos. Descubrir reutiliza ese perfil para priorizar los resultados de TMDB; las valoraciones previstas y el encaje son estimaciones, no probabilidades. La búsqueda sigue consultando TMDB y los filtros personales de visibilidad se aplican localmente. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales.
 
 El análisis intensivo se ejecuta en un Web Worker para mantener la interfaz disponible mientras Espectro calcula. Los datos, las valoraciones y el historial permanecen en el dispositivo. Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película.
 
