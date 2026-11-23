@@ -243,14 +243,21 @@ export function DiscoverPage() {
       setState("ready");
       void getSpectroDiscoverRecommendations(feed.movies).then((personalized) => {
         if (currentRequest !== requestId.current) return;
-        setRecommendations(personalized.recommendations);
-        setSpectroState(personalized.movieCount < 3
+        setRecommendations((current) => {
+          const merged = new Map(current.map((item) => [item.movie.tmdbId, item]));
+          for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
+          return rankSpectroRecommendations([...merged.values()]);
+        });
+        const nextSpectroState: SpectroState = personalized.movieCount < 3
           ? "insufficient"
-          : personalized.recommendations.length ? "ready" : "no-matches");
+          : personalized.recommendations.length ? "ready" : "no-matches";
+        setSpectroState((current) => current === "ready" && nextSpectroState !== "ready"
+          ? current
+          : nextSpectroState);
       }).catch(() => {
         if (currentRequest !== requestId.current) return;
         setRecommendations([]);
-        setSpectroState("unavailable");
+        setSpectroState((current) => current === "ready" ? current : "unavailable");
       });
     } catch (cause) {
       if (currentRequest !== requestId.current) return;
@@ -271,9 +278,12 @@ export function DiscoverPage() {
         setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
         setPendingTmdbIds(libraryStatus.pendingTmdbIds);
         setRecommendations(personalized.recommendations);
-        setSpectroState(personalized.movieCount < 3
+        const nextSpectroState: SpectroState = personalized.movieCount < 3
           ? "insufficient"
-          : personalized.recommendations.length ? "ready" : "no-matches");
+          : personalized.recommendations.length ? "ready" : "no-matches";
+        setSpectroState((current) => current === "ready" && nextSpectroState !== "ready"
+          ? current
+          : nextSpectroState);
       }).catch(() => {
         if (active) setSpectroState("unavailable");
       });
@@ -348,7 +358,9 @@ export function DiscoverPage() {
           ? "insufficient"
           : personalized.recommendations.length ? "ready" : "no-matches");
       }).catch(() => {
-        if (currentRequest === requestId.current) setSpectroState("unavailable");
+        if (currentRequest === requestId.current) {
+          setSpectroState((current) => current === "ready" ? current : "unavailable");
+        }
       });
       if (result.stale) {
         setShowingCachedData(true);
