@@ -359,7 +359,11 @@ export function SettingsPage() {
           <span>{configured ? "Credencial guardada en este navegador" : "Sin configurar"}</span>
         </div>
 
-        <form className="settings-form" onSubmit={handleTest}>
+        <form
+          className="settings-form"
+          onSubmit={handleTest}
+          data-prisma-unsaved={token.trim() !== getTmdbAccessToken() ? "true" : undefined}
+        >
           <label className="field-label" htmlFor="tmdb-token">API Read Access Token</label>
           <div className="secret-field">
             <input
