@@ -1,5 +1,11 @@
 import type { MovieRecord, SpectroSnapshot } from "../../domain/types";
-import type { TmdbMovieSummary } from "../tmdb/TmdbService";
+import {
+  getMovieAnalysisMetadata,
+  type TmdbMovieAnalysisMetadata,
+  type TmdbMovieSummary
+} from "../tmdb/TmdbService";
+import { getTmdbAccessToken } from "../tmdb/settings";
+import { runWithConcurrency } from "../../domain/asyncPool";
 import {
   getSpectroInputFingerprint,
   selectSpectroCandidates,
@@ -208,12 +214,54 @@ export async function getSpectroDiscoverRecommendations(
     ? cachedSnapshot.analysisPayload
     : (await getSpectroWorkspace()).analysis;
   const localMovies = new Map(movies.map((movie) => [movie.tmdbId, movie]));
-  const now = new Date().toISOString();
+  const metadataById = new Map<number, TmdbMovieAnalysisMetadata>();
+  const token = getTmdbAccessToken();
 
+  // Solo se enriquece cuando Espectro tiene muestra suficiente para recomendar.
+  // Las respuestas ya consultadas se reutilizan desde la caché TMDB y se limitan
+  // cuatro películas simultáneas para no saturar la API al explorar páginas.
+  if (token && analysis.movieCount >= 3) {
+    await runWithConcurrency(summaries, 4, async (summary) => {
+      const current = localMovies.get(summary.id);
+      const hasFeatureMetadata = Boolean(
+        current?.directors?.length
+        && current.castMembers?.length
+        && current.countries.length
+        && current.keywords?.length
+        && current.runtimeMinutes
+      );
+      if (hasFeatureMetadata) return;
+      try {
+        metadataById.set(summary.id, await getMovieAnalysisMetadata(token, summary.id));
+      } catch {
+        // La clasificación neutral por género, época e idioma sigue disponible.
+      }
+    });
+  }
+
+  const now = new Date().toISOString();
   const candidates: MovieRecord[] = summaries.map((summary) => {
     const current = localMovies.get(summary.id);
-    const releaseYear = summary.release_date && /^\d{4}/.test(summary.release_date)
-      ? Number(summary.release_date.slice(0, 4))
+    const metadata = metadataById.get(summary.id);
+    const details = metadata?.details;
+    const directors = metadata?.credits.crew
+      .filter((person) => person.job?.toLocaleLowerCase() === "director")
+      .map((person) => person.name)
+      .filter(Boolean);
+    const castMembers = metadata?.credits.cast
+      .slice(0, 12)
+      .map((person) => person.name)
+      .filter(Boolean);
+    const genres = details?.genres?.map((genre) => genre.name).filter(Boolean);
+    const genreIds = details?.genres?.map((genre) => genre.id)
+      .filter((id) => Number.isSafeInteger(id) && id > 0);
+    const countries = details?.production_countries
+      ?.map((country) => country.name)
+      .filter(Boolean);
+    const runtime = details?.runtime;
+    const releaseDate = details?.release_date ?? summary.release_date ?? current?.releaseDate;
+    const releaseYear = releaseDate && /^\d{4}/.test(releaseDate)
+      ? Number(releaseDate.slice(0, 4))
       : current?.releaseYear;
 
     return {
@@ -230,15 +278,23 @@ export async function getSpectroDiscoverRecommendations(
       id: current?.id ?? "tmdb-" + summary.id,
       tmdbId: summary.id,
       title: summary.title,
-      originalTitle: summary.original_title ?? current?.originalTitle,
-      overview: summary.overview ?? current?.overview,
-      releaseDate: summary.release_date ?? current?.releaseDate,
+      originalTitle: summary.original_title ?? details?.original_title ?? current?.originalTitle,
+      overview: summary.overview ?? details?.overview ?? current?.overview,
+      releaseDate,
       releaseYear,
-      voteAverage: summary.vote_average ?? current?.voteAverage,
-      genreIds: summary.genre_ids?.length ? summary.genre_ids : current?.genreIds,
-      originalLanguage: summary.original_language ?? current?.originalLanguage,
-      posterPath: summary.poster_path ?? current?.posterPath,
-      backdropPath: summary.backdrop_path ?? current?.backdropPath
+      runtimeMinutes: typeof runtime === "number" && Number.isFinite(runtime) && runtime > 0
+        ? runtime
+        : current?.runtimeMinutes,
+      voteAverage: summary.vote_average ?? details?.vote_average ?? current?.voteAverage,
+      genres: genres?.length ? genres : current?.genres ?? [],
+      genreIds: genreIds?.length ? genreIds : summary.genre_ids?.length ? summary.genre_ids : current?.genreIds,
+      countries: countries?.length ? countries : current?.countries ?? [],
+      directors: directors?.length ? directors : current?.directors ?? [],
+      castMembers: castMembers?.length ? castMembers : current?.castMembers ?? [],
+      keywords: metadata?.keywords.length ? metadata.keywords : current?.keywords ?? [],
+      originalLanguage: details?.original_language ?? summary.original_language ?? current?.originalLanguage,
+      posterPath: summary.poster_path ?? details?.poster_path ?? current?.posterPath,
+      backdropPath: summary.backdrop_path ?? details?.backdrop_path ?? current?.backdropPath
     };
   });
 
