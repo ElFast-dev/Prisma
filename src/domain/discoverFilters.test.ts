@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendDiscoverMovies,
+  appendDiscoverSpectroRecommendations,
   buildDiscoverMovieParams,
   countActiveDiscoverFilters,
   DEFAULT_DISCOVER_FILTERS,
@@ -152,6 +154,29 @@ describe("Discover filters", () => {
     expect(discoverFilterTitleMatch("Prisma Film", "Película Prisma", "PELÍCULA")).toBe(true);
     expect(discoverFilterTitleMatch("Otra película", "Another Movie", "prisma")).toBe(false);
     expect(discoverFilterTitleMatch("Otra película", undefined, "   ")).toBe(true);
+  });
+
+  it("appends new catalog pages without moving existing results or duplicating IDs", () => {
+    const firstPage = [{ id: 10 }, { id: 20 }, { id: 30 }];
+    const nextPage = [{ id: 30 }, { id: 40 }, { id: 50 }];
+
+    expect(appendDiscoverMovies(firstPage, nextPage))
+      .toEqual([{ id: 10 }, { id: 20 }, { id: 30 }, { id: 40 }, { id: 50 }]);
+  });
+
+  it("appends each new Spectro page after existing recommendations without reranking them", () => {
+    const firstPage = [
+      { movie: { tmdbId: 20 }, predictedRating: 9 },
+      { movie: { tmdbId: 10 }, predictedRating: 8 }
+    ];
+    const nextPage = [
+      { movie: { tmdbId: 40 }, predictedRating: 10 },
+      { movie: { tmdbId: 20 }, predictedRating: 9.5 },
+      { movie: { tmdbId: 30 }, predictedRating: 7 }
+    ];
+
+    expect(appendDiscoverSpectroRecommendations(firstPage, nextPage))
+      .toEqual([firstPage[0], firstPage[1], nextPage[0], nextPage[2]]);
   });
 
   it("shows only movies personally recommended by Spectro, in recommendation order", () => {
