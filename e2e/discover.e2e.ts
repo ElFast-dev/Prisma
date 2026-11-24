@@ -284,7 +284,7 @@ test("permite cargar más resultados de una búsqueda con filtros activos", asyn
   await expect(page.locator(".poster-card")).toHaveCount(3);
 });
 
-test("mantiene el orden global por recaudación al cargar otra página de búsqueda", async ({ page }) => {
+test("mantiene la posición de las películas anteriores al cargar otra página ordenada por recaudación", async ({ page }) => {
   await configureTmdbMock(page, { multiPageSearch: true });
   await page.goto("#/discover");
 
@@ -303,9 +303,10 @@ test("mantiene el orden global por recaudación al cargar otra página de búsqu
 
   await page.getByRole("button", { name: "Buscar en más resultados" }).click();
   await expect(posters).toHaveCount(3);
-  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
-  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
-  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  // La segunda página respeta su orden interno, pero nunca recoloca la primera.
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: película fuera del rango" })).toHaveCount(0);
 });
 
