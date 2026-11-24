@@ -20,6 +20,21 @@ export interface DiscoverSessionSnapshot {
   cachedFetchedAt: string;
 }
 
+export type DiscoverSpectroState = "loading" | "insufficient" | "ready" | "no-matches" | "unavailable";
+
+export function getDiscoverSpectroState(movieCount: number, recommendationCount: number): DiscoverSpectroState {
+  if (movieCount < 3) return "insufficient";
+  return recommendationCount > 0 ? "ready" : "no-matches";
+}
+
+/** Una respuesta tardía de otra página no debe degradar recomendaciones ya disponibles. */
+export function preserveDiscoverSpectroReadyState(
+  current: DiscoverSpectroState,
+  next: DiscoverSpectroState
+): DiscoverSpectroState {
+  return current === "ready" && next !== "ready" ? current : next;
+}
+
 interface SessionStorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -72,6 +87,8 @@ function restoreMovies(value: unknown): TmdbMovieSummary[] {
       ...(typeof item.backdrop_path === "string" || item.backdrop_path === null ? { backdrop_path: item.backdrop_path } : {}),
       ...(Array.isArray(item.genre_ids) ? { genre_ids: item.genre_ids.filter((id): id is number => Number.isSafeInteger(id)) } : {}),
       ...(typeof item.vote_average === "number" && Number.isFinite(item.vote_average) ? { vote_average: item.vote_average } : {}),
+      ...(typeof item.vote_count === "number" && Number.isFinite(item.vote_count) ? { vote_count: item.vote_count } : {}),
+      ...(typeof item.original_language === "string" ? { original_language: item.original_language.slice(0, 8) } : {}),
       ...(typeof item.popularity === "number" && Number.isFinite(item.popularity) ? { popularity: item.popularity } : {})
     }];
   }).slice(0, MAX_SAVED_MOVIES);
@@ -79,11 +96,14 @@ function restoreMovies(value: unknown): TmdbMovieSummary[] {
 
 export function getDiscoverFeedKey(query: string, filters: DiscoverFilters): string {
   const normalizedFilters = normalizeDiscoverFilters(filters);
-  if (hasActiveDiscoverFilters(normalizedFilters)) {
-    return "discover:" + JSON.stringify(normalizedFilters);
-  }
   const normalizedQuery = query.trim().toLocaleLowerCase("es");
-  return normalizedQuery ? "search:" + normalizedQuery : "trending";
+  const catalogFilters: Partial<DiscoverFilters> = { ...normalizedFilters };
+  delete catalogFilters.hideWatched;
+  delete catalogFilters.hidePending;
+  const source = normalizedQuery
+    ? "search:" + normalizedQuery
+    : hasActiveDiscoverFilters(normalizedFilters) ? "discover" : "trending";
+  return source + ":" + JSON.stringify(catalogFilters);
 }
 
 /**
@@ -98,12 +118,18 @@ export function readDiscoverSession(
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || parsed.version !== 1) return null;
+    if (!isRecord(parsed) || (parsed.version !== 1 && parsed.version !== 2)) return null;
 
     const query = typeof parsed.query === "string" ? parsed.query.slice(0, 200) : "";
-    const appliedFilters = normalizeDiscoverFilters(
-      isRecord(parsed.appliedFilters) ? parsed.appliedFilters as Partial<DiscoverFilters> : null
-    );
+    const storedFilters = isRecord(parsed.appliedFilters)
+      ? parsed.appliedFilters as Partial<DiscoverFilters>
+      : null;
+    // La versión 1 usaba popularity.desc como valor predeterminado. Desde la
+    // versión 2 el orden elegido es explícito y no debe reinterpretarse al restaurar.
+    const filtersToRestore = parsed.version === 1 && storedFilters?.sortBy === "popularity.desc"
+      ? { ...storedFilters, sortBy: "spectro" as const }
+      : storedFilters;
+    const appliedFilters = normalizeDiscoverFilters(filtersToRestore);
     const page = positiveInteger(parsed.page, 1, 500);
     const totalPages = Math.max(page, positiveInteger(parsed.totalPages, 1, 500));
 
@@ -130,7 +156,7 @@ export function writeDiscoverSession(
   if (!storage) return;
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 1,
+      version: 2,
       query: snapshot.query.slice(0, 200),
       appliedFilters: normalizeDiscoverFilters(snapshot.appliedFilters),
       movies: snapshot.movies.slice(0, MAX_SAVED_MOVIES),

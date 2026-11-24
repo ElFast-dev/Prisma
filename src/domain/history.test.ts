@@ -67,6 +67,8 @@ const filters: HistoryFilters = {
   query: "",
   notes: "all",
   rating: "all",
+  ratingMin: "",
+  ratingMax: "",
   fromDate: "",
   toDate: ""
 };
@@ -185,6 +187,20 @@ describe("Historial cinematográfico", () => {
     });
 
     expect(result.map((item) => item.viewing.id)).toEqual(["view-2"]);
+  });
+
+  it("permite definir un rango exacto de calificación del visionado", () => {
+    const items = buildHistoryItems([
+      viewing("view-low", "movie-1", 1, "2024-01-10", { rating: 6 }),
+      viewing("view-mid", "movie-1", 2, "2024-02-10", { rating: 7.5 }),
+      viewing("view-high", "movie-2", 1, "2024-03-10", { rating: 9.5 })
+    ], movies);
+    const result = filterHistoryItems(items, {
+      ...filters,
+      ratingMin: "7.5",
+      ratingMax: "9"
+    });
+    expect(result.map((item) => item.viewing.id)).toEqual(["view-mid"]);
   });
 
   it("no pierde la relación y omite solo registros cuya película no existe", () => {

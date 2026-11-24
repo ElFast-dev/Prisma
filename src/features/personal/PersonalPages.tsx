@@ -250,7 +250,11 @@ export function LibraryPage() {
     || Boolean(filtersState.query.trim())
     || Boolean(filtersState.genre)
     || Boolean(filtersState.yearFrom)
-    || Boolean(filtersState.yearTo);
+    || Boolean(filtersState.yearTo)
+    || Boolean(filtersState.runtimeMin)
+    || Boolean(filtersState.runtimeMax)
+    || Boolean(filtersState.myRatingMin)
+    || Boolean(filtersState.myRatingMax);
   const hasNonDefaultBrowseOptions = hasActiveFilters
     || filtersState.sort !== "added"
     || filtersState.sortDirection !== "desc";
@@ -443,6 +447,35 @@ export function LibraryPage() {
             </div>
 
             <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Duración de la película</span><span>Minutos</span></div>
+              <div className="library-year-range">
+                <label className="library-sheet-field" htmlFor="library-runtime-min">
+                  <span>Desde</span>
+                  <input id="library-runtime-min" className="library-refinement-select" type="number" min="1" max="600" placeholder="Sin mínimo" value={filtersState.runtimeMin} onChange={(event) => updateFilters({ runtimeMin: event.target.value })} />
+                </label>
+                <label className="library-sheet-field" htmlFor="library-runtime-max">
+                  <span>Hasta</span>
+                  <input id="library-runtime-max" className="library-refinement-select" type="number" min="1" max="600" placeholder="Sin máximo" value={filtersState.runtimeMax} onChange={(event) => updateFilters({ runtimeMax: event.target.value })} />
+                </label>
+              </div>
+            </div>
+
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Mi valoración</span><span>Escala 1–10</span></div>
+              <div className="library-year-range">
+                <label className="library-sheet-field" htmlFor="library-rating-min">
+                  <span>Desde</span>
+                  <input id="library-rating-min" className="library-refinement-select" type="number" min="1" max="10" step="0.5" placeholder="Sin mínimo" value={filtersState.myRatingMin} onChange={(event) => updateFilters({ myRatingMin: event.target.value })} />
+                </label>
+                <label className="library-sheet-field" htmlFor="library-rating-max">
+                  <span>Hasta</span>
+                  <input id="library-rating-max" className="library-refinement-select" type="number" min="1" max="10" step="0.5" placeholder="Sin máximo" value={filtersState.myRatingMax} onChange={(event) => updateFilters({ myRatingMax: event.target.value })} />
+                </label>
+              </div>
+              <p className="muted-copy">Solo aparecen títulos que tengan al menos una calificación personal.</p>
+            </div>
+
+            <div className="library-sheet-section">
               <div className="library-sheet-label-row"><span>Ordenar por</span><span>{selectedSort?.label ?? "Añadidos recientemente"}</span></div>
               <div className="library-sort-options" role="group" aria-label="Ordenar Biblioteca">
                 {sortOptions.map((option) => {
@@ -484,7 +517,13 @@ export function LibraryPage() {
                     filtersState.status !== "all" ? libraryStatusOptions.find((option) => option.id === filtersState.status)?.label : "",
                     filtersState.genre,
                     filtersState.yearFrom || filtersState.yearTo
-                      ? (filtersState.yearFrom || "…") + "–" + (filtersState.yearTo || "…")
+                      ? "Año " + (filtersState.yearFrom || "…") + "–" + (filtersState.yearTo || "…")
+                      : "",
+                    filtersState.runtimeMin || filtersState.runtimeMax
+                      ? "Duración " + (filtersState.runtimeMin || "…") + "–" + (filtersState.runtimeMax || "…") + " min"
+                      : "",
+                    filtersState.myRatingMin || filtersState.myRatingMax
+                      ? "Mi nota " + (filtersState.myRatingMin || "…") + "–" + (filtersState.myRatingMax || "…")
                       : "",
                     filtersState.query.trim() ? "Búsqueda" : ""]
                     .filter(Boolean).join(" · ")}
@@ -517,6 +556,8 @@ export function HistoryPage() {
   const [query, setQuery] = useState("");
   const [notesFilter, setNotesFilter] = useState<HistoryNotesFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<HistoryRatingFilter>("all");
+  const [ratingMin, setRatingMin] = useState("");
+  const [ratingMax, setRatingMax] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [sortOrder, setSortOrder] = useState<HistorySortOrder>("newest");
@@ -556,6 +597,8 @@ export function HistoryPage() {
           setQuery(savedFilters.query);
           setNotesFilter(savedFilters.notes);
           setRatingFilter(savedFilters.rating);
+          setRatingMin(savedFilters.ratingMin);
+          setRatingMax(savedFilters.ratingMax);
           setFromDate(savedFilters.fromDate);
           setToDate(savedFilters.toDate);
         }
@@ -573,9 +616,11 @@ export function HistoryPage() {
     query,
     notes: notesFilter,
     rating: ratingFilter,
+    ratingMin,
+    ratingMax,
     fromDate,
     toDate
-  }), [query, notesFilter, ratingFilter, fromDate, toDate]);
+  }), [query, notesFilter, ratingFilter, ratingMin, ratingMax, fromDate, toDate]);
 
   const filteredItems = useMemo(
     () => filterHistoryItems(items, filters, sortOrder),
@@ -606,6 +651,8 @@ export function HistoryPage() {
     setQuery(next.query);
     setNotesFilter(next.notes);
     setRatingFilter(next.rating);
+    setRatingMin(next.ratingMin);
+    setRatingMax(next.ratingMax);
     setFromDate(next.fromDate);
     setToDate(next.toDate);
     if (preferencesReady) {
@@ -657,6 +704,8 @@ export function HistoryPage() {
     : "—";
   const activeFilterCount = Number(notesFilter !== "all")
     + Number(ratingFilter !== "all")
+    + Number(Boolean(ratingMin))
+    + Number(Boolean(ratingMax))
     + Number(Boolean(fromDate))
     + Number(Boolean(toDate))
     + Number(viewMode !== "timeline")
@@ -669,6 +718,8 @@ export function HistoryPage() {
       query: "",
       notes: "all",
       rating: "all",
+      ratingMin: "",
+      ratingMax: "",
       fromDate: "",
       toDate: ""
     });
@@ -1076,6 +1127,38 @@ export function HistoryPage() {
                     {label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="history-filter-section">
+              <span className="history-filter-label">Rango personalizado de nota</span>
+              <div className="history-date-range">
+                <label className="history-filter-field">
+                  <span>Nota mínima</span>
+                  <input
+                    className="text-field"
+                    type="number"
+                    min="1"
+                    max={ratingMax || "10"}
+                    step="0.5"
+                    placeholder="Sin mínimo"
+                    value={ratingMin}
+                    onChange={(event) => updateHistoryFilters({ ratingMin: event.target.value })}
+                  />
+                </label>
+                <label className="history-filter-field">
+                  <span>Nota máxima</span>
+                  <input
+                    className="text-field"
+                    type="number"
+                    min={ratingMin || "1"}
+                    max="10"
+                    step="0.5"
+                    placeholder="Sin máximo"
+                    value={ratingMax}
+                    onChange={(event) => updateHistoryFilters({ ratingMax: event.target.value })}
+                  />
+                </label>
               </div>
             </div>
 

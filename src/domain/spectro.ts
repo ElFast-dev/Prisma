@@ -12,7 +12,7 @@ export type {
   SpectroNetworkCluster
 } from "./spectroNetwork";
 
-export const SPECTRO_ALGORITHM_VERSION = "2.6.0";
+export const SPECTRO_ALGORITHM_VERSION = "2.8.0";
 export const SPECTRO_MINIMUM_MOVIES = 3;
 export const SPECTRO_MINIMUM_AFFINITY_MOVIES = 2;
 export const SPECTRO_MINIMUM_TREND_MOVIES = 3;
@@ -471,8 +471,8 @@ function synopsisFeatures(movie: MovieRecord): Feature[] {
   const words = (movie.overview ?? "")
     .toLocaleLowerCase()
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
-    .match(/[\\p{L}\\p{N}]{3,}/gu) ?? [];
+    .replace(/[\u0300-\u036f]/g, "")
+    .match(/[\p{L}\p{M}\p{N}]{3,}/gu) ?? [];
   const tokens = words.filter((word) => !SYNOPSIS_STOPWORDS.has(word));
   const features = new Map<string, Feature>();
 
@@ -1021,11 +1021,21 @@ function buildRecommendations(
       .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
 
     const modelPrediction = modelPredictions.get(movie.id);
+    const predictedRating = modelPrediction?.predictedRating
+      ?? round(clamp(overallAverage + netRatingDifference, 0, 10));
+    const hasDeclaredFavorite = accumulators.some((item) => item.reason.source === "favoritos");
+    // Una afinidad estructurada positiva no debe sobreponerse a evidencia comparable
+    // que predice una nota materialmente inferior al promedio personal. La puerta
+    // se desactiva con evidencia débil (p. ej., una coincidencia aislada) o con un favorito explícito.
+    const hasReliableNegativePrediction = modelPrediction !== undefined
+      && modelPrediction.maximumSimilarity >= 0.4
+      && predictedRating < overallAverage - 0.25;
+    if (hasReliableNegativePrediction && !hasDeclaredFavorite) continue;
+
     ranked.push({
       movie,
       fitPercentage,
-      predictedRating: modelPrediction?.predictedRating
-        ?? round(clamp(overallAverage + netRatingDifference, 0, 10)),
+      predictedRating,
       confidence: recommendationConfidence(reasons),
       reasons,
       similarMovies: modelPrediction?.neighbors ?? []
@@ -1052,6 +1062,62 @@ function buildRecommendations(
       ratedMovies.length
     )
   };
+}
+
+
+/**
+ * Reutiliza las afinidades y señales de una instantánea de Espectro para
+ * ordenar candidatas externas sin recalcular patrones ni escribir en IndexedDB.
+ */
+export function rankSpectroCandidates(
+  input: Pick<SpectroInput, "movies" | "viewings" | "favoriteMovieIds">,
+  candidates: MovieRecord[],
+  analysis: SpectroAnalysis,
+  options: { includeWatched?: boolean } = {}
+): SpectroRecommendation[] {
+  const moviesById = new Map(input.movies.map((movie) => [movie.id, movie]));
+  const ratingsByMovie = new Map<string, number[]>();
+
+  for (const viewing of input.viewings) {
+    if (viewing.rating === undefined) continue;
+    const ratings = ratingsByMovie.get(viewing.movieId) ?? [];
+    ratings.push(viewing.rating);
+    ratingsByMovie.set(viewing.movieId, ratings);
+  }
+
+  const ratedMovies: RatedMovie[] = [...ratingsByMovie.entries()]
+    .flatMap(([movieId, ratings]) => {
+      const movie = moviesById.get(movieId);
+      return movie && ratings.length
+        ? [{ movie, averageRating: mean(ratings) }]
+        : [];
+    });
+
+  if (ratedMovies.length < SPECTRO_MINIMUM_MOVIES) return [];
+
+  const overallAverage = mean(ratedMovies.map((item) => item.averageRating));
+  const affinities = [
+    ...analysis.genreAffinities,
+    ...analysis.directorAffinities,
+    ...analysis.castAffinities,
+    ...analysis.countryAffinities,
+    ...analysis.decadeAffinities,
+    ...analysis.languageAffinities,
+    ...analysis.durationAffinities,
+    ...analysis.themeAffinities
+  ];
+  const watchedMovieIds = options.includeWatched
+    ? new Set<string>()
+    : new Set(input.viewings.map((viewing) => viewing.movieId));
+
+  return buildRecommendations(
+    candidates,
+    affinities,
+    analysis.favoriteSignals,
+    watchedMovieIds,
+    overallAverage,
+    ratedMovies
+  ).recommendations;
 }
 
 export function analyzeSpectro(input: SpectroInput): SpectroAnalysis {

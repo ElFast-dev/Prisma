@@ -14,9 +14,9 @@ El desarrollo nuevo se concentrará en hacer Espectro más inteligente y útil, 
 
 Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, perfil, logros, Espectro, integración TMDB, copias de seguridad, funcionamiento offline y publicación como PWA para Android.
 
-Espectro 2.6.0 presenta seis secciones de analítica local: Resumen, Actividad, Calificaciones, Universo, Perfil y Biblioteca. Muestra actividad de visionado, distribución de notas, metadatos cinematográficos, afinidades personales, interacciones estadísticas y estado de la Biblioteca.
+Espectro 2.8.0 presenta seis secciones de analítica local: Resumen, Actividad, Calificaciones, Universo, Perfil y Biblioteca. Muestra actividad de visionado, distribución de notas, metadatos cinematográficos, afinidades personales, interacciones estadísticas y estado de la Biblioteca.
 
-El motor calcula afinidades con respaldo y mantiene un predictor local para candidatas que ya existen en Prisma. La nota prevista y el encaje son estimaciones, no probabilidades; no hay una pantalla separada de recomendaciones ni búsquedas ilimitadas en TMDB. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales.
+El motor calcula afinidades con respaldo y mantiene un predictor local. El kernel de predicción no asigna similitud de fondo a películas sin rasgos compartidos y contrae la nota prevista según la evidencia del vecino más cercano, para evitar sobreestimar títulos con metadatos escasos. Descubrir reutiliza ese perfil para priorizar los resultados de TMDB; las valoraciones previstas y el encaje son estimaciones, no probabilidades. La búsqueda sigue consultando TMDB y los filtros personales de visibilidad se aplican localmente. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales. Cuando una candidata alcanza una similitud de al menos 0,40 y el predictor estima una nota al menos 0,25 puntos inferior al promedio personal, Espectro la excluye, salvo que coincida con un favorito declarado. Una coincidencia aislada no basta para descartarla.
 
 El análisis intensivo se ejecuta en un Web Worker para mantener la interfaz disponible mientras Espectro calcula. Los datos, las valoraciones y el historial permanecen en el dispositivo. Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película.
 
@@ -74,3 +74,5 @@ Abre Ajustes dentro de Prisma, introduce tu propia API Read Access Token y pulsa
 ## Licencia
 
 La licencia del código fuente está pendiente de decisión. La autorización específica de uso de TMDB facilitada para Prisma es independiente de la licencia del código de este repositorio.
+
+La simulación reproducible del recomendador (perfil sintético, sin datos personales ni llamadas a TMDB) se ejecuta con `npm run test:spectro:simulation`; valida que las sinopsis influyan en las predicciones, que las señales negativas no se recomienden y que los metadatos escasos no generen confianza artificial.

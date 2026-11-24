@@ -32,6 +32,102 @@ interface PredictionVocabulary {
 
 type SparseVector = Map<number, number>;
 
+interface TrainedPredictionModel {
+  training: readonly SpectroPredictionTrainingMovie[];
+  vocabulary: PredictionVocabulary;
+  trainingVectors: readonly SparseVector[];
+  fallbackRating: number;
+  coefficients: Float64Array | null;
+}
+
+// La exploración consulta varias páginas con el mismo historial local. Mantener
+// dos modelos recientes evita repetir la factorización cúbica sin almacenar
+// preferencias en IndexedDB, localStorage ni enviarlas fuera del dispositivo.
+const MAX_CACHED_PREDICTION_MODELS = 2;
+const trainedPredictionModels = new Map<string, TrainedPredictionModel>();
+
+function getTrainingFingerprint(training: readonly SpectroPredictionTrainingMovie[]): string {
+  const serialized = JSON.stringify(training.map(({ movie, rating }) => [
+    movie.id,
+    movie.title,
+    movie.genres,
+    movie.genreIds,
+    movie.countries,
+    movie.directors,
+    movie.castMembers,
+    movie.keywords,
+    movie.originalLanguage,
+    movie.releaseYear,
+    movie.runtimeMinutes,
+    movie.overview,
+    rating
+  ]));
+  let first = 2166136261;
+  let second = 2246822519;
+  for (let index = 0; index < serialized.length; index += 1) {
+    const code = serialized.charCodeAt(index);
+    first = Math.imul(first ^ code, 16777619);
+    second = Math.imul(second ^ code, 3266489917);
+  }
+  return training.length + ":" + serialized.length + ":"
+    + (first >>> 0).toString(16).padStart(8, "0")
+    + (second >>> 0).toString(16).padStart(8, "0");
+}
+
+function trainPredictionModel(
+  training: readonly SpectroPredictionTrainingMovie[]
+): TrainedPredictionModel {
+  const fallbackRating = mean(training.map((item) => item.rating));
+  const vocabulary = buildVocabulary(training);
+  const trainingVectors = training.map((item) => vectorize(item.movie, vocabulary));
+  const size = training.length;
+  const coefficients = size >= 3
+    ? (() => {
+      const matrix = new Float64Array(size * size);
+      for (let row = 0; row < size; row += 1) {
+        for (let column = 0; column <= row; column += 1) {
+          const kernel = rbfKernel(
+            cosineSimilarity(trainingVectors[row], trainingVectors[column]),
+            trainingVectors[row].size > 0 && trainingVectors[column].size > 0
+          );
+          matrix[row * size + column] = kernel;
+          matrix[column * size + row] = kernel;
+        }
+        matrix[row * size + row] += RIDGE_REGULARIZATION;
+      }
+
+      const centeredRatings = Float64Array.from(
+        training,
+        (item) => item.rating - fallbackRating
+      );
+      return solvePositiveDefinite(matrix, centeredRatings, size);
+    })()
+    : null;
+
+  return { training, vocabulary, trainingVectors, fallbackRating, coefficients };
+}
+
+function getTrainedPredictionModel(
+  training: readonly SpectroPredictionTrainingMovie[]
+): TrainedPredictionModel {
+  const fingerprint = getTrainingFingerprint(training);
+  const cached = trainedPredictionModels.get(fingerprint);
+  if (cached) {
+    // LRU: las dos huellas más recientes permanecen disponibles durante la sesión.
+    trainedPredictionModels.delete(fingerprint);
+    trainedPredictionModels.set(fingerprint, cached);
+    return cached;
+  }
+
+  const model = trainPredictionModel(training);
+  if (trainedPredictionModels.size >= MAX_CACHED_PREDICTION_MODELS) {
+    const oldest = trainedPredictionModels.keys().next().value;
+    if (oldest !== undefined) trainedPredictionModels.delete(oldest);
+  }
+  trainedPredictionModels.set(fingerprint, model);
+  return model;
+}
+
 const KERNEL_GAMMA = 0.5;
 const RIDGE_REGULARIZATION = 0.25;
 const MINIMUM_TEXT_DOCUMENT_FREQUENCY = 2;
@@ -98,7 +194,7 @@ const structuredFeatures = (movie: MovieRecord): Set<string> => {
 
 const overviewTerms = (overview: string | undefined): Map<string, number> => {
   const normalized = normalizeText(overview ?? "");
-  const tokens = (normalized.match(/[\\p{L}\\p{N}_]{2,}/gu) ?? [])
+  const tokens = (normalized.match(/[\p{L}\p{M}\p{N}_]{2,}/gu) ?? [])
     .filter((token) => !STOPWORDS.has(token));
   const terms = new Map<string, number>();
 
@@ -218,9 +314,17 @@ function cosineSimilarity(left: SparseVector, right: SparseVector): number {
 }
 
 function rbfKernel(similarity: number, hasFeatures = true): number {
-  if (!hasFeatures) return 0;
-  const squaredDistance = Math.max(0, 2 - 2 * similarity);
-  return Math.exp(-KERNEL_GAMMA * squaredDistance);
+  if (!hasFeatures || !Number.isFinite(similarity)) return 0;
+  // En vectores unitarios, el RBF clásico deja un suelo exp(-2γ) incluso
+  // cuando no comparten ningún rasgo. Se elimina ese suelo y se normaliza
+  // [0, 1], para que solo las coincidencias reales aporten señal.
+  // La serie exp(2γs) - 1 conserva un kernel positivo semidefinido.
+  const boundedSimilarity = Math.max(0, Math.min(1, similarity));
+  const denominator = Math.expm1(2 * KERNEL_GAMMA);
+  if (!Number.isFinite(denominator) || denominator <= 0) return 0;
+  return Math.max(0, Math.min(1,
+    Math.expm1(2 * KERNEL_GAMMA * boundedSimilarity) / denominator
+  ));
 }
 
 /**
@@ -311,10 +415,14 @@ function nearestNeighbors(
  * El vocabulario se ajusta exclusivamente con películas calificadas. Los
  * candidatos no pueden introducir términos ni estadísticas de entrenamiento.
  */
+
 export function predictSpectroMovies(
   trainingInput: readonly SpectroPredictionTrainingMovie[],
   candidates: readonly MovieRecord[]
 ): Map<string, SpectroMoviePrediction> {
+  const predictions = new Map<string, SpectroMoviePrediction>();
+  if (candidates.length === 0 || trainingInput.length === 0) return predictions;
+
   const ratingsByMovie = new Map<string, {
     movie: MovieRecord;
     ratings: number[];
@@ -333,49 +441,34 @@ export function predictSpectroMovies(
     rating: item.ratings.reduce((sum, rating) => sum + rating, 0) / item.ratings.length
   }));
 
-  const predictions = new Map<string, SpectroMoviePrediction>();
   if (training.length === 0) return predictions;
 
-  const fallbackRating = mean(training.map((item) => item.rating));
-  const vocabulary = buildVocabulary(training);
-  const trainingVectors = training.map((item) => vectorize(item.movie, vocabulary));
-  const size = training.length;
-  const coefficients = size >= 3
-    ? (() => {
-      const matrix = new Float64Array(size * size);
-      for (let row = 0; row < size; row += 1) {
-        for (let column = 0; column <= row; column += 1) {
-          const kernel = rbfKernel(
-            cosineSimilarity(trainingVectors[row], trainingVectors[column]),
-            trainingVectors[row].size > 0 && trainingVectors[column].size > 0
-          );
-          matrix[row * size + column] = kernel;
-          matrix[column * size + row] = kernel;
-        }
-        matrix[row * size + row] += RIDGE_REGULARIZATION;
-      }
-
-      const centeredRatings = Float64Array.from(
-        training,
-        (item) => item.rating - fallbackRating
-      );
-      return solvePositiveDefinite(matrix, centeredRatings, size);
-    })()
-    : null;
-
+  // La matriz RBF y su factorización dependen solo del historial y sus
+  // metadatos; las candidatas de cada página se vectorizan usando el modelo.
+  const model = getTrainedPredictionModel(training);
   for (const movie of candidates) {
-    const vector = vectorize(movie, vocabulary);
-    const neighbors = nearestNeighbors(vector, training, trainingVectors);
+    const vector = vectorize(movie, model.vocabulary);
+    const neighbors = nearestNeighbors(vector, model.training, model.trainingVectors);
     const maximumSimilarity = neighbors[0]?.similarity ?? 0;
-    let predictedRating = fallbackRating;
+    let predictedRating = model.fallbackRating;
 
-    if (coefficients && vector.size > 0) {
+    if (model.coefficients && vector.size > 0) {
       let adjustment = 0;
-      for (let index = 0; index < size; index += 1) {
-        const similarity = cosineSimilarity(vector, trainingVectors[index]);
-        adjustment += rbfKernel(similarity, vector.size > 0 && trainingVectors[index].size > 0) * coefficients[index];
+      for (let index = 0; index < model.training.length; index += 1) {
+        const trainingVector = model.trainingVectors[index];
+        adjustment += rbfKernel(
+          cosineSimilarity(vector, trainingVector),
+          vector.size > 0 && trainingVector.size > 0
+        ) * model.coefficients[index];
       }
-      predictedRating = Math.max(1, Math.min(10, fallbackRating + adjustment));
+      // La predicción del kernel se acerca al promedio personal cuando la
+      // candidata solo comparte pocos rasgos con el historial. Así una
+      // coincidencia aislada no se interpreta como evidencia fuerte.
+      const evidenceWeight = Math.max(0, Math.min(1, maximumSimilarity));
+      predictedRating = Math.max(
+        1,
+        Math.min(10, model.fallbackRating + adjustment * evidenceWeight)
+      );
     }
 
     predictions.set(movie.id, {

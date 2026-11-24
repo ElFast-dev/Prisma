@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Film, LoaderCircle, WifiOff, SlidersHorizontal } from "lucide-react";
+import { Search, X, Film, LoaderCircle, WifiOff, SlidersHorizontal, BrainCircuit } from "lucide-react";
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
@@ -7,10 +7,10 @@ import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import {
   countActiveDiscoverFilters,
   DEFAULT_DISCOVER_FILTERS,
-  discoverFilterTitleMatch,
   DISCOVER_GENRES,
   DISCOVER_LANGUAGES,
   getDiscoverFilterErrors,
+  filterDiscoverLibraryVisibility,
   hasActiveDiscoverFilters,
   normalizeDiscoverFilters,
   type DiscoverFilters
@@ -21,15 +21,90 @@ import {
   getTmdbImageUrl,
   getTrendingMovies,
   searchMovies,
+  getMovieDetailsForEnrichment,
+  type TmdbMovieDetails,
   type TmdbMovieSummary
 } from "../../infrastructure/tmdb/TmdbService";
 import { getTmdbAccessToken } from "../../infrastructure/tmdb/settings";
+import { getDiscoverLibraryStatus } from "../../infrastructure/database/movieRepository";
+import { getSpectroDiscoverRecommendations } from "../../infrastructure/database/spectroRepository";
+import {
+  rankSpectroRecommendations,
+  type SpectroRecommendation
+} from "../../domain/spectro";
+import { runWithConcurrency } from "../../domain/asyncPool";
 import { saveCurrentRouteScrollPosition } from "../../navigation/scrollRestoration";
-import { getDiscoverFeedKey, readDiscoverSession, writeDiscoverSession } from "./discoverSession";
+import {
+  getDiscoverFeedKey,
+  getDiscoverSpectroState,
+  preserveDiscoverSpectroReadyState,
+  readDiscoverSession,
+  writeDiscoverSession,
+  type DiscoverSpectroState
+} from "./discoverSession";
 
 type FeedState = "loading" | "ready" | "error" | "unconfigured";
+async function filterSearchResults(
+  token: string,
+  results: TmdbMovieSummary[],
+  filters: DiscoverFilters
+): Promise<TmdbMovieSummary[]> {
+  const needsRuntime = Boolean(filters.runtimeMin || filters.runtimeMax);
+  const needsRevenue = filters.sortBy === "revenue.desc";
+  const needsDetails = needsRuntime || needsRevenue;
+  const detailsById = new Map<number, TmdbMovieDetails | undefined>();
+  if (needsDetails) {
+    await runWithConcurrency(results, 4, async (movie) => {
+      try {
+        detailsById.set(movie.id, await getMovieDetailsForEnrichment(token, movie.id));
+      } catch {
+        detailsById.set(movie.id, undefined);
+      }
+    });
+  }
+
+  const filtered = results.filter((movie) => {
+    if (filters.genreId && !movie.genre_ids?.includes(Number(filters.genreId))) return false;
+    const year = movie.release_date && /^\d{4}/.test(movie.release_date)
+      ? Number(movie.release_date.slice(0, 4))
+      : undefined;
+    if (filters.yearFrom && (year === undefined || year < Number(filters.yearFrom))) return false;
+    if (filters.yearTo && (year === undefined || year > Number(filters.yearTo))) return false;
+    if (filters.minVoteAverage && (movie.vote_average ?? 0) < Number(filters.minVoteAverage)) return false;
+    if (filters.minVoteCount && (movie.vote_count ?? 0) < Number(filters.minVoteCount)) return false;
+    if (filters.originalLanguage && movie.original_language !== filters.originalLanguage) return false;
+    if (needsRuntime) {
+      const runtime = detailsById.get(movie.id)?.runtime;
+      if (!Number.isFinite(runtime) || !runtime || runtime <= 0) return false;
+      if (filters.runtimeMin && runtime < Number(filters.runtimeMin)) return false;
+      if (filters.runtimeMax && runtime > Number(filters.runtimeMax)) return false;
+    }
+    return true;
+  });
+
+  const sorted = [...filtered];
+  switch (filters.sortBy) {
+    case "vote_average.desc": sorted.sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0)); break;
+    case "primary_release_date.desc": sorted.sort((a, b) => (b.release_date ?? "").localeCompare(a.release_date ?? "")); break;
+    case "primary_release_date.asc": sorted.sort((a, b) => (a.release_date ?? "").localeCompare(b.release_date ?? "")); break;
+    case "revenue.desc": sorted.sort((a, b) => {
+      const left = detailsById.get(a.id)?.revenue;
+      const right = detailsById.get(b.id)?.revenue;
+      const leftValid = typeof left === "number" && Number.isFinite(left) && left >= 0;
+      const rightValid = typeof right === "number" && Number.isFinite(right) && right >= 0;
+      if (!leftValid && !rightValid) return (b.popularity ?? 0) - (a.popularity ?? 0);
+      if (!leftValid) return 1;
+      if (!rightValid) return -1;
+      return right - left;
+    }); break;
+    case "original_title.asc": sorted.sort((a, b) => (a.original_title ?? a.title).localeCompare(b.original_title ?? b.title, "es", { sensitivity: "base" })); break;
+    default: sorted.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0)); break;
+  }
+  return sorted;
+}
 
 const SORT_OPTIONS = [
+  { id: "spectro", label: "Para ti · Espectro" },
   { id: "popularity.desc", label: "Más populares" },
   { id: "vote_average.desc", label: "Mejor valoradas" },
   { id: "primary_release_date.desc", label: "Estreno más reciente" },
@@ -51,6 +126,10 @@ export function DiscoverPage() {
     restoredSession?.appliedFilters ?? DEFAULT_DISCOVER_FILTERS
   );
   const [movies, setMovies] = useState<TmdbMovieSummary[]>(restoredSession?.movies ?? []);
+  const [recommendations, setRecommendations] = useState<SpectroRecommendation[]>([]);
+  const [spectroState, setSpectroState] = useState<DiscoverSpectroState>("loading");
+  const [watchedTmdbIds, setWatchedTmdbIds] = useState<number[]>([]);
+  const [pendingTmdbIds, setPendingTmdbIds] = useState<number[]>([]);
   const [state, setState] = useState<FeedState>(hasRestoredMovies ? "ready" : "loading");
   const [error, setError] = useState("");
   const [showingCachedData, setShowingCachedData] = useState(restoredSession?.showingCachedData ?? false);
@@ -59,9 +138,11 @@ export function DiscoverPage() {
   const [totalPages, setTotalPages] = useState(restoredSession?.totalPages ?? 1);
   const [totalResults, setTotalResults] = useState(restoredSession?.totalResults ?? 0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
   const [imageBase, setImageBase] = useState(restoredSession?.imageBase ?? "https://image.tmdb.org/t/p/");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
+  const feedRevisionRef = useRef(0);
   const loadedFeedKeyRef = useRef(
     hasRestoredMovies && restoredSession
       ? getDiscoverFeedKey(restoredSession.query, restoredSession.appliedFilters)
@@ -70,11 +151,22 @@ export function DiscoverPage() {
 
   const activeFilterCount = countActiveDiscoverFilters(appliedFilters);
   const filtersActive = activeFilterCount > 0;
+  const catalogFiltersActive = hasActiveDiscoverFilters(appliedFilters);
   const filterErrors = getDiscoverFilterErrors(draftFilters);
-  const visibleMovies = useMemo(() => {
-    if (!filtersActive || !query.trim()) return movies;
-    return movies.filter((movie) => discoverFilterTitleMatch(movie.title, movie.original_title, query));
-  }, [filtersActive, movies, query]);
+  const rankedMovies = useMemo(() => {
+    if (appliedFilters.sortBy !== "spectro" || !recommendations.length) return movies;
+    const ranking = new Map(recommendations.map((item, index) => [item.movie.tmdbId, index]));
+    return [...movies].sort((left, right) => (
+      (ranking.get(left.id) ?? Number.MAX_SAFE_INTEGER)
+      - (ranking.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+    ));
+  }, [movies, recommendations, appliedFilters.sortBy]);
+  const visibleMovies = useMemo(() => filterDiscoverLibraryVisibility(
+    rankedMovies,
+    new Set(watchedTmdbIds),
+    new Set(pendingTmdbIds),
+    appliedFilters
+  ), [rankedMovies, watchedTmdbIds, pendingTmdbIds, appliedFilters.hideWatched, appliedFilters.hidePending]);
   const activeFilterChips = useMemo(() => {
     const chips: { key: string; label: string }[] = [];
     const genre = DISCOVER_GENRES.find((item) => String(item.id) === appliedFilters.genreId);
@@ -96,12 +188,16 @@ export function DiscoverPage() {
     if (appliedFilters.minVoteAverage) chips.push({ key: "rating", label: "Valoración: ≥ " + appliedFilters.minVoteAverage });
     if (appliedFilters.minVoteCount) chips.push({ key: "votes", label: "Votos: ≥ " + Number(appliedFilters.minVoteCount).toLocaleString("es-PA") });
     if (language) chips.push({ key: "language", label: "Idioma: " + language.label });
-    if (sort && appliedFilters.sortBy !== "popularity.desc") chips.push({ key: "sort", label: "Orden: " + sort.label });
+    if (appliedFilters.hideWatched) chips.push({ key: "watched", label: "Ocultar vistas" });
+    if (appliedFilters.hidePending) chips.push({ key: "pending", label: "Ocultar pendientes" });
+    if (sort && appliedFilters.sortBy !== "spectro") chips.push({ key: "sort", label: "Orden: " + sort.label });
     return chips;
   }, [appliedFilters]);
 
   const loadFirstPage = useCallback(async (searchText: string, filters: DiscoverFilters) => {
     const currentRequest = ++requestId.current;
+    feedRevisionRef.current += 1;
+    loadingMoreRef.current = false;
     loadedFeedKeyRef.current = getDiscoverFeedKey(searchText, filters);
     const token = getTmdbAccessToken();
     if (!token) {
@@ -112,6 +208,8 @@ export function DiscoverPage() {
     }
 
     setState("loading");
+    setSpectroState("loading");
+    setRecommendations([]);
     setError("");
     setMovies([]);
     setShowingCachedData(false);
@@ -123,28 +221,54 @@ export function DiscoverPage() {
 
     try {
       const useFilters = hasActiveDiscoverFilters(filters);
-      const [feed, imageConfig] = await Promise.all([
-        useFilters
-          ? discoverMovies(token, filters, 1)
-          : searchText.trim()
-            ? searchMovies(token, searchText, 1)
+      const [rawFeed, imageConfig, libraryStatus] = await Promise.all([
+        searchText.trim()
+          ? searchMovies(token, searchText, 1)
+          : useFilters
+            ? discoverMovies(token, filters, 1)
             : getTrendingMovies(token, 1),
         getImageConfiguration(token).catch(() => ({
           secure_base_url: "https://image.tmdb.org/t/p/",
           poster_sizes: [],
           backdrop_sizes: [],
           profile_sizes: []
-        }))
+        })),
+        getDiscoverLibraryStatus().catch(() => ({ watchedTmdbIds: [], pendingTmdbIds: [] }))
       ]);
+      const feed = searchText.trim() && useFilters
+        ? { ...rawFeed, movies: await filterSearchResults(token, rawFeed.movies, filters) }
+        : rawFeed;
       if (currentRequest !== requestId.current) return;
       setMovies(feed.movies);
-      setTotalPages(feed.totalPages);
-      setTotalResults(feed.totalResults);
+      setTotalPages(rawFeed.totalPages);
+      setTotalResults(rawFeed.totalResults);
       setPage(1);
       setImageBase(imageConfig.secure_base_url);
       setShowingCachedData(feed.stale);
       setCachedFetchedAt(feed.stale ? feed.fetchedAt : "");
+      setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
+      setPendingTmdbIds(libraryStatus.pendingTmdbIds);
+      if (currentRequest !== requestId.current) return;
+      // Primero se presenta el catálogo; el enriquecimiento de Espectro continúa
+      // en segundo plano para no bloquear la búsqueda en las consultas de metadatos.
       setState("ready");
+      void getSpectroDiscoverRecommendations(feed.movies).then((personalized) => {
+        if (currentRequest !== requestId.current) return;
+        setRecommendations((current) => {
+          const merged = new Map(current.map((item) => [item.movie.tmdbId, item]));
+          for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
+          return rankSpectroRecommendations([...merged.values()]);
+        });
+        const nextSpectroState = getDiscoverSpectroState(
+          personalized.movieCount,
+          personalized.recommendations.length
+        );
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
+      }).catch(() => {
+        if (currentRequest !== requestId.current) return;
+        // Un error tardío no debe borrar recomendaciones que ya aportó otra página.
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
+      });
     } catch (cause) {
       if (currentRequest !== requestId.current) return;
       setState("error");
@@ -152,9 +276,54 @@ export function DiscoverPage() {
     }
   }, []);
 
+
+  useEffect(() => {
+    let active = true;
+    const sessionRequest = requestId.current;
+    const sessionFeedKey = loadedFeedKeyRef.current;
+    const sessionRevision = feedRevisionRef.current;
+    const sessionMovies = movies;
+    if (sessionMovies.length > 0) {
+      void Promise.all([
+        getDiscoverLibraryStatus(),
+        getSpectroDiscoverRecommendations(sessionMovies)
+      ]).then(([libraryStatus, personalized]) => {
+        // La sesión restaurada solo puede completar su propio feed, nunca una
+        // búsqueda o página más reciente iniciada mientras se calculaba Espectro.
+        if (
+          !active
+          || sessionRequest !== requestId.current
+          || sessionFeedKey !== loadedFeedKeyRef.current
+          || sessionRevision !== feedRevisionRef.current
+        ) return;
+        setWatchedTmdbIds(libraryStatus.watchedTmdbIds);
+        setPendingTmdbIds(libraryStatus.pendingTmdbIds);
+        setRecommendations(rankSpectroRecommendations(personalized.recommendations));
+        const nextSpectroState = getDiscoverSpectroState(
+          personalized.movieCount,
+          personalized.recommendations.length
+        );
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
+      }).catch(() => {
+        if (
+          active
+          && sessionRequest === requestId.current
+          && sessionFeedKey === loadedFeedKeyRef.current
+          && sessionRevision === feedRevisionRef.current
+        ) {
+          setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
+        }
+      });
+    }
+    return () => { active = false; };
+  }, []);
+
   useEffect(() => {
     const requestedFeedKey = getDiscoverFeedKey(query, appliedFilters);
     if (loadedFeedKeyRef.current === requestedFeedKey) return;
+    // Invalida de inmediato cualquier enriquecimiento de una consulta anterior,
+    // incluso durante la pausa de escritura antes de solicitar la nueva página.
+    requestId.current += 1;
     const timer = window.setTimeout(() => void loadFirstPage(query, appliedFilters), query.trim() ? 420 : 0);
     return () => window.clearTimeout(timer);
   }, [query, appliedFilters, loadFirstPage]);
@@ -189,45 +358,84 @@ export function DiscoverPage() {
 
   const loadMore = useCallback(async () => {
     const token = getTmdbAccessToken();
-    if (!token || loadingMore || state !== "ready" || page >= totalPages) return;
+    if (!token || loadingMore || loadingMoreRef.current || state !== "ready" || page >= totalPages) return;
+    loadingMoreRef.current = true;
     const currentRequest = requestId.current;
     const nextPage = page + 1;
     setLoadingMore(true);
     try {
-      const result = hasActiveDiscoverFilters(appliedFilters)
-        ? await discoverMovies(token, appliedFilters, nextPage)
-        : query.trim()
-          ? await searchMovies(token, query, nextPage)
+      const useFilters = hasActiveDiscoverFilters(appliedFilters);
+      const rawResult = query.trim()
+        ? await searchMovies(token, query, nextPage)
+        : useFilters
+          ? await discoverMovies(token, appliedFilters, nextPage)
           : await getTrendingMovies(token, nextPage);
-      if (currentRequest !== requestId.current) return;
-      setMovies((current) => {
-        const seen = new Set(current.map((movie) => movie.id));
-        return [...current, ...result.movies.filter((movie) => !seen.has(movie.id))];
+      const existingIds = new Set(movies.map((movie) => movie.id));
+      const newPageIds = new Set(rawResult.movies
+        .filter((movie) => !existingIds.has(movie.id))
+        .map((movie) => movie.id));
+      const seenIds = new Set<number>();
+      const mergedSummaries = [...movies, ...rawResult.movies].filter((movie) => {
+        if (seenIds.has(movie.id)) return false;
+        seenIds.add(movie.id);
+        return true;
       });
-      if (result.stale) {
+      // /search/movie no admite todos los criterios de ordenación de Descubrir.
+      // Reaplicamos filtros y orden sobre todo lo cargado para que añadir páginas
+      // no mezcle bloques ordenados de forma independiente.
+      const mergedMovies = query.trim() && useFilters
+        ? await filterSearchResults(token, mergedSummaries, appliedFilters)
+        : mergedSummaries;
+      if (currentRequest !== requestId.current) return;
+      const newPageMovies = mergedMovies.filter((movie) => newPageIds.has(movie.id));
+      // Una página que ya llegó invalida el cálculo de la instantánea restaurada.
+      // Así no puede reemplazar recomendaciones que se hayan calculado después.
+      feedRevisionRef.current += 1;
+      setMovies(mergedMovies);
+      void getSpectroDiscoverRecommendations(newPageMovies).then((personalized) => {
+        if (currentRequest !== requestId.current) return;
+        setRecommendations((current) => {
+          const merged = new Map(current.map((item) => [item.movie.tmdbId, item]));
+          for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
+          return rankSpectroRecommendations([...merged.values()]);
+        });
+        const nextSpectroState = getDiscoverSpectroState(
+          personalized.movieCount,
+          personalized.recommendations.length
+        );
+        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
+      }).catch(() => {
+        if (currentRequest === requestId.current) {
+          setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
+        }
+      });
+      if (rawResult.stale) {
         setShowingCachedData(true);
-        setCachedFetchedAt(result.fetchedAt);
+        setCachedFetchedAt(rawResult.fetchedAt);
       }
       setPage(nextPage);
-      setTotalResults(result.totalResults);
+      setTotalResults(rawResult.totalResults);
     } catch {
       if (currentRequest === requestId.current) {
         setError("No se pudieron cargar más películas. Comprueba tu conexión.");
       }
     } finally {
-      if (currentRequest === requestId.current) setLoadingMore(false);
+      if (currentRequest === requestId.current) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
     }
-  }, [appliedFilters, loadingMore, page, query, state, totalPages]);
+  }, [appliedFilters, loadingMore, movies, page, query, state, totalPages]);
 
   useEffect(() => {
     const target = sentinelRef.current;
-    if (!target || state !== "ready" || (filtersActive && query.trim())) return;
+    if (!target || state !== "ready" || (catalogFiltersActive && query.trim())) return;
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) void loadMore();
     }, { rootMargin: "500px" });
     observer.observe(target);
     return () => observer.disconnect();
-  }, [filtersActive, query, state, loadMore]);
+  }, [catalogFiltersActive, query, state, loadMore]);
 
   function openMovie(movie: TmdbMovieSummary) {
     saveCurrentRouteScrollPosition();
@@ -262,7 +470,9 @@ export function DiscoverPage() {
       case "rating": next.minVoteAverage = ""; break;
       case "votes": next.minVoteCount = ""; break;
       case "language": next.originalLanguage = ""; break;
-      case "sort": next.sortBy = "popularity.desc"; break;
+      case "watched": next.hideWatched = false; break;
+      case "pending": next.hidePending = false; break;
+      case "sort": next.sortBy = "spectro"; break;
       default: return;
     }
     const normalized = normalizeDiscoverFilters(next);
@@ -286,8 +496,9 @@ export function DiscoverPage() {
   }
 
   function clearAppliedFilters() {
-    setAppliedFilters(DEFAULT_DISCOVER_FILTERS);
-    setDraftFilters(DEFAULT_DISCOVER_FILTERS);
+    const cleared = { ...DEFAULT_DISCOVER_FILTERS, hideWatched: false, hidePending: false };
+    setAppliedFilters(cleared);
+    setDraftFilters(cleared);
     setQuery("");
   }
 
@@ -295,8 +506,8 @@ export function DiscoverPage() {
     <div className="page page-discover">
       <UnifiedSearchBar
         inputId="discover-search"
-        placeholder={filtersActive ? "Buscar dentro de los resultados..." : "Buscar..."}
-        searchLabel={filtersActive ? "Buscar por título dentro de los resultados filtrados" : "Buscar películas en TMDB"}
+        placeholder="Buscar películas en TMDB..."
+        searchLabel="Buscar películas por título en TMDB y aplicar los filtros seleccionados"
         value={query}
         onChange={setQuery}
         onFiltersClick={openFilters}
@@ -343,11 +554,27 @@ export function DiscoverPage() {
           )}
           {state === "ready" && movies.length > 0 && (
             <p className="discover-results-meta" role="status">
-              {filtersActive && query.trim()
-                ? visibleMovies.length + " de " + movies.length + " títulos cargados coinciden"
+              {query.trim() && catalogFiltersActive
+                ? visibleMovies.length + " de " + movies.length + " coincidencias cargadas · " + totalResults.toLocaleString("es-PA") + " resultados de búsqueda"
                 : totalResults.toLocaleString("es-PA") + " resultados en TMDB"}
               {" · Página " + page + " de " + totalPages}
             </p>
+          )}
+          {state === "ready" && movies.length > 0 && (
+            <div className="discover-spectro-note" role="status">
+              <BrainCircuit size={16} />
+              <span>
+                {spectroState === "loading"
+                  ? "Espectro está contrastando estas películas con tus afinidades y valoraciones, sin retrasar los resultados."
+                  : spectroState === "ready"
+                    ? "Espectro prioriza los resultados según tus afinidades, valoraciones y películas favoritas. Encaje y nota prevista son estimaciones."
+                    : spectroState === "insufficient"
+                      ? "Espectro todavía necesita al menos tres películas distintas calificadas para personalizar estas sugerencias."
+                      : spectroState === "no-matches"
+                        ? "Espectro no encontró coincidencias personales con evidencia suficiente; se conserva el orden de TMDB."
+                        : "No se pudo calcular la clasificación personal ahora. Los resultados de TMDB siguen disponibles."}
+              </span>
+            </div>
           )}
           {showingCachedData && (
             <p className="cached-feed-note" role="status">
@@ -363,8 +590,8 @@ export function DiscoverPage() {
             <EmptyState
               icon={<Search size={25} />}
               title="No encontramos películas"
-              description={filtersActive && query.trim()
-                ? "No hay títulos que coincidan con el texto dentro de esta combinación de filtros. Prueba otro término o amplía los criterios."
+              description={query.trim()
+                ? "No hay títulos que coincidan con esta búsqueda y sus criterios. Prueba otro término o amplía los filtros."
                 : "Prueba otra combinación de filtros o revisa la escritura."}
               action={<button className="button button-secondary" type="button" onClick={clearAppliedFilters}>Limpiar búsqueda y filtros</button>}
             />
@@ -383,12 +610,12 @@ export function DiscoverPage() {
             </>
           )}
           <div ref={sentinelRef} className="feed-sentinel" aria-hidden="true" />
-          {filtersActive && query.trim() && page < totalPages && (
+          {catalogFiltersActive && query.trim() && page < totalPages && (
             <button className="button button-secondary discover-load-more" type="button" onClick={() => void loadMore()} disabled={loadingMore}>
               {loadingMore ? <><LoaderCircle size={17} className="spin" /> Cargando...</> : "Buscar en más resultados"}
             </button>
           )}
-          {loadingMore && !(filtersActive && query.trim()) && <div className="feed-loading"><LoaderCircle size={19} className="spin" /><span>Cargando películas...</span></div>}
+          {loadingMore && !(catalogFiltersActive && query.trim()) && <div className="feed-loading"><LoaderCircle size={19} className="spin" /><span>Cargando películas...</span></div>}
           {error && movies.length > 0 && <p className="feed-inline-error">{error}</p>}
         </>
       )}
@@ -411,6 +638,27 @@ export function DiscoverPage() {
                 <button type="button" onClick={() => applyDiscoverPreset("recent")}>Estrenos recientes</button>
                 <button type="button" onClick={() => applyDiscoverPreset("classics")}>Cine clásico</button>
               </div>
+            </div>
+
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Mi Biblioteca</span><span>Exclusiones locales</span></div>
+              <label className="discover-exclusion-option">
+                <input
+                  type="checkbox"
+                  checked={draftFilters.hideWatched}
+                  onChange={(event) => updateDraft({ hideWatched: event.target.checked })}
+                />
+                <span>Ocultar películas que ya vi</span>
+              </label>
+              <label className="discover-exclusion-option">
+                <input
+                  type="checkbox"
+                  checked={draftFilters.hidePending}
+                  onChange={(event) => updateDraft({ hidePending: event.target.checked })}
+                />
+                <span>Ocultar películas pendientes</span>
+              </label>
+              <p className="muted-copy">Estas opciones consultan tu Biblioteca local; no envían tu historial a TMDB.</p>
             </div>
 
             <div className="library-sheet-section">

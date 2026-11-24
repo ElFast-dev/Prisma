@@ -92,6 +92,10 @@ export interface LibraryBrowsePreferences {
   genre: string;
   yearFrom: string;
   yearTo: string;
+  runtimeMin: string;
+  runtimeMax: string;
+  myRatingMin: string;
+  myRatingMax: string;
   sort: LibrarySort;
   sortDirection: LibrarySortDirection;
   shuffleSeed: number;
@@ -108,6 +112,8 @@ export interface HistoryFiltersPreferences {
   query: string;
   notes: "all" | "with-notes" | "without-notes";
   rating: "all" | "9-10" | "7-8" | "1-6";
+  ratingMin: string;
+  ratingMax: string;
   fromDate: string;
   toDate: string;
 }

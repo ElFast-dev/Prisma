@@ -34,3 +34,22 @@ export async function runWithConcurrency<T>(
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
   if (failed) throw failure;
 }
+
+
+/** Comparte una promesa mientras una operación con la misma clave sigue en curso. */
+export function shareInFlight<T>(
+  requests: Map<string, Promise<T>>,
+  key: string,
+  create: () => Promise<T>
+): Promise<T> {
+  const existing = requests.get(key);
+  if (existing) return existing;
+
+  const request = Promise.resolve().then(create);
+  requests.set(key, request);
+  const clear = () => {
+    if (requests.get(key) === request) requests.delete(key);
+  };
+  void request.then(clear, clear);
+  return request;
+}

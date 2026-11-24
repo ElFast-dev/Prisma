@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CollectionMovie, LibraryEntry, MovieRecord, Viewing } from "./types";
 import {
   analyzeSpectro,
+  rankSpectroCandidates,
   rankSpectroRecommendations,
   selectSpectroCandidates,
   SPECTRO_ALGORITHM_VERSION
@@ -48,7 +49,7 @@ const viewing = (
   operationId: "op-" + id
 });
 
-describe("analyzeSpectro 2.6", () => {
+describe("analyzeSpectro 2.7", () => {
   it("ordena primero por nota prevista y usa el encaje para desempatar", () => {
     const ranked = rankSpectroRecommendations([
       { movie: { title: "Encaje alto" }, fitPercentage: 96, predictedRating: 6.4 },
@@ -68,7 +69,7 @@ describe("analyzeSpectro 2.6", () => {
   });
 
   it("identifica la versión que separa las instantáneas anteriores", () => {
-    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.6.0");
+    expect(SPECTRO_ALGORITHM_VERSION).toBe("2.8.0");
   });
 
   it("usa temas TMDB como afinidades explícitas y motivos de recomendación", () => {
@@ -309,6 +310,53 @@ describe("analyzeSpectro 2.6", () => {
     expect(result.recommendations[0].similarMovies[0].rating).toBeGreaterThan(0);
     expect(result.decisionGraph.candidateCount).toBe(1);
     expect(result.decisionGraph.signalCount).toBeGreaterThan(0);
+  });
+
+  it("usa metadatos enriquecidos de una candidata externa para cruzar dirección, reparto, país, idioma, duración y temas", () => {
+    const movies = [
+      movie("movie-1", "Drama", 18, 2015, { keywords: ["Drama"] }),
+      movie("movie-2", "Drama", 18, 2016, { keywords: ["Drama"] }),
+      movie("movie-3", "Drama", 18, 2017, { keywords: ["Drama"] }),
+      movie("movie-4", "Comedia", 35, 2005, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 85, keywords: ["Crimen"]
+      }),
+      movie("movie-5", "Comedia", 35, 2006, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 88, keywords: ["Crimen"]
+      }),
+      movie("movie-6", "Comedia", 35, 2007, {
+        countries: ["México"], directors: ["Director B"], castMembers: ["Actor B"],
+        originalLanguage: "es", runtimeMinutes: 90, keywords: ["Crimen"]
+      })
+    ];
+    const ratings = [10, 9, 10, 5, 6, 5];
+    const viewings = movies.map((item, index) => viewing(
+      "enriched-view-" + (index + 1),
+      item.id,
+      "2026-02-" + String(index + 1).padStart(2, "0"),
+      ratings[index]
+    ));
+    const analysis = analyzeSpectro({ movies, viewings, candidates: [] });
+    const externalCandidate = movie("movie-7", "Drama", 18, 2024, {
+      directors: ["Directora A"],
+      castMembers: ["Actor A"],
+      countries: ["Japón"],
+      originalLanguage: "ja",
+      runtimeMinutes: 110,
+      keywords: ["Drama"]
+    });
+
+    const recommendations = rankSpectroCandidates(
+      { movies, viewings, favoriteMovieIds: [] },
+      [externalCandidate],
+      analysis
+    );
+
+    expect(recommendations).toHaveLength(1);
+    expect(recommendations[0].reasons.map((reason) => reason.category)).toEqual(
+      expect.arrayContaining(["Género", "Dirección", "Reparto", "País", "Idioma original", "Duración", "Temas"])
+    );
   });
 
   it("resta puntos por señales negativas y muestra su contribución en el grafo", () => {
@@ -557,9 +605,9 @@ describe("patrones cinematográficos combinados", () => {
     const movies: MovieRecord[] = [];
     const viewings: Viewing[] = [];
     const groups = [
-      { genre: "Drama", genreId: 18, theme: "Memoria", rating: 10, prefix: "drama-memory" },
+      { genre: "Drama", genreId: 18, theme: "Cultura", rating: 10, prefix: "drama-memory" },
       { genre: "Drama", genreId: 18, theme: "Amistad", rating: 6, prefix: "drama-friendship" },
-      { genre: "Comedia", genreId: 35, theme: "Memoria", rating: 6, prefix: "comedy-memory" },
+      { genre: "Comedia", genreId: 35, theme: "Cultura", rating: 6, prefix: "comedy-memory" },
       { genre: "Comedia", genreId: 35, theme: "Amistad", rating: 6, prefix: "comedy-friendship" }
     ];
 
@@ -568,7 +616,7 @@ describe("patrones cinematográficos combinados", () => {
         const id = "movie-" + (100 + movies.length);
         const item = movie(id, group.genre, group.genreId, 2020, {
           title: group.prefix + " " + (index + 1),
-          keywords: [group.theme]
+          overview: group.theme
         });
         movies.push(item);
         viewings.push(viewing(
@@ -583,8 +631,8 @@ describe("patrones cinematográficos combinados", () => {
     // Un revisionado modifica el promedio de la película, pero no aumenta la muestra.
     viewings.push(viewing("pattern-repeat", "movie-100", "2026-02-01", 8));
     const result = analyzeSpectro({ movies, viewings, candidates: [] });
-    const positive = result.patterns.find((pattern) => pattern.key === "genre:18::theme:memoria");
-    const negative = result.patterns.find((pattern) => pattern.key === "genre:35::theme:memoria");
+    const positive = result.patterns.find((pattern) => pattern.key === "genre:18::synopsis:term:cultura");
+    const negative = result.patterns.find((pattern) => pattern.key === "genre:35::synopsis:term:cultura");
 
     expect(positive).toBeDefined();
     expect(positive?.sampleSize).toBe(20);

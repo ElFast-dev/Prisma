@@ -26,6 +26,33 @@ describe("preferencias de Biblioteca", () => {
     expect(normalizeLibraryFilters(saved)).toEqual(saved);
   });
 
+  it("restaura y normaliza rangos de duración y valoración personal", () => {
+    expect(normalizeLibraryFilters({
+      ...DEFAULT_LIBRARY_FILTERS,
+      runtimeMin: "90",
+      runtimeMax: "150",
+      myRatingMin: "7.5",
+      myRatingMax: "9"
+    })).toMatchObject({
+      runtimeMin: "90",
+      runtimeMax: "150",
+      myRatingMin: "7.5",
+      myRatingMax: "9"
+    });
+    expect(normalizeLibraryFilters({
+      ...DEFAULT_LIBRARY_FILTERS,
+      runtimeMin: "180",
+      runtimeMax: "90",
+      myRatingMin: "9",
+      myRatingMax: "7"
+    })).toMatchObject({
+      runtimeMin: "",
+      runtimeMax: "",
+      myRatingMin: "",
+      myRatingMax: ""
+    });
+  });
+
   it("migra las preferencias antiguas de ordenación sin perder los filtros", () => {
     const migrated = normalizeLibraryFilters({
       status: "pending",

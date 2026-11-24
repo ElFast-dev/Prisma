@@ -94,6 +94,35 @@ describe("predicción personal no lineal de Espectro", () => {
     expect(memory?.featureCount).toBeGreaterThan(0);
   });
 
+  it("reduce la influencia artificial cuando una película internacional solo comparte un rasgo", () => {
+    const training = trainingMovies();
+    const sparseInternational: MovieRecord = {
+      ...movie(
+        "candidate-bangladesh",
+        "Candidata de cine bengalí",
+        "desconocido"
+      ),
+      genres: ["Drama"],
+      genreIds: [18],
+      countries: ["Bangladesh"],
+      directors: ["Directora no representada"],
+      castMembers: ["Reparto no representado"],
+      keywords: ["botánica", "observatorio remoto"],
+      originalLanguage: "bn",
+      releaseYear: 1965,
+      runtimeMinutes: 0,
+      overview: "Una comunidad protege semillas ancestrales en una región montañosa."
+    };
+    const result = predictSpectroMovies(training, [sparseInternational]).get(sparseInternational.id);
+    const personalAverage = training.reduce((sum, item) => sum + item.rating, 0) / training.length;
+
+    expect(result).toBeDefined();
+    expect(result?.featureCount).toBeGreaterThan(0);
+    expect(result?.maximumSimilarity).toBeGreaterThan(0);
+    expect(result?.maximumSimilarity).toBeLessThan(0.35);
+    expect(result?.predictedRating).toBeCloseTo(personalAverage, 0);
+  });
+
   it("devuelve el promedio personal cuando una candidata no tiene rasgos comparables", () => {
     const training = trainingMovies();
     const unknown = movie("candidate-unknown", "Candidata sin metadatos", "desconocido");
@@ -144,4 +173,131 @@ describe("predicción personal no lineal de Espectro", () => {
 
     expect(first).toEqual(second);
   });
+
+  it("conserva las predicciones al consultar candidatas en páginas separadas", () => {
+    const training = trainingMovies();
+    const memory = movie("candidate-memory-page", "Candidata de memoria", "memoria", 30);
+    const action = movie("candidate-action-page", "Candidata de acción", "acción", 31);
+
+    const memoryPage = predictSpectroMovies(training, [memory]).get(memory.id);
+    const actionPage = predictSpectroMovies(training, [action]).get(action.id);
+    const combinedPages = predictSpectroMovies(training, [memory, action]);
+
+    expect(memoryPage).toEqual(combinedPages.get(memory.id));
+    expect(actionPage).toEqual(combinedPages.get(action.id));
+  });
+
+  it("reentrena el modelo cuando cambian las valoraciones locales", () => {
+    const training = trainingMovies();
+    const candidate = movie("candidate-memory-updated", "Candidata de memoria", "memoria", 32);
+    const initial = predictSpectroMovies(training, [candidate]).get(candidate.id);
+    const updatedTraining = training.map((item) => ({
+      ...item,
+      rating: item.movie.id.startsWith("rated-memory-")
+        ? 10
+        : item.movie.id.startsWith("rated-action-") ? 1 : item.rating
+    }));
+    const updated = predictSpectroMovies(updatedTraining, [candidate]).get(candidate.id);
+
+    expect(initial).toBeDefined();
+    expect(updated).toBeDefined();
+    expect(updated?.predictedRating).not.toBe(initial?.predictedRating);
+  });
+
+  it("reentrena el modelo cuando cambian los metadatos cinematográficos", () => {
+    const training = trainingMovies();
+    const candidate = movie("candidate-memory-metadata", "Candidata de memoria", "memoria", 33);
+    const initial = predictSpectroMovies(training, [candidate]).get(candidate.id);
+    const updatedTraining = training.map((item) => ({
+      ...item,
+      movie: item.movie.id.startsWith("rated-memory-")
+        ? {
+          ...item.movie,
+          genres: ["Ciencia ficción"],
+          genreIds: [878],
+          countries: ["Canadá"],
+          directors: ["Nueva directora"],
+          castMembers: ["Nuevo reparto"],
+          keywords: ["espacio", "nave", "extraterrestres"],
+          originalLanguage: "en",
+          runtimeMinutes: 170,
+          overview: "Una tripulación explora una estación espacial y descubre vida extraterrestre."
+        }
+        : item.movie
+    }));
+    const updated = predictSpectroMovies(updatedTraining, [candidate]).get(candidate.id);
+
+    expect(initial).toBeDefined();
+    expect(updated).toBeDefined();
+    expect(updated?.predictedRating).not.toBe(initial?.predictedRating);
+  });
+
+  it("no entrena un modelo cuando no hay candidatas que clasificar", () => {
+    expect(predictSpectroMovies(trainingMovies(), [])).toEqual(new Map());
+  });
+
+  it("usa las sinopsis como señal léxica aunque falten metadatos estructurados", () => {
+    const training = trainingMovies().map(({ movie: item, rating }) => ({
+      movie: {
+        ...item,
+        genres: [],
+        genreIds: [],
+        countries: [],
+        directors: [],
+        castMembers: [],
+        keywords: [],
+        originalLanguage: undefined,
+        releaseYear: undefined,
+        runtimeMinutes: undefined
+      },
+      rating
+    }));
+    const memory = {
+      ...movie("candidate-synopsis-memory", "Candidata de memoria textual", "desconocido"),
+      overview: training[0].movie.overview
+    };
+    const action = {
+      ...movie("candidate-synopsis-action", "Candidata de acción textual", "desconocido"),
+      overview: training[1].movie.overview
+    };
+    const predictions = predictSpectroMovies(training, [memory, action]);
+    const memoryPrediction = predictions.get(memory.id);
+    const actionPrediction = predictions.get(action.id);
+
+    expect(memoryPrediction).toBeDefined();
+    expect(actionPrediction).toBeDefined();
+    expect(memoryPrediction?.featureCount).toBeGreaterThan(0);
+    expect(memoryPrediction?.maximumSimilarity).toBeGreaterThan(0.8);
+    expect(memoryPrediction?.predictedRating).toBeGreaterThan(
+      (actionPrediction?.predictedRating ?? 10) + 2
+    );
+  });
+
+  it("tokeniza sinopsis bengalí conservando letras y marcas Unicode", () => {
+    const training = Array.from({ length: 12 }, (_, index) => ({
+      movie: {
+        ...movie("rated-bengali-" + index, "Película bengalí " + index, "desconocido"),
+        overview: index < 6
+          ? "একটি পরিবার স্মৃতি ও পরিচয়ের গল্প"
+          : "একটি যুদ্ধ প্রতিশোধ ও অপরাধের গল্প"
+      },
+      rating: index < 6 ? 9 : 3
+    }));
+    const preferred = {
+      ...movie("candidate-bengali-preferred", "Candidata bengalí preferida", "desconocido"),
+      overview: "একটি পরিবার স্মৃতি ও পরিচয়ের গল্প"
+    };
+    const rejected = {
+      ...movie("candidate-bengali-rejected", "Candidata bengalí no preferida", "desconocido"),
+      overview: "একটি যুদ্ধ প্রতিশোধ ও অপরাধের গল্প"
+    };
+    const predictions = predictSpectroMovies(training, [preferred, rejected]);
+
+    expect(predictions.get(preferred.id)?.featureCount).toBeGreaterThan(0);
+    expect(predictions.get(preferred.id)?.maximumSimilarity).toBeGreaterThan(0.5);
+    expect(predictions.get(preferred.id)?.predictedRating ?? 0).toBeGreaterThan(
+      predictions.get(rejected.id)?.predictedRating ?? 10
+    );
+  });
+
 });

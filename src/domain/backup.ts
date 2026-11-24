@@ -94,6 +94,8 @@ const preferencesSchema = z.object({
     query: z.string().max(200),
     notes: z.enum(["all", "with-notes", "without-notes"]),
     rating: z.enum(["all", "9-10", "7-8", "1-6"]),
+    ratingMin: z.string().optional(),
+    ratingMax: z.string().optional(),
     fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")),
     toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal(""))
   }).strict().optional(),
@@ -104,6 +106,10 @@ const preferencesSchema = z.object({
     genre: z.string().max(100),
     yearFrom: z.string().refine((value) => value === "" || (/^\d{4}$/.test(value) && Number(value) >= 1880 && Number(value) <= 3000)),
     yearTo: z.string().refine((value) => value === "" || (/^\d{4}$/.test(value) && Number(value) >= 1880 && Number(value) <= 3000)),
+    runtimeMin: z.string().optional(),
+    runtimeMax: z.string().optional(),
+    myRatingMin: z.string().optional(),
+    myRatingMax: z.string().optional(),
     sort: z.enum(["title", "rating", "my-rating", "runtime", "release-date", "added", "random", "added-desc", "title-asc", "year-desc", "year-asc"]).optional(),
     sortDirection: z.enum(["asc", "desc"]).optional(),
     shuffleSeed: z.number().int().nonnegative().optional()

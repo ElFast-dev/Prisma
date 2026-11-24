@@ -185,7 +185,7 @@ test("presenta Espectro como un centro de analítica visual por secciones", asyn
   await expect(page.getByRole("heading", { name: "Afinidades", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Evolución", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Recomendaciones", exact: true })).toHaveCount(0);
-  await expect(page.getByText("Espectro 2.6.0")).toBeVisible();
+  await expect(page.getByText("Espectro 2.8.0")).toBeVisible();
 });
 test("redirige enlaces guardados de las antiguas vistas de Espectro", async ({ page }) => {
   await page.goto("#/spectro/map");
@@ -423,9 +423,19 @@ test("reanuda automáticamente metadatos temporales cuyo plazo de espera ya venc
   });
 
   const requestedPaths: string[] = [];
+  let releaseMetadataRequests: (() => void) | undefined;
+  const metadataRequestGate = new Promise<void>((resolve) => {
+    releaseMetadataRequests = resolve;
+  });
+  let signalFirstMetadataRequest: (() => void) | undefined;
+  const firstMetadataRequest = new Promise<void>((resolve) => {
+    signalFirstMetadataRequest = resolve;
+  });
   await page.route("https://api.themoviedb.org/3/movie/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     requestedPaths.push(pathname);
+    signalFirstMetadataRequest?.();
+    await metadataRequestGate;
     if (pathname.endsWith("/keywords")) {
       await route.fulfill({
         status: 200,
@@ -522,7 +532,9 @@ test("reanuda automáticamente metadatos temporales cuyo plazo de espera ya venc
   });
 
   await page.goto("#/spectro");
+  await firstMetadataRequest;
   await expect(page.getByText("Espectro está completando información")).toBeVisible();
+  releaseMetadataRequests?.();
   await expect(page.getByText("Espectro incorporó metadatos de 1 películas.")).toBeVisible();
   expect(requestedPaths).toContain("/3/movie/987401");
   expect(requestedPaths).toContain("/3/movie/987401/credits");

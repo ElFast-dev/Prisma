@@ -153,6 +153,19 @@ describe("filterLibraryItems", () => {
       .toEqual(["movie-4"]);
   });
 
+  it("combina rangos de duración y valoración personal", () => {
+    const filters = {
+      ...defaults,
+      runtimeMin: "100",
+      runtimeMax: "122",
+      myRatingMin: "8",
+      myRatingMax: "9"
+    };
+    expect(filterLibraryItems(library, { ...filters, sort: "title", sortDirection: "asc" }).map((x) => x.movie.id))
+      .toEqual(["movie-3", "movie-1", "movie-5"]);
+    expect(filterLibraryItems(library, { ...filters, runtimeMin: "125", myRatingMin: "9.5" })).toEqual([]);
+  });
+
   it("ordena títulos en ambos sentidos", () => {
     expect(filterLibraryItems(library, { ...defaults, sort: "title", sortDirection: "asc" }).map(x => x.movie.title))
       .toEqual(["Alien", "Amélie", "Ciudad de Dios", "Depredador", "Estreno próximo", "La cosa", "Película sin año"]);

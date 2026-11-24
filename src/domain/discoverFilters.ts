@@ -1,4 +1,5 @@
 export type DiscoverSort =
+  | "spectro"
   | "popularity.desc"
   | "vote_average.desc"
   | "primary_release_date.desc"
@@ -15,6 +16,9 @@ export interface DiscoverFilters {
   minVoteAverage: string;
   minVoteCount: string;
   originalLanguage: string;
+  /** Excluir estados personales; son filtros locales, nunca parámetros de TMDB. */
+  hideWatched: boolean;
+  hidePending: boolean;
   sortBy: DiscoverSort;
 }
 
@@ -27,7 +31,9 @@ export const DEFAULT_DISCOVER_FILTERS: DiscoverFilters = {
   minVoteAverage: "",
   minVoteCount: "",
   originalLanguage: "",
-  sortBy: "popularity.desc"
+  hideWatched: true,
+  hidePending: true,
+  sortBy: "spectro"
 };
 
 export const DISCOVER_GENRES = [
@@ -75,10 +81,34 @@ export const DISCOVER_LANGUAGES = [
   { id: "he", label: "Hebreo" },
   { id: "ar", label: "Árabe" },
   { id: "id", label: "Indonesio" },
-  { id: "tl", label: "Filipino" }
+  { id: "tl", label: "Filipino" },
+  { id: "bn", label: "Bengalí" },
+  { id: "bg", label: "Búlgaro" },
+  { id: "ca", label: "Catalán" },
+  { id: "hr", label: "Croata" },
+  { id: "el", label: "Griego" },
+  { id: "eu", label: "Euskera" },
+  { id: "fa", label: "Persa" },
+  { id: "fi", label: "Finés" },
+  { id: "hu", label: "Húngaro" },
+  { id: "hy", label: "Armenio" },
+  { id: "ka", label: "Georgiano" },
+  { id: "kk", label: "Kazajo" },
+  { id: "ml", label: "Malayalam" },
+  { id: "sk", label: "Eslovaco" },
+  { id: "sl", label: "Esloveno" },
+  { id: "sq", label: "Albanés" },
+  { id: "sr", label: "Serbio" },
+  { id: "sw", label: "Suajili" },
+  { id: "ta", label: "Tamil" },
+  { id: "te", label: "Telugu" },
+  { id: "uk", label: "Ucraniano" },
+  { id: "ur", label: "Urdu" },
+  { id: "vi", label: "Vietnamita" }
 ] as const;
 
 const SORT_OPTIONS = new Set<DiscoverSort>([
+  "spectro",
   "popularity.desc",
   "vote_average.desc",
   "primary_release_date.desc",
@@ -116,9 +146,11 @@ export function normalizeDiscoverFilters(
     originalLanguage: DISCOVER_LANGUAGES.some((language) => language.id === filters?.originalLanguage)
       ? filters?.originalLanguage ?? ""
       : "",
+    hideWatched: filters?.hideWatched !== false,
+    hidePending: filters?.hidePending !== false,
     sortBy: SORT_OPTIONS.has(filters?.sortBy as DiscoverSort)
       ? filters?.sortBy as DiscoverSort
-      : "popularity.desc"
+      : "spectro"
   };
 
   if (normalized.runtimeMin && normalized.runtimeMax
@@ -156,7 +188,7 @@ export function hasActiveDiscoverFilters(filters: DiscoverFilters): boolean {
     || filters.minVoteAverage
     || filters.minVoteCount
     || filters.originalLanguage
-    || filters.sortBy !== "popularity.desc"
+    || filters.sortBy !== "spectro"
   );
 }
 
@@ -168,8 +200,26 @@ export function countActiveDiscoverFilters(filters: DiscoverFilters): number {
     filters.minVoteAverage,
     filters.minVoteCount,
     filters.originalLanguage,
-    filters.sortBy !== "popularity.desc" ? filters.sortBy : ""
+    filters.hideWatched ? "hide-watched" : "",
+    filters.hidePending ? "hide-pending" : "",
+    filters.sortBy !== "spectro" ? filters.sortBy : ""
   ].filter(Boolean).length;
+}
+
+/**
+ * Aplica las exclusiones de Biblioteca sobre el catálogo ya descargado.
+ * No modifica la consulta TMDB ni comparte datos personales con servicios externos.
+ */
+export function filterDiscoverLibraryVisibility<T extends { id: number }>(
+  movies: readonly T[],
+  watchedTmdbIds: ReadonlySet<number>,
+  pendingTmdbIds: ReadonlySet<number>,
+  filters: Pick<DiscoverFilters, "hideWatched" | "hidePending">
+): T[] {
+  return movies.filter((movie) => (
+    !(filters.hideWatched && watchedTmdbIds.has(movie.id))
+    && !(filters.hidePending && pendingTmdbIds.has(movie.id))
+  ));
 }
 
 export function buildDiscoverMovieParams(
@@ -182,7 +232,7 @@ export function buildDiscoverMovieParams(
     language,
     include_adult: false,
     include_video: false,
-    sort_by: filters.sortBy
+    sort_by: filters.sortBy === "spectro" ? "popularity.desc" : filters.sortBy
   };
 
   if (filters.genreId) params.with_genres = filters.genreId;

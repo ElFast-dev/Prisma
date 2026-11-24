@@ -108,6 +108,8 @@ describe("persistencia local de preferencias", () => {
       query: "Amélie",
       notes: "with-notes" as const,
       rating: "9-10" as const,
+      ratingMin: "8",
+      ratingMax: "10",
       fromDate: "2024-01-01",
       toDate: "2025-12-31"
     };
@@ -119,6 +121,21 @@ describe("persistencia local de preferencias", () => {
     expect(afterReload.libraryFilters).toEqual(libraryFilters);
     expect(afterReload.historyFilters).toEqual(historyFilters);
     expect(fakeDatabase.read()).toMatchObject({ libraryFilters, historyFilters });
+  });
+
+  it("restablece un rango personalizado de nota invertido", async () => {
+    await saveHistoryFilters({
+      query: "",
+      notes: "all",
+      rating: "all",
+      ratingMin: "9",
+      ratingMax: "7",
+      fromDate: "",
+      toDate: ""
+    });
+    const saved = await getUserPreferences();
+    expect(saved.historyFilters?.ratingMin).toBe("");
+    expect(saved.historyFilters?.ratingMax).toBe("");
   });
 
   it("normaliza filas antiguas sin perder región, movimiento reducido ni vista de Biblioteca", async () => {
@@ -136,7 +153,7 @@ describe("persistencia local de preferencias", () => {
     expect(migrated.historyBrowse?.viewMode).toBe("timeline");
     expect(migrated.historyBrowse?.selectedDate).toBeNull();
     expect(migrated.historyFilters).toEqual({
-      query: "", notes: "all", rating: "all", fromDate: "", toDate: ""
+      query: "", notes: "all", rating: "all", ratingMin: "", ratingMax: "", fromDate: "", toDate: ""
     });
     expect(fakeDatabase.read()).toMatchObject({
       region: "MX", reducedMotion: true, libraryFilters: DEFAULT_LIBRARY_FILTERS

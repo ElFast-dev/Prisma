@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-async function configureTmdbMock(page: import("@playwright/test").Page): Promise<{ discoverRequests: URL[] }> {
+async function configureTmdbMock(
+  page: import("@playwright/test").Page,
+  options: { multiPageSearch?: boolean } = {}
+): Promise<{ discoverRequests: URL[]; searchRequests: URL[] }> {
   const discoverRequests: URL[] = [];
+  const searchRequests: URL[] = [];
   await page.addInitScript(() => {
     localStorage.setItem("prisma.tmdb.accessToken", "test-discover-token");
   });
@@ -48,9 +52,55 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
           poster_path: null,
           backdrop_path: null,
           runtime: 110,
+          revenue: 100,
           status: "Released",
           genres: [{ id: 18, name: "Drama" }],
           original_language: "es"
+        })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/103") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 103,
+          title: "Prisma: la otra historia",
+          original_title: "Prisma: the other story",
+          release_date: "2020-02-01",
+          runtime: 105,
+          revenue: 300
+        })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/104") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 104,
+          title: "Prisma: tercera historia",
+          original_title: "Prisma: third story",
+          release_date: "2021-01-01",
+          runtime: 105,
+          revenue: 1000
+        })
+      });
+      return;
+    }
+    if (url.pathname === "/3/movie/105") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 105,
+          title: "Prisma: película fuera del rango",
+          original_title: "Prisma: outside filter range",
+          release_date: "2005-01-01",
+          runtime: 100,
+          revenue: 5000
         })
       });
       return;
@@ -79,6 +129,70 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
       });
       return;
     }
+    if (url.pathname === "/3/search/movie") {
+      searchRequests.push(url);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          page: Number(url.searchParams.get("page") ?? "1"),
+          total_pages: options.multiPageSearch ? 2 : 1,
+          total_results: options.multiPageSearch ? 4 : 2,
+          results: options.multiPageSearch && url.searchParams.get("page") === "2"
+            ? [{
+              id: 104,
+              title: "Prisma: tercera historia",
+              original_title: "Prisma: third story",
+              overview: "Resultado de la segunda página.",
+              release_date: "2021-01-01",
+              poster_path: null,
+              genre_ids: [18],
+              vote_average: 7.6,
+              vote_count: 700,
+              original_language: "es",
+              popularity: 16
+            }, {
+              id: 105,
+              title: "Prisma: película fuera del rango",
+              original_title: "Prisma: outside filter range",
+              overview: "Este resultado debe quedar excluido por el año.",
+              release_date: "2005-01-01",
+              poster_path: null,
+              genre_ids: [18],
+              vote_average: 7.9,
+              vote_count: 750,
+              original_language: "es",
+              popularity: 17
+            }]
+            : [{
+              id: 101,
+              title: "Prisma: una historia",
+              original_title: "Prisma Story",
+              overview: "Sinopsis de prueba.",
+              release_date: "2020-01-01",
+              poster_path: null,
+              genre_ids: [18],
+              vote_average: 8,
+              vote_count: 900,
+              original_language: "ja",
+              popularity: 20
+            }, {
+              id: 103,
+              title: "Prisma: la otra historia",
+              original_title: "Prisma: the other story",
+              overview: "Otra sinopsis de prueba.",
+              release_date: "2020-02-01",
+              poster_path: null,
+              genre_ids: [18],
+              vote_average: 7.8,
+              vote_count: 850,
+              original_language: "en",
+              popularity: 18
+            }]
+        })
+      });
+      return;
+    }
     if (url.pathname === "/3/discover/movie") {
       discoverRequests.push(url);
       await route.fulfill({
@@ -98,11 +212,11 @@ async function configureTmdbMock(page: import("@playwright/test").Page): Promise
     }
     await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ status_message: "Unexpected test endpoint" }) });
   });
-  return { discoverRequests };
+  return { discoverRequests, searchRequests };
 }
 
 test("filtra Descubrir por género, duración, año, valoración, idioma y orden", async ({ page }) => {
-  const { discoverRequests } = await configureTmdbMock(page);
+  const { discoverRequests, searchRequests } = await configureTmdbMock(page);
   await page.goto("#/discover");
   await expect(page.locator("#discover-search")).toBeVisible();
 
@@ -135,11 +249,80 @@ test("filtra Descubrir por género, duración, año, valoración, idioma y orden
   expect(params.get("sort_by")).toBe("vote_average.desc");
   await expect(page.getByRole("button", { name: "Abrir filtros" })).toHaveAttribute("aria-pressed", "true");
 
-  // Cuando hay filtros activos, el texto reduce los resultados de esa búsqueda filtrada.
+  // La búsqueda textual consulta TMDB y combina después los filtros avanzados.
   await page.locator("#discover-search").fill("prisma");
+  await expect.poll(() => searchRequests.length).toBe(1);
+  expect(searchRequests[0].searchParams.get("query")).toBe("prisma");
   await expect(page.locator(".poster-card")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Abrir ficha de Otra historia" })).toHaveCount(0);
+});
+
+test("permite cargar más resultados de una búsqueda con filtros activos", async ({ page }) => {
+  const { searchRequests } = await configureTmdbMock(page, { multiPageSearch: true });
+  await page.goto("#/discover");
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.locator("#discover-genre").selectOption("18");
+  await dialog.locator("#discover-year-from").fill("2010");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+
+  await page.locator("#discover-search").fill("prisma");
+  await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
+  await expect.poll(() => searchRequests.length).toBe(1);
+
+  const moreResults = page.getByRole("button", { name: "Buscar en más resultados" });
+  await expect(moreResults).toBeVisible();
+  await moreResults.click();
+
+  await expect.poll(() => searchRequests.length).toBe(2);
+  expect(searchRequests[1].searchParams.get("page")).toBe("2");
+  await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: tercera historia" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: película fuera del rango" })).toHaveCount(0);
+  await expect(moreResults).toHaveCount(0);
+  await expect(page.locator(".poster-card")).toHaveCount(3);
+});
+
+test("mantiene el orden global por recaudación al cargar otra página de búsqueda", async ({ page }) => {
+  await configureTmdbMock(page, { multiPageSearch: true });
+  await page.goto("#/discover");
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.locator("#discover-genre").selectOption("18");
+  await dialog.locator("#discover-year-from").fill("2010");
+  await dialog.locator("#discover-sort").selectOption("revenue.desc");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+
+  await page.locator("#discover-search").fill("prisma");
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+
+  await page.getByRole("button", { name: "Buscar en más resultados" }).click();
+  await expect(posters).toHaveCount(3);
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: película fuera del rango" })).toHaveCount(0);
+});
+
+test("ordena los resultados de búsqueda por recaudación real", async ({ page }) => {
+  await configureTmdbMock(page);
+  await page.goto("#/discover");
+
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  await dialog.locator("#discover-sort").selectOption("revenue.desc");
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+
+  await page.locator("#discover-search").fill("prisma");
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  await expect(posters.first()).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
 });
 
 test("impide aplicar rangos de duración y año invertidos", async ({ page }) => {
@@ -181,6 +364,22 @@ test("muestra dos columnas de pósteres en móvil", async ({ page }) => {
 });
 
 
+test("permite ocultar por separado las películas vistas y pendientes", async ({ page }) => {
+  await configureTmdbMock(page);
+  await page.goto("#/discover");
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  const watched = dialog.getByLabel("Ocultar películas que ya vi");
+  const pending = dialog.getByLabel("Ocultar películas pendientes");
+  await expect(watched).toBeChecked();
+  await expect(pending).toBeChecked();
+  await watched.uncheck();
+  await expect(watched).not.toBeChecked();
+  await expect(pending).toBeChecked();
+  await pending.uncheck();
+  await expect(pending).not.toBeChecked();
+});
+
 test("mantiene el foco dentro de los filtros y lo devuelve al cerrarlos", async ({ page }) => {
   await configureTmdbMock(page);
   await page.goto("#/discover");
@@ -219,7 +418,13 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
 
   const movie = page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" });
   await expect(movie).toBeVisible();
-  await expect(page.locator(".discover-filter-chip")).toHaveCount(2);
+  await expect(page.locator(".discover-filter-chip")).toHaveCount(4);
+  await expect(page.locator(".discover-filter-chip")).toContainText([
+    "Género: Drama",
+    "Año: 2015–actualidad",
+    "Ocultar vistas",
+    "Ocultar pendientes"
+  ]);
   await expect.poll(() => discoverRequests.length).toBe(1);
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem("prisma:discover-session:v1"))).toContain('"query":"prisma"');
 
@@ -233,7 +438,13 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
   await expect(page).toHaveURL(/#\/discover$/);
   await expect(page.locator("#discover-search")).toHaveValue("prisma");
   await expect(page.getByRole("button", { name: "Abrir filtros" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".discover-filter-chip")).toContainText(["Género: Drama", "Año: 2015–actualidad"]);
+  await expect(page.locator(".discover-filter-chip")).toHaveCount(4);
+  await expect(page.locator(".discover-filter-chip")).toContainText([
+    "Género: Drama",
+    "Año: 2015–actualidad",
+    "Ocultar vistas",
+    "Ocultar pendientes"
+  ]);
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
   await expect.poll(() => discoverRequests.length).toBe(1);
 });

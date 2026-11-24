@@ -8,6 +8,10 @@ export const DEFAULT_LIBRARY_FILTERS: LibraryBrowsePreferences = {
   genre: "",
   yearFrom: "",
   yearTo: "",
+  runtimeMin: "",
+  runtimeMax: "",
+  myRatingMin: "",
+  myRatingMax: "",
   sort: "added",
   sortDirection: "desc",
   shuffleSeed: 1
@@ -19,6 +23,13 @@ const yearPreference = z.string()
   ))
   .catch("");
 
+const runtimePreference = z.string()
+  .refine((value) => value === "" || (/^\d{1,3}$/.test(value) && Number(value) >= 1 && Number(value) <= 600))
+  .catch("");
+const ratingPreference = z.string()
+  .refine((value) => value === "" || (/^\d{1,2}(?:\.\d)?$/.test(value) && Number(value) >= 1 && Number(value) <= 10))
+  .catch("");
+
 const libraryFiltersSchema = z.object({
   status: z.enum(["all", "watched", "pending", "favorites"]).catch("all"),
   releaseStatus: z.enum(["all", "upcoming", "released"]).catch("all"),
@@ -26,6 +37,10 @@ const libraryFiltersSchema = z.object({
   genre: z.string().max(100).catch(""),
   yearFrom: yearPreference,
   yearTo: yearPreference,
+  runtimeMin: runtimePreference,
+  runtimeMax: runtimePreference,
+  myRatingMin: ratingPreference,
+  myRatingMax: ratingPreference,
   sort: z.enum(["title", "rating", "my-rating", "runtime", "release-date", "added", "random",
     "added-desc", "title-asc", "year-desc", "year-asc"]).catch("added"),
   sortDirection: z.enum(["asc", "desc"]).catch("desc"),
@@ -64,6 +79,14 @@ export function normalizeLibraryFilters(value: unknown): LibraryBrowsePreference
   if (normalized.yearFrom && normalized.yearTo && Number(normalized.yearFrom) > Number(normalized.yearTo)) {
     normalized.yearFrom = "";
     normalized.yearTo = "";
+  }
+  if (normalized.runtimeMin && normalized.runtimeMax && Number(normalized.runtimeMin) > Number(normalized.runtimeMax)) {
+    normalized.runtimeMin = "";
+    normalized.runtimeMax = "";
+  }
+  if (normalized.myRatingMin && normalized.myRatingMax && Number(normalized.myRatingMin) > Number(normalized.myRatingMax)) {
+    normalized.myRatingMin = "";
+    normalized.myRatingMax = "";
   }
 
   return normalized;

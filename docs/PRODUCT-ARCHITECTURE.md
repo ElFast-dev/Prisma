@@ -1,16 +1,16 @@
 # Prisma — Evolución de Espectro
 
-**Alcance vigente:** mejorar exclusivamente la inteligencia cinematográfica de Espectro.  
+**Alcance vigente:** evolucionar Espectro y llevar su inteligencia a Descubrir, además de mejorar la búsqueda y los filtros.  
 **Experiencia que se conserva:** Personal · Descubrir · Espectro.  
 **Estado:** especificación de trabajo que sustituye el plan anterior de cuatro destinos.
 
 ## 1. Decisión de producto
 
-Prisma conserva la navegación y la experiencia general que ya tenía. No se incorporará Inicio como nuevo destino principal, no se renombrará Personal y no se rediseñará Descubrir como parte de este trabajo.
+Prisma conserva la navegación principal Personal · Descubrir · Espectro. No se incorporará Inicio como nuevo destino. Descubrir sí forma parte de esta evolución: su exploración y clasificación de películas estarán impulsadas por Espectro, sin duplicar el motor de preferencias ni crear una cuarta sección.
 
 El desarrollo se concentra en Espectro para que comprenda mejor la experiencia cinematográfica registrada, encuentre patrones fiables, explique sus conclusiones y aporte mejores recomendaciones.
 
-Espectro debe ser el cerebro de Prisma sin convertirse en una aplicación distinta ni en un panel estadístico. Sus mejoras han de beneficiar la comprensión de los gustos y la exploración cinematográfica dentro de Espectro.
+Espectro debe ser el cerebro cinematográfico de Prisma, no solo un panel estadístico. Su perfil, afinidades y predictor deben impulsar las recomendaciones y el orden personalizado de Descubrir; los filtros controlan el catálogo sin enviar datos personales a TMDB.
 
 ### Principios que permanecen
 
@@ -35,7 +35,18 @@ La implementación existente utiliza TypeScript, Dexie, repositorios locales, in
 
 La navegación de nivel superior continúa siendo Personal, Descubrir y Espectro. Las rutas y operaciones ya existentes deben conservarse.
 
-## 3. Qué debe mejorar Espectro
+## 3. Qué debe mejorar Espectro y Descubrir
+
+### 3.0 Descubrir impulsado por Espectro
+
+- Usar el perfil y el predictor locales de Espectro para priorizar resultados de búsqueda y exploración.
+- Reutilizar entre páginas el modelo de predicción entrenado con el historial local mediante una caché en memoria acotada; invalidarla si cambian las notas o metadatos de entrenamiento, sin persistir ni transmitir el perfil.
+- Mantener la búsqueda textual real de TMDB: escribir un título ejecuta una búsqueda, no limita la coincidencia a una página ya cargada.
+- Combinar búsqueda y filtros avanzados; cuando TMDB no permite combinar texto y todos los criterios en un solo endpoint, aplicar filtros adicionales a los resultados y completar metadatos faltantes bajo demanda.
+- Permitir ocultar por separado películas ya vistas y pendientes consultando solo la Biblioteca local.
+- Indicar cuándo falta evidencia personal suficiente y conservar un orden neutral como alternativa.
+- No enviar historial, calificaciones, favoritos ni listas personales a TMDB.
+
 
 ### 3.1 Identidad cinematográfica
 
@@ -148,6 +159,8 @@ El propietario ha solicitado evaluar redes neuronales cuando puedan demostrar un
 
 No se entrenará una red compleja desde cero con una muestra personal pequeña.
 
+**Implementación actual · Espectro 2.8.0.** El predictor local utiliza Kernel Ridge con kernel RBF y características estructuradas (géneros, país, dirección, reparto, idioma, época y duración), combinadas con TF-IDF de sinopsis. La extracción textual reconoce letras, marcas combinantes y números Unicode, incluidos alfabetos no latinos, sin confundir secuencias de escape con caracteres literales. El vocabulario textual se ajusta solo con películas calificadas; no se incorporan embeddings multilingües ni comprensión semántica de sinopsis. El kernel parte de similitud cero cuando no hay rasgos compartidos y la desviación de la nota se contrae según la similitud del vecino más cercano. Por tanto, las candidatas con pocos metadatos mantienen una estimación próxima al promedio personal en vez de recibir un ajuste optimista sin respaldo. Las candidatas con similitud de al menos 0,40 y una nota prevista al menos 0,25 puntos por debajo del promedio personal se excluyen del ranking, salvo que exista un favorito declarado explícito; una coincidencia aislada queda fuera de ese filtro. Las valoraciones previstas siguen siendo estimaciones, no probabilidades.
+
 ### 5.2 Validación
 
 - Usar validación temporal cuando las fechas permitan ordenar correctamente las observaciones.
@@ -209,7 +222,7 @@ Los metadatos externos y las entidades geográficas tendrán procedencia y fecha
 - Enriquecer metadatos mediante parches explícitos y acotados.
 - No cambiar la preferencia regional ni la región de disponibilidad automáticamente.
 
-## 9. Secuencia de trabajo exclusiva de Espectro
+## 9. Secuencia de trabajo de Espectro y su integración
 
 | Orden | Trabajo | Resultado esperado |
 |---|---|---|
@@ -222,7 +235,7 @@ Los metadatos externos y las entidades geográficas tendrán procedencia y fecha
 | 7 | Atlas geográfico | Producción, rodaje y ambientación con procedencia |
 | 8 | Evolución y análisis temporal | Etapas y cambios sin falsas conclusiones |
 
-Estos trabajos se desarrollan dentro de Espectro y sus servicios. No crean nuevos destinos de navegación ni reemplazan Personal o Descubrir.
+El modelo y los cálculos personales siguen perteneciendo a Espectro. Descubrir consume sus resultados para ordenar la exploración, mientras sus filtros y búsqueda siguen siendo controles de catálogo; no se crea un nuevo destino ni se reemplazan Personal o Descubrir.
 
 ## 10. Criterios de aceptación
 
@@ -255,4 +268,4 @@ Se mantienen los controles actuales de Prisma: TypeScript, unit tests, build, sm
 
 ---
 
-**Decisión final:** Prisma conserva Personal, Descubrir y Espectro. Todo el desarrollo nuevo de esta línea de trabajo mejora Espectro; no se añadirá una cuarta sección principal ni se alterará el resto de la experiencia.
+**Decisión final:** Prisma conserva Personal, Descubrir y Espectro. Espectro es el motor inteligente que también impulsa Descubrir. La búsqueda debe consultar realmente TMDB, los filtros deben ofrecer más control y ninguna mejora puede alterar los registros personales.
