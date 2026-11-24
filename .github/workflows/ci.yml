@@ -54,10 +54,10 @@ jobs:
           done
           PRISMA_SMOKE_URL=http://127.0.0.1:4174/Prisma/ PRISMA_SMOKE_ATTEMPTS=1 node scripts/smoke-test-pages.mjs
 
-  # Mantiene el contexto `verify` que main todavía exige en su protección.
-  # Este gate solo pasa si el job completo de TypeScript/tests/build termina bien.
+  # Mantiene el contexto `verify` que main exige en su protección.
+  # El gate no pasa hasta completar TypeScript/unit tests/build y Browser E2E.
   verify:
-    needs: typecheck_unit_build
+    needs: [typecheck_unit_build, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Confirm required verification gate
