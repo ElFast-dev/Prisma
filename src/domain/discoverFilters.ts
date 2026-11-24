@@ -222,6 +222,35 @@ export function filterDiscoverLibraryVisibility<T extends { id: number }>(
   ));
 }
 
+/**
+ * En el modo «Para ti», evita mezclar recomendaciones personales con el resto
+ * del catálogo de TMDB. El catálogo completo se conserva cuando no hay señales
+ * positivas, para que Espectro nunca deje la pantalla vacía por falta de evidencia.
+ */
+export function selectDiscoverSpectroMovies<T extends { id: number }>(
+  movies: readonly T[],
+  recommendations: readonly { movie: { tmdbId: number } }[],
+  sortBy: DiscoverSort
+): T[] {
+  if (sortBy !== "spectro" || recommendations.length === 0) {
+    return [...movies];
+  }
+
+  const rankByTmdbId = new Map<number, number>();
+  recommendations.forEach((recommendation, index) => {
+    if (!rankByTmdbId.has(recommendation.movie.tmdbId)) {
+      rankByTmdbId.set(recommendation.movie.tmdbId, index);
+    }
+  });
+
+  return movies
+    .filter((movie) => rankByTmdbId.has(movie.id))
+    .sort((left, right) => (
+      (rankByTmdbId.get(left.id) ?? Number.MAX_SAFE_INTEGER)
+      - (rankByTmdbId.get(right.id) ?? Number.MAX_SAFE_INTEGER)
+    ));
+}
+
 export function buildDiscoverMovieParams(
   filters: DiscoverFilters,
   page: number,
