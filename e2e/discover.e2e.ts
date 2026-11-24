@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 async function configureTmdbMock(
   page: import("@playwright/test").Page,
-  options: { multiPageSearch?: boolean; duplicatePageResult?: boolean } = {}
+  options: { multiPageSearch?: boolean; duplicatePageResult?: boolean; longFirstPage?: boolean } = {}
 ): Promise<{ discoverRequests: URL[]; searchRequests: URL[] }> {
   const discoverRequests: URL[] = [];
   const searchRequests: URL[] = [];
@@ -136,8 +136,8 @@ async function configureTmdbMock(
         contentType: "application/json",
         body: JSON.stringify({
           page: Number(url.searchParams.get("page") ?? "1"),
-          total_pages: options.multiPageSearch ? 2 : 1,
-          total_results: options.multiPageSearch ? 4 : 2,
+          total_pages: options.longFirstPage ? 3 : options.multiPageSearch ? 2 : 1,
+          total_results: options.longFirstPage ? 14 : options.multiPageSearch ? 4 : 2,
           results: options.multiPageSearch && url.searchParams.get("page") === "2"
             ? options.duplicatePageResult
               ? [{
@@ -190,7 +190,21 @@ async function configureTmdbMock(
               original_language: "es",
               popularity: 17
             }]
-            : [{
+            : options.longFirstPage && url.searchParams.get("page") === "1"
+              ? Array.from({ length: 12 }, (_, index) => ({
+                id: 200 + index,
+                title: "Prisma: historia de prueba " + (index + 1),
+                original_title: "Prisma test story " + (index + 1),
+                overview: "Resultado para comprobar el desplazamiento real del catálogo.",
+                release_date: "2020-01-01",
+                poster_path: null,
+                genre_ids: [18],
+                vote_average: 7.5,
+                vote_count: 500,
+                original_language: "es",
+                popularity: 20 - index
+              }))
+              : [{
               id: 101,
               title: "Prisma: una historia",
               original_title: "Prisma Story",
@@ -476,26 +490,53 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
   await expect.poll(() => discoverRequests.length).toBe(1);
 });
 
-test("no carga páginas al deslizar; espera a que la persona toque Cargar más", async ({ page }) => {
-  const { searchRequests } = await configureTmdbMock(page, { multiPageSearch: true });
+test("deslizar no carga otra página ni mueve las tarjetas; Cargar más añade resultados abajo", async ({ page }) => {
+  const { searchRequests } = await configureTmdbMock(page, {
+    multiPageSearch: true,
+    longFirstPage: true
+  });
   await page.goto("#/discover");
   await page.locator("#discover-search").fill("prisma");
 
   const posters = page.locator(".poster-card");
-  await expect(posters).toHaveCount(2);
+  await expect(posters).toHaveCount(12);
   await expect.poll(() => searchRequests.length).toBe(1);
 
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.waitForTimeout(300);
   expect(searchRequests).toHaveLength(1);
-  await expect(posters).toHaveCount(2);
+  await expect(posters).toHaveCount(12);
+
+  const before = await page.evaluate(() => {
+    const first = document.querySelector(".poster-card");
+    return {
+      scrollY: window.scrollY,
+      firstCardDocumentTop: first
+        ? first.getBoundingClientRect().top + window.scrollY
+        : null
+    };
+  });
+  expect(before.firstCardDocumentTop).not.toBeNull();
 
   await page.getByRole("button", { name: "Cargar más películas" }).click();
   await expect.poll(() => searchRequests.length).toBe(2);
-  await expect(posters).toHaveCount(3);
-  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
-  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
-  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
+  await expect(posters).toHaveCount(14);
+  await expect.poll(async () => page.evaluate(() => {
+    const first = document.querySelector(".poster-card");
+    return first ? first.getBoundingClientRect().top + window.scrollY : null;
+  })).toBeCloseTo(before.firstCardDocumentTop!, 1);
+
+  const after = await page.evaluate(() => ({
+    scrollY: window.scrollY,
+    firstCardDocumentTop: (() => {
+      const first = document.querySelector(".poster-card");
+      return first ? first.getBoundingClientRect().top + window.scrollY : null;
+    })()
+  }));
+  expect(after.scrollY).toBe(before.scrollY);
+  expect(after.firstCardDocumentTop).toBeCloseTo(before.firstCardDocumentTop!, 1);
+  await expect(page.getByRole("button", { name: /Cargar más películas/ })).toContainText("2 de 3 páginas");
 });
 
 test("actualiza una película repetida en su lugar sin crear otra tarjeta", async ({ page }) => {
