@@ -6,6 +6,7 @@ import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import {
   countActiveDiscoverFilters,
+  appendDiscoverRecommendationBatch,
   DEFAULT_DISCOVER_FILTERS,
   DISCOVER_GENRES,
   DISCOVER_LANGUAGES,
@@ -250,11 +251,9 @@ export function DiscoverPage() {
       setState("ready");
       void getSpectroDiscoverRecommendations(feed.movies).then((personalized) => {
         if (currentRequest !== requestId.current) return;
-        setRecommendations((current) => {
-          const merged = new Map(current.map((item) => [item.movie.tmdbId, item]));
-          for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
-          return rankSpectroRecommendations([...merged.values()]);
-        });
+        // La primera página se ordena completa antes de mostrarla. Las
+        // páginas posteriores se incorporan como bloques estables al final.
+        setRecommendations(rankSpectroRecommendations(personalized.recommendations));
         const nextSpectroState = getDiscoverSpectroState(
           personalized.movieCount,
           personalized.recommendations.length
@@ -354,7 +353,14 @@ export function DiscoverPage() {
 
   const loadMore = useCallback(async () => {
     const token = getTmdbAccessToken();
-    if (!token || loadingMore || loadingMoreRef.current || state !== "ready" || page >= totalPages) return;
+    if (
+      !token
+      || loadingMore
+      || loadingMoreRef.current
+      || state !== "ready"
+      || page >= totalPages
+      || (appliedFilters.sortBy === "spectro" && spectroState === "loading")
+    ) return;
     loadingMoreRef.current = true;
     const currentRequest = requestId.current;
     const nextPage = page + 1;
@@ -390,11 +396,10 @@ export function DiscoverPage() {
       setMovies(mergedMovies);
       void getSpectroDiscoverRecommendations(newPageMovies).then((personalized) => {
         if (currentRequest !== requestId.current) return;
-        setRecommendations((current) => {
-          const merged = new Map(current.map((item) => [item.movie.tmdbId, item]));
-          for (const item of personalized.recommendations) merged.set(item.movie.tmdbId, item);
-          return rankSpectroRecommendations([...merged.values()]);
-        });
+        const rankedBatch = rankSpectroRecommendations(personalized.recommendations);
+        setRecommendations((current) => (
+          appendDiscoverRecommendationBatch(current, rankedBatch)
+        ));
         const nextSpectroState = getDiscoverSpectroState(
           personalized.movieCount,
           personalized.recommendations.length
@@ -421,17 +426,17 @@ export function DiscoverPage() {
         setLoadingMore(false);
       }
     }
-  }, [appliedFilters, loadingMore, movies, page, query, state, totalPages]);
+  }, [appliedFilters, loadingMore, movies, page, query, spectroState, state, totalPages]);
 
   useEffect(() => {
     const target = sentinelRef.current;
     if (!target || state !== "ready" || (catalogFiltersActive && query.trim())) return;
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) void loadMore();
-    }, { rootMargin: "500px" });
+    }, { rootMargin: "220px" });
     observer.observe(target);
     return () => observer.disconnect();
-  }, [catalogFiltersActive, query, state, loadMore]);
+  }, [appliedFilters.sortBy, catalogFiltersActive, query, spectroState, state, loadMore]);
 
   function openMovie(movie: TmdbMovieSummary) {
     saveCurrentRouteScrollPosition();
@@ -578,7 +583,8 @@ export function DiscoverPage() {
               <span>Mostrando catálogo guardado en este dispositivo{cachedFetchedAt ? " · " + new Date(cachedFetchedAt).toLocaleString("es-PA") : ""}.</span>
             </p>
           )}
-          {state === "loading" && movies.length === 0 ? (
+          {(state === "loading" && movies.length === 0)
+            || (appliedFilters.sortBy === "spectro" && spectroState === "loading") ? (
             <div className="poster-grid" aria-label="Cargando películas">
               {Array.from({ length: 8 }, (_, index) => <div className="poster-skeleton" key={index} />)}
             </div>
@@ -607,8 +613,12 @@ export function DiscoverPage() {
           )}
           <div ref={sentinelRef} className="feed-sentinel" aria-hidden="true" />
           {catalogFiltersActive && query.trim() && page < totalPages && (
-            <button className="button button-secondary discover-load-more" type="button" onClick={() => void loadMore()} disabled={loadingMore}>
-              {loadingMore ? <><LoaderCircle size={17} className="spin" /> Cargando...</> : "Buscar en más resultados"}
+            <button className="button button-secondary discover-load-more" type="button" onClick={() => void loadMore()} disabled={loadingMore || (appliedFilters.sortBy === "spectro" && spectroState === "loading")}>
+              {loadingMore
+                ? <><LoaderCircle size={17} className="spin" /> Cargando...</>
+                : appliedFilters.sortBy === "spectro" && spectroState === "loading"
+                  ? "Preparando recomendaciones..."
+                  : "Buscar en más resultados"}
             </button>
           )}
           {loadingMore && !(catalogFiltersActive && query.trim()) && <div className="feed-loading"><LoaderCircle size={19} className="spin" /><span>Cargando películas...</span></div>}
