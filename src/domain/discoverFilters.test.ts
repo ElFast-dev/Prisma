@@ -206,6 +206,8 @@ describe("Discover filters", () => {
     expect(selectDiscoverSpectroMovies(catalog, recommendation, "popularity.desc"))
       .toEqual(catalog);
     expect(selectDiscoverSpectroMovies(catalog, [], "spectro")).toEqual(catalog);
+    expect(selectDiscoverSpectroMovies(catalog, recommendation, "spectro", false))
+      .toEqual(catalog);
   });
 
 });
