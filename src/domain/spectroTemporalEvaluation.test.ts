@@ -76,6 +76,8 @@ describe("evaluación temporal reproducible de Espectro", () => {
       [20, 4]
     ]);
     expect(report.folds.every((fold) => fold.predictionCoverage === 1)).toBe(true);
+    expect(report.folds[0].metrics.mae)
+      .toBeLessThan(report.folds[0].metrics.meanBaselineMae);
     expect(report.aggregate?.rbfWinRateAgainstMeanBaseline).toBeGreaterThanOrEqual(0);
     expect(report.aggregate?.ndcgAtK).toBeGreaterThanOrEqual(0);
     expect(report.aggregate?.ndcgAtK).toBeLessThanOrEqual(1);
