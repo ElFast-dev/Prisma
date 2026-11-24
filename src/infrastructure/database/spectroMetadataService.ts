@@ -7,6 +7,7 @@ import {
 } from "../tmdb/TmdbService";
 import { getTmdbAccessToken } from "../tmdb/settings";
 import { prismaDb } from "./database";
+import { appendSpectroMetadataSnapshot } from "./spectroMetadataHistoryRepository";
 
 const ITEM_PREFIX = "spectro:metadata:v1:";
 const REQUEST_GAP_MS = 450;
@@ -332,6 +333,7 @@ async function persistItem(
       complete = false;
       return;
     }
+    await appendSpectroMetadataSnapshot(current, current.updatedAt, "legacy-updated-at");
     const patch = createMovieMetadataPatch(current, {
       ...metadata.details,
       keywords: metadata.keywords
@@ -352,6 +354,7 @@ async function persistItem(
     // Este parche solo contiene metadatos cinematográficos. No escribe visionados,
     // calificaciones, favoritos, colecciones, perfil ni preferencias.
     await prismaDb.movies.update(movie.id, patch);
+    await appendSpectroMetadataSnapshot(enriched, now, "tmdb-observed");
     await prismaDb.appMetadata.put({
       key: itemKey(movie.tmdbId),
       value: JSON.stringify({
