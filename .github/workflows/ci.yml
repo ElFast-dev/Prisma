@@ -66,6 +66,11 @@ jobs:
   e2e:
     name: Browser E2E · Playwright
     runs-on: ubuntu-latest
+    container:
+      # Imagen oficial fijada a la misma versión que @playwright/test en package-lock.
+      # Ya incluye Chromium, Firefox, WebKit y sus dependencias de sistema.
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
+      options: --init --ipc=host
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -78,8 +83,8 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Install browser engines and system dependencies
-        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Verify Playwright browser image
+        run: npx playwright --version
       - name: Run end-to-end browser tests
         run: npm run test:e2e
       - name: Upload Playwright report and failure evidence
