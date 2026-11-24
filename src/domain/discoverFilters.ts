@@ -264,9 +264,10 @@ export function appendDiscoverSpectroRecommendations<T extends { movie: { tmdbId
 export function selectDiscoverSpectroMovies<T extends { id: number }>(
   movies: readonly T[],
   recommendations: readonly { movie: { tmdbId: number } }[],
-  sortBy: DiscoverSort
+  sortBy: DiscoverSort,
+  personalizationReady = true
 ): T[] {
-  if (sortBy !== "spectro" || recommendations.length === 0) {
+  if (sortBy !== "spectro" || !personalizationReady || recommendations.length === 0) {
     return [...movies];
   }
 
