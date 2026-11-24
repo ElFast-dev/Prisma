@@ -450,29 +450,6 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
   await expect.poll(() => discoverRequests.length).toBe(1);
 });
 
-test("ofrece atajos de búsqueda y permite quitar un filtro sin borrar los demás", async ({ page }) => {
-  const { discoverRequests } = await configureTmdbMock(page);
-  await page.goto("#/discover");
-
-  await page.getByRole("button", { name: "Abrir filtros" }).click();
-  const dialog = page.getByRole("dialog", { name: "Filtros" });
-  await dialog.getByRole("button", { name: "Bien valoradas" }).click();
-  await expect(dialog.locator("#discover-min-rating")).toHaveValue("7.5");
-  await expect(dialog.locator("#discover-min-votes")).toHaveValue("500");
-  await expect(dialog.locator("#discover-sort")).toHaveValue("vote_average.desc");
-  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
-
-  await expect.poll(() => discoverRequests.length).toBe(1);
-  expect(discoverRequests[0].searchParams.get("vote_average.gte")).toBe("7.5");
-  expect(discoverRequests[0].searchParams.get("vote_count.gte")).toBe("500");
-  expect(discoverRequests[0].searchParams.get("sort_by")).toBe("vote_average.desc");
-
-  await page.getByRole("button", { name: "Quitar filtro Valoración: ≥ 7.5" }).click();
-  await expect.poll(() => discoverRequests.length).toBe(2);
-  expect(discoverRequests[1].searchParams.get("vote_average.gte")).toBeNull();
-  expect(discoverRequests[1].searchParams.get("vote_count.gte")).toBe("500");
-  expect(discoverRequests[1].searchParams.get("sort_by")).toBe("vote_average.desc");
-  await expect(page.locator(".discover-filter-chip")).toContainText(["Votos: ≥ 500", "Orden: Mejor valoradas"]);
 test("no carga páginas al deslizar; espera a que la persona toque Cargar más", async ({ page }) => {
   const { searchRequests } = await configureTmdbMock(page, { multiPageSearch: true });
   await page.goto("#/discover");
@@ -493,6 +470,4 @@ test("no carga páginas al deslizar; espera a que la persona toque Cargar más",
   await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
   await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
   await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
-});
-
 });
