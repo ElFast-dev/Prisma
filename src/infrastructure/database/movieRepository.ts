@@ -13,6 +13,7 @@ function dateYear(value?: string): number | undefined {
 export async function saveTmdbMovie(movie: TmdbMovieSummary | TmdbMovieDetails, credits?: TmdbCredits): Promise<MovieRecord> {
   const id = "tmdb-" + movie.id;
   const details = movie as TmdbMovieDetails;
+  const current = await prismaDb.movies.get(id);
   const now = new Date().toISOString();
 
   const record: MovieRecord = {
