@@ -518,3 +518,30 @@ test("ofrece el atajo de películas bien valoradas y permite quitar solo ese fil
   expect(discoverRequests[1].searchParams.get("sort_by")).toBe("vote_average.desc");
   await expect(page.locator(".discover-filter-chip")).toContainText(["Votos: ≥ 500", "Orden: Mejor valoradas"]);
 });
+
+
+test("ofrece actualizar al reconectar sin reemplazar el feed hasta confirmarlo", async ({ page, context }) => {
+  const { searchRequests } = await configureTmdbMock(page, { multiPageSearch: true });
+  await page.goto("#/discover");
+  await page.locator("#discover-search").fill("prisma");
+
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  await expect.poll(() => searchRequests.length).toBe(1);
+  const firstTitles = await posters.allTextContents();
+
+  await context.setOffline(true);
+  await expect.poll(() => page.evaluate(() => navigator.onLine)).toBe(false);
+  await context.setOffline(false);
+
+  const refresh = page.getByRole("button", { name: "Actualizar" });
+  await expect(refresh).toBeVisible();
+  expect(searchRequests).toHaveLength(1);
+  await expect(posters).toHaveCount(2);
+  await expect(posters).toHaveText(firstTitles);
+
+  await refresh.click();
+  await expect.poll(() => searchRequests.length).toBe(2);
+  expect(searchRequests[1].searchParams.get("page")).toBe("1");
+  await expect(posters).toHaveCount(2);
+});
