@@ -502,7 +502,7 @@ test("deslizar no carga otra página ni mueve las tarjetas; Cargar más añade r
   await expect(posters).toHaveCount(12);
   await expect.poll(() => searchRequests.length).toBe(1);
 
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "instant" }));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.waitForTimeout(300);
   expect(searchRequests).toHaveLength(1);
