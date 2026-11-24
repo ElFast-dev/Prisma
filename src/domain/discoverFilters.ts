@@ -227,6 +227,33 @@ export function filterDiscoverLibraryVisibility<T extends { id: number }>(
  * del catálogo de TMDB. El catálogo completo se conserva cuando no hay señales
  * positivas, para que Espectro nunca deje la pantalla vacía por falta de evidencia.
  */
+/**
+ * Añade una tanda nueva sin alterar la posición de títulos que ya estaban
+ * visibles. La tanda entrante debe llegar ordenada por su propio criterio
+ * (por ejemplo, Espectro); las coincidencias duplicadas se actualizan in situ.
+ */
+export function appendDiscoverRecommendationBatch<T extends { movie: { tmdbId: number } }>(
+  current: readonly T[],
+  incomingBatch: readonly T[]
+): T[] {
+  const result = [...current];
+  const indexByTmdbId = new Map(
+    result.map((recommendation, index) => [recommendation.movie.tmdbId, index])
+  );
+
+  for (const recommendation of incomingBatch) {
+    const existingIndex = indexByTmdbId.get(recommendation.movie.tmdbId);
+    if (existingIndex !== undefined) {
+      result[existingIndex] = recommendation;
+      continue;
+    }
+    indexByTmdbId.set(recommendation.movie.tmdbId, result.length);
+    result.push(recommendation);
+  }
+
+  return result;
+}
+
 export function selectDiscoverSpectroMovies<T extends { id: number }>(
   movies: readonly T[],
   recommendations: readonly { movie: { tmdbId: number } }[],
