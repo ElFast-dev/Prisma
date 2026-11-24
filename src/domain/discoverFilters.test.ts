@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendDiscoverMovies,
+  appendDiscoverSpectroRecommendations,
   buildDiscoverMovieParams,
   countActiveDiscoverFilters,
   DEFAULT_DISCOVER_FILTERS,
@@ -154,6 +156,42 @@ describe("Discover filters", () => {
     expect(discoverFilterTitleMatch("Otra película", undefined, "   ")).toBe(true);
   });
 
+  it("refreshes duplicate movie data in place and appends only new IDs", () => {
+    const firstPage = [
+      { id: 10, title: "Una historia" },
+      { id: 20, title: "Otra historia" },
+      { id: 30, title: "Tercera historia" }
+    ];
+    const nextPage = [
+      { id: 30, title: "Tercera historia actualizada" },
+      { id: 40, title: "Nueva película" },
+      { id: 20, title: "Otra historia actualizada" },
+      { id: 40, title: "Nueva película · datos recientes" }
+    ];
+
+    expect(appendDiscoverMovies(firstPage, nextPage)).toEqual([
+      firstPage[0],
+      nextPage[2],
+      nextPage[0],
+      nextPage[3]
+    ]);
+  });
+
+  it("appends each new Spectro page after existing recommendations without reranking them", () => {
+    const firstPage = [
+      { movie: { tmdbId: 20 }, predictedRating: 9 },
+      { movie: { tmdbId: 10 }, predictedRating: 8 }
+    ];
+    const nextPage = [
+      { movie: { tmdbId: 40 }, predictedRating: 10 },
+      { movie: { tmdbId: 20 }, predictedRating: 9.5 },
+      { movie: { tmdbId: 30 }, predictedRating: 7 }
+    ];
+
+    expect(appendDiscoverSpectroRecommendations(firstPage, nextPage))
+      .toEqual([nextPage[1], firstPage[1], nextPage[0], nextPage[2]]);
+  });
+
   it("shows only movies personally recommended by Spectro, in recommendation order", () => {
     const catalog = [
       { id: 101, title: "Resultado antiguo A" },
@@ -181,6 +219,8 @@ describe("Discover filters", () => {
     expect(selectDiscoverSpectroMovies(catalog, recommendation, "popularity.desc"))
       .toEqual(catalog);
     expect(selectDiscoverSpectroMovies(catalog, [], "spectro")).toEqual(catalog);
+    expect(selectDiscoverSpectroMovies(catalog, recommendation, "spectro", false))
+      .toEqual(catalog);
   });
 
 });

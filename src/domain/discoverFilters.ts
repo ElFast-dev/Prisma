@@ -227,12 +227,65 @@ export function filterDiscoverLibraryVisibility<T extends { id: number }>(
  * del catálogo de TMDB. El catálogo completo se conserva cuando no hay señales
  * positivas, para que Espectro nunca deje la pantalla vacía por falta de evidencia.
  */
+/**
+ * Añade una página sin cambiar el orden de las películas que ya estaban en pantalla.
+ * La nueva página conserva su propio orden y los duplicados se descartan por ID.
+ */
+export function appendDiscoverMovies<T extends { id: number }>(
+  current: readonly T[],
+  nextPage: readonly T[]
+): T[] {
+  const result = [...current];
+  const indexById = new Map(result.map((movie, index) => [movie.id, index]));
+
+  for (const movie of nextPage) {
+    const existingIndex = indexById.get(movie.id);
+    if (existingIndex !== undefined) {
+      // Refresca metadatos en la tarjeta existente, sin alterar el orden del feed.
+      result[existingIndex] = movie;
+      continue;
+    }
+    indexById.set(movie.id, result.length);
+    result.push(movie);
+  }
+
+  return result;
+}
+
+/**
+ * Añade recomendaciones de una página al final de las ya mostradas.
+ * Nunca reordena las recomendaciones existentes al terminar otro cálculo.
+ */
+export function appendDiscoverSpectroRecommendations<T extends { movie: { tmdbId: number } }>(
+  current: readonly T[],
+  nextPage: readonly T[]
+): T[] {
+  const result = [...current];
+  const indexByTmdbId = new Map(
+    result.map((item, index) => [item.movie.tmdbId, index])
+  );
+
+  for (const item of nextPage) {
+    const existingIndex = indexByTmdbId.get(item.movie.tmdbId);
+    if (existingIndex !== undefined) {
+      // Actualiza predicción/metadatos sin mover la tarjeta de su posición anterior.
+      result[existingIndex] = item;
+      continue;
+    }
+    indexByTmdbId.set(item.movie.tmdbId, result.length);
+    result.push(item);
+  }
+
+  return result;
+}
+
 export function selectDiscoverSpectroMovies<T extends { id: number }>(
   movies: readonly T[],
   recommendations: readonly { movie: { tmdbId: number } }[],
-  sortBy: DiscoverSort
+  sortBy: DiscoverSort,
+  personalizationReady = true
 ): T[] {
-  if (sortBy !== "spectro" || recommendations.length === 0) {
+  if (sortBy !== "spectro" || !personalizationReady || recommendations.length === 0) {
     return [...movies];
   }
 

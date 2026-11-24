@@ -54,10 +54,10 @@ jobs:
           done
           PRISMA_SMOKE_URL=http://127.0.0.1:4174/Prisma/ PRISMA_SMOKE_ATTEMPTS=1 node scripts/smoke-test-pages.mjs
 
-  # Mantiene el contexto `verify` que main todavía exige en su protección.
-  # Este gate solo pasa si el job completo de TypeScript/tests/build termina bien.
+  # Mantiene el contexto `verify` que main exige en su protección.
+  # El gate no pasa hasta completar TypeScript/unit tests/build y Browser E2E.
   verify:
-    needs: typecheck_unit_build
+    needs: [typecheck_unit_build, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Confirm required verification gate
@@ -66,6 +66,11 @@ jobs:
   e2e:
     name: Browser E2E · Playwright
     runs-on: ubuntu-latest
+    container:
+      # Imagen oficial fijada a la misma versión que @playwright/test en package-lock.
+      # Ya incluye Chromium, Firefox, WebKit y sus dependencias de sistema.
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
+      options: --init --ipc=host
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -78,10 +83,13 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Install browser engines and system dependencies
-        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Verify Playwright browser image
+        run: npx playwright --version
       - name: Run end-to-end browser tests
         run: npm run test:e2e
+        env:
+          # Firefox ejecutado como root necesita un HOME propiedad de root.
+          HOME: /root
       - name: Upload Playwright report and failure evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

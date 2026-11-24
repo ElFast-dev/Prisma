@@ -27,7 +27,8 @@ vi.mock("../database/database", () => ({
 
 import {
   getMovieAnalysisMetadata,
-  getMovieDetailsForEnrichment
+  getMovieDetailsForEnrichment,
+  searchMovies
 } from "./TmdbService";
 
 const originalFetch = globalThis.fetch;
@@ -132,4 +133,43 @@ describe("caché TMDB compartida", () => {
       .filter((path) => path === "/3/movie/77");
     expect(detailRequests).toHaveLength(1);
   });
+  it("forces a live search refresh even while its cached response is still fresh", async () => {
+    const cachedAt = new Date().toISOString();
+    fakeCache.entries.set("search:movie:prisma:1", {
+      cacheKey: "search:movie:prisma:1",
+      resourceType: "search",
+      payload: {
+        page: 1,
+        total_pages: 1,
+        total_results: 1,
+        results: [{ id: 100, title: "Resultado antiguo" }]
+      },
+      fetchedAt: cachedAt,
+      lastValidatedAt: cachedAt
+    });
+
+    const fetcher = installFetch((pathname) => {
+      expect(pathname).toBe("/3/search/movie");
+      return jsonResponse({
+        page: 1,
+        total_pages: 1,
+        total_results: 1,
+        results: [{ id: 200, title: "Resultado actualizado" }]
+      });
+    });
+
+    const cached = await searchMovies("fixture-token", "prisma");
+    expect(cached.movies[0]?.id).toBe(100);
+    expect(fetcher).not.toHaveBeenCalled();
+
+    const refreshed = await searchMovies("fixture-token", "prisma", 1, { forceRefresh: true });
+    expect(refreshed.movies[0]?.id).toBe(200);
+    expect(refreshed.stale).toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fakeCache.entries.get("search:movie:prisma:1")?.payload).toMatchObject({
+      results: [{ id: 200, title: "Resultado actualizado" }]
+    });
+  });
+
+
 });

@@ -113,7 +113,7 @@ async function getCached<T>(
   cacheKey: string,
   endpoint: string,
   params: Record<string, string | number | boolean | undefined> = {},
-  options: { signal?: AbortSignal; useStaleOnError?: boolean } = {}
+  options: { signal?: AbortSignal; useStaleOnError?: boolean; forceRefresh?: boolean } = {}
 ): Promise<{ data: T; fetchedAt: string; stale: boolean }> {
   // La credencial forma parte solo de la clave efímera en memoria: un cambio de
   // token no puede heredar un error o una respuesta iniciada con el token anterior.
@@ -124,7 +124,7 @@ async function getCached<T>(
     request = (async (): Promise<TmdbCacheFlightResult> => {
       const cached = await prismaDb.catalogCache.get(cacheKey);
       const cachedTimestamp = cached ? Date.parse(cached.fetchedAt) : Number.NaN;
-      const cacheIsFresh = Boolean(
+      const cacheIsFresh = !options.forceRefresh && Boolean(
         cached && Number.isFinite(cachedTimestamp)
         && Date.now() - cachedTimestamp < cacheTtlMs(cacheKey)
       );
@@ -189,13 +189,15 @@ export async function getImageConfiguration(token: string): Promise<TmdbConfigur
 
 export async function getTrendingMovies(
   token: string,
-  page = 1
+  page = 1,
+  options: { forceRefresh?: boolean } = {}
 ): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; totalResults: number; stale: boolean; fetchedAt: string }> {
   const result = await getCached<TmdbListResponse>(
     token,
     "trending:movie:week:" + page,
     "trending/movie/week",
-    { page, language: LANGUAGE }
+    { page, language: LANGUAGE },
+    { forceRefresh: options.forceRefresh }
   );
   return {
     movies: result.data.results ?? [],
@@ -209,7 +211,8 @@ export async function getTrendingMovies(
 export async function discoverMovies(
   token: string,
   filters: DiscoverFilters,
-  page = 1
+  page = 1,
+  options: { forceRefresh?: boolean } = {}
 ): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; totalResults: number; stale: boolean; fetchedAt: string }> {
   const normalizedFilters = normalizeDiscoverFilters(filters);
   const params = buildDiscoverMovieParams(normalizedFilters, page, LANGUAGE);
@@ -218,7 +221,8 @@ export async function discoverMovies(
     token,
     cacheKey,
     "discover/movie",
-    params
+    params,
+    { forceRefresh: options.forceRefresh }
   );
 
   return {
@@ -233,7 +237,8 @@ export async function discoverMovies(
 export async function searchMovies(
   token: string,
   query: string,
-  page = 1
+  page = 1,
+  options: { forceRefresh?: boolean } = {}
 ): Promise<{ movies: TmdbMovieSummary[]; totalPages: number; totalResults: number; stale: boolean; fetchedAt: string }> {
   const normalized = query.trim();
   if (!normalized) return { movies: [], totalPages: 0, totalResults: 0, stale: false, fetchedAt: new Date().toISOString() };
@@ -241,7 +246,8 @@ export async function searchMovies(
     token,
     "search:movie:" + normalized.toLocaleLowerCase() + ":" + page,
     "search/movie",
-    { query: normalized, page, language: LANGUAGE, include_adult: false }
+    { query: normalized, page, language: LANGUAGE, include_adult: false },
+    { forceRefresh: options.forceRefresh }
   );
   return {
     movies: result.data.results ?? [],
