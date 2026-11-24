@@ -566,6 +566,11 @@ export function DiscoverPage() {
               {" · Página " + page + " de " + totalPages}
             </p>
           )}
+          {page > 1 && (
+            <p className="cached-feed-note" role="status">
+              Las películas nuevas se añaden al final; las que ya estaban cargadas conservan su posición.
+            </p>
+          )}
           {state === "ready" && movies.length > 0 && (
             <div className="discover-spectro-note" role="status">
               <BrainCircuit size={16} />
