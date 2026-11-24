@@ -176,7 +176,7 @@ describe("Discover filters", () => {
     ];
 
     expect(appendDiscoverSpectroRecommendations(firstPage, nextPage))
-      .toEqual([firstPage[0], firstPage[1], nextPage[0], nextPage[2]]);
+      .toEqual([nextPage[1], firstPage[1], nextPage[0], nextPage[2]]);
   });
 
   it("shows only movies personally recommended by Spectro, in recommendation order", () => {
