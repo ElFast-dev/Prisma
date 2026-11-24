@@ -439,24 +439,20 @@ function evaluateFold(
 }
 
 function aggregateFolds(folds: readonly SpectroTemporalFold[]) {
-  const metricKeys: Array<keyof SpectroTemporalMetrics> = [
-    "mae",
-    "rmse",
-    "meanBaselineMae",
-    "meanBaselineRmse",
-    "medianBaselineMae",
-    "medianBaselineRmse",
-    "neighborBaselineMae",
-    "neighborBaselineRmse",
-    "ndcgAtK",
-    "precisionAtK",
-    "recallAtK",
-    "hitRateAtK"
-  ];
-  const aggregate = Object.fromEntries(metricKeys.map((key) => [
-    key,
-    average(folds.map((fold) => fold.metrics[key]))
-  ])) as SpectroTemporalMetrics;
+  const aggregate: SpectroTemporalMetrics = {
+    mae: average(folds.map((fold) => fold.metrics.mae)),
+    rmse: average(folds.map((fold) => fold.metrics.rmse)),
+    meanBaselineMae: average(folds.map((fold) => fold.metrics.meanBaselineMae)),
+    meanBaselineRmse: average(folds.map((fold) => fold.metrics.meanBaselineRmse)),
+    medianBaselineMae: average(folds.map((fold) => fold.metrics.medianBaselineMae)),
+    medianBaselineRmse: average(folds.map((fold) => fold.metrics.medianBaselineRmse)),
+    neighborBaselineMae: average(folds.map((fold) => fold.metrics.neighborBaselineMae)),
+    neighborBaselineRmse: average(folds.map((fold) => fold.metrics.neighborBaselineRmse)),
+    ndcgAtK: average(folds.map((fold) => fold.metrics.ndcgAtK)),
+    precisionAtK: average(folds.map((fold) => fold.metrics.precisionAtK)),
+    recallAtK: average(folds.map((fold) => fold.metrics.recallAtK)),
+    hitRateAtK: average(folds.map((fold) => fold.metrics.hitRateAtK))
+  };
   return {
     ...aggregate,
     rbfWinRateAgainstMeanBaseline: folds.filter(
