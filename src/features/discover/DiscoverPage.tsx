@@ -370,18 +370,19 @@ export function DiscoverPage() {
         : useFilters
           ? await discoverMovies(token, appliedFilters, nextPage)
           : await getTrendingMovies(token, nextPage);
-      const existingIds = new Set(movies.map((movie) => movie.id));
       // Cada página se filtra y ordena de forma independiente. Las películas que
       // ya están en pantalla permanecen en su sitio; solo se añade contenido abajo.
       const filteredPage = query.trim() && useFilters
         ? await filterSearchResults(token, rawResult.movies, appliedFilters)
         : rawResult.movies;
       if (currentRequest !== requestId.current) return;
-      const newPageMovies = filteredPage.filter((movie) => !existingIds.has(movie.id));
+      const uniquePageMovies = appendDiscoverMovies([], filteredPage);
+      const existingIds = new Set(movies.map((movie) => movie.id));
+      const newPageMovies = uniquePageMovies.filter((movie) => !existingIds.has(movie.id));
       // Invalida cualquier resultado atrasado de la sesión restaurada antes de
-      // añadir una página, pero conserva intacto el orden que ya se está mostrando.
+      // añadir una página; los duplicados refrescan sus datos en la misma posición.
       feedRevisionRef.current += 1;
-      setMovies((current) => appendDiscoverMovies(current, newPageMovies));
+      setMovies((current) => appendDiscoverMovies(current, filteredPage));
       // Solo se amplía un ranking personal que ya estaba activo desde la primera
       // página. Un fallback del catálogo nunca se convierte a mitad del scroll
       // en una lista distinta que haga desaparecer las películas ya vistas.
@@ -459,19 +460,19 @@ export function DiscoverPage() {
 
   function applyDiscoverPreset(preset: "rated" | "recent" | "classics" | "short") {
     const currentYear = new Date().getFullYear();
-    const base = {
-      ...DEFAULT_DISCOVER_FILTERS,
-      hideWatched: draftFilters.hideWatched,
-      hidePending: draftFilters.hidePending
-    };
+    // El atajo cambia sus propios criterios, pero conserva el resto de la combinación.
     if (preset === "rated") {
-      updateDraft({ ...base, minVoteAverage: "7.5", minVoteCount: "500", sortBy: "vote_average.desc" });
+      updateDraft({ minVoteAverage: "7.5", minVoteCount: "500", sortBy: "vote_average.desc" });
     } else if (preset === "recent") {
-      updateDraft({ ...base, yearFrom: String(currentYear - 4), yearTo: String(currentYear), sortBy: "primary_release_date.desc" });
+      updateDraft({
+        yearFrom: String(currentYear - 4),
+        yearTo: String(currentYear),
+        sortBy: "primary_release_date.desc"
+      });
     } else if (preset === "classics") {
-      updateDraft({ ...base, yearTo: "1989", sortBy: "vote_average.desc" });
+      updateDraft({ yearFrom: "", yearTo: "1989", sortBy: "vote_average.desc" });
     } else {
-      updateDraft({ ...base, runtimeMax: "100", sortBy: "popularity.desc" });
+      updateDraft({ runtimeMin: "", runtimeMax: "100", sortBy: "popularity.desc" });
     }
   }
 
