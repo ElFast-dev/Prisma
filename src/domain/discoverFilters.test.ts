@@ -156,12 +156,25 @@ describe("Discover filters", () => {
     expect(discoverFilterTitleMatch("Otra película", undefined, "   ")).toBe(true);
   });
 
-  it("appends new catalog pages without moving existing results or duplicating IDs", () => {
-    const firstPage = [{ id: 10 }, { id: 20 }, { id: 30 }];
-    const nextPage = [{ id: 30 }, { id: 40 }, { id: 50 }];
+  it("refreshes duplicate movie data in place and appends only new IDs", () => {
+    const firstPage = [
+      { id: 10, title: "Una historia" },
+      { id: 20, title: "Otra historia" },
+      { id: 30, title: "Tercera historia" }
+    ];
+    const nextPage = [
+      { id: 30, title: "Tercera historia actualizada" },
+      { id: 40, title: "Nueva película" },
+      { id: 20, title: "Otra historia actualizada" },
+      { id: 40, title: "Nueva película · datos recientes" }
+    ];
 
-    expect(appendDiscoverMovies(firstPage, nextPage))
-      .toEqual([{ id: 10 }, { id: 20 }, { id: 30 }, { id: 40 }, { id: 50 }]);
+    expect(appendDiscoverMovies(firstPage, nextPage)).toEqual([
+      firstPage[0],
+      nextPage[2],
+      nextPage[0],
+      nextPage[3]
+    ]);
   });
 
   it("appends each new Spectro page after existing recommendations without reranking them", () => {
