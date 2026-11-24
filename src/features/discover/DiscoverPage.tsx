@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Film, LoaderCircle, WifiOff, SlidersHorizontal, BrainCircuit } from "lucide-react";
+import { Search, X, Film, LoaderCircle, WifiOff, SlidersHorizontal, BrainCircuit, RefreshCw } from "lucide-react";
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { EmptyState } from "../../components/EmptyState";
 import { MoviePosterCard } from "../../components/MoviePosterCard";
 import { useAccessibleDialog } from "../../components/useAccessibleDialog";
 import {
+  appendDiscoverMovies,
+  appendDiscoverSpectroRecommendations,
   countActiveDiscoverFilters,
-  appendDiscoverRecommendationBatch,
   DEFAULT_DISCOVER_FILTERS,
   DISCOVER_GENRES,
   DISCOVER_LANGUAGES,
@@ -135,15 +136,14 @@ export function DiscoverPage() {
   const [state, setState] = useState<FeedState>(hasRestoredMovies ? "ready" : "loading");
   const [error, setError] = useState("");
   const [showingCachedData, setShowingCachedData] = useState(restoredSession?.showingCachedData ?? false);
-  const [refreshAvailable, setRefreshAvailable] = useState(false);
   const [cachedFetchedAt, setCachedFetchedAt] = useState(restoredSession?.cachedFetchedAt ?? "");
   const [page, setPage] = useState(restoredSession?.page ?? 1);
   const [totalPages, setTotalPages] = useState(restoredSession?.totalPages ?? 1);
   const [totalResults, setTotalResults] = useState(restoredSession?.totalResults ?? 0);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
+  const [refreshAvailable, setRefreshAvailable] = useState(false);
   const [imageBase, setImageBase] = useState(restoredSession?.imageBase ?? "https://image.tmdb.org/t/p/");
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
   const feedRevisionRef = useRef(0);
   const loadedFeedKeyRef = useRef(
@@ -156,9 +156,12 @@ export function DiscoverPage() {
   const filtersActive = activeFilterCount > 0;
   const catalogFiltersActive = hasActiveDiscoverFilters(appliedFilters);
   const filterErrors = getDiscoverFilterErrors(draftFilters);
+  const waitingForSpectro = state === "ready"
+    && appliedFilters.sortBy === "spectro"
+    && spectroState === "loading";
   const rankedMovies = useMemo(() => (
-    selectDiscoverSpectroMovies(movies, recommendations, appliedFilters.sortBy)
-  ), [movies, recommendations, appliedFilters.sortBy]);
+    selectDiscoverSpectroMovies(movies, recommendations, appliedFilters.sortBy, spectroState === "ready")
+  ), [movies, recommendations, appliedFilters.sortBy, spectroState]);
   const visibleMovies = useMemo(() => filterDiscoverLibraryVisibility(
     rankedMovies,
     new Set(watchedTmdbIds),
@@ -206,8 +209,8 @@ export function DiscoverPage() {
     }
 
     setState("loading");
-    setSpectroState("loading");
     setRefreshAvailable(false);
+    setSpectroState("loading");
     setRecommendations([]);
     setError("");
     setMovies([]);
@@ -253,8 +256,6 @@ export function DiscoverPage() {
       setState("ready");
       void getSpectroDiscoverRecommendations(feed.movies).then((personalized) => {
         if (currentRequest !== requestId.current) return;
-        // La primera página se ordena completa antes de mostrarla. Las
-        // páginas posteriores se incorporan como bloques estables al final.
         setRecommendations(rankSpectroRecommendations(personalized.recommendations));
         const nextSpectroState = getDiscoverSpectroState(
           personalized.movieCount,
@@ -327,18 +328,13 @@ export function DiscoverPage() {
 
   useEffect(() => {
     const refreshAfterReconnect = () => {
-      if (!navigator.onLine) return;
-      // No se reemplaza un feed que la persona ya está explorando. Se ofrece
-      // una actualización explícita para que ningún título salte de posición.
-      if (state === "error" && movies.length === 0) {
-        void loadFirstPage(query, appliedFilters);
-      } else if (movies.length > 0) {
-        setRefreshAvailable(true);
-      }
+      // No sustituir resultados ni mover el scroll mientras la persona explora.
+      // La actualización queda disponible como acción explícita.
+      if (navigator.onLine) setRefreshAvailable(true);
     };
     window.addEventListener("online", refreshAfterReconnect);
     return () => window.removeEventListener("online", refreshAfterReconnect);
-  }, [loadFirstPage, movies.length, query, appliedFilters, state]);
+  }, []);
 
   useEffect(() => {
     const feedIsCurrent = loadedFeedKeyRef.current === getDiscoverFeedKey(query, appliedFilters)
@@ -362,14 +358,7 @@ export function DiscoverPage() {
 
   const loadMore = useCallback(async () => {
     const token = getTmdbAccessToken();
-    if (
-      !token
-      || loadingMore
-      || loadingMoreRef.current
-      || state !== "ready"
-      || page >= totalPages
-      || (appliedFilters.sortBy === "spectro" && spectroState === "loading")
-    ) return;
+    if (!token || loadingMore || loadingMoreRef.current || state !== "ready" || page >= totalPages) return;
     loadingMoreRef.current = true;
     const currentRequest = requestId.current;
     const nextPage = page + 1;
@@ -382,39 +371,31 @@ export function DiscoverPage() {
           ? await discoverMovies(token, appliedFilters, nextPage)
           : await getTrendingMovies(token, nextPage);
       const existingIds = new Set(movies.map((movie) => movie.id));
-      const seenIds = new Set(existingIds);
-      const incomingPage = rawResult.movies.filter((movie) => {
-        if (seenIds.has(movie.id)) return false;
-        seenIds.add(movie.id);
-        return true;
-      });
-      // Filtra y ordena solo la página entrante. Reordenar todas las películas
-      // cargadas puede mover tarjetas anteriores por encima de la posición actual.
-      const newPageMovies = query.trim() && useFilters
-        ? await filterSearchResults(token, incomingPage, appliedFilters)
-        : incomingPage;
+      // Cada página se filtra y ordena de forma independiente. Las películas que
+      // ya están en pantalla permanecen en su sitio; solo se añade contenido abajo.
+      const filteredPage = query.trim() && useFilters
+        ? await filterSearchResults(token, rawResult.movies, appliedFilters)
+        : rawResult.movies;
       if (currentRequest !== requestId.current) return;
-      const mergedMovies = [...movies, ...newPageMovies];
-      // Una página que ya llegó invalida el cálculo de la instantánea restaurada.
-      // Así no puede reemplazar recomendaciones que se hayan calculado después.
+      const newPageMovies = filteredPage.filter((movie) => !existingIds.has(movie.id));
+      // Invalida cualquier resultado atrasado de la sesión restaurada antes de
+      // añadir una página, pero conserva intacto el orden que ya se está mostrando.
       feedRevisionRef.current += 1;
-      setMovies(mergedMovies);
-      void getSpectroDiscoverRecommendations(newPageMovies).then((personalized) => {
-        if (currentRequest !== requestId.current) return;
-        const rankedBatch = rankSpectroRecommendations(personalized.recommendations);
-        setRecommendations((current) => (
-          appendDiscoverRecommendationBatch(current, rankedBatch)
-        ));
-        const nextSpectroState = getDiscoverSpectroState(
-          personalized.movieCount,
-          personalized.recommendations.length
-        );
-        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
-      }).catch(() => {
-        if (currentRequest === requestId.current) {
-          setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
-        }
-      });
+      setMovies((current) => appendDiscoverMovies(current, newPageMovies));
+      // Solo se amplía un ranking personal que ya estaba activo desde la primera
+      // página. Un fallback del catálogo nunca se convierte a mitad del scroll
+      // en una lista distinta que haga desaparecer las películas ya vistas.
+      if (appliedFilters.sortBy === "spectro" && spectroState === "ready") {
+        void getSpectroDiscoverRecommendations(newPageMovies).then((personalized) => {
+          if (currentRequest !== requestId.current) return;
+          const rankedPageRecommendations = rankSpectroRecommendations(personalized.recommendations);
+          setRecommendations((current) => (
+            appendDiscoverSpectroRecommendations(current, rankedPageRecommendations)
+          ));
+        }).catch(() => {
+          // La clasificación de páginas anteriores permanece válida si falla una página nueva.
+        });
+      }
       if (rawResult.stale) {
         setShowingCachedData(true);
         setCachedFetchedAt(rawResult.fetchedAt);
@@ -431,17 +412,7 @@ export function DiscoverPage() {
         setLoadingMore(false);
       }
     }
-  }, [appliedFilters, loadingMore, movies, page, query, spectroState, state, totalPages]);
-
-  useEffect(() => {
-    const target = sentinelRef.current;
-    if (!target || state !== "ready" || (catalogFiltersActive && query.trim())) return;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) void loadMore();
-    }, { rootMargin: "220px" });
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [appliedFilters.sortBy, catalogFiltersActive, query, spectroState, state, loadMore]);
+  }, [appliedFilters, loadingMore, movies, page, query, state, totalPages]);
 
   function openMovie(movie: TmdbMovieSummary) {
     saveCurrentRouteScrollPosition();
@@ -486,18 +457,21 @@ export function DiscoverPage() {
     setDraftFilters(normalized);
   }
 
-  function applyDiscoverPreset(preset: "rated" | "recent" | "classics") {
+  function applyDiscoverPreset(preset: "rated" | "recent" | "classics" | "short") {
     const currentYear = new Date().getFullYear();
+    const base = {
+      ...DEFAULT_DISCOVER_FILTERS,
+      hideWatched: draftFilters.hideWatched,
+      hidePending: draftFilters.hidePending
+    };
     if (preset === "rated") {
-      updateDraft({ minVoteAverage: "7.5", minVoteCount: "500", sortBy: "vote_average.desc" });
+      updateDraft({ ...base, minVoteAverage: "7.5", minVoteCount: "500", sortBy: "vote_average.desc" });
     } else if (preset === "recent") {
-      updateDraft({
-        yearFrom: String(currentYear - 4),
-        yearTo: String(currentYear),
-        sortBy: "primary_release_date.desc"
-      });
+      updateDraft({ ...base, yearFrom: String(currentYear - 4), yearTo: String(currentYear), sortBy: "primary_release_date.desc" });
+    } else if (preset === "classics") {
+      updateDraft({ ...base, yearTo: "1989", sortBy: "vote_average.desc" });
     } else {
-      updateDraft({ yearFrom: "", yearTo: "1989", sortBy: "vote_average.desc" });
+      updateDraft({ ...base, runtimeMax: "100", sortBy: "popularity.desc" });
     }
   }
 
@@ -512,8 +486,8 @@ export function DiscoverPage() {
     <div className="page page-discover">
       <UnifiedSearchBar
         inputId="discover-search"
-        placeholder="Buscar películas en TMDB..."
-        searchLabel="Buscar películas por título en TMDB y aplicar los filtros seleccionados"
+        placeholder="Buscar por título..."
+        searchLabel="Buscar películas por título o abrir filtros para explorar el catálogo"
         value={query}
         onChange={setQuery}
         onFiltersClick={openFilters}
@@ -521,6 +495,8 @@ export function DiscoverPage() {
         filtersActive={filtersActive}
         settingsHref="#/settings"
       />
+
+      <p className="discover-search-hint">Busca por título o combina filtros para descubrir algo nuevo.</p>
 
       {state === "unconfigured" ? (
         <EmptyState
@@ -538,6 +514,14 @@ export function DiscoverPage() {
         />
       ) : (
         <>
+          {refreshAvailable && state === "ready" && (
+            <div className="discover-refresh-note" role="status">
+              <span>Conexión restablecida. Tus resultados actuales no se han movido.</span>
+              <button type="button" onClick={() => void loadFirstPage(query, appliedFilters)}>
+                <RefreshCw size={14} /> Actualizar
+              </button>
+            </div>
+          )}
           {filtersActive && state === "ready" && (
             <div className="discover-active-filters" role="group" aria-label="Filtros aplicados">
               <span className="discover-filter-summary-icon" aria-hidden="true"><SlidersHorizontal size={14} /></span>
@@ -566,17 +550,12 @@ export function DiscoverPage() {
               {" · Página " + page + " de " + totalPages}
             </p>
           )}
-          {page > 1 && (
-            <p className="cached-feed-note" role="status">
-              Las películas nuevas se añaden al final; las que ya estaban cargadas conservan su posición.
-            </p>
-          )}
-          {state === "ready" && movies.length > 0 && (
+          {appliedFilters.sortBy === "spectro" && state === "ready" && movies.length > 0 && (
             <div className="discover-spectro-note" role="status">
               <BrainCircuit size={16} />
               <span>
                 {spectroState === "loading"
-                  ? "Espectro está contrastando estas películas con tus afinidades y valoraciones para fijar un orden estable."
+                  ? "Espectro está preparando una lista estable según tus afinidades. Las películas aparecerán cuando termine de ordenarlas."
                   : spectroState === "ready"
                     ? "Espectro prioriza los resultados según tus afinidades, valoraciones y películas favoritas. Encaje y nota prevista son estimaciones."
                     : spectroState === "insufficient"
@@ -593,26 +572,13 @@ export function DiscoverPage() {
               <span>Mostrando catálogo guardado en este dispositivo{cachedFetchedAt ? " · " + new Date(cachedFetchedAt).toLocaleString("es-PA") : ""}.</span>
             </p>
           )}
-          {refreshAvailable && (
-            <div className="cached-feed-note" role="status">
-              <span>Conexión recuperada. El catálogo se mantendrá estable mientras lo exploras.</span>
-              <button
-                className="button button-quiet"
-                type="button"
-                onClick={() => {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                  void loadFirstPage(query, appliedFilters);
-                }}
-              >
-                Actualizar catálogo
-              </button>
-            </div>
-          )}
-          {(state === "loading" && movies.length === 0)
-            || (appliedFilters.sortBy === "spectro" && spectroState === "loading") ? (
-            <div className="poster-grid" aria-label="Cargando películas">
-              {Array.from({ length: 8 }, (_, index) => <div className="poster-skeleton" key={index} />)}
-            </div>
+          {(state === "loading" && movies.length === 0) || waitingForSpectro ? (
+            <>
+              {waitingForSpectro && <p className="discover-ranking-status" role="status">Preparando tus recomendaciones sin cambiar la lista mientras navegas…</p>}
+              <div className="poster-grid" aria-label={waitingForSpectro ? "Preparando recomendaciones de Espectro" : "Cargando películas"}>
+                {Array.from({ length: 8 }, (_, index) => <div className="poster-skeleton" key={index} />)}
+              </div>
+            </>
           ) : visibleMovies.length === 0 ? (
             <EmptyState
               icon={<Search size={25} />}
@@ -636,17 +602,14 @@ export function DiscoverPage() {
               </div>
             </>
           )}
-          <div ref={sentinelRef} className="feed-sentinel" aria-hidden="true" />
-          {catalogFiltersActive && query.trim() && page < totalPages && (
-            <button className="button button-secondary discover-load-more" type="button" onClick={() => void loadMore()} disabled={loadingMore || (appliedFilters.sortBy === "spectro" && spectroState === "loading")}>
+          {state === "ready" && !waitingForSpectro && page < totalPages && (
+            <button className="button button-secondary discover-load-more" type="button" onClick={() => void loadMore()} disabled={loadingMore}>
               {loadingMore
-                ? <><LoaderCircle size={17} className="spin" /> Cargando...</>
-                : appliedFilters.sortBy === "spectro" && spectroState === "loading"
-                  ? "Preparando recomendaciones..."
-                  : "Buscar en más resultados"}
+                ? <><LoaderCircle size={17} className="spin" /> Cargando películas…</>
+                : <>Cargar más películas <span>({page} de {totalPages} páginas)</span></>}
             </button>
           )}
-          {loadingMore && !(catalogFiltersActive && query.trim()) && <div className="feed-loading"><LoaderCircle size={19} className="spin" /><span>Cargando películas...</span></div>}
+          {loadingMore && <p className="discover-load-more-hint" role="status">Añadiendo resultados al final; tu posición actual se conserva.</p>}
           {error && movies.length > 0 && <p className="feed-inline-error">{error}</p>}
         </>
       )}
@@ -662,12 +625,39 @@ export function DiscoverPage() {
               <button className="icon-button" type="button" onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><X size={19} /></button>
             </div>
 
+            <p className="discover-filter-intro">Empieza con un atajo o ajusta solo lo que te importa. Los filtros se combinan entre sí.</p>
+
             <div className="library-sheet-section">
-              <div className="library-sheet-label-row"><span>Atajos de búsqueda</span><span>Puedes ajustarlos después</span></div>
+              <div className="library-sheet-label-row"><span>¿Qué te apetece ver?</span><span>Atajos</span></div>
               <div className="discover-presets">
-                <button type="button" onClick={() => applyDiscoverPreset("rated")}>Muy valoradas</button>
-                <button type="button" onClick={() => applyDiscoverPreset("recent")}>Estrenos recientes</button>
-                <button type="button" onClick={() => applyDiscoverPreset("classics")}>Cine clásico</button>
+                <button type="button" onClick={() => applyDiscoverPreset("rated")}>Bien valoradas</button>
+                <button type="button" onClick={() => applyDiscoverPreset("recent")}>Recientes</button>
+                <button type="button" onClick={() => applyDiscoverPreset("classics")}>Clásicos</button>
+                <button type="button" onClick={() => applyDiscoverPreset("short")}>Hasta 100 min</button>
+              </div>
+            </div>
+
+            <div className="library-sheet-section">
+              <div className="library-sheet-label-row"><span>Géneros populares</span><span>Elige uno</span></div>
+              <div className="discover-genre-shortcuts" role="group" aria-label="Géneros populares">
+                {[
+                  { id: 18, label: "Drama" },
+                  { id: 35, label: "Comedia" },
+                  { id: 28, label: "Acción" },
+                  { id: 53, label: "Suspenso" },
+                  { id: 878, label: "Ciencia ficción" },
+                  { id: 27, label: "Terror" }
+                ].map((genre) => (
+                  <button
+                    key={genre.id}
+                    type="button"
+                    aria-pressed={draftFilters.genreId === String(genre.id)}
+                    className={draftFilters.genreId === String(genre.id) ? "is-selected" : ""}
+                    onClick={() => updateDraft({ genreId: draftFilters.genreId === String(genre.id) ? "" : String(genre.id) })}
+                  >
+                    {genre.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -689,12 +679,12 @@ export function DiscoverPage() {
                 />
                 <span>Ocultar películas pendientes</span>
               </label>
-              <p className="muted-copy">Estas opciones consultan tu Biblioteca local; no envían tu historial a TMDB.</p>
+              <p className="discover-filter-help">Son exclusiones de este catálogo, no borran nada de tu Biblioteca ni se envían a TMDB.</p>
             </div>
 
             <div className="library-sheet-section">
               <label className="library-sheet-field" htmlFor="discover-genre">
-                <span>Género</span>
+                <span>Todos los géneros disponibles</span>
                 <select id="discover-genre" className="library-refinement-select" value={draftFilters.genreId} onChange={(event) => updateDraft({ genreId: event.target.value })}>
                   <option value="">Todos los géneros</option>
                   {DISCOVER_GENRES.map((genre) => <option key={genre.id} value={String(genre.id)}>{genre.label}</option>)}
@@ -703,7 +693,12 @@ export function DiscoverPage() {
             </div>
 
             <div className="library-sheet-section">
-              <div className="library-sheet-label-row"><span>Duración</span><span>Minutos</span></div>
+              <div className="library-sheet-label-row"><span>Duración</span><span>Personalizable</span></div>
+              <div className="discover-duration-shortcuts" role="group" aria-label="Atajos de duración">
+                <button type="button" aria-pressed={!draftFilters.runtimeMin && draftFilters.runtimeMax === "100"} onClick={() => updateDraft({ runtimeMin: "", runtimeMax: "100" })}>Hasta 100 min</button>
+                <button type="button" aria-pressed={draftFilters.runtimeMin === "100" && draftFilters.runtimeMax === "140"} onClick={() => updateDraft({ runtimeMin: "100", runtimeMax: "140" })}>100–140 min</button>
+                <button type="button" aria-pressed={draftFilters.runtimeMin === "140" && !draftFilters.runtimeMax} onClick={() => updateDraft({ runtimeMin: "140", runtimeMax: "" })}>Más de 140 min</button>
+              </div>
               <div className="library-year-range">
                 <label className="library-sheet-field" htmlFor="discover-runtime-min">
                   <span>Mínima</span>
@@ -717,7 +712,12 @@ export function DiscoverPage() {
             </div>
 
             <div className="library-sheet-section">
-              <div className="library-sheet-label-row"><span>Año de estreno</span><span>Rango</span></div>
+              <div className="library-sheet-label-row"><span>Época de estreno</span><span>Desde / hasta</span></div>
+              <div className="discover-year-shortcuts" role="group" aria-label="Atajos de época">
+                <button type="button" onClick={() => updateDraft({ yearFrom: String(new Date().getFullYear() - 5), yearTo: String(new Date().getFullYear()) })}>Últimos 5 años</button>
+                <button type="button" onClick={() => updateDraft({ yearFrom: "2000", yearTo: "" })}>Desde 2000</button>
+                <button type="button" onClick={() => updateDraft({ yearFrom: "", yearTo: "1999" })}>Antes de 2000</button>
+              </div>
               <div className="library-year-range">
                 <label className="library-sheet-field" htmlFor="discover-year-from">
                   <span>Desde</span>
@@ -732,14 +732,14 @@ export function DiscoverPage() {
 
             <div className="library-sheet-section">
               <label className="library-sheet-field" htmlFor="discover-min-rating">
-                <span>Valoración mínima de TMDB</span>
+                <span>Nota mínima en TMDB</span>
                 <select id="discover-min-rating" className="library-refinement-select" value={draftFilters.minVoteAverage} onChange={(event) => updateDraft({ minVoteAverage: event.target.value })}>
-                  <option value="">Cualquier valoración</option>
+                  <option value="">Cualquier nota</option>
                   {["5", "6", "6.5", "7", "7.5", "8", "8.5", "9"].map((value) => <option key={value} value={value}>{value}/10 o más</option>)}
                 </select>
               </label>
               <label className="library-sheet-field" htmlFor="discover-min-votes">
-                <span>Número mínimo de votos</span>
+                <span>Evitar notas con pocas votaciones</span>
                 <select id="discover-min-votes" className="library-refinement-select" value={draftFilters.minVoteCount} onChange={(event) => updateDraft({ minVoteCount: event.target.value })}>
                   <option value="">Sin mínimo</option>
                   <option value="100">100 votos</option>
@@ -751,15 +751,16 @@ export function DiscoverPage() {
             </div>
 
             <div className="library-sheet-section">
+              <p className="discover-filter-help">El idioma original no es necesariamente el idioma del doblaje o los subtítulos.</p>
               <label className="library-sheet-field" htmlFor="discover-language">
-                <span>Idioma original</span>
+                <span>Idioma original de la película</span>
                 <select id="discover-language" className="library-refinement-select" value={draftFilters.originalLanguage} onChange={(event) => updateDraft({ originalLanguage: event.target.value })}>
                   <option value="">Todos los idiomas</option>
                   {DISCOVER_LANGUAGES.map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
                 </select>
               </label>
               <label className="library-sheet-field" htmlFor="discover-sort">
-                <span>Ordenar resultados</span>
+                <span>Cómo ordenar los resultados</span>
                 <select id="discover-sort" className="library-refinement-select" value={draftFilters.sortBy} onChange={(event) => updateDraft({ sortBy: event.target.value as DiscoverFilters["sortBy"] })}>
                   {SORT_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                 </select>
