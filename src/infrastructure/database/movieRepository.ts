@@ -3,6 +3,7 @@ import type { TmdbCredits, TmdbMovieDetails, TmdbMovieSummary } from "../tmdb/Tm
 import { prismaDb } from "./database";
 import { requestAutomaticEnrichment } from "./enrichmentService";
 import { startSpectroMetadataEnrichment } from "./spectroMetadataService";
+import { appendSpectroMetadataSnapshot } from "./spectroMetadataHistoryRepository";
 
 function dateYear(value?: string): number | undefined {
   if (!value || !/^\d{4}/.test(value)) return undefined;
@@ -11,7 +12,6 @@ function dateYear(value?: string): number | undefined {
 
 export async function saveTmdbMovie(movie: TmdbMovieSummary | TmdbMovieDetails, credits?: TmdbCredits): Promise<MovieRecord> {
   const id = "tmdb-" + movie.id;
-  const current = await prismaDb.movies.get(id);
   const details = movie as TmdbMovieDetails;
   const now = new Date().toISOString();
 
@@ -43,7 +43,32 @@ export async function saveTmdbMovie(movie: TmdbMovieSummary | TmdbMovieDetails, 
     updatedAt: now
   };
 
-  await prismaDb.movies.put(record);
+  await prismaDb.transaction("rw", [prismaDb.movies, prismaDb.appMetadata], async () => {
+    const current = await prismaDb.movies.get(id);
+    if (current) {
+      await appendSpectroMetadataSnapshot(current, current.updatedAt, "legacy-updated-at");
+      // La construcción reutiliza datos locales que no llegan en el resumen TMDB.
+      record.runtimeMinutes = details.runtime ?? current.runtimeMinutes;
+      record.voteAverage = movie.vote_average ?? current.voteAverage;
+      record.status = details.status ?? current.status;
+      record.genres = details.genres?.map((genre) => genre.name) ?? current.genres;
+      record.genreIds = details.genres?.map((genre) => genre.id) ?? movie.genre_ids ?? current.genreIds ?? [];
+      record.countries = details.production_countries?.map((country) => country.name) ?? current.countries;
+      record.directors = credits?.crew.length
+        ? [...new Set(credits.crew.filter((person) => person.job === "Director").map((person) => person.name))]
+        : current.directors ?? [];
+      record.castMembers = credits?.cast.length
+        ? [...new Set(credits.cast.slice(0, 12).map((person) => person.name))]
+        : current.castMembers ?? [];
+      record.originalLanguage = details.original_language ?? current.originalLanguage;
+      record.posterPath = movie.poster_path ?? current.posterPath;
+      record.backdropPath = movie.backdrop_path ?? current.backdropPath;
+      record.lastViewingSequence = current.lastViewingSequence;
+      record.createdAt = current.createdAt;
+    }
+    await prismaDb.movies.put(record);
+    await appendSpectroMetadataSnapshot(record, now, "tmdb-observed");
+  });
   return record;
 }
 
