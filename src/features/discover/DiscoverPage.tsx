@@ -327,7 +327,7 @@ export function DiscoverPage() {
     if (savedScrollY === null) return;
     pendingFeedScrollRestoreRef.current = null;
     // Mantiene exactamente el mismo punto del feed antes de pintar las nuevas tarjetas.
-    window.scrollTo(0, savedScrollY);
+    window.scrollTo({ top: savedScrollY, left: 0, behavior: "instant" });
   }, [movies]);
 
   useEffect(() => {
