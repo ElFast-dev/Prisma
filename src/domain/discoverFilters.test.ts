@@ -7,7 +7,8 @@ import {
   discoverFilterTitleMatch,
   filterDiscoverLibraryVisibility,
   hasActiveDiscoverFilters,
-  normalizeDiscoverFilters
+  normalizeDiscoverFilters,
+  selectDiscoverSpectroMovies
 } from "./discoverFilters";
 
 describe("Discover filters", () => {
@@ -152,4 +153,34 @@ describe("Discover filters", () => {
     expect(discoverFilterTitleMatch("Otra película", "Another Movie", "prisma")).toBe(false);
     expect(discoverFilterTitleMatch("Otra película", undefined, "   ")).toBe(true);
   });
+
+  it("shows only movies personally recommended by Spectro, in recommendation order", () => {
+    const catalog = [
+      { id: 101, title: "Resultado antiguo A" },
+      { id: 102, title: "Resultado antiguo B" },
+      { id: 103, title: "Recomendación favorita" },
+      { id: 104, title: "Resultado antiguo C" },
+      { id: 105, title: "Otra recomendación" }
+    ];
+    const recommendations = [
+      { movie: { tmdbId: 105 } },
+      { movie: { tmdbId: 103 } }
+    ];
+
+    expect(selectDiscoverSpectroMovies(catalog, recommendations, "spectro"))
+      .toEqual([catalog[4], catalog[2]]);
+  });
+
+  it("keeps the full catalog for explicit sorting or when Spectro has no matches", () => {
+    const catalog = [
+      { id: 101, title: "Película A" },
+      { id: 102, title: "Película B" }
+    ];
+    const recommendation = [{ movie: { tmdbId: 102 } }];
+
+    expect(selectDiscoverSpectroMovies(catalog, recommendation, "popularity.desc"))
+      .toEqual(catalog);
+    expect(selectDiscoverSpectroMovies(catalog, [], "spectro")).toEqual(catalog);
+  });
+
 });
