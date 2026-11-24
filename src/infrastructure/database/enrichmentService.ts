@@ -5,6 +5,7 @@ import {
 } from "../../domain/movieMetadata";
 import { runWithConcurrency } from "../../domain/asyncPool";
 import { prismaDb } from "./database";
+import { appendSpectroMetadataSnapshot } from "./spectroMetadataHistoryRepository";
 import { TmdbHttpError } from "../tmdb/TmdbClient";
 import { getMovieDetailsForEnrichment } from "../tmdb/TmdbService";
 import { getTmdbAccessToken } from "../tmdb/settings";
@@ -351,10 +352,14 @@ async function persistMovieMetadata(
     const current = await prismaDb.movies.get(movieId);
     // No recrear marcadores si el registro se eliminó durante el enriquecimiento.
     if (!current) return;
+    // La versión previa solo se considera conocida desde updatedAt, nunca
+    // desde createdAt o la fecha del visionado. Se conserva antes de mutarla.
+    await appendSpectroMetadataSnapshot(current, current.updatedAt, "legacy-updated-at");
     const patch = createMovieMetadataPatch(current, details, now);
     // Solo se actualizan metadatos cinematográficos. Los datos personales
     // viven en tablas separadas y no se reescriben durante este proceso.
     await prismaDb.movies.update(movieId, patch);
+    await appendSpectroMetadataSnapshot({ ...current, ...patch }, now, "tmdb-observed");
     await prismaDb.appMetadata.put({
       key: ITEM_PREFIX + tmdbId,
       value: JSON.stringify({
