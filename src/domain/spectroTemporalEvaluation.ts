@@ -1,5 +1,12 @@
 import type { MovieRecord, Viewing } from "./types";
 import {
+  applySpectroMetadataSnapshot,
+  createSpectroMetadataSnapshot,
+  isSpectroMetadataSnapshot,
+  selectSpectroMetadataSnapshot,
+  type SpectroMetadataSnapshot
+} from "./spectroMetadataHistory";
+import {
   predictSpectroMovies,
   type SpectroPredictionTrainingMovie
 } from "./spectroPrediction";
@@ -11,8 +18,10 @@ export interface SpectroTemporalEvaluationOptions {
   testWindowMovies?: number;
   /** Ignore final windows smaller than this number of distinct titles. */
   minimumTestMovies?: number;
-  /** Maximum number of expanding-window folds to evaluate. */
+  /** Maximum number of expanding-window validation folds to evaluate. */
   maximumFolds?: number;
+  /** Number of final, most recent distinct titles held out exactly once. */
+  finalTestMovies?: number;
   /** A future rating at or above this value counts as relevant for ranking. */
   relevantRatingThreshold?: number;
   /** Number of top-ranked candidates used by ranking metrics. */
@@ -39,17 +48,26 @@ export interface SpectroTemporalFold {
   trainingMovieCount: number;
   testMovieCount: number;
   predictionCoverage: number;
+  metadataCoverage: number;
+  metadataExcludedMovieCount: number;
   metrics: SpectroTemporalMetrics;
 }
 
 export interface SpectroTemporalEvaluationReport {
   status: "evaluated" | "insufficient-data";
-  reason?: "not-enough-distinct-rated-movies" | "no-valid-temporal-windows";
+  reason?:
+    | "not-enough-distinct-rated-movies"
+    | "no-valid-temporal-windows"
+    | "no-historical-metadata-before-cutoff"
+    | "no-valid-final-test";
   uniqueRatedMovies: number;
   foldCount: number;
   options: Required<SpectroTemporalEvaluationOptions>;
-  metadataScope: "current-catalog-snapshot";
+  metadataScope: "observed-before-cutoff";
+  /** Expanding validation folds; the final test is never included here. */
   folds: SpectroTemporalFold[];
+  /** Most recent reserved window, evaluated exactly once after validation. */
+  finalTest: SpectroTemporalFold | null;
   aggregate?: SpectroTemporalMetrics & {
     rbfWinRateAgainstMeanBaseline: number;
   };
@@ -90,14 +108,17 @@ const DEFAULT_OPTIONS: Required<SpectroTemporalEvaluationOptions> = {
   testWindowMovies: 5,
   minimumTestMovies: 3,
   maximumFolds: 6,
+  finalTestMovies: 4,
   relevantRatingThreshold: 7,
   rankingCutoff: 5
 };
 
 const LIMITATIONS = [
   "La evaluación separa cronológicamente las valoraciones y agrega los revisionados por título.",
-  "El esquema actual no conserva una fecha histórica por cada campo de metadatos; se usan los metadatos disponibles hoy para representar películas pasadas y futuras.",
-  "Por esa limitación, el resultado mide validación temporal de ratings con la instantánea actual del catálogo, pero no demuestra ausencia total de fuga temporal de metadatos ni equivale a una evaluación prospectiva."
+  "Cada corte usa la última observación local de metadatos conocida antes del primer día de prueba; las observaciones del mismo día se excluyen porque watchedOn no conserva hora.",
+  "Los registros anteriores al historial de observaciones usan updatedAt como límite conservador de disponibilidad. Nunca se retrotraen a createdAt ni a la fecha del visionado.",
+  "Los títulos sin una observación anterior al corte se excluyen de esa ventana. La cobertura de metadatos se informa por fold.",
+  "La validación expansiva y el test final reservado son conjuntos separados; el test final no interviene en las métricas agregadas de validación."
 ];
 
 function normalizeOptions(
@@ -128,6 +149,11 @@ function normalizeOptions(
     maximumFolds: positiveInteger(
       options.maximumFolds,
       DEFAULT_OPTIONS.maximumFolds,
+      1
+    ),
+    finalTestMovies: positiveInteger(
+      options.finalTestMovies,
+      DEFAULT_OPTIONS.finalTestMovies,
       1
     ),
     relevantRatingThreshold: Number.isFinite(threshold)
@@ -339,7 +365,8 @@ function evaluateFold(
   titlesByDate: readonly DateGroup[],
   window: { trainingGroupCount: number; testEndGroup: number },
   index: number,
-  options: Required<SpectroTemporalEvaluationOptions>
+  options: Required<SpectroTemporalEvaluationOptions>,
+  metadataSnapshots: readonly SpectroMetadataSnapshot[]
 ): SpectroTemporalFold | null {
   const trainingGroups = titlesByDate.slice(0, window.trainingGroupCount);
   const testingGroups = titlesByDate.slice(
@@ -350,21 +377,47 @@ function evaluateFold(
   const endExclusive = titlesByDate[window.testEndGroup]?.day;
   if (!cutoffDay || testingGroups.length === 0) return null;
 
+  const allTrainingTitles = trainingGroups.flatMap((group) => group.titles);
+  const allTestingTitles = testingGroups.flatMap((group) => group.titles);
+  const knownMovie = (title: RatedTitle): MovieRecord | null => {
+    const snapshot = selectSpectroMetadataSnapshot(
+      metadataSnapshots,
+      title.movie.id,
+      cutoffDay
+    );
+    return snapshot ? applySpectroMetadataSnapshot(title.movie, snapshot) : null;
+  };
+
+  const historicalTraining = allTrainingTitles.flatMap((title) => {
+    const movie = knownMovie(title);
+    return movie ? [{ title, movie }] : [];
+  });
+  const historicalTesting = allTestingTitles.flatMap((title) => {
+    const movie = knownMovie(title);
+    return movie ? [{ title, movie }] : [];
+  });
+  const totalTitlesAtCut = allTrainingTitles.length + allTestingTitles.length;
+  const metadataAvailable = historicalTraining.length + historicalTesting.length;
+  const metadataExcludedMovieCount = totalTitlesAtCut - metadataAvailable;
+  const metadataCoverage = totalTitlesAtCut > 0
+    ? metadataAvailable / totalTitlesAtCut
+    : 0;
+
   const training: SpectroPredictionTrainingMovie[] = [];
-  for (const title of trainingGroups.flatMap((group) => group.titles)) {
+  for (const { title, movie } of historicalTraining) {
     const knownRatings = title.viewings
       .filter((viewing) => viewing.day < cutoffDay)
       .map((viewing) => viewing.rating);
     if (knownRatings.length > 0) {
       training.push({
-        movie: title.movie,
+        movie,
         rating: average(knownRatings)
       });
     }
   }
 
   const targets: EvaluationTarget[] = [];
-  for (const title of testingGroups.flatMap((group) => group.titles)) {
+  for (const { title, movie } of historicalTesting) {
     const futureRatings = title.viewings
       .filter((viewing) => (
         viewing.day >= cutoffDay
@@ -374,7 +427,7 @@ function evaluateFold(
     if (futureRatings.length > 0) {
       targets.push({
         id: title.movie.id,
-        movie: title.movie,
+        movie,
         rating: average(futureRatings)
       });
     }
@@ -424,6 +477,8 @@ function evaluateFold(
     trainingMovieCount: training.length,
     testMovieCount: targets.length,
     predictionCoverage: scored.length / targets.length,
+    metadataCoverage,
+    metadataExcludedMovieCount,
     metrics: {
       mae: rbf.mae,
       rmse: rbf.rmse,
@@ -436,6 +491,42 @@ function evaluateFold(
       ...ranking
     }
   };
+}
+
+/** El corte final conserva grupos de día completos y nunca parte revisionados. */
+function buildFinalTestWindow(
+  groups: readonly DateGroup[],
+  requestedMovies: number
+): { trainingGroupCount: number; testEndGroup: number } | null {
+  let start = groups.length;
+  let testMovies = 0;
+  while (start > 0 && testMovies < requestedMovies) {
+    start -= 1;
+    testMovies += groups[start].titles.length;
+  }
+  return start > 0
+    ? { trainingGroupCount: start, testEndGroup: groups.length }
+    : null;
+}
+
+function effectiveMetadataSnapshots(
+  movies: readonly MovieRecord[],
+  provided: readonly SpectroMetadataSnapshot[]
+): SpectroMetadataSnapshot[] {
+  const snapshots = provided.filter(isSpectroMetadataSnapshot);
+  const moviesWithRecordedHistory = new Set(snapshots.map((snapshot) => snapshot.movieId));
+  for (const movie of movies) {
+    // Una historia explícita (aunque solo tenga observaciones futuras) impide
+    // usar el catálogo actual como fallback para ese título.
+    if (moviesWithRecordedHistory.has(movie.id)) continue;
+    const legacy = createSpectroMetadataSnapshot(
+      movie,
+      movie.updatedAt,
+      "legacy-updated-at"
+    );
+    if (legacy) snapshots.push(legacy);
+  }
+  return snapshots;
 }
 
 function aggregateFolds(folds: readonly SpectroTemporalFold[]) {
@@ -476,11 +567,13 @@ function aggregateFolds(folds: readonly SpectroTemporalFold[]) {
 export function evaluateSpectroTemporally(
   movies: readonly MovieRecord[],
   viewings: readonly Viewing[],
-  requestedOptions: SpectroTemporalEvaluationOptions = {}
+  requestedOptions: SpectroTemporalEvaluationOptions = {},
+  providedMetadataSnapshots: readonly SpectroMetadataSnapshot[] = []
 ): SpectroTemporalEvaluationReport {
   const options = normalizeOptions(requestedOptions);
   const titles = groupRatedTitles(movies, viewings);
   const dateGroups = groupByFirstRatingDay(titles);
+  const metadataSnapshots = effectiveMetadataSnapshots(movies, providedMetadataSnapshots);
   const insufficient = (
     reason: SpectroTemporalEvaluationReport["reason"]
   ): SpectroTemporalEvaluationReport => ({
@@ -489,35 +582,69 @@ export function evaluateSpectroTemporally(
     uniqueRatedMovies: titles.length,
     foldCount: 0,
     options,
-    metadataScope: "current-catalog-snapshot",
+    metadataScope: "observed-before-cutoff",
     folds: [],
+    finalTest: null,
     limitations: [...LIMITATIONS]
   });
 
-  if (titles.length < options.minimumTrainingMovies + options.minimumTestMovies) {
+  if (
+    titles.length
+    < options.minimumTrainingMovies + options.minimumTestMovies + options.finalTestMovies
+  ) {
     return insufficient("not-enough-distinct-rated-movies");
   }
 
-  const windows = buildExpandingWindows(dateGroups, options);
-  if (windows.length === 0) {
-    return insufficient("no-valid-temporal-windows");
+  const finalWindow = buildFinalTestWindow(dateGroups, options.finalTestMovies);
+  if (!finalWindow) return insufficient("no-valid-final-test");
+
+  const validationGroups = dateGroups.slice(0, finalWindow.trainingGroupCount);
+  const validationWindows = buildExpandingWindows(validationGroups, options);
+  if (validationWindows.length === 0) return insufficient("no-valid-temporal-windows");
+
+  const cutoffs = [
+    ...validationWindows.map((window) => validationGroups[window.trainingGroupCount]?.day)
+      .filter((day): day is string => Boolean(day)),
+    dateGroups[finalWindow.trainingGroupCount]?.day
+  ].filter((day): day is string => Boolean(day));
+  const hasAnyHistoricalMetadata = cutoffs.some((cutoff) => (
+    dateGroups.some((group) => group.titles.some((title) => (
+      selectSpectroMetadataSnapshot(metadataSnapshots, title.movie.id, cutoff) !== null
+    )))
+  ));
+  if (!hasAnyHistoricalMetadata) {
+    return insufficient("no-historical-metadata-before-cutoff");
   }
 
-  const folds = windows
-    .map((window, index) => evaluateFold(dateGroups, window, index + 1, options))
+  const folds = validationWindows
+    .map((window, index) => evaluateFold(
+      validationGroups,
+      window,
+      index + 1,
+      options,
+      metadataSnapshots
+    ))
     .filter((fold): fold is SpectroTemporalFold => fold !== null);
 
-  if (folds.length === 0) {
-    return insufficient("no-valid-temporal-windows");
-  }
+  if (folds.length === 0) return insufficient("no-valid-temporal-windows");
+
+  const finalTest = evaluateFold(
+    dateGroups,
+    finalWindow,
+    folds.length + 1,
+    options,
+    metadataSnapshots
+  );
+  if (!finalTest) return insufficient("no-valid-final-test");
 
   return {
     status: "evaluated",
     uniqueRatedMovies: titles.length,
     foldCount: folds.length,
     options,
-    metadataScope: "current-catalog-snapshot",
+    metadataScope: "observed-before-cutoff",
     folds,
+    finalTest,
     aggregate: aggregateFolds(folds),
     limitations: [...LIMITATIONS]
   };
