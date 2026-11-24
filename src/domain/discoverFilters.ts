@@ -252,13 +252,23 @@ export function appendDiscoverSpectroRecommendations<T extends { movie: { tmdbId
   current: readonly T[],
   nextPage: readonly T[]
 ): T[] {
-  const seen = new Set(current.map((item) => item.movie.tmdbId));
-  const additions = nextPage.filter((item) => {
-    if (seen.has(item.movie.tmdbId)) return false;
-    seen.add(item.movie.tmdbId);
-    return true;
-  });
-  return [...current, ...additions];
+  const result = [...current];
+  const indexByTmdbId = new Map(
+    result.map((item, index) => [item.movie.tmdbId, index])
+  );
+
+  for (const item of nextPage) {
+    const existingIndex = indexByTmdbId.get(item.movie.tmdbId);
+    if (existingIndex !== undefined) {
+      // Actualiza predicción/metadatos sin mover la tarjeta de su posición anterior.
+      result[existingIndex] = item;
+      continue;
+    }
+    indexByTmdbId.set(item.movie.tmdbId, result.length);
+    result.push(item);
+  }
+
+  return result;
 }
 
 export function selectDiscoverSpectroMovies<T extends { id: number }>(
