@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, X, Film, LoaderCircle, WifiOff, SlidersHorizontal, BrainCircuit, RefreshCw } from "lucide-react";
 import { UnifiedSearchBar } from "../../components/UnifiedSearchBar";
 import { EmptyState } from "../../components/EmptyState";
@@ -146,6 +146,7 @@ export function DiscoverPage() {
   const [imageBase, setImageBase] = useState(restoredSession?.imageBase ?? "https://image.tmdb.org/t/p/");
   const requestId = useRef(0);
   const feedRevisionRef = useRef(0);
+  const pendingFeedScrollRestoreRef = useRef<number | null>(null);
   const loadedFeedKeyRef = useRef(
     hasRestoredMovies && restoredSession
       ? getDiscoverFeedKey(restoredSession.query, restoredSession.appliedFilters)
@@ -321,6 +322,14 @@ export function DiscoverPage() {
     return () => { active = false; };
   }, []);
 
+  useLayoutEffect(() => {
+    const savedScrollY = pendingFeedScrollRestoreRef.current;
+    if (savedScrollY === null) return;
+    pendingFeedScrollRestoreRef.current = null;
+    // Mantiene exactamente el mismo punto del feed antes de pintar las nuevas tarjetas.
+    window.scrollTo(0, savedScrollY);
+  }, [movies]);
+
   useEffect(() => {
     const requestedFeedKey = getDiscoverFeedKey(query, appliedFilters);
     if (loadedFeedKeyRef.current === requestedFeedKey) return;
@@ -387,6 +396,7 @@ export function DiscoverPage() {
       // Invalida cualquier resultado atrasado de la sesión restaurada antes de
       // añadir una página; los duplicados refrescan sus datos en la misma posición.
       feedRevisionRef.current += 1;
+      pendingFeedScrollRestoreRef.current = window.scrollY;
       setMovies((current) => appendDiscoverMovies(current, filteredPage));
       // Solo se amplía un ranking personal que ya estaba activo desde la primera
       // página. Un fallback del catálogo nunca se convierte a mitad del scroll
