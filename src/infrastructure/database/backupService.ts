@@ -3,6 +3,7 @@ import { parsePrismaBackup } from "../../domain/backup";
 import { getCatalogRegion, saveCatalogRegion } from "../tmdb/settings";
 import { prismaDb } from "./database";
 import { normalizeLibraryFilters } from "../../domain/libraryPreferences";
+import { SPECTRO_METADATA_HISTORY_PREFIX } from "./spectroMetadataHistoryRepository";
 
 export async function createLocalBackup(): Promise<string> {
   const [movies, libraryEntries, viewings, collections, collectionMovies, profile, preferences] = await Promise.all([
@@ -42,9 +43,17 @@ export async function restoreLocalBackup(backup: PrismaBackup): Promise<void> {
       prismaDb.catalogCache,
       prismaDb.availabilityCache,
       prismaDb.peopleCache,
-      prismaDb.spectroSnapshots
+      prismaDb.spectroSnapshots,
+      prismaDb.appMetadata
     ],
     async () => {
+      // Las observaciones derivadas pertenecen al catálogo anterior. Al
+      // restaurar otro catálogo se descartan sin tocar colas ni preferencias.
+      await prismaDb.appMetadata
+        .toCollection()
+        .filter((entry) => entry.key.startsWith(SPECTRO_METADATA_HISTORY_PREFIX))
+        .delete();
+
       await Promise.all([
         prismaDb.movies.clear(),
         prismaDb.libraryEntries.clear(),
