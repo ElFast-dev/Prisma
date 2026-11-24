@@ -228,38 +228,46 @@ export function filterDiscoverLibraryVisibility<T extends { id: number }>(
  * positivas, para que Espectro nunca deje la pantalla vacía por falta de evidencia.
  */
 /**
- * Añade una tanda nueva sin alterar la posición de títulos que ya estaban
- * visibles. La tanda entrante debe llegar ordenada por su propio criterio
- * (por ejemplo, Espectro); las coincidencias duplicadas se actualizan in situ.
+ * Añade una página sin cambiar el orden de las películas que ya estaban en pantalla.
+ * La nueva página conserva su propio orden y los duplicados se descartan por ID.
  */
-export function appendDiscoverRecommendationBatch<T extends { movie: { tmdbId: number } }>(
+export function appendDiscoverMovies<T extends { id: number }>(
   current: readonly T[],
-  incomingBatch: readonly T[]
+  nextPage: readonly T[]
 ): T[] {
-  const result = [...current];
-  const indexByTmdbId = new Map(
-    result.map((recommendation, index) => [recommendation.movie.tmdbId, index])
-  );
+  const seen = new Set(current.map((movie) => movie.id));
+  const additions = nextPage.filter((movie) => {
+    if (seen.has(movie.id)) return false;
+    seen.add(movie.id);
+    return true;
+  });
+  return [...current, ...additions];
+}
 
-  for (const recommendation of incomingBatch) {
-    const existingIndex = indexByTmdbId.get(recommendation.movie.tmdbId);
-    if (existingIndex !== undefined) {
-      result[existingIndex] = recommendation;
-      continue;
-    }
-    indexByTmdbId.set(recommendation.movie.tmdbId, result.length);
-    result.push(recommendation);
-  }
-
-  return result;
+/**
+ * Añade recomendaciones de una página al final de las ya mostradas.
+ * Nunca reordena las recomendaciones existentes al terminar otro cálculo.
+ */
+export function appendDiscoverSpectroRecommendations<T extends { movie: { tmdbId: number } }>(
+  current: readonly T[],
+  nextPage: readonly T[]
+): T[] {
+  const seen = new Set(current.map((item) => item.movie.tmdbId));
+  const additions = nextPage.filter((item) => {
+    if (seen.has(item.movie.tmdbId)) return false;
+    seen.add(item.movie.tmdbId);
+    return true;
+  });
+  return [...current, ...additions];
 }
 
 export function selectDiscoverSpectroMovies<T extends { id: number }>(
   movies: readonly T[],
   recommendations: readonly { movie: { tmdbId: number } }[],
-  sortBy: DiscoverSort
+  sortBy: DiscoverSort,
+  personalizationReady = true
 ): T[] {
-  if (sortBy !== "spectro" || recommendations.length === 0) {
+  if (sortBy !== "spectro" || !personalizationReady || recommendations.length === 0) {
     return [...movies];
   }
 
