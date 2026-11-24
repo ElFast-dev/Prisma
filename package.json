@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:pwa": "playwright test --config=playwright.pwa.config.ts",
     "test:e2e:report": "playwright show-report",
-    "test:spectro:simulation": "vitest run src/domain/spectroSimulation.test.ts --reporter=verbose"
+    "test:spectro:simulation": "vitest run src/domain/spectroSimulation.test.ts --reporter=verbose",
+    "test:spectro:temporal": "vitest run src/domain/spectroTemporalEvaluation.test.ts --reporter=verbose"
   },
   "dependencies": {
     "dexie": "4.4.7",

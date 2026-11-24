@@ -266,7 +266,7 @@ Los parámetros actuales son una configuración candidata. La exploración tempo
 
 ### Siguientes entregas
 
-1. **Evaluación predictiva independiente:** mantener validación temporal anidada, tramo final reservado y comparación pareada del RBF con promedios, Ridge, árboles, boosting y Factorization Machines; incluir MAE, RMSE, NDCG y estabilidad.
+1. **Evaluación predictiva independiente:** ya se implementó la fase inicial con ventanas cronológicas expansivas, películas distintas, revisionados agregados y comparación del RBF con media, mediana y vecinos ponderados. Reporta MAE, RMSE, NDCG@K, Precision, Recall y Hit Rate sin exportar títulos, identificadores ni notas. Sigue pendiente guardar instantáneas históricas por campo de metadatos, aplicar validación temporal anidada, comparar Ridge/árboles/boosting/Factorization Machines y reservar un test final intacto. Hasta entonces el reporte usa la instantánea actual del catálogo y no se debe interpretar como evaluación prospectiva libre de fuga.
 2. **Calibración:** calibrar errores e intervalos fuera de muestra y medir cuándo el sistema debe abstenerse. Cualquier futura aparición de candidatas deberá integrarse en Descubrir, no recrear una pantalla de recomendaciones dentro de Espectro.
 3. **Rendimiento Android:** mover entrenamiento e inferencia a Web Worker y medir memoria, latencia, batería y almacenamiento en dispositivos reales.
 4. **Semántica local opcional:** embeddings multilingües preentrenados descargables, comparados contra TF‑IDF y metadatos sin transmitir historial personal.
