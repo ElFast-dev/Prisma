@@ -135,6 +135,7 @@ export function DiscoverPage() {
   const [state, setState] = useState<FeedState>(hasRestoredMovies ? "ready" : "loading");
   const [error, setError] = useState("");
   const [showingCachedData, setShowingCachedData] = useState(restoredSession?.showingCachedData ?? false);
+  const [refreshAvailable, setRefreshAvailable] = useState(false);
   const [cachedFetchedAt, setCachedFetchedAt] = useState(restoredSession?.cachedFetchedAt ?? "");
   const [page, setPage] = useState(restoredSession?.page ?? 1);
   const [totalPages, setTotalPages] = useState(restoredSession?.totalPages ?? 1);
@@ -206,6 +207,7 @@ export function DiscoverPage() {
 
     setState("loading");
     setSpectroState("loading");
+    setRefreshAvailable(false);
     setRecommendations([]);
     setError("");
     setMovies([]);
@@ -325,11 +327,18 @@ export function DiscoverPage() {
 
   useEffect(() => {
     const refreshAfterReconnect = () => {
-      if (navigator.onLine) void loadFirstPage(query, appliedFilters);
+      if (!navigator.onLine) return;
+      // No se reemplaza un feed que la persona ya está explorando. Se ofrece
+      // una actualización explícita para que ningún título salte de posición.
+      if (state === "error" && movies.length === 0) {
+        void loadFirstPage(query, appliedFilters);
+      } else if (movies.length > 0) {
+        setRefreshAvailable(true);
+      }
     };
     window.addEventListener("online", refreshAfterReconnect);
     return () => window.removeEventListener("online", refreshAfterReconnect);
-  }, [loadFirstPage, query, appliedFilters]);
+  }, [loadFirstPage, movies.length, query, appliedFilters, state]);
 
   useEffect(() => {
     const feedIsCurrent = loadedFeedKeyRef.current === getDiscoverFeedKey(query, appliedFilters)
@@ -566,7 +575,7 @@ export function DiscoverPage() {
               <BrainCircuit size={16} />
               <span>
                 {spectroState === "loading"
-                  ? "Espectro está contrastando estas películas con tus afinidades y valoraciones, sin retrasar los resultados."
+                  ? "Espectro está contrastando estas películas con tus afinidades y valoraciones para fijar un orden estable."
                   : spectroState === "ready"
                     ? "Espectro prioriza los resultados según tus afinidades, valoraciones y películas favoritas. Encaje y nota prevista son estimaciones."
                     : spectroState === "insufficient"
@@ -582,6 +591,21 @@ export function DiscoverPage() {
               <WifiOff size={14} />
               <span>Mostrando catálogo guardado en este dispositivo{cachedFetchedAt ? " · " + new Date(cachedFetchedAt).toLocaleString("es-PA") : ""}.</span>
             </p>
+          )}
+          {refreshAvailable && (
+            <div className="cached-feed-note" role="status">
+              <span>Conexión recuperada. El catálogo se mantendrá estable mientras lo exploras.</span>
+              <button
+                className="button button-quiet"
+                type="button"
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  void loadFirstPage(query, appliedFilters);
+                }}
+              >
+                Actualizar catálogo
+              </button>
+            </div>
           )}
           {(state === "loading" && movies.length === 0)
             || (appliedFilters.sortBy === "spectro" && spectroState === "loading") ? (
