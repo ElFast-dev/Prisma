@@ -87,6 +87,10 @@ jobs:
         run: npx playwright --version
       - name: Run end-to-end browser tests
         run: npm run test:e2e
+        env:
+          # La imagen Playwright corre como root; Firefox requiere que HOME
+          # pertenezca a ese usuario en vez del directorio del usuario pwuser.
+          HOME: /root
       - name: Upload Playwright report and failure evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
