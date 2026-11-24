@@ -60,6 +60,8 @@ Las etapas 1–15 están completadas. Espectro 2.6 ofrece un panel local de seis
 - [ ] 17. Optimización integral.
   - [x] 17.1 Presupuesto informativo del JS/CSS iniciales y de los chunks diferidos, medido tras compresión gzip y ejecutado en CI.
   - [x] 17.2 Alternativas tabulares accesibles para las gráficas de Espectro.
+  - [x] 17.3 Evaluador temporal inicial de Espectro: ventanas cronológicas expansivas, una observación por película distinta, revisionados agregados, comparación RBF/media/mediana/vecinos y métricas MAE, RMSE, NDCG@K, Precision, Recall y Hit Rate. El informe no contiene títulos, identificadores ni notas.
+  - [ ] 17.4 Instantáneas históricas de metadatos y validación temporal anidada con test final reservado. El evaluador actual usa la instantánea disponible hoy y no prueba todavía ausencia total de fuga temporal de metadatos.
 
 Este es el orden acordado para continuar Prisma. El alcance y los criterios de aceptación de cada etapa se definirán antes de implementarla; estas etapas no se sustituyen por propuestas técnicas aisladas.
 
