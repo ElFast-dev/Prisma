@@ -235,13 +235,21 @@ export function appendDiscoverMovies<T extends { id: number }>(
   current: readonly T[],
   nextPage: readonly T[]
 ): T[] {
-  const seen = new Set(current.map((movie) => movie.id));
-  const additions = nextPage.filter((movie) => {
-    if (seen.has(movie.id)) return false;
-    seen.add(movie.id);
-    return true;
-  });
-  return [...current, ...additions];
+  const result = [...current];
+  const indexById = new Map(result.map((movie, index) => [movie.id, index]));
+
+  for (const movie of nextPage) {
+    const existingIndex = indexById.get(movie.id);
+    if (existingIndex !== undefined) {
+      // Refresca metadatos en la tarjeta existente, sin alterar el orden del feed.
+      result[existingIndex] = movie;
+      continue;
+    }
+    indexById.set(movie.id, result.length);
+    result.push(movie);
+  }
+
+  return result;
 }
 
 /**
