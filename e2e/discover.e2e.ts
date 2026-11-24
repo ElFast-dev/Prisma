@@ -272,7 +272,7 @@ test("permite cargar más resultados de una búsqueda con filtros activos", asyn
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
   await expect.poll(() => searchRequests.length).toBe(1);
 
-  const moreResults = page.getByRole("button", { name: "Buscar en más resultados" });
+  const moreResults = page.getByRole("button", { name: "Cargar más películas" });
   await expect(moreResults).toBeVisible();
   await moreResults.click();
 
@@ -284,7 +284,7 @@ test("permite cargar más resultados de una búsqueda con filtros activos", asyn
   await expect(page.locator(".poster-card")).toHaveCount(3);
 });
 
-test("mantiene la posición de las películas anteriores al cargar otra página ordenada por recaudación", async ({ page }) => {
+test("conserva el orden visible al añadir otra página con orden de recaudación", async ({ page }) => {
   await configureTmdbMock(page, { multiPageSearch: true });
   await page.goto("#/discover");
 
@@ -301,9 +301,9 @@ test("mantiene la posición de las películas anteriores al cargar otra página 
   await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
   await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
 
-  await page.getByRole("button", { name: "Buscar en más resultados" }).click();
+  await page.getByRole("button", { name: "Cargar más películas" }).click();
   await expect(posters).toHaveCount(3);
-  // La segunda página respeta su orden interno, pero nunca recoloca la primera.
+  // El nuevo título se añade abajo: no desplaza las películas que ya estaban visibles.
   await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
   await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
   await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
@@ -450,27 +450,46 @@ test("conserva filtros, búsqueda y resultados al regresar de una ficha", async 
   await expect.poll(() => discoverRequests.length).toBe(1);
 });
 
-test("ofrece atajos de búsqueda y permite quitar un filtro sin borrar los demás", async ({ page }) => {
+test("no carga páginas al deslizar; espera a que la persona toque Cargar más", async ({ page }) => {
+  const { searchRequests } = await configureTmdbMock(page, { multiPageSearch: true });
+  await page.goto("#/discover");
+  await page.locator("#discover-search").fill("prisma");
+
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  await expect.poll(() => searchRequests.length).toBe(1);
+
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(300);
+  expect(searchRequests).toHaveLength(1);
+  await expect(posters).toHaveCount(2);
+
+  await page.getByRole("button", { name: "Cargar más películas" }).click();
+  await expect.poll(() => searchRequests.length).toBe(2);
+  await expect(posters).toHaveCount(3);
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
+});
+
+test("combina atajos de género y duración sin obligar a configurar campos manualmente", async ({ page }) => {
   const { discoverRequests } = await configureTmdbMock(page);
   await page.goto("#/discover");
-
   await page.getByRole("button", { name: "Abrir filtros" }).click();
+
   const dialog = page.getByRole("dialog", { name: "Filtros" });
-  await dialog.getByRole("button", { name: "Muy valoradas" }).click();
-  await expect(dialog.locator("#discover-min-rating")).toHaveValue("7.5");
-  await expect(dialog.locator("#discover-min-votes")).toHaveValue("500");
-  await expect(dialog.locator("#discover-sort")).toHaveValue("vote_average.desc");
+  const genres = dialog.getByRole("group", { name: "Géneros populares" });
+  await genres.getByRole("button", { name: "Drama" }).click();
+  await expect(dialog.locator("#discover-genre")).toHaveValue("18");
+
+  const duration = dialog.getByRole("group", { name: "Atajos de duración" });
+  await duration.getByRole("button", { name: "100–140 min" }).click();
+  await expect(dialog.locator("#discover-runtime-min")).toHaveValue("100");
+  await expect(dialog.locator("#discover-runtime-max")).toHaveValue("140");
+
   await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
-
   await expect.poll(() => discoverRequests.length).toBe(1);
-  expect(discoverRequests[0].searchParams.get("vote_average.gte")).toBe("7.5");
-  expect(discoverRequests[0].searchParams.get("vote_count.gte")).toBe("500");
-  expect(discoverRequests[0].searchParams.get("sort_by")).toBe("vote_average.desc");
-
-  await page.getByRole("button", { name: "Quitar filtro Valoración: ≥ 7.5" }).click();
-  await expect.poll(() => discoverRequests.length).toBe(2);
-  expect(discoverRequests[1].searchParams.get("vote_average.gte")).toBeNull();
-  expect(discoverRequests[1].searchParams.get("vote_count.gte")).toBe("500");
-  expect(discoverRequests[1].searchParams.get("sort_by")).toBe("vote_average.desc");
-  await expect(page.locator(".discover-filter-chip")).toContainText(["Votos: ≥ 500", "Orden: Mejor valoradas"]);
+  expect(discoverRequests[0].searchParams.get("with_genres")).toBe("18");
+  expect(discoverRequests[0].searchParams.get("with_runtime.gte")).toBe("100");
+  expect(discoverRequests[0].searchParams.get("with_runtime.lte")).toBe("140");
 });
