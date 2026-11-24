@@ -112,8 +112,9 @@ describe("evaluación temporal reproducible de Espectro", () => {
 
   it("no permite que una actualización de metadatos posterior al corte entre en ventanas anteriores", () => {
     const data = fixture();
-    const snapshots = legacySnapshots(data.movies);
     const lateMovie = data.movies[12];
+    // This title has no legacy observation: its only known metadata arrives late.
+    const snapshots = legacySnapshots(data.movies.filter((movie) => movie.id !== lateMovie.id));
     const lateSnapshot = createSpectroMetadataSnapshot({
       ...lateMovie,
       overview: "Metadatos que solo se conocieron después de varias ventanas.",
