@@ -272,7 +272,7 @@ test("permite cargar más resultados de una búsqueda con filtros activos", asyn
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: una historia" })).toBeVisible();
   await expect.poll(() => searchRequests.length).toBe(1);
 
-  const moreResults = page.getByRole("button", { name: "Buscar en más resultados" });
+  const moreResults = page.getByRole("button", { name: "Cargar más películas" });
   await expect(moreResults).toBeVisible();
   await moreResults.click();
 
@@ -284,7 +284,7 @@ test("permite cargar más resultados de una búsqueda con filtros activos", asyn
   await expect(page.locator(".poster-card")).toHaveCount(3);
 });
 
-test("mantiene el orden global por recaudación al cargar otra página de búsqueda", async ({ page }) => {
+test("conserva el orden visible al añadir otra página con orden de recaudación", async ({ page }) => {
   await configureTmdbMock(page, { multiPageSearch: true });
   await page.goto("#/discover");
 
@@ -301,11 +301,12 @@ test("mantiene el orden global por recaudación al cargar otra página de búsqu
   await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
   await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
 
-  await page.getByRole("button", { name: "Buscar en más resultados" }).click();
+  await page.getByRole("button", { name: "Cargar más películas" }).click();
   await expect(posters).toHaveCount(3);
-  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
-  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
-  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  // El nuevo título se añade abajo: no desplaza las películas que ya estaban visibles.
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
   await expect(page.getByRole("button", { name: "Abrir ficha de Prisma: película fuera del rango" })).toHaveCount(0);
 });
 
@@ -455,7 +456,7 @@ test("ofrece atajos de búsqueda y permite quitar un filtro sin borrar los demá
 
   await page.getByRole("button", { name: "Abrir filtros" }).click();
   const dialog = page.getByRole("dialog", { name: "Filtros" });
-  await dialog.getByRole("button", { name: "Muy valoradas" }).click();
+  await dialog.getByRole("button", { name: "Bien valoradas" }).click();
   await expect(dialog.locator("#discover-min-rating")).toHaveValue("7.5");
   await expect(dialog.locator("#discover-min-votes")).toHaveValue("500");
   await expect(dialog.locator("#discover-sort")).toHaveValue("vote_average.desc");
@@ -472,4 +473,26 @@ test("ofrece atajos de búsqueda y permite quitar un filtro sin borrar los demá
   expect(discoverRequests[1].searchParams.get("vote_count.gte")).toBe("500");
   expect(discoverRequests[1].searchParams.get("sort_by")).toBe("vote_average.desc");
   await expect(page.locator(".discover-filter-chip")).toContainText(["Votos: ≥ 500", "Orden: Mejor valoradas"]);
+test("no carga páginas al deslizar; espera a que la persona toque Cargar más", async ({ page }) => {
+  const { searchRequests } = await configureTmdbMock(page, { multiPageSearch: true });
+  await page.goto("#/discover");
+  await page.locator("#discover-search").fill("prisma");
+
+  const posters = page.locator(".poster-card");
+  await expect(posters).toHaveCount(2);
+  await expect.poll(() => searchRequests.length).toBe(1);
+
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(300);
+  expect(searchRequests).toHaveLength(1);
+  await expect(posters).toHaveCount(2);
+
+  await page.getByRole("button", { name: "Cargar más películas" }).click();
+  await expect.poll(() => searchRequests.length).toBe(2);
+  await expect(posters).toHaveCount(3);
+  await expect(posters.nth(0)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: una historia");
+  await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
+  await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
+});
+
 });
