@@ -227,6 +227,40 @@ export function filterDiscoverLibraryVisibility<T extends { id: number }>(
  * del catálogo de TMDB. El catálogo completo se conserva cuando no hay señales
  * positivas, para que Espectro nunca deje la pantalla vacía por falta de evidencia.
  */
+/**
+ * Añade una página sin cambiar el orden de las películas que ya estaban en pantalla.
+ * La nueva página conserva su propio orden y los duplicados se descartan por ID.
+ */
+export function appendDiscoverMovies<T extends { id: number }>(
+  current: readonly T[],
+  nextPage: readonly T[]
+): T[] {
+  const seen = new Set(current.map((movie) => movie.id));
+  const additions = nextPage.filter((movie) => {
+    if (seen.has(movie.id)) return false;
+    seen.add(movie.id);
+    return true;
+  });
+  return [...current, ...additions];
+}
+
+/**
+ * Añade recomendaciones de una página al final de las ya mostradas.
+ * Nunca reordena las recomendaciones existentes al terminar otro cálculo.
+ */
+export function appendDiscoverSpectroRecommendations<T extends { movie: { tmdbId: number } }>(
+  current: readonly T[],
+  nextPage: readonly T[]
+): T[] {
+  const seen = new Set(current.map((item) => item.movie.tmdbId));
+  const additions = nextPage.filter((item) => {
+    if (seen.has(item.movie.tmdbId)) return false;
+    seen.add(item.movie.tmdbId);
+    return true;
+  });
+  return [...current, ...additions];
+}
+
 export function selectDiscoverSpectroMovies<T extends { id: number }>(
   movies: readonly T[],
   recommendations: readonly { movie: { tmdbId: number } }[],
