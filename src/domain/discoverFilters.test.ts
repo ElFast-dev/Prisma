@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendDiscoverMovies,
+  appendDiscoverSpectroRecommendations,
   buildDiscoverMovieParams,
   countActiveDiscoverFilters,
   DEFAULT_DISCOVER_FILTERS,
@@ -8,8 +10,7 @@ import {
   filterDiscoverLibraryVisibility,
   hasActiveDiscoverFilters,
   normalizeDiscoverFilters,
-  selectDiscoverSpectroMovies,
-  appendDiscoverRecommendationBatch
+  selectDiscoverSpectroMovies
 } from "./discoverFilters";
 
 describe("Discover filters", () => {
@@ -155,6 +156,29 @@ describe("Discover filters", () => {
     expect(discoverFilterTitleMatch("Otra película", undefined, "   ")).toBe(true);
   });
 
+  it("appends new catalog pages without moving existing results or duplicating IDs", () => {
+    const firstPage = [{ id: 10 }, { id: 20 }, { id: 30 }];
+    const nextPage = [{ id: 30 }, { id: 40 }, { id: 50 }];
+
+    expect(appendDiscoverMovies(firstPage, nextPage))
+      .toEqual([{ id: 10 }, { id: 20 }, { id: 30 }, { id: 40 }, { id: 50 }]);
+  });
+
+  it("appends each new Spectro page after existing recommendations without reranking them", () => {
+    const firstPage = [
+      { movie: { tmdbId: 20 }, predictedRating: 9 },
+      { movie: { tmdbId: 10 }, predictedRating: 8 }
+    ];
+    const nextPage = [
+      { movie: { tmdbId: 40 }, predictedRating: 10 },
+      { movie: { tmdbId: 20 }, predictedRating: 9.5 },
+      { movie: { tmdbId: 30 }, predictedRating: 7 }
+    ];
+
+    expect(appendDiscoverSpectroRecommendations(firstPage, nextPage))
+      .toEqual([firstPage[0], firstPage[1], nextPage[0], nextPage[2]]);
+  });
+
   it("shows only movies personally recommended by Spectro, in recommendation order", () => {
     const catalog = [
       { id: 101, title: "Resultado antiguo A" },
@@ -182,44 +206,8 @@ describe("Discover filters", () => {
     expect(selectDiscoverSpectroMovies(catalog, recommendation, "popularity.desc"))
       .toEqual(catalog);
     expect(selectDiscoverSpectroMovies(catalog, [], "spectro")).toEqual(catalog);
-  });
-
-
-  it("appends a stronger next-page recommendation without moving existing movies", () => {
-    const firstBatch = [
-      { movie: { tmdbId: 10, title: "Recomendación inicial A" }, predictedRating: 8.8, fitPercentage: 82 },
-      { movie: { tmdbId: 20, title: "Recomendación inicial B" }, predictedRating: 7.9, fitPercentage: 74 }
-    ];
-    const nextPageBatch = [
-      { movie: { tmdbId: 30, title: "Nueva recomendación más fuerte" }, predictedRating: 9.9, fitPercentage: 96 },
-      { movie: { tmdbId: 40, title: "Otra recomendación nueva" }, predictedRating: 7.2, fitPercentage: 70 }
-    ];
-
-    const updated = appendDiscoverRecommendationBatch(firstBatch, nextPageBatch);
-
-    expect(updated.map((item) => item.movie.tmdbId)).toEqual([10, 20, 30, 40]);
-    expect(updated.slice(0, 2)).toEqual(firstBatch);
-    expect(updated.slice(2)).toEqual(nextPageBatch);
-  });
-
-  it("updates a duplicate recommendation in place and does not duplicate its movie", () => {
-    const firstBatch = [
-      { movie: { tmdbId: 10, title: "Primera" }, predictedRating: 8, fitPercentage: 80 },
-      { movie: { tmdbId: 20, title: "Segunda" }, predictedRating: 7, fitPercentage: 70 }
-    ];
-    const updatedDuplicate = {
-      movie: { tmdbId: 10, title: "Primera actualizada" },
-      predictedRating: 9.5,
-      fitPercentage: 95
-    };
-    const updated = appendDiscoverRecommendationBatch(firstBatch, [
-      updatedDuplicate,
-      { movie: { tmdbId: 30, title: "Tercera" }, predictedRating: 9, fitPercentage: 90 }
-    ]);
-
-    expect(updated.map((item) => item.movie.tmdbId)).toEqual([10, 20, 30]);
-    expect(updated[0]).toBe(updatedDuplicate);
-    expect(updated[1]).toBe(firstBatch[1]);
+    expect(selectDiscoverSpectroMovies(catalog, recommendation, "spectro", false))
+      .toEqual(catalog);
   });
 
 });
