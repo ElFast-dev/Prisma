@@ -11,6 +11,7 @@ import {
   DISCOVER_LANGUAGES,
   getDiscoverFilterErrors,
   filterDiscoverLibraryVisibility,
+  selectDiscoverSpectroMovies,
   hasActiveDiscoverFilters,
   normalizeDiscoverFilters,
   type DiscoverFilters
@@ -153,14 +154,9 @@ export function DiscoverPage() {
   const filtersActive = activeFilterCount > 0;
   const catalogFiltersActive = hasActiveDiscoverFilters(appliedFilters);
   const filterErrors = getDiscoverFilterErrors(draftFilters);
-  const rankedMovies = useMemo(() => {
-    if (appliedFilters.sortBy !== "spectro" || !recommendations.length) return movies;
-    const ranking = new Map(recommendations.map((item, index) => [item.movie.tmdbId, index]));
-    return [...movies].sort((left, right) => (
-      (ranking.get(left.id) ?? Number.MAX_SAFE_INTEGER)
-      - (ranking.get(right.id) ?? Number.MAX_SAFE_INTEGER)
-    ));
-  }, [movies, recommendations, appliedFilters.sortBy]);
+  const rankedMovies = useMemo(() => (
+    selectDiscoverSpectroMovies(movies, recommendations, appliedFilters.sortBy)
+  ), [movies, recommendations, appliedFilters.sortBy]);
   const visibleMovies = useMemo(() => filterDiscoverLibraryVisibility(
     rankedMovies,
     new Set(watchedTmdbIds),
