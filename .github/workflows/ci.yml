@@ -88,6 +88,10 @@ jobs:
       - name: Run end-to-end browser tests
         run: npm run test:e2e
         env:
+          # Firefox in the official container runs as root; the runner's HOME
+          # belongs to pwuser, so use root's own home directory for the process.
+          HOME: /root
+        env:
           # La imagen Playwright corre como root; Firefox requiere que HOME
           # pertenezca a ese usuario en vez del directorio del usuario pwuser.
           HOME: /root
