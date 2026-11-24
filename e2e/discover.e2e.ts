@@ -471,3 +471,25 @@ test("no carga páginas al deslizar; espera a que la persona toque Cargar más",
   await expect(posters.nth(1)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: la otra historia");
   await expect(posters.nth(2)).toHaveAttribute("aria-label", "Abrir ficha de Prisma: tercera historia");
 });
+
+test("combina atajos de género y duración sin obligar a configurar campos manualmente", async ({ page }) => {
+  const { discoverRequests } = await configureTmdbMock(page);
+  await page.goto("#/discover");
+  await page.getByRole("button", { name: "Abrir filtros" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Filtros" });
+  const genres = dialog.getByRole("group", { name: "Géneros populares" });
+  await genres.getByRole("button", { name: "Drama" }).click();
+  await expect(dialog.locator("#discover-genre")).toHaveValue("18");
+
+  const duration = dialog.getByRole("group", { name: "Atajos de duración" });
+  await duration.getByRole("button", { name: "100–140 min" }).click();
+  await expect(dialog.locator("#discover-runtime-min")).toHaveValue("100");
+  await expect(dialog.locator("#discover-runtime-max")).toHaveValue("140");
+
+  await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
+  await expect.poll(() => discoverRequests.length).toBe(1);
+  expect(discoverRequests[0].searchParams.get("with_genres")).toBe("18");
+  expect(discoverRequests[0].searchParams.get("with_runtime.gte")).toBe("100");
+  expect(discoverRequests[0].searchParams.get("with_runtime.lte")).toBe("140");
+});
