@@ -195,7 +195,11 @@ export function DiscoverPage() {
     return chips;
   }, [appliedFilters]);
 
-  const loadFirstPage = useCallback(async (searchText: string, filters: DiscoverFilters) => {
+  const loadFirstPage = useCallback(async (
+    searchText: string,
+    filters: DiscoverFilters,
+    forceRefresh = false
+  ) => {
     const currentRequest = ++requestId.current;
     feedRevisionRef.current += 1;
     loadingMoreRef.current = false;
@@ -223,12 +227,13 @@ export function DiscoverPage() {
 
     try {
       const useFilters = hasActiveDiscoverFilters(filters);
+      const feedRequestOptions = forceRefresh ? { forceRefresh: true } : undefined;
       const [rawFeed, imageConfig, libraryStatus] = await Promise.all([
         searchText.trim()
-          ? searchMovies(token, searchText, 1)
+          ? searchMovies(token, searchText, 1, feedRequestOptions)
           : useFilters
-            ? discoverMovies(token, filters, 1)
-            : getTrendingMovies(token, 1),
+            ? discoverMovies(token, filters, 1, feedRequestOptions)
+            : getTrendingMovies(token, 1, feedRequestOptions),
         getImageConfiguration(token).catch(() => ({
           secure_base_url: "https://image.tmdb.org/t/p/",
           poster_sizes: [],
@@ -518,7 +523,7 @@ export function DiscoverPage() {
           {refreshAvailable && state === "ready" && (
             <div className="discover-refresh-note" role="status">
               <span>Conexión restablecida. Tus resultados actuales no se han movido.</span>
-              <button type="button" onClick={() => void loadFirstPage(query, appliedFilters)}>
+              <button type="button" onClick={() => void loadFirstPage(query, appliedFilters, true)}>
                 <RefreshCw size={14} /> Actualizar
               </button>
             </div>
