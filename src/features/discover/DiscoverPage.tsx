@@ -160,8 +160,8 @@ export function DiscoverPage() {
     && appliedFilters.sortBy === "spectro"
     && spectroState === "loading";
   const rankedMovies = useMemo(() => (
-    selectDiscoverSpectroMovies(movies, recommendations, appliedFilters.sortBy)
-  ), [movies, recommendations, appliedFilters.sortBy]);
+    selectDiscoverSpectroMovies(movies, recommendations, appliedFilters.sortBy, spectroState === "ready")
+  ), [movies, recommendations, appliedFilters.sortBy, spectroState]);
   const visibleMovies = useMemo(() => filterDiscoverLibraryVisibility(
     rankedMovies,
     new Set(watchedTmdbIds),
@@ -334,7 +334,7 @@ export function DiscoverPage() {
     };
     window.addEventListener("online", refreshAfterReconnect);
     return () => window.removeEventListener("online", refreshAfterReconnect);
-  }, [loadFirstPage, query, appliedFilters]);
+  }, []);
 
   useEffect(() => {
     const feedIsCurrent = loadedFeedKeyRef.current === getDiscoverFeedKey(query, appliedFilters)
@@ -382,22 +382,20 @@ export function DiscoverPage() {
       // añadir una página, pero conserva intacto el orden que ya se está mostrando.
       feedRevisionRef.current += 1;
       setMovies((current) => appendDiscoverMovies(current, newPageMovies));
-      void getSpectroDiscoverRecommendations(newPageMovies).then((personalized) => {
-        if (currentRequest !== requestId.current) return;
-        const rankedPageRecommendations = rankSpectroRecommendations(personalized.recommendations);
-        setRecommendations((current) => (
-          appendDiscoverSpectroRecommendations(current, rankedPageRecommendations)
-        ));
-        const nextSpectroState = getDiscoverSpectroState(
-          personalized.movieCount,
-          personalized.recommendations.length
-        );
-        setSpectroState((current) => preserveDiscoverSpectroReadyState(current, nextSpectroState));
-      }).catch(() => {
-        if (currentRequest === requestId.current) {
-          setSpectroState((current) => preserveDiscoverSpectroReadyState(current, "unavailable"));
-        }
-      });
+      // Solo se amplía un ranking personal que ya estaba activo desde la primera
+      // página. Un fallback del catálogo nunca se convierte a mitad del scroll
+      // en una lista distinta que haga desaparecer las películas ya vistas.
+      if (appliedFilters.sortBy === "spectro" && spectroState === "ready") {
+        void getSpectroDiscoverRecommendations(newPageMovies).then((personalized) => {
+          if (currentRequest !== requestId.current) return;
+          const rankedPageRecommendations = rankSpectroRecommendations(personalized.recommendations);
+          setRecommendations((current) => (
+            appendDiscoverSpectroRecommendations(current, rankedPageRecommendations)
+          ));
+        }).catch(() => {
+          // La clasificación de páginas anteriores permanece válida si falla una página nueva.
+        });
+      }
       if (rawResult.stale) {
         setShowingCachedData(true);
         setCachedFetchedAt(rawResult.fetchedAt);
@@ -552,7 +550,7 @@ export function DiscoverPage() {
               {" · Página " + page + " de " + totalPages}
             </p>
           )}
-          {state === "ready" && movies.length > 0 && (
+          {appliedFilters.sortBy === "spectro" && state === "ready" && movies.length > 0 && (
             <div className="discover-spectro-note" role="status">
               <BrainCircuit size={16} />
               <span>
@@ -604,7 +602,7 @@ export function DiscoverPage() {
               </div>
             </>
           )}
-          {state === "ready" && page < totalPages && (
+          {state === "ready" && !waitingForSpectro && page < totalPages && (
             <button className="button button-secondary discover-load-more" type="button" onClick={() => void loadMore()} disabled={loadingMore}>
               {loadingMore
                 ? <><LoaderCircle size={17} className="spin" /> Cargando películas…</>
