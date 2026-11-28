@@ -32,11 +32,13 @@ Ambos casos limitan la reconstrucción de títulos faltantes y las solicitudes c
 
 Los dos feeds conservan las tarjetas y navegación nativas de Showly. Se excluyen los títulos ya calificados y ocultos; colección y watchlist se excluyen cuando está activo el filtro nativo hideCollection.
 
-## Ranking híbrido
+## Ampliación de candidatos y ranking híbrido
 
 El motor combina afinidad de características, similitud con títulos calificados, calidad comunitaria suavizada por la cantidad de votos, popularidad, novedad y diversidad. Para evitar que una cuenta nueva reciba falsas afirmaciones de personalización, el arranque en frío usa señales comunitarias con confianza baja.
 
-El motor no hace llamadas de red. Showly conserva su sincronización de Trakt y usa los repositorios existentes para cargar los metadatos que falten; el perfil de gusto y el orden se calculan localmente. Las calificaciones no se envían a un modelo remoto ni al servicio de Prisma.
+La integración amplía el catálogo de cada feed consultando títulos relacionados de Trakt a partir de hasta cuatro títulos con nota 8/10 o superior. Se solicitan hasta 10 relacionados por título, hasta 40 adicionales en total y con un máximo de dos solicitudes concurrentes. Esos resultados se unen a los candidatos de Descubrir, se deduplican y se reordenan localmente. Las notas altas eligen semillas; las notas bajas participan en el perfil y reducen la puntuación de atributos similares. Si falla una consulta relacionada, no se interrumpe el feed normal.
+
+El motor en sí no hace llamadas de red. La capa Android usa los endpoints existentes de Trakt para ampliar los candidatos y los repositorios Showly para leer calificaciones y metadatos; el perfil de gusto y el orden se calculan localmente. Las notas numéricas no se envían a un modelo remoto ni al servicio de Prisma.
 
 ## Configuración
 
