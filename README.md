@@ -23,9 +23,10 @@ El motor de Prisma se conecta al proyecto Gradle de Showly mediante un script id
 
 ```bash
 python3 scripts/configure_showly_recommender.py
+python3 scripts/apply_showly_recommender.py
 ```
 
-El script modifica únicamente el working tree local de `showly-android` para añadir `:prisma-recommendation-engine` como dependencia. No crea commits en el submódulo ni escribe en el repositorio upstream.
+Los scripts modifican únicamente el working tree local de `showly-android`: registran `:prisma-recommendation-engine` y añaden el feed `PERSONALIZED` (Para ti) a la pantalla de descubrimiento de películas. El segundo script conecta las valoraciones de Trakt con Room, enriquece géneros/directores/reparto con los créditos TMDB cacheados y vuelve a ordenar las tarjetas existentes. Ambos scripts son repetibles y no crean commits ni escriben en el repositorio upstream.
 
 ## Configurar Showly
 
@@ -79,7 +80,7 @@ El workflow de GitHub Actions también ejecuta pruebas del script de configuraci
 
 El motor, el adaptador para los modelos de Showly, el caso de uso y la simulación están implementados. El módulo puede añadirse a la compilación Android.
 
-**Todavía falta conectar el origen real de datos Room/Trakt/TMDB con `ShowlyRecommendationDataSource` y añadir el feed “Para ti” dentro de `DiscoverMoviesCase`.** También falta persistir el feedback explícito en Room y cubrir esa integración con pruebas Android. Por tanto, el recomendador todavía no está disponible como una pantalla funcional dentro de la app.
+El feed `Para ti` ya se conecta en el working tree local de Showly mediante el script de integración: usa calificaciones Trakt, datos de películas de Room y créditos TMDB disponibles mediante `PeopleRepository`. Aún falta persistir feedback explícito (LIKE/DISLIKE/NOT_INTERESTED/HIDE) en Room, ajustar el enriquecimiento y validar la experiencia con una cuenta real. CI debe compilar el submódulo ya parcheado antes de considerar cerrada esta fase.
 
 La PWA React/Vite anterior ya no forma parte de esta rama del proyecto. La rama principal no se cambia hasta validar la sustitución Android.
 
