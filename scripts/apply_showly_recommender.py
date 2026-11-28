@@ -54,8 +54,10 @@ internal class PersonalizedMoviesCase @Inject constructor(
     withContext(dispatchers.IO) {
       if (candidates.isEmpty()) return@withContext emptyList()
 
-      val ratings = ratingsRepository.loadMoviesRatings()
+      val allRatings = ratingsRepository.loadMoviesRatings()
         .filter { it.rating in 1..10 }
+      val allRatedIds = allRatings.mapTo(HashSet()) { it.idTrakt.id }
+      val ratings = allRatings
         .sortedByDescending { it.ratedAt }
         .take(MAX_HISTORY_RATINGS)
 
@@ -94,7 +96,9 @@ internal class PersonalizedMoviesCase @Inject constructor(
       val ratingPairs = ratings.mapNotNull { rating ->
         historyById[rating.idTrakt.id]?.let { rating to it }
       }
-      if (ratingPairs.isEmpty()) return@withContext coldStart(candidates, excludedIds)
+      if (ratingPairs.isEmpty()) {
+        return@withContext coldStart(candidates, excludedIds + allRatedIds)
+      }
 
       val ratedMovies = ratingPairs.map { it.second }.distinctBy { it.traktId }
       val ratedCreditIds = ratedMovies.take(MAX_RATED_CREDIT_MOVIES)
@@ -118,7 +122,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
       val recommendations = adapter.recommend(
         candidates = candidateMetadata,
         ratings = ratingRecords,
-        excludedMovieIds = excludedIds.toSet(),
+        excludedMovieIds = (excludedIds + allRatedIds).toSet(),
         limit = candidates.size,
         diversity = DEFAULT_DIVERSITY,
       )
