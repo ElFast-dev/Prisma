@@ -3,7 +3,7 @@ package com.elfast.prisma.recommendation
 import java.text.Normalizer
 import java.util.Locale
 
-/** Metadata used by the recommender. Showly adapters map Movie and TMDB credits to this type. */
+/** Metadata used by the recommender. Showly adapters map movies or series and TMDB credits to this type. */
 data class MovieProfile(
   val id: Long,
   val title: String,
@@ -47,6 +47,7 @@ enum class MovieFeatureType(val importance: Double) {
   WRITER(0.90),
   FRANCHISE(0.85),
   STUDIO(0.65),
+  NETWORK(0.65),
   LANGUAGE(0.55),
   COUNTRY(0.40),
   DECADE(0.25),
