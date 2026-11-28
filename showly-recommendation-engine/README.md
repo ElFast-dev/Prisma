@@ -1,79 +1,80 @@
 # Prisma · motor de recomendaciones para Showly
 
-Motor Kotlin independiente, determinista y ejecutable localmente. Se integra con **Showly para Android** como un feed personalizado de descubrimiento de películas.
+Motor Kotlin local, determinista y sin dependencia de servicios de IA remotos. Se integra con **Showly para Android** mediante feeds personalizados de descubrimiento para películas y series.
 
-> Estado: el motor, el adaptador, el caso de uso Android y el feed `PERSONALIZED` (“Para ti”) están conectados mediante los scripts de integración. La rama fija Showly como submódulo a un commit concreto; los parches se aplican al working tree local del submódulo, sin modificar su repositorio upstream.
+> Estado: el motor y el adaptador son independientes de Android. Los scripts conectan el módulo Gradle y aplican los casos de uso a un checkout local del submódulo Showly fijado por Prisma.
 
-## Qué aprende automáticamente
+## Aprende de las calificaciones existentes
 
-La única señal de gusto personal son las **calificaciones de Trakt que la persona ya registra en Showly**:
+La señal personal procede de las valoraciones de Trakt que la persona ya registra en Showly:
 
-- Las puntuaciones altas refuerzan los rasgos compartidos por esas películas.
-- Las puntuaciones bajas penalizan los rasgos compartidos por esas películas.
-- La nota se interpreta tanto de forma absoluta como relativa a la media personal.
-- La fecha original de cada valoración determina cuánto pesa con el paso del tiempo.
+- Las puntuaciones altas refuerzan atributos que comparten esos títulos.
+- Las puntuaciones bajas penalizan atributos similares.
+- La nota se interpreta de forma absoluta y en relación con la media personal, adaptándose a distintos hábitos de puntuación.
+- La fecha original aplica decaimiento temporal para que el gusto reciente tenga más peso.
+- Cambiar o borrar una calificación se refleja en el siguiente cálculo porque el perfil se reconstruye desde el repositorio local de ratings.
 
-A partir de las películas calificadas aprende preferencias por género, dirección, reparto, guion, palabras clave, franquicia, estudio, idioma, país y década, siempre que existan metadatos. Combina esa afinidad con similitud de contenido, calidad comunitaria ajustada por votos, popularidad, novedad y diversidad.
+No hay “me gusta”, “no me gusta”, “no me interesa”, encuestas ni tareas adicionales. La persona usa la app como siempre: registra una calificación y el sistema aprende.
 
-**No hay botones, formularios, encuestas ni acciones adicionales para entrenar al recomendador.** No se pide marcar películas como favoritas ni indicar que no gustan: la calificación existente ya expresa esa opinión. Una película calificada no vuelve a aparecer entre las recomendaciones.
+## Dos feeds personalizados
 
-El motor no necesita conexión de red, no llama a un modelo remoto y no envía las calificaciones a ningún servidor. Showly conserva su sincronización habitual de Trakt; el cálculo del ranking se realiza en el dispositivo.
+**Películas — PersonalizedMoviesCase**
+- Lee las calificaciones de MoviesRatingsRepository.
+- Reconstruye hasta 100 títulos recientes con Room y usa MovieDetailsRepository para un número limitado de elementos que falten.
+- Enriquece metadatos con géneros, idioma, país, año, nota comunitaria y créditos cacheados de PeopleRepository.
 
-## Integración Android actual
+**Series — PersonalizedShowsCase**
+- Lee las calificaciones existentes de ShowsRatingsRepository.
+- Reconstruye el historial desde Room y usa ShowDetailsRepository como alternativa limitada.
+- Aprende de géneros, cadena/plataforma, país, año, nota comunitaria y créditos de dirección, guion y reparto mediante PeopleRepository.
 
-El feed se incorpora a la pantalla de descubrimiento de películas de Showly:
+Ambos casos limitan la reconstrucción de títulos faltantes y las solicitudes concurrentes para evitar bloquear la interfaz o multiplicar llamadas de red. Los créditos no disponibles simplemente no aportan una señal; no se inventan.
 
-- `PersonalizedMoviesCase` lee las últimas 100 calificaciones de `MoviesRatingsRepository`.
-- Une los IDs de Trakt con las películas locales de Room y usa `MovieDetailsRepository` como fallback limitado para registros que falten.
-- Enriquece las películas con géneros, idioma, país, año y rating comunitario; obtiene créditos mediante `PeopleRepository` con concurrencia limitada.
-- Prioriza las tarjetas nativas de Showly: el motor calcula el orden y la pantalla conserva las tarjetas, imágenes, estados y navegación originales.
-- Excluye películas ya calificadas y ocultas. También excluye colección y watchlist cuando el filtro existente de Showly así lo solicita.
-- Si todavía no hay calificaciones, usa señales comunitarias como arranque en frío y mantiene baja la confianza; no inventa preferencias personales.
+Los dos feeds conservan las tarjetas y navegación nativas de Showly. Se excluyen los títulos ya calificados y ocultos; colección y watchlist se excluyen cuando está activo el filtro nativo hideCollection.
 
-Por límites de coste y disponibilidad, los créditos se enriquecen para un conjunto acotado del historial y de candidatos. Los metadatos que no estén disponibles no se inventan ni se tratan como preferencias.
+## Ranking híbrido
 
-## Obtener y configurar el proyecto
+El motor combina afinidad de características, similitud con títulos calificados, calidad comunitaria suavizada por la cantidad de votos, popularidad, novedad y diversidad. Para evitar que una cuenta nueva reciba falsas afirmaciones de personalización, el arranque en frío usa señales comunitarias con confianza baja.
 
-Clona incluyendo submódulos:
+El motor no hace llamadas de red. Showly conserva su sincronización de Trakt y usa los repositorios existentes para cargar los metadatos que falten; el perfil de gusto y el orden se calculan localmente. Las calificaciones no se envían a un modelo remoto ni al servicio de Prisma.
 
-```bash
-git clone --recurse-submodules https://github.com/ElFast-dev/Prisma.git
-cd Prisma
-python3 scripts/configure_showly_recommender.py
-python3 scripts/apply_showly_recommender.py
-```
+## Configuración
 
-En un clon existente:
+Clona con submódulos:
 
-```bash
-git submodule update --init --recursive
-python3 scripts/configure_showly_recommender.py
-python3 scripts/apply_showly_recommender.py
-```
+    git clone --recurse-submodules https://github.com/ElFast-dev/Prisma.git
+    cd Prisma
+    python3 scripts/configure_showly_recommender.py
+    python3 scripts/apply_showly_recommender.py
 
-Ambos scripts son idempotentes. El primero registra `:prisma-recommendation-engine` en Gradle; el segundo agrega el feed `PERSONALIZED` (“Para ti”) y su caso de uso en Showly. No crean commits ni envían cambios al upstream.
+En un clon ya existente:
 
-El submódulo apunta al repositorio original de Showly. Para distribuir una versión Android derivada, hay que mantener los avisos y obligaciones GPL-3.0 y publicar los cambios del submódulo en un fork propio, nunca en el upstream original.
+    git submodule update --init --recursive
+    python3 scripts/configure_showly_recommender.py
+    python3 scripts/apply_showly_recommender.py
+
+Los scripts son idempotentes. El primero registra el módulo de recomendaciones; el segundo conecta el feed PERSONALIZED en películas y series. No crean commits ni envían cambios al upstream.
 
 ## Ejecutar pruebas
 
 Requiere JDK 21 y Gradle:
 
-```bash
-gradle -p showly-recommendation-engine check
-```
+    gradle -p showly-recommendation-engine check
 
-Las pruebas JVM cubren normalización y mapeo de metadatos, ranking a partir de calificaciones Trakt, exclusiones, arranque en frío, diversidad y escenarios sintéticos con perfiles reproducibles. Las simulaciones no utilizan datos privados ni una cuenta real.
+Las pruebas JVM cubren normalización de atributos, mapeo de géneros, créditos y cadenas/plataformas, ranking desde notas, cambios de calificación, exclusiones, arranque en frío, diversidad y escenarios sintéticos. Las simulaciones no utilizan datos privados ni una cuenta real.
 
-GitHub Actions aplica los scripts dos veces sobre el commit fijado de Showly, compila Kotlin Android y ejecuta las pruebas configuradas. La validación de calidad con un historial real y las pruebas instrumentadas del flujo completo siguen siendo trabajo pendiente; las simulaciones no se presentan como prueba de precisión real.
+GitHub Actions aplica los scripts dos veces sobre el commit fijado de Showly, compila Kotlin Android y ejecuta los tests configurados. La evaluación de precisión con un historial real sigue pendiente; las simulaciones comprueban propiedades del algoritmo pero no prueban la calidad real de recomendaciones para una cuenta concreta.
 
 ## Métricas y evaluación
 
-`RecommendationMetrics` calcula Precision@K, Recall@K, HitRate@K, NDCG@K, cobertura del catálogo y diversidad intra-lista. La evaluación con un historial real debe respetar un corte temporal: entrenar con calificaciones anteriores y medir contra valoraciones posteriores, sin reutilizar las mismas puntuaciones para entrenamiento y evaluación.
+RecommendationMetrics calcula Precision@K, Recall@K, HitRate@K, NDCG@K, cobertura del catálogo y diversidad intra-lista. La evaluación de una cuenta real debe usar separación temporal: entrenar con calificaciones anteriores y medir contra valoraciones posteriores, sin reutilizar las mismas notas entre entrenamiento y prueba.
 
-## Privacidad y límites
+## Límites
 
-El motor no envía el historial a un modelo remoto ni a un servicio de Prisma. No implementa filtrado colaborativo multiusuario. En un perfil nuevo usa calidad comunitaria con confianza conservadora; la personalización crece automáticamente conforme Showly dispone de más valoraciones.
+- El feed ordena los candidatos que Showly ya entrega; no puede recomendar títulos que no estén en ese conjunto.
+- El enriquecimiento de créditos y la reconstrucción de títulos faltantes tienen límites de concurrencia y cantidad.
+- Un perfil sin calificaciones no aporta evidencia de gustos personales.
+- Las recomendaciones no sustituyen el criterio de la persona ni son una garantía de afinidad.
 
 ## Licencia
 
