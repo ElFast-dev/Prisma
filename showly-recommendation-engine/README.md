@@ -8,7 +8,6 @@ Motor Kotlin independiente, determinista y ejecutable localmente. Está pensado 
 
 - Calificaciones personales de Trakt (1–10), usando una combinación de señal absoluta y relativa a la media del usuario.
 - Antigüedad de cada calificación, con decaimiento temporal configurable.
-- Gustos y rechazos explícitos: LIKE, DISLIKE, NOT_INTERESTED y HIDE.
 - Preferencias ponderadas por género, dirección, reparto, guion, palabras clave, franquicia, estudio, idioma, país y década.
 - Similitud ponderada con películas que gustaron y no gustaron.
 - Calidad comunitaria ajustada por cantidad de votos, popularidad y novedad.
@@ -17,7 +16,7 @@ Motor Kotlin independiente, determinista y ejecutable localmente. Está pensado 
 
 El motor no necesita conexión de red, no llama a un modelo remoto y no envía las calificaciones a ningún servidor. La app que lo integre será responsable de obtener candidatos y metadatos.
 
-El puente `ShowlyRecommendationAdapter` convierte snapshots del modelo `ui_model.Movie`, los registros de `TraktRating` unidos con sus películas y las señales de feedback en perfiles tipados para el motor. `PersonalizedMovieDiscovery` añade un caso de uso y el contrato `ShowlyRecommendationDataSource`, que la capa Android debe implementar con los repositorios de Showly. Ninguna de estas clases depende de Android; por eso sus pruebas se ejecutan en JVM.
+El puente `ShowlyRecommendationAdapter` convierte snapshots del modelo `ui_model.Movie`, los registros de calificaciones `TraktRating` unidos con sus películas en perfiles tipados para el motor. `PersonalizedMovieDiscovery` añade un caso de uso y el contrato `ShowlyRecommendationDataSource`, que la capa Android debe implementar con los repositorios de Showly. Ninguna de estas clases depende de Android; por eso sus pruebas se ejecutan en JVM.
 
 ## Obtener la base Android de Showly
 
@@ -54,10 +53,10 @@ La simulación determinista usa perfiles sintéticos y un reloj fijo. Las prueba
 1. Mantener Showly como base Android. Añadir este código como módulo Kotlin puro o incorporarlo a un módulo de dominio dedicado.
 2. Convertir `ui_model.Movie` a `MovieProfile`: ID Trakt, título, año, géneros, idioma, país, década, rating y votos comunitarios. Enriquecer director, guionistas, reparto, keywords, franquicias y estudio con TMDB cuando estén disponibles.
 3. Leer el historial desde `MoviesRatingsRepository.loadMoviesRatings()`. Showly ya sincroniza `sync/ratings/movies` y guarda puntuaciones en Room mediante `Rating` y `RatingsDao`. Como `TraktRating` solo contiene ID Trakt, nota y fecha, unir esos registros con `MoviesLocalDataSource.getAll(ids)` o `MovieDetailsRepository.load(IdTrakt(...))` antes de crear `ShowlyRatingRecord`.
-4. Persistir el feedback explícito por usuario en Room. HIDE debe ser un bloqueo; NOT_INTERESTED y DISLIKE enseñan al perfil qué evitar; LIKE sirve como señal positiva.
-5. Construir `excludedMovieIds` con películas ya vistas/calificadas, bloqueadas u ocultas, además de cualquier exclusión de producto que decida la app.
+4. Pasar las IDs de películas ya vistas, calificadas u ocultas como exclusiones; el usuario no necesita proporcionar señales adicionales.
+5. Construir `excludedMovieIds` con películas vistas, de la colección, watchlist u ocultas que Showly ya conozca.
 6. Integrar el adaptador en `ui-discover-movies/.../cases/DiscoverMoviesCase.kt`: después de obtener candidatos de `MoviesRepository.discoverMovies.loadAllRemote(...)` y antes de `prepareItems(...)`, mapearlos a `ShowlyMovieMetadata`, completar créditos TMDB disponibles y ordenar mediante `ShowlyRecommendationAdapter.recommend(...)`.
-7. Implementar `ShowlyRecommendationDataSource` con `MoviesRepository`, `MoviesRatingsRepository`, `LocalDataSource` y los datos de feedback persistidos en Room.
+7. Implementar `ShowlyRecommendationDataSource` con `MoviesRepository`, `MoviesRatingsRepository`, `LocalDataSource` y las listas de exclusión existentes.
 8. Añadir pruebas de integración para sincronización, borrado/actualización de puntuaciones, persistencia, migración Room y funcionamiento sin conexión.
 
 ### Puntos de extensión confirmados en upstream
