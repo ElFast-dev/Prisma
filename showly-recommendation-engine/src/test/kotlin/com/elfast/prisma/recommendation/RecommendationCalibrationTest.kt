@@ -12,6 +12,9 @@ class RecommendationCalibrationTest {
     assertTrue(ratingSignal(7, 8.5) < 0.0)
     assertTrue(ratingSignal(10, 8.5) > 0.0)
     assertTrue(ratingSignal(4, 2.5) > ratingSignal(3, 2.5))
+    assertTrue(ratingSignal(7, 7.0) >= 0.10)
+    assertTrue(ratingSignal(8, 8.5) >= 0.10)
+    assertTrue(ratingSignal(7, 8.5) < 0.10)
   }
 
   @Test

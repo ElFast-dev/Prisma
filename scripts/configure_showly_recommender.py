@@ -130,6 +130,16 @@ def main() -> int:
             str(default_paths["mapper"]),
         )
         changed_defaults |= changed
+        planned_defaults["mapper"], changed = replace_exact(
+            planned_defaults["mapper"],
+            "discoverMoviesFilterFeed = enumEntries<DiscoverFeed>()\n"
+            "        .find { settings.discoverFilterFeed == it.name } ?: PERSONALIZED,",
+            "discoverMoviesFilterFeed = enumEntries<DiscoverFeed>()\n"
+            "        .find { settings.discoverMoviesFilterFeed == it.name } ?: PERSONALIZED,",
+            1,
+            str(default_paths["mapper"]),
+        )
+        changed_defaults |= changed
     except ValueError as error:
         print(f"{error} No se escribieron cambios.", file=sys.stderr)
         return 3

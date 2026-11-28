@@ -14,7 +14,7 @@ import kotlin.math.sqrt
  * complementary signals. No network calls or remote model are made by this class.
  */
 /** Interprets a rating against both the scale and this person's usual scoring baseline. */
-internal fun ratingSignal(rating: Int, personalMean: Double): Double {
+fun ratingSignal(rating: Int, personalMean: Double): Double {
   require(rating in 1..10) { "Rating must be between 1 and 10" }
   require(personalMean in 1.0..10.0 && personalMean.isFinite()) {
     "Personal rating mean must be finite and between 1 and 10"

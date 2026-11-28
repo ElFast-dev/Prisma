@@ -71,8 +71,8 @@ jobs:
           python3 scripts/configure_showly_recommender.py
           python3 scripts/apply_showly_recommender.py
           python3 scripts/apply_showly_recommender.py
-      - name: Compile app
-        run: gradle -p showly-android :app:compileDebugKotlin --no-daemon
+      - name: Assemble installable debug APK
+        run: gradle -p showly-android :app:assembleDebug --no-daemon
       - name: Test app and integration repositories
         run: |
           gradle -p showly-android :app:testDebugUnitTest --no-daemon

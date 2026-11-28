@@ -46,7 +46,10 @@ class ConfigureShowlyRecommenderTest(unittest.TestCase):
             "mapper": self.write_showly(
                 "repository/src/main/java/com/michaldrabik/repository/mappers/SettingsMapper.kt",
                 "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n"
-                "val shows = value ?: TRENDING\nval movies = value ?: TRENDING\n",
+                "discoverFilterFeed = enumEntries<DiscoverFeed>()\n"
+                "        .find { settings.discoverFilterFeed == it.name } ?: TRENDING,\n"
+                "discoverMoviesFilterFeed = enumEntries<DiscoverFeed>()\n"
+                "        .find { settings.discoverFilterFeed == it.name } ?: TRENDING,\n",
             ),
         }
         engine = self.root / "showly-recommendation-engine"
@@ -93,6 +96,8 @@ class ConfigureShowlyRecommenderTest(unittest.TestCase):
         mapper = self.default_files["mapper"].read_text(encoding="utf-8")
         self.assertIn("DiscoverFeed.PERSONALIZED", mapper)
         self.assertEqual(mapper.count("?: PERSONALIZED"), 2)
+        self.assertEqual(mapper.count("settings.discoverFilterFeed == it.name"), 1)
+        self.assertEqual(mapper.count("settings.discoverMoviesFilterFeed == it.name"), 1)
 
         before = {name: path.read_text(encoding="utf-8") for name, path in self.default_files.items()}
         second = self.run_script()

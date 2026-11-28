@@ -24,6 +24,7 @@ import com.michaldrabik.ui_model.IdTrakt
 import com.michaldrabik.ui_model.Movie
 import com.michaldrabik.ui_model.TraktRating
 import com.michaldrabik.ui_model.Person.Department
+import com.elfast.prisma.recommendation.ratingSignal
 import com.elfast.prisma.recommendation.showly.ShowlyTitleMetadata
 import com.elfast.prisma.recommendation.showly.ShowlyTitleRatingRecord
 import com.elfast.prisma.recommendation.showly.ShowlyRecommendationAdapter
@@ -65,6 +66,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
         .take(MAX_HISTORY_RATINGS)
 
       if (ratings.isEmpty()) return@withContext coldStart(candidates, excludedIds)
+      val personalRatingMean = ratings.map { it.rating.toDouble() }.average()
 
       val ratingIds = ratings.map { it.idTrakt.id }.distinct()
       val localRows = localSource.movies.getAllChunked(ratingIds)
@@ -104,7 +106,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
       }
 
       val ratedMovies = ratingPairs.map { it.second }.distinctBy { it.traktId }
-      val relatedCandidates = loadRelatedCandidates(ratingPairs)
+      val relatedCandidates = loadRelatedCandidates(ratingPairs, personalRatingMean)
       val recommendationCandidates = (relatedCandidates + candidates).distinctBy { it.traktId }
       val ratedCreditIds = ratedMovies.take(MAX_RATED_CREDIT_MOVIES)
         .mapTo(HashSet()) { it.traktId }
@@ -138,13 +140,14 @@ internal class PersonalizedMoviesCase @Inject constructor(
   /** Expands the catalog with related titles from a few highly rated items. */
   private suspend fun loadRelatedCandidates(
     ratingPairs: List<Pair<TraktRating, Movie>>,
+    personalRatingMean: Double,
   ): List<Movie> =
     coroutineScope {
       val seeds = ratingPairs
         .distinctBy { it.first.idTrakt.id }
-        .filter { it.first.rating >= MIN_RELATED_SEED_RATING }
+        .filter { ratingSignal(it.first.rating, personalRatingMean) >= MIN_RELATED_SEED_SIGNAL }
         .sortedWith(
-          compareByDescending<Pair<TraktRating, Movie>> { it.first.rating }
+          compareByDescending<Pair<TraktRating, Movie>> { ratingSignal(it.first.rating, personalRatingMean) }
             .thenByDescending { it.first.ratedAt },
         )
         .take(MAX_RELATED_SEEDS)
@@ -240,7 +243,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
     const val MAX_RATED_CREDIT_MOVIES = 40
     const val MAX_CANDIDATE_CREDIT_MOVIES = 24
     const val MAX_PARALLEL_REQUESTS = 4
-    const val MIN_RELATED_SEED_RATING = 8
+    const val MIN_RELATED_SEED_SIGNAL = 0.10
     const val MAX_RELATED_SEEDS = 4
     const val RELATED_LIMIT_ADJUSTMENT = 0
     const val MAX_RELATED_CANDIDATES = 40
@@ -263,6 +266,7 @@ import com.michaldrabik.ui_model.IdTrakt
 import com.michaldrabik.ui_model.Person.Department
 import com.michaldrabik.ui_model.Show
 import com.michaldrabik.ui_model.TraktRating
+import com.elfast.prisma.recommendation.ratingSignal
 import com.elfast.prisma.recommendation.showly.ShowlyTitleMetadata
 import com.elfast.prisma.recommendation.showly.ShowlyTitleRatingRecord
 import com.elfast.prisma.recommendation.showly.ShowlyRecommendationAdapter
@@ -304,6 +308,7 @@ internal class PersonalizedShowsCase @Inject constructor(
         .take(MAX_HISTORY_RATINGS)
 
       if (ratings.isEmpty()) return@withContext coldStart(candidates, excludedIds)
+      val personalRatingMean = ratings.map { it.rating.toDouble() }.average()
 
       val ratingIds = ratings.map { it.idTrakt.id }.distinct()
       val localRows = localSource.shows.getAllChunked(ratingIds)
@@ -343,7 +348,7 @@ internal class PersonalizedShowsCase @Inject constructor(
       }
 
       val ratedShows = ratingPairs.map { it.second }.distinctBy { it.traktId }
-      val relatedCandidates = loadRelatedCandidates(ratingPairs)
+      val relatedCandidates = loadRelatedCandidates(ratingPairs, personalRatingMean)
       val recommendationCandidates = (relatedCandidates + candidates).distinctBy { it.traktId }
       val ratedCreditIds = ratedShows.take(MAX_RATED_CREDIT_SHOWS)
         .mapTo(HashSet()) { it.traktId }
@@ -376,13 +381,14 @@ internal class PersonalizedShowsCase @Inject constructor(
   /** Expands the catalog with related titles from a few highly rated items. */
   private suspend fun loadRelatedCandidates(
     ratingPairs: List<Pair<TraktRating, Show>>,
+    personalRatingMean: Double,
   ): List<Show> =
     coroutineScope {
       val seeds = ratingPairs
         .distinctBy { it.first.idTrakt.id }
-        .filter { it.first.rating >= MIN_RELATED_SEED_RATING }
+        .filter { ratingSignal(it.first.rating, personalRatingMean) >= MIN_RELATED_SEED_SIGNAL }
         .sortedWith(
-          compareByDescending<Pair<TraktRating, Show>> { it.first.rating }
+          compareByDescending<Pair<TraktRating, Show>> { ratingSignal(it.first.rating, personalRatingMean) }
             .thenByDescending { it.first.ratedAt },
         )
         .take(MAX_RELATED_SEEDS)
@@ -478,7 +484,7 @@ internal class PersonalizedShowsCase @Inject constructor(
     const val MAX_RATED_CREDIT_SHOWS = 40
     const val MAX_CANDIDATE_CREDIT_SHOWS = 24
     const val MAX_PARALLEL_REQUESTS = 4
-    const val MIN_RELATED_SEED_RATING = 8
+    const val MIN_RELATED_SEED_SIGNAL = 0.10
     const val MAX_RELATED_SEEDS = 4
     const val RELATED_LIMIT_ADJUSTMENT = 0
     const val MAX_RELATED_CANDIDATES = 40
@@ -521,23 +527,123 @@ def main() -> int:
             "  RECENT,\n  PERSONALIZED,\n}",
         )
 
-        for relative, branch in [
-            (
-                "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
-                "TRENDING, RECENT ->",
-            ),
-            (
-                "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
-                "TRENDING, RECENT ->",
-            ),
-        ]:
+        movies_repository = (
+            "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt"
+        )
+        shows_repository = (
+            "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt"
+        )
+        for relative in (movies_repository, shows_repository):
             patch(
                 relative,
                 "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n",
                 "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n"
                 "import com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
             )
-            patch(relative, branch, "TRENDING, RECENT, PERSONALIZED ->")
+            patch(
+                relative,
+                "import kotlinx.coroutines.async\n",
+                "import kotlinx.coroutines.CancellationException\n"
+                "import kotlinx.coroutines.async\n",
+            )
+
+        patch(
+            movies_repository,
+            "      TRENDING, RECENT -> loadRemoteTrending(genres, showCollection, collectionSize)\n",
+            "      TRENDING, RECENT -> loadRemoteTrending(genres, showCollection, collectionSize)\n"
+            "      PERSONALIZED -> loadRemotePersonalized(genres, showCollection, collectionSize)\n",
+        )
+        patch(
+            shows_repository,
+            "      TRENDING, RECENT -> loadRemoteTrending(genres, networks, showCollection, collectionSize)\n",
+            "      TRENDING, RECENT -> loadRemoteTrending(genres, networks, showCollection, collectionSize)\n"
+            "      PERSONALIZED -> loadRemotePersonalized(genres, networks, showCollection, collectionSize)\n",
+        )
+
+        movies_personalized_method = '''  private suspend fun loadRemotePersonalized(
+            genres: List<Genre>,
+            showCollection: Boolean,
+            collectionSize: Int,
+        ): List<Movie> =
+            coroutineScope {
+                val trendingAsync = async {
+                    try {
+                        loadRemoteTrending(genres, showCollection, collectionSize)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                }
+                val popularAsync = async {
+                    try {
+                        loadRemotePopular(genres)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                }
+                val trending = trendingAsync.await()
+                val popular = popularAsync.await()
+                val combined = mutableListOf<Movie>()
+                repeat(maxOf(trending.size, popular.size)) { index ->
+                    trending.getOrNull(index)?.let { addIfMissing(combined, it) }
+                    popular.getOrNull(index)?.let { addIfMissing(combined, it) }
+                }
+                combined
+            }
+
+'''
+        patch(
+            movies_repository,
+            "  private suspend fun loadRemotePopular(genres: List<Genre>): List<Movie> {",
+            movies_personalized_method + "  private suspend fun loadRemotePopular(genres: List<Genre>): List<Movie> {",
+        )
+
+        shows_personalized_method = '''  private suspend fun loadRemotePersonalized(
+            genres: List<Genre>,
+            networks: List<Network>,
+            showCollection: Boolean,
+            collectionSize: Int,
+        ): List<Show> =
+            coroutineScope {
+                val trendingAsync = async {
+                    try {
+                        loadRemoteTrending(genres, networks, showCollection, collectionSize)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                }
+                val popularAsync = async {
+                    try {
+                        loadRemotePopular(genres, networks)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Throwable) {
+                        emptyList()
+                    }
+                }
+                val trending = trendingAsync.await()
+                val popular = popularAsync.await()
+                val combined = mutableListOf<Show>()
+                repeat(maxOf(trending.size, popular.size)) { index ->
+                    trending.getOrNull(index)?.let { addIfMissing(combined, it) }
+                    popular.getOrNull(index)?.let { addIfMissing(combined, it) }
+                }
+                combined
+            }
+
+'''
+        patch(
+            shows_repository,
+            "  private suspend fun loadRemotePopular(\n    genres: List<Genre>,",
+            shows_personalized_method + "  private suspend fun loadRemotePopular(\n    genres: List<Genre>,",
+        )
+
+        # The Shows screen shares the enum and gets its own personalized selector.
 
         # The Shows screen shares the enum and gets its own personalized selector.
         patch(
