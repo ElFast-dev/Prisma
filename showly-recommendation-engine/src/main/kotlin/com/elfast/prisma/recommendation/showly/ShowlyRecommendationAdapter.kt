@@ -4,8 +4,6 @@ import com.elfast.prisma.recommendation.MovieFeature
 import com.elfast.prisma.recommendation.MovieFeatureType
 import com.elfast.prisma.recommendation.MovieProfile
 import com.elfast.prisma.recommendation.RecommendationEngine
-import com.elfast.prisma.recommendation.RecommendationFeedback
-import com.elfast.prisma.recommendation.RecommendationFeedbackType
 import com.elfast.prisma.recommendation.RecommendationRequest
 import com.elfast.prisma.recommendation.RecommendedMovie
 import com.elfast.prisma.recommendation.UserMovieRating
@@ -43,13 +41,6 @@ data class ShowlyRatingRecord(
   val movie: ShowlyMovieMetadata,
   val rating: Int,
   val ratedAtEpochMillis: Long,
-)
-
-/** Explicit recommendation feedback stored by the derived app in Room. */
-data class ShowlyFeedbackRecord(
-  val movie: ShowlyMovieMetadata,
-  val type: RecommendationFeedbackType,
-  val createdAtEpochMillis: Long,
 )
 
 /**
@@ -93,8 +84,7 @@ class ShowlyRecommendationAdapter(
   fun recommend(
     candidates: List<ShowlyMovieMetadata>,
     ratings: List<ShowlyRatingRecord>,
-    feedback: List<ShowlyFeedbackRecord> = emptyList(),
-    /** Pass all watched, hidden, dismissed and otherwise unavailable Trakt IDs from Showly. */
+    /** Pass watched, hidden and otherwise unavailable Trakt IDs already known by Showly. */
     excludedMovieIds: Set<Long> = emptySet(),
     limit: Int = 20,
     diversity: Double = 0.35,
@@ -107,13 +97,6 @@ class ShowlyRecommendationAdapter(
           movie = toProfile(it.movie),
           rating = it.rating,
           ratedAtEpochMillis = it.ratedAtEpochMillis,
-        )
-      },
-      feedback = feedback.map {
-        RecommendationFeedback(
-          movie = toProfile(it.movie),
-          type = it.type,
-          createdAtEpochMillis = it.createdAtEpochMillis,
         )
       },
       excludedMovieIds = excludedMovieIds,
