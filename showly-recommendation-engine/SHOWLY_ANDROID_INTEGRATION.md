@@ -10,6 +10,7 @@ Este documento describe la conexión del motor Prisma con el submódulo Showly. 
 - PersonalizedMoviesCase conectado a DiscoverMoviesCase.
 - PersonalizedShowsCase conectado a DiscoverShowsCase.
 - Lectura de ratings existentes, unión con Room y enriquecimiento de créditos a través de los repositorios de Showly.
+- «Para ti» queda como feed predeterminado en instalaciones nuevas para películas y series; las selecciones ya guardadas se respetan.
 - Aplicación de cambios repetible; los scripts modifican únicamente el working tree local del submódulo.
 
 ## 1. La calificación normal es el único feedback personal
@@ -23,7 +24,7 @@ Cada registro aporta ID Trakt, nota de 1 a 10 y fecha. No se muestran preguntas,
 
 El motor combina:
 - Señal absoluta de la nota.
-- Diferencia respecto a la media personal.
+- Diferencia respecto a la media personal (65 % del peso de la señal), combinada con la escala absoluta (35 %).
 - Decaimiento temporal según cuándo se registró la calificación.
 
 Así, una nota alta refuerza los rasgos de ese título y una nota baja resta afinidad a rasgos similares. El perfil se reconstruye al calcular el feed desde el repositorio local actualizado, de modo que corregir o eliminar una calificación cambia el resultado sin un registro paralelo de preferencias.
@@ -66,7 +67,7 @@ Desde la raíz de Prisma:
     python3 scripts/configure_showly_recommender.py
     python3 scripts/apply_showly_recommender.py
 
-Ambos scripts pueden ejecutarse varias veces sin duplicar cambios. No crean commits ni escriben en el repositorio upstream de Showly.
+Ambos scripts pueden ejecutarse varias veces sin duplicar cambios. El primero fija «Para ti» como valor inicial solo si el usuario aún no había guardado un feed; nunca sobrescribe una selección existente. No crean commits ni escriben en el repositorio upstream de Showly.
 
 ## 6. Verificación y límites
 

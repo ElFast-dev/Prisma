@@ -13,6 +13,17 @@ import kotlin.math.sqrt
  * rated titles, vote-smoothed community quality, popularity and novelty provide
  * complementary signals. No network calls or remote model are made by this class.
  */
+/** Interprets a rating against both the scale and this person's usual scoring baseline. */
+internal fun ratingSignal(rating: Int, personalMean: Double): Double {
+  require(rating in 1..10) { "Rating must be between 1 and 10" }
+  require(personalMean in 1.0..10.0 && personalMean.isFinite()) {
+    "Personal rating mean must be finite and between 1 and 10"
+  }
+  val absolute = ((rating - 5.5) / 4.5).coerceIn(-1.0, 1.0)
+  val relative = ((rating - personalMean) / 4.5).coerceIn(-1.0, 1.0)
+  return (0.35 * absolute + 0.65 * relative).coerceIn(-1.0, 1.0)
+}
+
 class RecommendationEngine {
 
   fun recommend(request: RecommendationRequest): List<RecommendedMovie> {
@@ -46,9 +57,7 @@ class RecommendationEngine {
 
     val ratingMean = latestRatings.map { it.rating.toDouble() }.average().takeIf { it.isFinite() } ?: 6.0
     val ratingSamples = latestRatings.map { entry ->
-      val absolute = ((entry.rating - 5.5) / 4.5).coerceIn(-1.0, 1.0)
-      val relative = ((entry.rating - ratingMean) / 4.5).coerceIn(-1.0, 1.0)
-      TrainingSample(entry.movie, (0.72 * absolute + 0.28 * relative).coerceIn(-1.0, 1.0), entry.ratedAtEpochMillis)
+      TrainingSample(entry.movie, ratingSignal(entry.rating, ratingMean), entry.ratedAtEpochMillis)
     }
     return ratingSamples
   }

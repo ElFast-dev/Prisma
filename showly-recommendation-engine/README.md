@@ -10,11 +10,11 @@ La señal personal procede de las valoraciones de Trakt que la persona ya regist
 
 - Las puntuaciones altas refuerzan atributos que comparten esos títulos.
 - Las puntuaciones bajas penalizan atributos similares.
-- La nota se interpreta de forma absoluta y en relación con la media personal, adaptándose a distintos hábitos de puntuación.
+- La nota se interpreta de forma absoluta y, sobre todo, respecto a la media personal (35 % escala absoluta / 65 % referencia propia), para distinguir hábitos de puntuación estrictos y generosos.
 - La fecha original aplica decaimiento temporal para que el gusto reciente tenga más peso.
 - Cambiar o borrar una calificación se refleja en el siguiente cálculo porque el perfil se reconstruye desde el repositorio local de ratings.
 
-No hay “me gusta”, “no me gusta”, “no me interesa”, encuestas ni tareas adicionales. La persona usa la app como siempre: registra una calificación y el sistema aprende.
+No hay “me gusta”, “no me gusta”, “no me interesa”, encuestas ni tareas adicionales. La persona usa la app como siempre: registra una calificación y el sistema aprende. En instalaciones nuevas, «Para ti» es el feed inicial tanto de películas como de series; cualquier selección de feed que ya estuviera guardada se conserva.
 
 ## Dos feeds personalizados
 
@@ -55,7 +55,7 @@ En un clon ya existente:
     python3 scripts/configure_showly_recommender.py
     python3 scripts/apply_showly_recommender.py
 
-Los scripts son idempotentes. El primero registra el módulo de recomendaciones; el segundo conecta el feed PERSONALIZED en películas y series. No crean commits ni envían cambios al upstream.
+Los scripts son idempotentes. El primero registra el módulo de recomendaciones y establece «Para ti» como valor inicial solo cuando no existe una preferencia previa; el segundo conecta el feed PERSONALIZED en películas y series. Las preferencias ya guardadas no se sobrescriben. No crean commits ni envían cambios al upstream.
 
 ## Ejecutar pruebas
 
