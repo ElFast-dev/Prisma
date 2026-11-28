@@ -214,28 +214,30 @@ def main() -> int:
         ),
         (
             "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
         ),
         (
             "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
-            "      TRENDING, RECENT -> loadRemoteTrending(genres, showCollection, collectionSize)",
+            "TRENDING, RECENT",
+            "TRENDING, RECENT, PERSONALIZED",
             "      TRENDING, RECENT, PERSONALIZED -> loadRemoteTrending(genres, showCollection, collectionSize)",
         ),
         (
             "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
         ),
         (
             "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
-            "      TRENDING, RECENT -> loadRemoteTrending(genres, networks, showCollection, collectionSize)",
+            "TRENDING, RECENT",
+            "TRENDING, RECENT, PERSONALIZED",
             "      TRENDING, RECENT, PERSONALIZED -> loadRemoteTrending(genres, networks, showCollection, collectionSize)",
         ),
         (
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
         ),
         (
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
@@ -244,8 +246,8 @@ def main() -> int:
         ),
         (
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/feed/DiscoverFiltersFeedBottomSheet.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
         ),
         (
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/feed/DiscoverFiltersFeedBottomSheet.kt",
@@ -254,8 +256,8 @@ def main() -> int:
         ),
         (
             "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/views/DiscoverMoviesFiltersView.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
         ),
         (
             "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/views/DiscoverMoviesFiltersView.kt",
