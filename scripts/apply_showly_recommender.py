@@ -761,7 +761,7 @@ def main() -> int:
 
     print("Feeds 'Para ti' conectados a películas y series.")
     print("Aprende de las calificaciones Trakt existentes y los metadatos locales/cacheados de Showly.")
-        print("Los cambios solo afectan al working tree local del submódulo; no se confirma nada en upstream.")
+    print("Los cambios solo afectan al working tree local del submódulo; no se confirma nada en upstream.")
     return 0
 
 
