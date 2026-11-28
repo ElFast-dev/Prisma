@@ -136,7 +136,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
     candidates: List<Movie>,
     excludedIds: List<Long>,
   ): List<Movie> {
-    val metadata = enrich(candidates, emptySet())
+    val metadata = enrich(candidates, candidates.mapTo(HashSet()) { it.traktId })
     val recommended = adapter.recommend(
       candidates = metadata,
       ratings = emptyList(),
@@ -218,8 +218,18 @@ def main() -> int:
         ),
         (
             "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+        ),
+        (
+            "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
             "      TRENDING, RECENT -> loadRemoteTrending(genres, showCollection, collectionSize)",
             "      TRENDING, RECENT, PERSONALIZED -> loadRemoteTrending(genres, showCollection, collectionSize)",
+        ),
+        (
+            "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
         ),
         (
             "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
@@ -228,13 +238,28 @@ def main() -> int:
         ),
         (
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+        ),
+        (
+            "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
             "        RECENT -> context.getString(R.string.textSortNewest)\n",
             "        RECENT -> context.getString(R.string.textSortNewest)\n        PERSONALIZED -> context.getString(R.string.textFeedTrending)\n",
         ),
         (
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/feed/DiscoverFiltersFeedBottomSheet.kt",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
+        ),
+        (
+            "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/feed/DiscoverFiltersFeedBottomSheet.kt",
             "      feedChipHot.isChecked = feedOrder == TRENDING",
             "      feedChipHot.isChecked = feedOrder == TRENDING || feedOrder == PERSONALIZED",
+        ),
+        (
+            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/views/DiscoverMoviesFiltersView.kt",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
         ),
         (
             "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/views/DiscoverMoviesFiltersView.kt",
@@ -257,7 +282,7 @@ def main() -> int:
             "      feedChipForYou.isChecked = feedOrder == PERSONALIZED\n      feedChipTrending.isChecked = feedOrder == TRENDING\n",
         ),
         (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/DiscoverMoviesCase.kt",
+            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
             "import com.michaldrabik.ui_model.DiscoverFeed\n",
             "import com.michaldrabik.ui_model.DiscoverFeed\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
         ),
