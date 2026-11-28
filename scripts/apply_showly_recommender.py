@@ -132,7 +132,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
     candidates: List<Movie>,
     excludedIds: List<Long>,
   ): List<Movie> {
-    val metadata = enrich(candidates, candidates.mapTo(HashSet()) { it.traktId })
+    val metadata = enrich(candidates, emptySet())
     val recommended = adapter.recommend(
       candidates = metadata,
       ratings = emptyList(),
