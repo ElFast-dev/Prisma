@@ -20,20 +20,43 @@ concurrency:
 
 jobs:
   analyze:
-    name: CodeQL · JavaScript/TypeScript
+    name: CodeQL · Kotlin
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
+      - name: Checkout with Showly submodule
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.6.0"
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: javascript-typescript
-          build-mode: none
-
-      - name: Analyze source code
+          languages: java-kotlin
+          build-mode: manual
+      - name: Create non-secret build configuration
+        run: |
+          cat > showly-android/local.properties <<'EOF'
+          traktClientId="ci-placeholder-client"
+          tmdbApiKey="ci-placeholder-key"
+          EOF
+          cat > showly-android/app/keystore.properties <<'EOF'
+          keyAlias=github
+          keyPassword=github
+          storePassword=github
+          EOF
+      - name: Add Prisma recommender dependency
+        run: python3 scripts/configure_showly_recommender.py
+      - name: Build Kotlin code for analysis
+        run: gradle -p showly-android :app:compileDebugKotlin --no-daemon
+      - name: Analyze
         uses: github/codeql-action/analyze@v4
         with:
-          category: "/language:javascript-typescript"
+          category: "/language:java-kotlin"
