@@ -9,7 +9,7 @@ import com.elfast.prisma.recommendation.RecommendedMovie
 import com.elfast.prisma.recommendation.UserMovieRating
 
 /**
- * Minimal, SDK-independent snapshot of Showly's ui_model.Movie plus optional TMDB enrichment.
+ * SDK-independent snapshot of a Showly movie or series plus optional TMDB enrichment.
  *
  * Showly adapter notes:
  * - idTrakt <- Movie.traktId
@@ -18,7 +18,7 @@ import com.elfast.prisma.recommendation.UserMovieRating
  * - directors/cast/writers/keywords/franchise/studio come from TMDB credits and metadata when
  *   available; no missing data is fabricated.
  */
-data class ShowlyMovieMetadata(
+data class ShowlyTitleMetadata(
   val idTrakt: Long,
   val title: String,
   val year: Int? = null,
@@ -34,11 +34,12 @@ data class ShowlyMovieMetadata(
   val keywords: List<String> = emptyList(),
   val franchises: List<String> = emptyList(),
   val studios: List<String> = emptyList(),
+  val networks: List<String> = emptyList(),
 )
 
-/** Snapshot of a Showly TraktRating joined with its full movie metadata. */
-data class ShowlyRatingRecord(
-  val movie: ShowlyMovieMetadata,
+/** Snapshot of a Showly TraktRating joined with its full title metadata. */
+data class ShowlyTitleRatingRecord(
+  val movie: ShowlyTitleMetadata,
   val rating: Int,
   val ratedAtEpochMillis: Long,
 )
@@ -54,7 +55,7 @@ class ShowlyRecommendationAdapter(
   private val engine: RecommendationEngine = RecommendationEngine(),
 ) {
 
-  fun toProfile(movie: ShowlyMovieMetadata): MovieProfile {
+  fun toProfile(movie: ShowlyTitleMetadata): MovieProfile {
     val features = buildSet {
       addAll(movie.genres, MovieFeatureType.GENRE)
       addAll(movie.directors, MovieFeatureType.DIRECTOR)
@@ -63,6 +64,7 @@ class ShowlyRecommendationAdapter(
       addAll(movie.keywords, MovieFeatureType.KEYWORD)
       addAll(movie.franchises, MovieFeatureType.FRANCHISE)
       addAll(movie.studios, MovieFeatureType.STUDIO)
+      addAll(movie.networks, MovieFeatureType.NETWORK)
       movie.language?.let { addFeature(MovieFeatureType.LANGUAGE, it) }
       movie.country?.let { addFeature(MovieFeatureType.COUNTRY, it) }
       movie.year?.takeIf { it > 0 }?.let { year ->
@@ -82,8 +84,8 @@ class ShowlyRecommendationAdapter(
   }
 
   fun recommend(
-    candidates: List<ShowlyMovieMetadata>,
-    ratings: List<ShowlyRatingRecord>,
+    candidates: List<ShowlyTitleMetadata>,
+    ratings: List<ShowlyTitleRatingRecord>,
     /** Pass watched, hidden and otherwise unavailable Trakt IDs already known by Showly. */
     excludedMovieIds: Set<Long> = emptySet(),
     limit: Int = 20,
