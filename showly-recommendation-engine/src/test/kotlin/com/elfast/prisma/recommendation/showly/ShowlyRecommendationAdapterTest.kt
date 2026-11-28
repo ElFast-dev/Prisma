@@ -80,7 +80,7 @@ class ShowlyRecommendationAdapterTest {
   }
 
   @Test
-  fun excludesAlreadyRatedHiddenAndUnavailableMoviesWithoutExtraFeedback() {
+  fun excludesAlreadyRatedHiddenAndUnavailableMovies() {
     val watchedAndRated = movie(1, "Already Watched", "drama")
     val hidden = movie(2, "Hidden", "mystery")
     val unavailable = movie(3, "Unavailable", "romance")
