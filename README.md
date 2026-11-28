@@ -59,8 +59,7 @@ Desde `showly-android`, compila la app:
 
 El módulo `showly-recommendation-engine` implementa un recomendador híbrido local:
 
-- Aprende de las valoraciones personales de Trakt (1–10), teniendo en cuenta su antigüedad y la media personal.
-- Aprende señales explícitas positivas y negativas: LIKE, DISLIKE, NOT_INTERESTED y HIDE.
+- Aprende automáticamente de las valoraciones personales de Trakt (1–10): las notas altas refuerzan gustos afines y las bajas penalizan rasgos similares. También tiene en cuenta la antigüedad y la media personal.
 - Pondera género, director, reparto, guion, palabras clave, franquicia, estudio, idioma, país y década cuando los metadatos están disponibles.
 - Combina preferencias personales, similitud de contenido, calidad comunitaria ajustada por votos, popularidad y novedad.
 - Diversifica la lista y devuelve una explicación y una confianza conservadora por película.
@@ -80,7 +79,7 @@ El workflow de GitHub Actions también ejecuta pruebas del script de configuraci
 
 El motor, el adaptador para los modelos de Showly, el caso de uso y la simulación están implementados. El módulo puede añadirse a la compilación Android.
 
-El feed `Para ti` ya se conecta en el working tree local de Showly mediante el script de integración: usa calificaciones Trakt, datos de películas de Room y créditos TMDB disponibles mediante `PeopleRepository`. Aún falta persistir feedback explícito (LIKE/DISLIKE/NOT_INTERESTED/HIDE) en Room, ajustar el enriquecimiento y validar la experiencia con una cuenta real. CI debe compilar el submódulo ya parcheado antes de considerar cerrada esta fase.
+El feed `Para ti` ya se conecta en el working tree local de Showly mediante el script de integración: usa las calificaciones Trakt que el usuario ya registra, datos de películas de Room y créditos TMDB disponibles mediante `PeopleRepository`. Las notas altas refuerzan características afines y las bajas las penalizan; no hay botones ni pasos extra de feedback. Aún falta validar la calidad de las recomendaciones con una cuenta real y terminar la validación completa de CI.
 
 La PWA React/Vite anterior ya no forma parte de esta rama del proyecto. La rama principal no se cambia hasta validar la sustitución Android.
 
