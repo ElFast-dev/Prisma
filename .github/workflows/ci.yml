@@ -78,6 +78,7 @@ jobs:
           gradle -p showly-android :app:testDebugUnitTest --no-daemon
           gradle -p showly-android :repository:testDebugUnitTest --no-daemon
           gradle -p showly-android :ui-discover-movies:testDebugUnitTest --no-daemon
+          gradle -p showly-android :ui-discover:testDebugUnitTest --no-daemon
 
   # Required verification context retained for the repository's branch protection.
   verify:
