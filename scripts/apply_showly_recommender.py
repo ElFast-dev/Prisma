@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Patch the pinned Showly checkout with Prisma's personalized movie feed.
+"""Apply Prisma's personalized movie feed to the pinned Showly submodule.
 
-All changes stay in the local showly-android submodule working tree. The upstream repository
-is never committed to or pushed to by this script.
+The patch is planned and validated in memory before any file is written. It is repeatable,
+and it never commits or pushes changes into the upstream Showly repository.
 """
 
 from __future__ import annotations
@@ -35,13 +35,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-/**
- * Ranks the existing Showly candidate pool using the user's Trakt rating history.
- *
- * Trakt rating records contain only the movie IDs, score and timestamp, so this use case joins
- * them with Room movie rows and resolves a small bounded set of missing details. TMDB credits
- * are fetched through Showly's existing PeopleRepository, which already caches credits.
- */
+/** Builds personalized rankings from Showly's local Trakt ratings and cached movie metadata. */
 @ViewModelScoped
 internal class PersonalizedMoviesCase @Inject constructor(
   private val dispatchers: CoroutineDispatchers,
@@ -103,9 +97,13 @@ internal class PersonalizedMoviesCase @Inject constructor(
       if (ratingPairs.isEmpty()) return@withContext coldStart(candidates, excludedIds)
 
       val ratedMovies = ratingPairs.map { it.second }.distinctBy { it.traktId }
-      val ratedCreditIds = ratedMovies.take(MAX_RATED_CREDIT_MOVIES).mapTo(HashSet()) { it.traktId }
+      val ratedCreditIds = ratedMovies.take(MAX_RATED_CREDIT_MOVIES)
+        .mapTo(HashSet()) { it.traktId }
+      val candidateCreditIds = candidates.take(MAX_CANDIDATE_CREDIT_MOVIES)
+        .mapTo(HashSet()) { it.traktId }
+
       val ratedMetadata = enrich(ratedMovies, ratedCreditIds).associateBy { it.idTrakt }
-      val candidateMetadata = enrich(candidates, candidates.mapTo(HashSet()) { it.traktId })
+      val candidateMetadata = enrich(candidates, candidateCreditIds)
 
       val ratingRecords = ratingPairs.mapNotNull { (rating, movie) ->
         ratedMetadata[movie.traktId]?.let { metadata ->
@@ -132,8 +130,9 @@ internal class PersonalizedMoviesCase @Inject constructor(
     candidates: List<Movie>,
     excludedIds: List<Long>,
   ): List<Movie> {
-    val metadata = enrich(candidates, emptySet())
-    val recommended = adapter.recommend(
+    val creditIds = candidates.take(MAX_CANDIDATE_CREDIT_MOVIES).mapTo(HashSet()) { it.traktId }
+    val metadata = enrich(candidates, creditIds)
+    val recommendations = adapter.recommend(
       candidates = metadata,
       ratings = emptyList(),
       excludedMovieIds = excludedIds.toSet(),
@@ -141,7 +140,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
       diversity = DEFAULT_DIVERSITY,
     )
     val byId = candidates.associateBy { it.traktId }
-    return recommended.mapNotNull { byId[it.movie.id] }
+    return recommendations.mapNotNull { byId[it.movie.id] }
   }
 
   private suspend fun enrich(
@@ -189,6 +188,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
     const val MAX_HISTORY_RATINGS = 100
     const val MAX_MISSING_DETAILS = 20
     const val MAX_RATED_CREDIT_MOVIES = 40
+    const val MAX_CANDIDATE_CREDIT_MOVIES = 24
     const val MAX_PARALLEL_REQUESTS = 4
     const val DEFAULT_DIVERSITY = 0.35
   }
@@ -206,91 +206,126 @@ def main() -> int:
         )
         return 2
 
-    replacements = [
-        (
+    planned: dict[Path, str] = {}
+
+    def patch(relative: str, old: str, new: str) -> None:
+        path = showly / relative
+        if not path.is_file():
+            raise ValueError(f"Falta el archivo esperado: {relative}")
+        content = planned.get(path, path.read_text(encoding="utf-8"))
+        if new in content:
+            planned[path] = content
+            return
+        if old not in content:
+            raise ValueError(f"No se encontró el ancla en {relative}: {old[:100]!r}")
+        planned[path] = content.replace(old, new, 1)
+
+    try:
+        # Shared enum. Show discovery treats this movie-only option as Trending.
+        patch(
             "ui-model/src/main/java/com/michaldrabik/ui_model/DiscoverFeed.kt",
             "  RECENT,\n}",
             "  RECENT,\n  PERSONALIZED,\n}",
-        ),
-        (
-            "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
-        ),
-        (
-            "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
-            "TRENDING, RECENT",
-            "TRENDING, RECENT, PERSONALIZED",
-            "      TRENDING, RECENT, PERSONALIZED -> loadRemoteTrending(genres, showCollection, collectionSize)",
-        ),
-        (
-            "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
-        ),
-        (
-            "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
-            "TRENDING, RECENT",
-            "TRENDING, RECENT, PERSONALIZED",
-            "      TRENDING, RECENT, PERSONALIZED -> loadRemoteTrending(genres, networks, showCollection, collectionSize)",
-        ),
-        (
+        )
+
+        for relative, branch in [
+            (
+                "repository/src/main/java/com/michaldrabik/repository/movies/DiscoverMoviesRepository.kt",
+                "TRENDING, RECENT ->",
+            ),
+            (
+                "repository/src/main/java/com/michaldrabik/repository/shows/DiscoverShowsRepository.kt",
+                "TRENDING, RECENT ->",
+            ),
+        ]:
+            patch(
+                relative,
+                "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n",
+                "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n"
+                "import com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
+            )
+            patch(relative, branch, "TRENDING, RECENT, PERSONALIZED ->")
+
+        # The Shows screen shares the enum, but keeps its own feed choices unchanged.
+        patch(
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
-        ),
-        (
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n"
+            "import com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
+        )
+        patch(
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
             "        RECENT -> context.getString(R.string.textSortNewest)\n",
-            "        RECENT -> context.getString(R.string.textSortNewest)\n        PERSONALIZED -> context.getString(R.string.textFeedTrending)\n",
-        ),
-        (
-            "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/feed/DiscoverFiltersFeedBottomSheet.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
-        ),
-        (
-            "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/feed/DiscoverFiltersFeedBottomSheet.kt",
-            "      feedChipHot.isChecked = feedOrder == TRENDING",
-            "      feedChipHot.isChecked = feedOrder == TRENDING || feedOrder == PERSONALIZED",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/views/DiscoverMoviesFiltersView.kt",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\\n",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/views/DiscoverMoviesFiltersView.kt",
+            "        RECENT -> context.getString(R.string.textSortNewest)\n"
+            "        PERSONALIZED -> context.getString(R.string.textFeedTrending)\n",
+        )
+
+        # Movie feed selection and label.
+        movies_filters = (
+            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/"
+            "filters/views/DiscoverMoviesFiltersView.kt"
+        )
+        patch(
+            movies_filters,
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n",
+            "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n"
+            "import com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
+        )
+        patch(
+            movies_filters,
             "        RECENT -> context.getString(R.string.textSortNewest)\n",
-            "        RECENT -> context.getString(R.string.textSortNewest)\n        PERSONALIZED -> context.getString(R.string.textFeedForYou)\n",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/feed/DiscoverMoviesFiltersFeedBottomSheet.kt",
+            "        RECENT -> context.getString(R.string.textSortNewest)\n"
+            "        PERSONALIZED -> context.getString(R.string.textFeedForYou)\n",
+        )
+
+        movie_sheet = (
+            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/"
+            "filters/feed/DiscoverMoviesFiltersFeedBottomSheet.kt"
+        )
+        patch(
+            movie_sheet,
             "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/feed/DiscoverMoviesFiltersFeedBottomSheet.kt",
+            "import com.michaldrabik.ui_model.DiscoverFeed.POPULAR\n"
+            "import com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
+        )
+        patch(
+            movie_sheet,
             "        feedChipTrending.isChecked -> TRENDING\n",
-            "        feedChipForYou.isChecked -> PERSONALIZED\n        feedChipTrending.isChecked -> TRENDING\n",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/feed/DiscoverMoviesFiltersFeedBottomSheet.kt",
+            "        feedChipForYou.isChecked -> PERSONALIZED\n"
+            "        feedChipTrending.isChecked -> TRENDING\n",
+        )
+        patch(
+            movie_sheet,
             "      feedChipTrending.isChecked = feedOrder == TRENDING\n",
-            "      feedChipForYou.isChecked = feedOrder == PERSONALIZED\n      feedChipTrending.isChecked = feedOrder == TRENDING\n",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
+            "      feedChipForYou.isChecked = feedOrder == PERSONALIZED\n"
+            "      feedChipTrending.isChecked = feedOrder == TRENDING\n",
+        )
+
+        # Keep the recommender dependency in the feature that directly uses its classes.
+        feature_gradle = "ui-discover-movies/build.gradle"
+        patch(
+            feature_gradle,
+            "  implementation project(':repository')\n",
+            "  implementation project(':repository')\n"
+            "  implementation project(':prisma-recommendation-engine')\n",
+        )
+
+        # Connect both cache-first and remote discovery paths.
+        case_path = "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt"
+        patch(
+            case_path,
             "import com.michaldrabik.ui_model.DiscoverFeed\n",
-            "import com.michaldrabik.ui_model.DiscoverFeed\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
+            "import com.michaldrabik.ui_model.DiscoverFeed\n"
+            "import com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
+        )
+        patch(
+            case_path,
             "  private val translationsRepository: TranslationsRepository,\n",
-            "  private val translationsRepository: TranslationsRepository,\n  private val personalizedMoviesCase: PersonalizedMoviesCase,\n",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
+            "  private val translationsRepository: TranslationsRepository,\n"
+            "  private val personalizedMoviesCase: PersonalizedMoviesCase,\n",
+        )
+        patch(
+            case_path,
             """      prepareItems(
         cachedMovies.await(),
         myIds.await(),
@@ -303,8 +338,10 @@ def main() -> int:
       val watchlistMoviesIds = watchlistIds.await()
       val hiddenMoviesIds = hiddenIds.await()
       val cached = cachedMovies.await()
+      val excludedIds = hiddenMoviesIds +
+        if (filters.hideCollection) myMoviesIds + watchlistMoviesIds else emptyList()
       val ordered = if (filters.feedOrder == PERSONALIZED) {
-        personalizedMoviesCase.rank(cached, myMoviesIds + watchlistMoviesIds + hiddenMoviesIds)
+        personalizedMoviesCase.rank(cached, excludedIds)
       } else {
         cached
       }
@@ -317,88 +354,77 @@ def main() -> int:
         filters,
         language,
       )""",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
+        )
+        patch(
+            case_path,
             """      moviesRepository.discoverMovies.cacheDiscoverMovies(remoteMovies)
       prepareItems(remoteMovies, myIds, watchlistIds, hiddenIds, filters, language)""",
             """      moviesRepository.discoverMovies.cacheDiscoverMovies(remoteMovies)
+      val excludedIds = hiddenIds +
+        if (filters.hideCollection) myIds + watchlistIds else emptyList()
       val ordered = if (filters.feedOrder == PERSONALIZED) {
-        personalizedMoviesCase.rank(remoteMovies, myIds + watchlistIds + hiddenIds)
+        personalizedMoviesCase.rank(remoteMovies, excludedIds)
       } else {
         remoteMovies
       }
       prepareItems(ordered, myIds, watchlistIds, hiddenIds, filters, language)""",
-        ),
-        (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/filters/feed/DiscoverMoviesFiltersFeedBottomSheet.kt",
-            "        feedChipNewest.isChecked -> RECENT\n",
-            "        feedChipNewest.isChecked -> RECENT\n",
-        ),
-        (
+        )
+
+        patch(
             "ui-discover-movies/src/main/res/values/strings.xml",
             "</resources>",
             '  <string name="textFeedForYou">For you</string>\n</resources>',
-        ),
-        (
-            "ui-discover-movies/src/main/res/layout/view_discover_movies_filters_feed.xml",
-            '        <com.google.android.material.chip.Chip\\n          android:id="@+id/feedChipNewest"',
-            '        <com.google.android.material.chip.Chip\\n          android:id="@+id/feedChipForYou"\\n          style="@style/Widget.Material3.Chip.Suggestion"\\n          android:layout_width="wrap_content"\\n          android:layout_height="wrap_content"\\n          android:text="@string/textFeedForYou"\\n          android:textColor="@color/selector_discover_chip_text"\\n          app:checkedIconTint="@color/selector_discover_chip_text"\\n          app:chipBackgroundColor="@color/selector_discover_chip_background"\\n          app:chipCornerRadius="100dp"\\n          app:chipStrokeColor="@color/selector_discover_chip_text"\\n          app:chipStrokeWidth="1dp"\\n          />\\n\\n        <com.google.android.material.chip.Chip\\n          android:id="@+id/feedChipNewest"',
-        ),    ]
+        )
+        layout_path = "ui-discover-movies/src/main/res/layout/view_discover_movies_filters_feed.xml"
+        layout = planned.get(showly / layout_path, (showly / layout_path).read_text(encoding="utf-8"))
+        chip_anchor = '''        <com.google.android.material.chip.Chip
+          android:id="@+id/feedChipNewest"'''
+        new_chip = '''        <com.google.android.material.chip.Chip
+          android:id="@+id/feedChipForYou"
+          style="@style/Widget.Material3.Chip.Suggestion"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/textFeedForYou"
+          android:textColor="@color/selector_discover_chip_text"
+          app:checkedIconTint="@color/selector_discover_chip_text"
+          app:chipBackgroundColor="@color/selector_discover_chip_background"
+          app:chipCornerRadius="100dp"
+          app:chipStrokeColor="@color/selector_discover_chip_text"
+          app:chipStrokeWidth="1dp"
+          />
 
-    # Ensure the same recommendation module can be used by the discovery feature module.
-    module_gradle_path = showly / "ui-discover-movies" / "build.gradle"
-    if not module_gradle_path.is_file():
-        print(f"Falta {module_gradle_path}", file=sys.stderr)
+        <com.google.android.material.chip.Chip
+          android:id="@+id/feedChipNewest"'''
+        if "android:id=\"@+id/feedChipForYou\"" not in layout:
+            if chip_anchor not in layout:
+                raise ValueError(f"No se encontró el chip feedChipNewest en {layout_path}")
+            layout = layout.replace(chip_anchor, new_chip, 1)
+        planned[showly / layout_path] = layout
+
+        personalized_case_path = (
+            showly / "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/"
+            "cases/PersonalizedMoviesCase.kt"
+        )
+        if personalized_case_path.exists():
+            existing = personalized_case_path.read_text(encoding="utf-8")
+            if existing != PERSONALIZED_CASE:
+                raise ValueError(
+                    "PersonalizedMoviesCase.kt ya existe con contenido distinto; no se sobrescribió."
+                )
+        else:
+            planned[personalized_case_path] = PERSONALIZED_CASE
+
+    except ValueError as error:
+        print(f"{error}. No se escribieron cambios.", file=sys.stderr)
         return 3
-    module_gradle = module_gradle_path.read_text(encoding="utf-8")
-    module_dependency = "  implementation project(':prisma-recommendation-engine')"
-    if module_dependency not in module_gradle:
-        anchor = "  implementation project(':repository')"
-        if anchor not in module_gradle:
-            print("No se encontró el ancla de repository en ui-discover-movies/build.gradle", file=sys.stderr)
-            return 4
-        module_gradle = module_gradle.replace(anchor, anchor + "\n" + module_dependency, 1)
-
-    # Plan all source edits before writing anything, so an upstream layout change cannot leave a
-    # partially patched checkout.
-    planned: dict[Path, str] = {module_gradle_path: module_gradle}
-    for relative, old, new in replacements:
-        path = showly / relative
-        if not path.is_file():
-            print(f"Falta el archivo esperado: {relative}", file=sys.stderr)
-            return 5
-        text = planned.get(path, path.read_text(encoding="utf-8"))
-        if new in text:
-            planned[path] = text
-            continue
-        if old not in text:
-            print(f"No se encontró el ancla esperada en {relative}. No se escribieron cambios.", file=sys.stderr)
-            return 6
-        planned[path] = text.replace(old, new, 1)
-
-    personalized_case_path = (
-        showly / "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/PersonalizedMoviesCase.kt"
-    )
-    if personalized_case_path.exists():
-        existing = personalized_case_path.read_text(encoding="utf-8")
-        if existing != PERSONALIZED_CASE:
-            print(
-                "PersonalizedMoviesCase.kt ya existe con contenido distinto; "
-                "no se sobrescribió.",
-                file=sys.stderr,
-            )
-            return 7
-    else:
-        planned[personalized_case_path] = PERSONALIZED_CASE
 
     for path, content in planned.items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
     print("Feed 'Para ti' conectado a DiscoverMoviesCase.")
-    print("El ranking utiliza valoraciones Trakt, películas Room y créditos TMDB cacheados por Showly.")
-    print("Los cambios se aplicaron solo al working tree local del submódulo; no se confirmaron en upstream.")
+    print("Usa valoraciones Trakt, películas Room y créditos TMDB cacheados por Showly.")
+    print("Los cambios solo afectan al working tree local del submódulo; no se confirma nada en upstream.")
     return 0
 
 
