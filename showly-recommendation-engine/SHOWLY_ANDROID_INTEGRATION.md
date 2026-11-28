@@ -124,3 +124,15 @@ Antes de dar la integración por terminada, añadir:
 - Evaluación temporal con datos del propio usuario, entrenando solo con calificaciones anteriores al corte. No uses las mismas puntuaciones como entrenamiento y verdad-terreno.
 
 La simulación sintética del módulo es una comprobación de comportamiento; no sustituye estas pruebas Android ni demuestra todavía precisión con el historial real de un usuario.
+
+## 7. Conectar el motor como dependencia Gradle
+
+Después de clonar con submódulos, ejecuta desde la raíz de Prisma:
+
+```bash
+python3 scripts/configure_showly_recommender.py
+```
+
+El script añade `:prisma-recommendation-engine` a `showly-android/settings.gradle`, registra la dependencia desde `app/build.gradle` y apunta al módulo Kotlin ubicado en la raíz de Prisma. Es idempotente y se detiene sin escribir cambios parciales si la estructura de Showly no coincide con la esperada. Los cambios se hacen en el working tree del submódulo y no se confirman en `trakt/showly`.
+
+Después abre `showly-android` en Android Studio. El script solo conecta la librería al classpath; no crea todavía la pantalla "Para ti" ni implementa Room/TMDB. La CI del motor prueba el script sobre un fixture aislado y comprueba que pueda ejecutarse dos veces sin duplicar dependencias.
