@@ -31,7 +31,10 @@ En clones existentes:
 
 ```bash
 git submodule update --init --recursive
+python3 scripts/configure_showly_recommender.py
 ```
+
+El script registra el motor como dependencia Gradle del módulo Android; su comportamiento idempotente está cubierto por pruebas Python dentro de GitHub Actions.
 
 El submódulo apunta al upstream original en modo solo lectura desde este proyecto. Para modificar el código Android y publicar una versión derivada, crea un fork de `trakt/showly` bajo tu cuenta y cambia la URL de `.gitmodules` a ese fork; no se deben enviar cambios al repositorio upstream.
 
