@@ -1,78 +1,94 @@
-# Prisma
+# Prisma · Showly para Android
 
-Aplicación cinematográfica personal, local-first y gratuita, diseñada como PWA para Android.
+Prisma toma **Showly** como base para convertirse en una aplicación Android de seguimiento de películas y series con un motor propio de recomendaciones cinematográficas.
 
-Prisma conserva sus tres espacios principales:
+La aplicación base se mantiene en el submódulo `showly-android`, fijado a un commit concreto de `trakt/showly`. El código de Showly no se copia ni se modifica en el repositorio original. Las personalizaciones de Prisma se mantienen en módulos propios.
 
-- **Personal:** biblioteca, historial, colecciones, perfil y logros.
-- **Descubrir:** exploración cinematográfica mediante un feed de carátulas.
-- **Espectro:** análisis local de preferencias, afinidades y recomendaciones propias.
+## Obtener el proyecto
 
-El desarrollo nuevo se concentrará en hacer Espectro más inteligente y útil, manteniendo la navegación y la experiencia general de Prisma. La dirección técnica está descrita en [Diseño de producto y arquitectura](docs/PRODUCT-ARCHITECTURE.md).
-
-## Estado del proyecto
-
-Prisma ya cuenta con biblioteca local, historial de visionados, colecciones, perfil, logros, Espectro, integración TMDB, copias de seguridad, funcionamiento offline y publicación como PWA para Android.
-
-Espectro 2.8.0 presenta seis secciones de analítica local: Resumen, Actividad, Calificaciones, Universo, Perfil y Biblioteca. Muestra actividad de visionado, distribución de notas, metadatos cinematográficos, afinidades personales, interacciones estadísticas y estado de la Biblioteca.
-
-El motor calcula afinidades con respaldo y mantiene un predictor local. El kernel de predicción no asigna similitud de fondo a películas sin rasgos compartidos y contrae la nota prevista según la evidencia del vecino más cercano, para evitar sobreestimar títulos con metadatos escasos. Descubrir reutiliza ese perfil para priorizar los resultados de TMDB; las valoraciones previstas y el encaje son estimaciones, no probabilidades. La búsqueda sigue consultando TMDB y los filtros personales de visibilidad se aplican localmente. Las sinopsis aportan señales léxicas, no comprensión semántica, y los comentarios personales no se utilizan como señales. Cuando una candidata alcanza una similitud de al menos 0,40 y el predictor estima una nota al menos 0,25 puntos inferior al promedio personal, Espectro la excluye, salvo que coincida con un favorito declarado. Una coincidencia aislada no basta para descartarla.
-
-El análisis intensivo se ejecuta en un Web Worker para mantener la interfaz disponible mientras Espectro calcula. Los datos, las valoraciones y el historial permanecen en el dispositivo. Espectro también puede solicitar una calificación pendiente desde su propia vista, sin obligar a abrir la ficha de la película.
-
-La aplicación está publicada como PWA en GitHub Pages. La suite automatizada cubre TypeScript, pruebas unitarias, build, smoke, navegadores Chromium/Firefox/WebKit y funcionamiento offline. Sigue siendo recomendable una revisión visual manual en un dispositivo Android físico.
-
-## Tecnologías
-
-- React
-- TypeScript
-- Vite
-- IndexedDB mediante Dexie
-- TMDB API
-- Service Worker / PWA
-- Vitest y Playwright
-
-## Desarrollo local
-
-Requisitos: Node.js 22.14.0 o posterior (línea 22) y npm.
+Clona incluyendo el submódulo de Showly:
 
 ```bash
-npm install
-npm run dev
+git clone --recurse-submodules https://github.com/ElFast-dev/Prisma.git
+cd Prisma
 ```
 
-Para generar la versión de producción:
+En un clon existente, inicializa el submódulo:
 
 ```bash
-npm run build
-npm run preview
+git submodule update --init --recursive
 ```
 
-## GitHub Pages
+El motor de Prisma se conecta al proyecto Gradle de Showly mediante un script idempotente:
 
-El proyecto está publicado en:
+```bash
+python3 scripts/configure_showly_recommender.py
+```
 
-`https://elfast-dev.github.io/Prisma/`
+El script modifica únicamente el working tree local de `showly-android` para añadir `:prisma-recommendation-engine` como dependencia. No crea commits en el submódulo ni escribe en el repositorio upstream.
 
-El flujo `.github/workflows/deploy.yml` construye la PWA y la publica mediante GitHub Actions. En **Settings → Pages → Build and deployment**, selecciona **GitHub Actions** como fuente para habilitar el despliegue.
+## Configurar Showly
 
-## Privacidad y credenciales
+Abre `showly-android` en Android Studio o prepara los archivos de configuración indicados por el proyecto upstream.
 
-- Los datos personales se almacenan localmente en el dispositivo.
-- No se debe guardar una clave TMDB en el código, en variables públicas de compilación ni en Git.
-- Cada instalación que utilice TMDB debe configurar su propia credencial.
-- No se deben subir al repositorio archivos de copias de seguridad, datos personales ni el correo privado de autorización de TMDB.
+En `showly-android/local.properties`:
+
+```properties
+traktClientId="TU_CLIENT_ID_DE_TRAKT"
+tmdbApiKey="TU_API_KEY_DE_TMDB"
+```
+
+En `showly-android/app/keystore.properties`, para compilar variantes locales:
+
+```properties
+keyAlias=github
+keyPassword=github
+storePassword=github
+```
+
+No guardes claves reales, tokens ni almacenes de firma en Git.
+
+Desde `showly-android`, compila la app:
+
+```bash
+./gradlew :app:compileDebugKotlin
+```
+
+## Motor de recomendaciones
+
+El módulo `showly-recommendation-engine` implementa un recomendador híbrido local:
+
+- Aprende de las valoraciones personales de Trakt (1–10), teniendo en cuenta su antigüedad y la media personal.
+- Aprende señales explícitas positivas y negativas: LIKE, DISLIKE, NOT_INTERESTED y HIDE.
+- Pondera género, director, reparto, guion, palabras clave, franquicia, estudio, idioma, país y década cuando los metadatos están disponibles.
+- Combina preferencias personales, similitud de contenido, calidad comunitaria ajustada por votos, popularidad y novedad.
+- Diversifica la lista y devuelve una explicación y una confianza conservadora por película.
+- Calcula Precision@K, Recall@K, HitRate@K, NDCG@K, cobertura y diversidad.
+
+El motor no envía valoraciones a servicios externos y no necesita un modelo remoto.
+
+Ejecuta sus pruebas y la simulación con JDK 21 y Gradle:
+
+```bash
+gradle -p showly-recommendation-engine check
+```
+
+El workflow de GitHub Actions también ejecuta pruebas del script de configuración y compila Showly con el módulo añadido.
+
+## Estado real de la integración
+
+El motor, el adaptador para los modelos de Showly, el caso de uso y la simulación están implementados. El módulo puede añadirse a la compilación Android.
+
+**Todavía falta conectar el origen real de datos Room/Trakt/TMDB con `ShowlyRecommendationDataSource` y añadir el feed “Para ti” dentro de `DiscoverMoviesCase`.** También falta persistir el feedback explícito en Room y cubrir esa integración con pruebas Android. Por tanto, el recomendador todavía no está disponible como una pantalla funcional dentro de la app.
+
+La PWA React/Vite anterior ya no forma parte de esta rama del proyecto. La rama principal no se cambia hasta validar la sustitución Android.
 
 ## Documentación
 
-La documentación técnica y funcional se encuentra en `docs/`. La dirección de las mejoras de Espectro está descrita en [PRODUCT-ARCHITECTURE.md](docs/PRODUCT-ARCHITECTURE.md).
-
-## Conexión con TMDB
-
-Abre Ajustes dentro de Prisma, introduce tu propia API Read Access Token y pulsa **Probar y guardar conexión**. La credencial se guarda en el navegador de esa instalación y no se publica en Git ni se incluye en los respaldos. Una credencial de una aplicación web puede inspeccionarse en el propio navegador; no es un secreto de servidor.
+- [Motor y arquitectura](showly-recommendation-engine/README.md)
+- [Guía de integración Android](showly-recommendation-engine/SHOWLY_ANDROID_INTEGRATION.md)
+- [Showly upstream](https://github.com/trakt/showly)
 
 ## Licencia
 
-La licencia del código fuente está pendiente de decisión. La autorización específica de uso de TMDB facilitada para Prisma es independiente de la licencia del código de este repositorio.
-
-La simulación reproducible del recomendador (perfil sintético, sin datos personales ni llamadas a TMDB) se ejecuta con `npm run test:spectro:simulation`; valida que las sinopsis influyan en las predicciones, que las señales negativas no se recomienden y que los metadatos escasos no generen confianza artificial.
+Showly utiliza GNU GPL versión 3. Este derivado conserva el texto de licencia. Al distribuir versiones modificadas, conserva los avisos de autoría y cumple las obligaciones de la GPL-3.0.
