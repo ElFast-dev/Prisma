@@ -17,7 +17,7 @@ Motor Kotlin independiente, determinista y ejecutable localmente. Está pensado 
 
 El motor no necesita conexión de red, no llama a un modelo remoto y no envía las calificaciones a ningún servidor. La app que lo integre será responsable de obtener candidatos y metadatos.
 
-El puente `ShowlyRecommendationAdapter` convierte snapshots del modelo `ui_model.Movie`, los registros de `TraktRating` unidos con sus películas y las señales de feedback en perfiles tipados para el motor. No depende de Android; por eso sus pruebas se ejecutan en JVM.
+El puente `ShowlyRecommendationAdapter` convierte snapshots del modelo `ui_model.Movie`, los registros de `TraktRating` unidos con sus películas y las señales de feedback en perfiles tipados para el motor. `PersonalizedMovieDiscovery` añade un caso de uso y el contrato `ShowlyRecommendationDataSource`, que la capa Android debe implementar con los repositorios de Showly. Ninguna de estas clases depende de Android; por eso sus pruebas se ejecutan en JVM.
 
 ## Ejecución
 
@@ -38,7 +38,8 @@ La simulación determinista usa perfiles sintéticos y un reloj fijo. Las prueba
 4. Persistir el feedback explícito por usuario en Room. HIDE debe ser un bloqueo; NOT_INTERESTED y DISLIKE enseñan al perfil qué evitar; LIKE sirve como señal positiva.
 5. Construir `excludedMovieIds` con películas ya vistas/calificadas, bloqueadas u ocultas, además de cualquier exclusión de producto que decida la app.
 6. Integrar el adaptador en `ui-discover-movies/.../cases/DiscoverMoviesCase.kt`: después de obtener candidatos de `MoviesRepository.discoverMovies.loadAllRemote(...)` y antes de `prepareItems(...)`, mapearlos a `ShowlyMovieMetadata`, completar créditos TMDB disponibles y ordenar mediante `ShowlyRecommendationAdapter.recommend(...)`.
-7. Añadir pruebas de integración para sincronización, borrado/actualización de puntuaciones, persistencia, migración Room y funcionamiento sin conexión.
+7. Implementar `ShowlyRecommendationDataSource` con `MoviesRepository`, `MoviesRatingsRepository`, `LocalDataSource` y los datos de feedback persistidos en Room.
+8. Añadir pruebas de integración para sincronización, borrado/actualización de puntuaciones, persistencia, migración Room y funcionamiento sin conexión.
 
 ### Puntos de extensión confirmados en upstream
 
@@ -48,7 +49,7 @@ La simulación determinista usa perfiles sintéticos y un reloj fijo. Las prueba
 - `repository/.../movies/DiscoverMoviesRepository.kt`: catálogo Trending, Popular, Anticipated y caché.
 - `data-remote/.../tmdb/api/TmdbService.kt`: créditos de película disponibles vía `fetchMoviePeople(tmdbId)`.
 
-El algoritmo no inventa créditos que no estén disponibles: las características ausentes simplemente no puntúan. No debe sustituirse la pantalla o los repositorios de Showly; el motor solo devuelve un orden y explicaciones para los candidatos suministrados. El adaptador espera que el código Android le entregue candidatos, historial enriquecido y exclusiones; todavía falta conectar ese puente a Room/TMDB y a la pantalla.
+El algoritmo no inventa créditos que no estén disponibles: las características ausentes simplemente no puntúan. No debe sustituirse la pantalla o los repositorios de Showly; el motor solo devuelve un orden y explicaciones para los candidatos suministrados. El adaptador y el caso de uso esperan que el código Android les entregue candidatos, historial enriquecido y exclusiones; todavía falta implementar el origen concreto basado en Room/Trakt/TMDB y conectar el feed a la pantalla.
 
 ## Métricas
 
