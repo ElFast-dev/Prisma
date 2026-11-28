@@ -39,7 +39,7 @@ data class ShowlyTitleMetadata(
 
 /** Snapshot of a Showly TraktRating joined with its full title metadata. */
 data class ShowlyTitleRatingRecord(
-  val movie: ShowlyTitleMetadata,
+  val title: ShowlyTitleMetadata,
   val rating: Int,
   val ratedAtEpochMillis: Long,
 )
@@ -96,7 +96,7 @@ class ShowlyRecommendationAdapter(
       candidates = candidates.map(::toProfile),
       ratings = ratings.map {
         UserMovieRating(
-          movie = toProfile(it.movie),
+          movie = toProfile(it.title),
           rating = it.rating,
           ratedAtEpochMillis = it.ratedAtEpochMillis,
         )
