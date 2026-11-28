@@ -681,6 +681,11 @@ def main() -> int:
             "</resources>",
             '  <string name="textFeedForYou">For you</string>\n</resources>',
         )
+        patch(
+            "ui-discover/src/main/res/values-es/strings.xml",
+            "</resources>",
+            '  <string name="textFeedForYou">Para ti</string>\n</resources>',
+        )
         show_layout_path = "ui-discover/src/main/res/layout/view_discover_filters_feed.xml"
         show_layout = planned.get(showly / show_layout_path, (showly / show_layout_path).read_text(encoding="utf-8"))
         show_chip_anchor = '''        <com.google.android.material.chip.Chip
@@ -711,6 +716,11 @@ def main() -> int:
             "ui-discover-movies/src/main/res/values/strings.xml",
             "</resources>",
             '  <string name="textFeedForYou">For you</string>\n</resources>',
+        )
+        patch(
+            "ui-discover-movies/src/main/res/values-es/strings.xml",
+            "</resources>",
+            '  <string name="textFeedForYou">Para ti</string>\n</resources>',
         )
         layout_path = "ui-discover-movies/src/main/res/layout/view_discover_movies_filters_feed.xml"
         layout = planned.get(showly / layout_path, (showly / layout_path).read_text(encoding="utf-8"))
