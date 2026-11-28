@@ -2,7 +2,7 @@
 
 Motor Kotlin independiente, determinista y ejecutable localmente. Está pensado para incorporarse a una versión derivada de **Showly para Android**, conservando la atribución y cumpliendo la GPL-3.0 de Showly.
 
-> Estado: motor y simulación implementados. Este directorio aún no es un fork completo de Showly ni está conectado a sus pantallas, base Room o servicios. La integración requiere importar primero el repositorio upstream completo y adaptar los puntos descritos abajo.
+> Estado: motor, adaptador Showly y simulaciones implementados. Este directorio aún no es un fork completo de Showly ni está conectado a sus pantallas, base Room o servicios. La integración requiere importar primero el repositorio upstream completo y adaptar los puntos descritos abajo.
 
 ## Qué aprende
 
@@ -17,6 +17,8 @@ Motor Kotlin independiente, determinista y ejecutable localmente. Está pensado 
 
 El motor no necesita conexión de red, no llama a un modelo remoto y no envía las calificaciones a ningún servidor. La app que lo integre será responsable de obtener candidatos y metadatos.
 
+El puente `ShowlyRecommendationAdapter` convierte snapshots del modelo `ui_model.Movie`, los registros de `TraktRating` unidos con sus películas y las señales de feedback en perfiles tipados para el motor. No depende de Android; por eso sus pruebas se ejecutan en JVM.
+
 ## Ejecución
 
 Requiere JDK 21 y Gradle:
@@ -26,16 +28,16 @@ gradle -p showly-recommendation-engine simulateRecommendations
 gradle -p showly-recommendation-engine check
 ```
 
-La simulación determinista usa perfiles sintéticos y un reloj fijo. No usa ni necesita datos privados del usuario.
+La simulación determinista usa perfiles sintéticos y un reloj fijo. Las pruebas también validan el adaptador Showly: normalización, deduplicación de atributos y traducción de puntuaciones en recomendaciones. No usa ni necesita datos privados del usuario.
 
 ## Integración prevista en Showly
 
 1. Mantener Showly como base Android. Añadir este código como módulo Kotlin puro o incorporarlo a un módulo de dominio dedicado.
 2. Convertir `ui_model.Movie` a `MovieProfile`: ID Trakt, título, año, géneros, idioma, país, década, rating y votos comunitarios. Enriquecer director, guionistas, reparto, keywords, franquicias y estudio con TMDB cuando estén disponibles.
-3. Leer el historial desde `MoviesRatingsRepository.loadMoviesRatings()`. Showly ya sincroniza `sync/ratings/movies` y guarda puntuaciones en Room mediante `Rating` y `RatingsDao`.
+3. Leer el historial desde `MoviesRatingsRepository.loadMoviesRatings()`. Showly ya sincroniza `sync/ratings/movies` y guarda puntuaciones en Room mediante `Rating` y `RatingsDao`. Como `TraktRating` solo contiene ID Trakt, nota y fecha, unir esos registros con `MoviesLocalDataSource.getAll(ids)` o `MovieDetailsRepository.load(IdTrakt(...))` antes de crear `ShowlyRatingRecord`.
 4. Persistir el feedback explícito por usuario en Room. HIDE debe ser un bloqueo; NOT_INTERESTED y DISLIKE enseñan al perfil qué evitar; LIKE sirve como señal positiva.
 5. Construir `excludedMovieIds` con películas ya vistas/calificadas, bloqueadas u ocultas, además de cualquier exclusión de producto que decida la app.
-6. Integrar el motor en `ui-discover-movies/.../cases/DiscoverMoviesCase.kt`: después de obtener candidatos de `MoviesRepository.discoverMovies.loadAllRemote(...)` y antes de `prepareItems(...)`, añadir una opción de feed personalizado que ordene mediante `RecommendationEngine.recommend(...)`.
+6. Integrar el adaptador en `ui-discover-movies/.../cases/DiscoverMoviesCase.kt`: después de obtener candidatos de `MoviesRepository.discoverMovies.loadAllRemote(...)` y antes de `prepareItems(...)`, mapearlos a `ShowlyMovieMetadata`, completar créditos TMDB disponibles y ordenar mediante `ShowlyRecommendationAdapter.recommend(...)`.
 7. Añadir pruebas de integración para sincronización, borrado/actualización de puntuaciones, persistencia, migración Room y funcionamiento sin conexión.
 
 ### Puntos de extensión confirmados en upstream
@@ -46,7 +48,7 @@ La simulación determinista usa perfiles sintéticos y un reloj fijo. No usa ni 
 - `repository/.../movies/DiscoverMoviesRepository.kt`: catálogo Trending, Popular, Anticipated y caché.
 - `data-remote/.../tmdb/api/TmdbService.kt`: créditos de película disponibles vía `fetchMoviePeople(tmdbId)`.
 
-El algoritmo no inventa créditos que no estén disponibles: las características ausentes simplemente no puntúan. No debe sustituirse la pantalla o los repositorios de Showly; el motor solo devuelve un orden y explicaciones para los candidatos suministrados.
+El algoritmo no inventa créditos que no estén disponibles: las características ausentes simplemente no puntúan. No debe sustituirse la pantalla o los repositorios de Showly; el motor solo devuelve un orden y explicaciones para los candidatos suministrados. El adaptador espera que el código Android le entregue candidatos, historial enriquecido y exclusiones; todavía falta conectar ese puente a Room/TMDB y a la pantalla.
 
 ## Métricas
 
