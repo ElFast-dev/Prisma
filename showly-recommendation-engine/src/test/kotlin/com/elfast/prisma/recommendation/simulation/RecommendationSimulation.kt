@@ -18,6 +18,11 @@ object RecommendationSimulation {
 
   @JvmStatic
   fun main(args: Array<String>) {
+    runAll()
+    println("Recommendation simulation passed: 7 scenarios")
+  }
+
+  fun runAll() {
     learnsPositiveAndNegativeTaste()
     excludesSeenAndHiddenTitles()
     learnsExplicitRejection()
@@ -25,7 +30,6 @@ object RecommendationSimulation {
     coldStartUsesCommunitySignals()
     handlesEmptyAndZeroLimit()
     diversifiesAndMeasuresResults()
-    println("Recommendation simulation passed: 7 scenarios")
   }
 
   private fun learnsPositiveAndNegativeTaste() {
