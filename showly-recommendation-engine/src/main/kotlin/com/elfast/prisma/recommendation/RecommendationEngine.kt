@@ -6,13 +6,6 @@ import kotlin.math.ln1p
 import kotlin.math.max
 import kotlin.math.sqrt
 
-/**
- * Deterministic, on-device hybrid recommender.
- *
- * Existing Trakt ratings build a weighted taste profile. Similarity to highly and poorly
- * rated titles, vote-smoothed community quality, popularity and novelty provide
- * complementary signals. No network calls or remote model are made by this class.
- */
 /** Interprets a rating against both the scale and this person's usual scoring baseline. */
 fun ratingSignal(rating: Int, personalMean: Double): Double {
   require(rating in 1..10) { "Rating must be between 1 and 10" }
@@ -24,6 +17,13 @@ fun ratingSignal(rating: Int, personalMean: Double): Double {
   return (0.35 * absolute + 0.65 * relative).coerceIn(-1.0, 1.0)
 }
 
+/**
+ * Deterministic, on-device hybrid recommender.
+ *
+ * Existing Trakt ratings build a weighted taste profile. Similarity to highly and poorly
+ * rated titles, vote-smoothed community quality, popularity and novelty provide
+ * complementary signals. No network calls or remote model are made by this class.
+ */
 class RecommendationEngine {
 
   fun recommend(request: RecommendationRequest): List<RecommendedMovie> {

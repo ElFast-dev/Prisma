@@ -644,8 +644,6 @@ def main() -> int:
         )
 
         # The Shows screen shares the enum and gets its own personalized selector.
-
-        # The Shows screen shares the enum and gets its own personalized selector.
         patch(
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
             "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n",
