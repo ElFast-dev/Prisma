@@ -1,95 +1,77 @@
 # Integración Android con Showly
 
-Este documento describe la integración que ya aplica Prisma al submódulo Showly y los límites que todavía deben validarse. Las rutas se contrastaron con el commit de upstream fijado en `.gitmodules`.
+Este documento describe la conexión del motor Prisma con el submódulo Showly. Las rutas y APIs de integración se contrastaron con el commit de upstream fijado en .gitmodules.
 
 ## Estado
 
-Implementado en esta rama:
+- Motor Kotlin puro que aprende un perfil desde valoraciones y calcula un ranking híbrido.
+- Adaptador de metadatos genérico para películas y series.
+- Feed PERSONALIZED (“Para ti”) en los descubrimientos de películas y series.
+- PersonalizedMoviesCase conectado a DiscoverMoviesCase.
+- PersonalizedShowsCase conectado a DiscoverShowsCase.
+- Lectura de ratings existentes, unión con Room y enriquecimiento de créditos a través de los repositorios de Showly.
+- Aplicación de cambios repetible; los scripts modifican únicamente el working tree local del submódulo.
 
-- Motor Kotlin puro con perfil de gusto aprendido desde valoraciones, ranking híbrido, diversidad, explicaciones y métricas.
-- Adaptador `ShowlyRecommendationAdapter` para traducir modelos y calificaciones al motor.
-- `PersonalizedMoviesCase`, que obtiene valoraciones existentes, las une con Room y enriquece datos con repositorios de Showly.
-- Feed `PERSONALIZED` (“Para ti”) en el selector de descubrimiento de películas.
-- Integración en las rutas de carga desde caché y carga remota de `DiscoverMoviesCase`.
-- Exclusiones de películas calificadas u ocultas; colección y watchlist se excluyen cuando el filtro nativo `hideCollection` está activo.
-- Scripts idempotentes para añadir el motor y aplicar el feed al submódulo sin hacer commits en upstream.
+## 1. La calificación normal es el único feedback personal
 
-Pendiente de validación:
+El usuario sigue calificando títulos como siempre en Showly. Prisma lee esas valoraciones de Trakt desde los repositorios que ya utiliza la aplicación:
 
-- Pruebas Android completas de los módulos afectados y CodeQL en el último commit.
-- Evaluar la calidad del ranking con un historial real, usando separación temporal entre entrenamiento y evaluación.
-- Pruebas instrumentadas de sincronización, cambios/borrado de calificaciones, estados sin conexión y experiencia de usuario.
+- Películas: MoviesRatingsRepository.loadMoviesRatings().
+- Series: ShowsRatingsRepository.loadShowsRatings().
 
-## 1. La calificación existente es el único feedback personal
+Cada registro aporta ID Trakt, nota de 1 a 10 y fecha. No se muestran preguntas, botones de “me gusta/no me gusta” ni controles adicionales para entrenar el recomendador.
 
-Showly sincroniza las valoraciones de Trakt mediante `MoviesRatingsRepository.loadMoviesRatings()`. Cada registro aporta ID Trakt, puntuación y fecha original.
+El motor combina:
+- Señal absoluta de la nota.
+- Diferencia respecto a la media personal.
+- Decaimiento temporal según cuándo se registró la calificación.
 
-El recomendador interpreta esos datos automáticamente:
+Así, una nota alta refuerza los rasgos de ese título y una nota baja resta afinidad a rasgos similares. El perfil se reconstruye al calcular el feed desde el repositorio local actualizado, de modo que corregir o eliminar una calificación cambia el resultado sin un registro paralelo de preferencias.
 
-- Puntuaciones altas aportan evidencia positiva sobre géneros, dirección, reparto y demás rasgos disponibles.
-- Puntuaciones bajas aportan evidencia negativa sobre esos mismos rasgos.
-- La señal combina el valor de la nota con la relación respecto a la media personal.
-- La fecha de valoración aplica decaimiento temporal para que los gustos recientes tengan más peso.
+## 2. Historial y metadatos de películas
 
-No se añaden controles “me gusta”, “no me gusta” o “no me interesa”. Tampoco hay encuestas, pasos de configuración ni tareas de entrenamiento. La persona sigue calificando películas como siempre y el feed aprende de ese historial.
+PersonalizedMoviesCase lee el historial de MoviesRatingsRepository, reconstruye hasta 100 calificaciones recientes con LocalDataSource.movies.getAllChunked(...) y resuelve una cantidad limitada de datos faltantes con MovieDetailsRepository.load(IdTrakt(...)).
 
-## 2. Reconstrucción del historial y metadatos
+El modelo ui_model.Movie aporta géneros, año, idioma, país, nota comunitaria y votos. PeopleRepository.loadAllForMovie(...) aporta dirección, guion y reparto cuando está disponible. Se enriquecen hasta 40 títulos del historial y 24 candidatos, con un máximo de cuatro solicitudes simultáneas.
 
-`TraktRating` contiene el ID, la calificación y la fecha, pero no todo el perfil cinematográfico. `PersonalizedMoviesCase`:
+## 3. Historial y metadatos de series
 
-1. Lee como máximo las 100 calificaciones más recientes.
-2. Busca los registros de película en Room mediante `LocalDataSource.movies.getAllChunked(...)`.
-3. Resuelve un número acotado de películas faltantes con `MovieDetailsRepository.load(IdTrakt(...))`, usando concurrencia limitada.
-4. Enriquece metadatos desde el modelo `ui_model.Movie` y los créditos de `PeopleRepository.loadAllForMovie(...)`.
-5. Convierte cada película y su nota original a `ShowlyMovieMetadata` y `ShowlyRatingRecord`.
+PersonalizedShowsCase realiza el mismo proceso con ShowsRatingsRepository, LocalDataSource.shows.getAllChunked(...) y ShowDetailsRepository.load(IdTrakt(...)) para recuperar las series calificadas.
 
-Los créditos de dirección, guion y reparto se usan cuando están disponibles. Si TMDB falla o no hay datos, se conserva la película con los metadatos restantes; no se inventan atributos. El enriquecimiento de créditos está acotado a 40 títulos del historial y 24 candidatos, con un máximo de cuatro solicitudes concurrentes.
+El modelo ui_model.Show aporta géneros, año, país, cadena/plataforma, nota comunitaria y votos. PeopleRepository.loadAllForShow(...) proporciona dirección, guion y reparto desde los datos cacheados de TMDB. El enriquecimiento está acotado a 40 títulos del historial y 24 candidatos, con un máximo de cuatro solicitudes simultáneas.
 
-En este commit, popularidad, keywords, estudios y franquicias no se fabrican cuando el modelo o los repositorios usados no los proporcionan. Los valores no disponibles simplemente no aportan señal.
+Cuando no hay créditos o metadatos suficientes, el motor continúa con los atributos disponibles. No inventa características ni trata los datos ausentes como preferencias.
 
-## 3. Ranking y exclusiones
+## 4. Ranking, exclusiones y presentación
 
-El adaptador llama a `RecommendationEngine` con los candidatos y el historial enriquecido. El motor:
+Los dos casos de uso llaman al mismo ShowlyRecommendationAdapter y al mismo motor Kotlin. El adaptador transforma las características disponibles en atributos tipados: género, dirección, guion, reparto, estudio, cadena/plataforma, idioma, país y década.
 
-- Omite películas incluidas en las calificaciones existentes.
-- Construye preferencias positivas y negativas a partir de las notas.
-- Combina afinidad personal, similitud con películas calificadas, calidad comunitaria, popularidad, novedad y diversidad.
-- Devuelve IDs y explicaciones; no reconstruye ni reemplaza las tarjetas de Showly.
+El motor:
+- Construye preferencias positivas y negativas según las calificaciones.
+- Combina afinidad, similitud con títulos valorados, calidad comunitaria ajustada por votos, popularidad disponible, novedad y diversidad.
+- Omite los títulos ya calificados.
+- Devuelve los IDs en orden recomendado junto con puntuación, confianza y explicación.
 
-Showly pasa las películas ocultas como exclusiones siempre. Cuando `filters.hideCollection` está activo, también excluye las películas de la colección y la watchlist. El resto de filtros y el flujo de tarjetas nativas se mantienen.
+Showly conserva sus tarjetas, imágenes, navegación y estados de colección/watchlist. Los títulos ocultos se excluyen siempre; colección y watchlist se excluyen cuando el filtro nativo hideCollection está activo.
 
-## 4. Feed “Para ti” en DiscoverMoviesCase
+## 5. Cableado en el proyecto Android
 
-El script `scripts/apply_showly_recommender.py` aplica el cableado de manera repetible:
-
-- Añade `PERSONALIZED` al enum `DiscoverFeed`.
-- Muestra la opción “For you” en el selector de feeds de películas.
-- En la ruta de carga desde caché, ordena los candidatos con `PersonalizedMoviesCase.rank(...)` antes de `prepareItems(...)`.
-- En la ruta remota, hace el mismo ranking antes de preparar las tarjetas.
-- Mantiene el tratamiento nativo de Showly para imágenes, traducciones, watchlist, navegación y demás estados visuales.
-
-El feed usa los candidatos que Showly ya proporciona; no sustituye los feeds generales Trending, Popular o Anticipated. Si el historial está vacío, usa el comportamiento de arranque en frío basado en señales comunitarias con confianza baja.
-
-## 5. Configuración y verificación
+scripts/apply_showly_recommender.py aplica el feed en las rutas de carga desde caché y carga remota de ambas pantallas. Añade el valor PERSONALIZED al enum compartido, la opción “For you” a los selectores y las dependencias del módulo Gradle.
 
 Desde la raíz de Prisma:
 
-```bash
-git submodule update --init --recursive
-python3 scripts/configure_showly_recommender.py
-python3 scripts/apply_showly_recommender.py
-```
+    git submodule update --init --recursive
+    python3 scripts/configure_showly_recommender.py
+    python3 scripts/apply_showly_recommender.py
 
-Los scripts están diseñados para ejecutarse más de una vez sin duplicar cambios. La CI los ejecuta dos veces sobre el commit real del submódulo y después compila Kotlin de la aplicación Android y ejecuta las pruebas JVM configuradas.
+Ambos scripts pueden ejecutarse varias veces sin duplicar cambios. No crean commits ni escriben en el repositorio upstream de Showly.
 
-La simulación sintética verifica propiedades del algoritmo —incluido que películas de géneros bien calificados superen a opciones asociadas a géneros con notas bajas, incluso frente a mejores señales comunitarias—, pero no demuestra por sí sola la precisión sobre una cuenta real. La evaluación real debe usar un historial consentido y separado temporalmente entre entrenamiento y conjunto de prueba.
+## 6. Verificación y límites
 
-## 6. Límites conocidos
+Las pruebas sintéticas comprueban que cambiar una nota puede cambiar el orden recomendado sin introducir nuevas acciones de usuario. La CI debe aplicar los scripts dos veces sobre el commit exacto de Showly, compilar Kotlin Android y ejecutar tests.
 
-- El recomendador ordena el conjunto de candidatos recibido de Showly; no puede recomendar una película que no esté presente en ese conjunto.
-- Los créditos adicionales y la reconstrucción de títulos faltantes están acotados para controlar coste, latencia y concurrencia.
-- El arranque en frío no puede adivinar gustos personales sin calificaciones.
-- La integración no añade feedback manual ni cambia la forma de calificar películas.
-- El motor ejecuta el cálculo en el dispositivo. La carga/sincronización de datos sigue usando los repositorios y servicios que Showly ya tiene.
+La precisión real debe validarse con un historial real y una separación temporal entre entrenamiento y evaluación. Las simulaciones no se presentan como evidencia de calidad para una cuenta concreta.
 
-La rama permanece en borrador hasta completar las verificaciones de CI y evaluar la experiencia con datos reales, sin fusionar estos cambios a `main` antes de esa validación.
+Los feeds solo pueden ordenar el conjunto de candidatos que Showly ya entrega. Si una película o serie no está en ese conjunto, no aparecerá hasta que el sistema de descubrimiento de Showly la incluya. El motor calcula el perfil y el ranking localmente; la carga y sincronización de datos sigue usando los servicios normales de Showly.
+
+La rama permanece en borrador hasta completar las validaciones y la revisión de la experiencia Android. No se debe fusionar en main antes de ese punto.
