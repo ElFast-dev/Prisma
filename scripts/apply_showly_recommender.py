@@ -149,11 +149,11 @@ internal class PersonalizedMoviesCase @Inject constructor(
         )
         .take(MAX_RELATED_SEEDS)
       val semaphore = Semaphore(MAX_RELATED_REQUESTS)
-      seeds.map { (_, ratedTitle) ->
+      val relatedBySeed = seeds.map { (_, ratedTitle) ->
         async {
           semaphore.withPermit {
             try {
-              remoteSource.trakt.fetchRelatedMovies(ratedTitle.traktId, RELATED_TITLES_PER_SEED)
+              remoteSource.trakt.fetchRelatedMovies(ratedTitle.traktId, RELATED_LIMIT_ADJUSTMENT)
                 .map { mappers.movie.fromNetwork(it) }
             } catch (error: CancellationException) {
               throw error
@@ -162,7 +162,18 @@ internal class PersonalizedMoviesCase @Inject constructor(
             }
           }
         }
-      }.awaitAll().flatten().distinctBy { it.traktId }.take(MAX_RELATED_CANDIDATES)
+      }.awaitAll()
+      val selected = linkedMapOf<Long, Movie>()
+      val maxRelatedIndex = relatedBySeed.maxOfOrNull { it.size } ?: 0
+      for (index in 0 until maxRelatedIndex) {
+        for (seedResults in relatedBySeed) {
+          val related = seedResults.getOrNull(index) ?: continue
+          if (related.traktId !in selected) selected[related.traktId] = related
+          if (selected.size >= MAX_RELATED_CANDIDATES) break
+        }
+        if (selected.size >= MAX_RELATED_CANDIDATES) break
+      }
+      selected.values.toList()
     }
 
   private suspend fun coldStart(
@@ -231,7 +242,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
     const val MAX_PARALLEL_REQUESTS = 4
     const val MIN_RELATED_SEED_RATING = 8
     const val MAX_RELATED_SEEDS = 4
-    const val RELATED_TITLES_PER_SEED = 10
+    const val RELATED_LIMIT_ADJUSTMENT = 0
     const val MAX_RELATED_CANDIDATES = 40
     const val MAX_RELATED_REQUESTS = 2
     const val DEFAULT_DIVERSITY = 0.35
@@ -376,11 +387,11 @@ internal class PersonalizedShowsCase @Inject constructor(
         )
         .take(MAX_RELATED_SEEDS)
       val semaphore = Semaphore(MAX_RELATED_REQUESTS)
-      seeds.map { (_, ratedTitle) ->
+      val relatedBySeed = seeds.map { (_, ratedTitle) ->
         async {
           semaphore.withPermit {
             try {
-              remoteSource.trakt.fetchRelatedShows(ratedTitle.traktId, RELATED_TITLES_PER_SEED)
+              remoteSource.trakt.fetchRelatedShows(ratedTitle.traktId, RELATED_LIMIT_ADJUSTMENT)
                 .map { mappers.show.fromNetwork(it) }
             } catch (error: CancellationException) {
               throw error
@@ -389,7 +400,18 @@ internal class PersonalizedShowsCase @Inject constructor(
             }
           }
         }
-      }.awaitAll().flatten().distinctBy { it.traktId }.take(MAX_RELATED_CANDIDATES)
+      }.awaitAll()
+      val selected = linkedMapOf<Long, Show>()
+      val maxRelatedIndex = relatedBySeed.maxOfOrNull { it.size } ?: 0
+      for (index in 0 until maxRelatedIndex) {
+        for (seedResults in relatedBySeed) {
+          val related = seedResults.getOrNull(index) ?: continue
+          if (related.traktId !in selected) selected[related.traktId] = related
+          if (selected.size >= MAX_RELATED_CANDIDATES) break
+        }
+        if (selected.size >= MAX_RELATED_CANDIDATES) break
+      }
+      selected.values.toList()
     }
 
   private suspend fun coldStart(
@@ -458,7 +480,7 @@ internal class PersonalizedShowsCase @Inject constructor(
     const val MAX_PARALLEL_REQUESTS = 4
     const val MIN_RELATED_SEED_RATING = 8
     const val MAX_RELATED_SEEDS = 4
-    const val RELATED_TITLES_PER_SEED = 10
+    const val RELATED_LIMIT_ADJUSTMENT = 0
     const val MAX_RELATED_CANDIDATES = 40
     const val MAX_RELATED_REQUESTS = 2
     const val DEFAULT_DIVERSITY = 0.35
