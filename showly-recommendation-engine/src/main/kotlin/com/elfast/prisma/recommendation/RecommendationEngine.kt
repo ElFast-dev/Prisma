@@ -9,8 +9,8 @@ import kotlin.math.sqrt
 /**
  * Deterministic, on-device hybrid recommender.
  *
- * Personal Trakt ratings and explicit feedback build a weighted taste profile. Similarity to
- * prior likes/dislikes, vote-smoothed community quality, popularity and novelty provide
+ * Existing Trakt ratings build a weighted taste profile. Similarity to highly and poorly
+ * rated titles, vote-smoothed community quality, popularity and novelty provide
  * complementary signals. No network calls or remote model are made by this class.
  */
 class RecommendationEngine {
@@ -50,21 +50,7 @@ class RecommendationEngine {
       val relative = ((entry.rating - ratingMean) / 4.5).coerceIn(-1.0, 1.0)
       TrainingSample(entry.movie, (0.72 * absolute + 0.28 * relative).coerceIn(-1.0, 1.0), entry.ratedAtEpochMillis)
     }
-    val feedbackSamples = request.feedback.map { feedback ->
-      val signal = when (feedback.type) {
-        RecommendationFeedbackType.LIKE -> 0.95
-        RecommendationFeedbackType.DISLIKE,
-        RecommendationFeedbackType.NOT_INTERESTED,
-        RecommendationFeedbackType.HIDE -> -0.95
-      }
-      TrainingSample(feedback.movie, signal, feedback.createdAtEpochMillis)
-    }
-
-    // Keep the most recent event for a title so a later correction can change the learned taste.
-    return (ratingSamples + feedbackSamples)
-      .groupBy { it.movie.id }
-      .values
-      .map { events -> events.maxBy { it.timestamp } }
+    return ratingSamples
   }
 
   private fun buildFeatureProfile(
