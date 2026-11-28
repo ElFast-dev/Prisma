@@ -1,92 +1,77 @@
 # Prisma · Showly para Android
 
-Prisma toma **Showly** como base para convertirse en una aplicación Android de seguimiento de películas y series con un motor propio de recomendaciones cinematográficas.
+Prisma toma **Showly** como base para convertirse en una aplicación Android de seguimiento de películas y series, con recomendaciones personalizadas que aprenden de las calificaciones que ya guardas en la app.
 
-La aplicación base se mantiene en el submódulo `showly-android`, fijado a un commit concreto de `trakt/showly`. El código de Showly no se copia ni se modifica en el repositorio original. Las personalizaciones de Prisma se mantienen en módulos propios.
+La aplicación base se mantiene en el submódulo **showly-android**, fijado a un commit concreto de **trakt/showly**. Las personalizaciones de Prisma se mantienen en módulos y scripts propios; no se modifica el repositorio upstream.
 
 ## Obtener el proyecto
 
 Clona incluyendo el submódulo de Showly:
 
-```bash
-git clone --recurse-submodules https://github.com/ElFast-dev/Prisma.git
-cd Prisma
-```
+    git clone --recurse-submodules https://github.com/ElFast-dev/Prisma.git
+    cd Prisma
 
-En un clon existente, inicializa el submódulo:
+En un clon existente:
 
-```bash
-git submodule update --init --recursive
-```
+    git submodule update --init --recursive
 
-El motor de Prisma se conecta al proyecto Gradle de Showly mediante un script idempotente:
+Conecta el motor a Gradle y aplica la integración:
 
-```bash
-python3 scripts/configure_showly_recommender.py
-python3 scripts/apply_showly_recommender.py
-```
+    python3 scripts/configure_showly_recommender.py
+    python3 scripts/apply_showly_recommender.py
 
-Los scripts modifican únicamente el working tree local de `showly-android`: registran `:prisma-recommendation-engine` y añaden el feed `PERSONALIZED` (Para ti) a la pantalla de descubrimiento de películas. El segundo script conecta las valoraciones de Trakt con Room, enriquece géneros/directores/reparto con los créditos TMDB cacheados y vuelve a ordenar las tarjetas existentes. Ambos scripts son repetibles y no crean commits ni escriben en el repositorio upstream.
+Los scripts registran el módulo Gradle de Prisma y añaden una opción **«Para ti»** tanto al descubrimiento de películas como al de series. Son idempotentes y solo modifican el working tree local del submódulo; no crean commits ni escriben en el repositorio upstream.
 
 ## Configurar Showly
 
-Abre `showly-android` en Android Studio o prepara los archivos de configuración indicados por el proyecto upstream.
+En showly-android/local.properties:
 
-En `showly-android/local.properties`:
+    traktClientId="TU_CLIENT_ID_DE_TRAKT"
+    tmdbApiKey="TU_API_KEY_DE_TMDB"
 
-```properties
-traktClientId="TU_CLIENT_ID_DE_TRAKT"
-tmdbApiKey="TU_API_KEY_DE_TMDB"
-```
+En showly-android/app/keystore.properties, para compilar variantes locales:
 
-En `showly-android/app/keystore.properties`, para compilar variantes locales:
-
-```properties
-keyAlias=github
-keyPassword=github
-storePassword=github
-```
+    keyAlias=github
+    keyPassword=github
+    storePassword=github
 
 No guardes claves reales, tokens ni almacenes de firma en Git.
 
-Desde `showly-android`, compila la app:
+Desde showly-android, compila:
 
-```bash
-./gradlew :app:compileDebugKotlin
-```
+    ./gradlew :app:compileDebugKotlin
 
-## Motor de recomendaciones
+## Cómo aprende el recomendador
 
-El módulo `showly-recommendation-engine` implementa un recomendador híbrido local:
+El recomendador utiliza las **calificaciones normales de Trakt que ya guardas en Showly**. No añade encuestas, botones de gustos, acciones de entrenamiento ni pasos de configuración.
 
-- Aprende automáticamente de las valoraciones personales de Trakt (1–10): las notas altas refuerzan gustos afines y las bajas penalizan rasgos similares. También tiene en cuenta la antigüedad y la media personal.
-- Pondera género, director, reparto, guion, palabras clave, franquicia, estudio, idioma, país y década cuando los metadatos están disponibles.
-- Combina preferencias personales, similitud de contenido, calidad comunitaria ajustada por votos, popularidad y novedad.
-- Diversifica la lista y devuelve una explicación y una confianza conservadora por película.
-- Calcula Precision@K, Recall@K, HitRate@K, NDCG@K, cobertura y diversidad.
+- Las notas altas refuerzan géneros, directores, reparto y otros atributos en común.
+- Las notas bajas reducen la afinidad por esos mismos atributos.
+- La señal tiene en cuenta tanto el valor de la nota como tu media personal, para no asumir que todas las personas califican igual.
+- Las notas recientes pesan más que las antiguas, con un decaimiento gradual.
+- Cada vez que se vuelve a calcular el feed, se lee el historial local actualizado; editar o eliminar una nota cambia el perfil automáticamente.
 
-El motor no envía valoraciones a servicios externos y no necesita un modelo remoto.
+Las recomendaciones de películas usan metadatos de películas. Las recomendaciones de series usan géneros, cadenas/plataformas, reparto, dirección, guion, país y década cuando están disponibles. Los títulos que ya calificaste no se repiten en el feed personalizado. También se respetan los elementos ocultos y los filtros nativos de colección y watchlist.
 
-Ejecuta sus pruebas y la simulación con JDK 21 y Gradle:
+El ranking es híbrido: combina afinidad personal, similitud de contenido, calidad comunitaria ajustada por cantidad de votos, popularidad disponible, novedad y diversidad. El cálculo se realiza en el dispositivo; Showly mantiene su sincronización habitual de Trakt y la carga de créditos/metadatos usa los repositorios ya existentes de la app.
 
-```bash
-gradle -p showly-recommendation-engine check
-```
+## Pruebas
 
-El workflow de GitHub Actions también ejecuta pruebas del script de configuración y compila Showly con el módulo añadido.
+Requiere JDK 21 y Gradle:
 
-## Estado real de la integración
+    gradle -p showly-recommendation-engine check
 
-El motor, el adaptador para los modelos de Showly, el caso de uso y la simulación están implementados. El módulo puede añadirse a la compilación Android.
+Las pruebas cubren el mapeo de metadatos, el cambio automático del ranking al cambiar una nota, exclusiones y simulaciones reproducibles. GitHub Actions aplica la integración dos veces sobre el commit fijado de Showly, compila Kotlin Android y ejecuta los tests configurados.
 
-El feed `Para ti` ya se conecta en el working tree local de Showly mediante el script de integración: usa las calificaciones Trakt que el usuario ya registra, datos de películas de Room y créditos TMDB disponibles mediante `PeopleRepository`. Las notas altas refuerzan características afines y las bajas las penalizan; no hay botones ni pasos extra de feedback. Aún falta validar la calidad de las recomendaciones con una cuenta real y terminar la validación completa de CI.
+Las simulaciones verifican propiedades del algoritmo, pero no sustituyen una evaluación real de precisión con un historial de cuenta. El feed solo puede reordenar el conjunto de candidatos que Showly le proporciona; no puede mostrar un título que no esté en ese conjunto.
 
-La PWA React/Vite anterior ya no forma parte de esta rama del proyecto. La rama principal no se cambia hasta validar la sustitución Android.
+## Estado del proyecto
 
-## Documentación
+La integración conserva las tarjetas, imágenes, navegación y sistemas de seguimiento de Showly. main no se modifica mientras la sustitución Android siga en revisión.
 
-- [Motor y arquitectura](showly-recommendation-engine/README.md)
-- [Guía de integración Android](showly-recommendation-engine/SHOWLY_ANDROID_INTEGRATION.md)
+Documentación adicional:
+- [Motor de recomendaciones](showly-recommendation-engine/README.md)
+- [Integración Android](showly-recommendation-engine/SHOWLY_ANDROID_INTEGRATION.md)
 - [Showly upstream](https://github.com/trakt/showly)
 
 ## Licencia
