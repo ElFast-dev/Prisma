@@ -65,13 +65,13 @@ class ShowlyRecommendationAdapter(
 
   fun toProfile(movie: ShowlyMovieMetadata): MovieProfile {
     val features = buildSet {
-      movie.genres.addAll(MovieFeatureType.GENRE)
-      movie.directors.addAll(MovieFeatureType.DIRECTOR)
-      movie.writers.addAll(MovieFeatureType.WRITER)
-      movie.cast.addAll(MovieFeatureType.CAST)
-      movie.keywords.addAll(MovieFeatureType.KEYWORD)
-      movie.franchises.addAll(MovieFeatureType.FRANCHISE)
-      movie.studios.addAll(MovieFeatureType.STUDIO)
+      addAll(movie.genres, MovieFeatureType.GENRE)
+      addAll(movie.directors, MovieFeatureType.DIRECTOR)
+      addAll(movie.writers, MovieFeatureType.WRITER)
+      addAll(movie.cast, MovieFeatureType.CAST)
+      addAll(movie.keywords, MovieFeatureType.KEYWORD)
+      addAll(movie.franchises, MovieFeatureType.FRANCHISE)
+      addAll(movie.studios, MovieFeatureType.STUDIO)
       movie.language?.let { addFeature(MovieFeatureType.LANGUAGE, it) }
       movie.country?.let { addFeature(MovieFeatureType.COUNTRY, it) }
       movie.year?.takeIf { it > 0 }?.let { year ->
