@@ -1,62 +1,58 @@
-# Guía de contribución
+# Contribuir a Prisma · Showly
 
-Gracias por ayudar a mejorar Prisma. El proyecto prioriza una experiencia cinematográfica local-first, privacidad y una interfaz cuidada tanto en móvil como en pantallas amplias.
+El objetivo es mantener una versión derivada de Showly para Android con recomendaciones locales de películas y series que aprendan de las calificaciones Trakt que la persona ya registra en la app.
 
-## Entorno
-
-- Node.js `>=22.12.0` (la versión requerida también está declarada en `package.json`).
-- npm.
-- El acceso a TMDB solo es necesario para probar manualmente funciones que consultan el catálogo. Las pruebas automatizadas deben utilizar datos ficticios y mocks.
-
-## Preparar el proyecto
+## Preparar el repositorio
 
 ```bash
-npm ci
-npm run dev
+git clone --recurse-submodules https://github.com/ElFast-dev/Prisma.git
+cd Prisma
+python3 scripts/configure_showly_recommender.py
 ```
 
-## Comprobaciones
+Requisitos: JDK 21, Gradle 9.6 o el Gradle Wrapper de Showly, Android SDK y Python 3 para los scripts de integración.
 
-Antes de proponer cambios, ejecuta las comprobaciones pertinentes:
+## Módulo de recomendaciones
+
+Ejecuta las pruebas JVM:
 
 ```bash
-npm run typecheck
-npm test
-npm run build
-npm run test:e2e
-npm run test:e2e:pwa
+gradle -p showly-recommendation-engine check
+python3 scripts/test_configure_showly_recommender.py
 ```
 
-La CI también ejecuta un smoke test de la versión compilada y Playwright en Chromium, Firefox y WebKit. Si una prueba requiere un dato externo, debe usar una respuesta simulada reproducible y no una credencial personal.
+El motor debe permanecer independiente de Android, Room, Retrofit y Hilt. Recibe perfiles de películas e historial ya enriquecidos; devuelve puntuaciones, explicaciones y orden. No debe consultar servicios de red ni transmitir datos personales.
 
-## Criterios de producto
+## Integración Android
 
-- Mantén Personal, Descubrir y Espectro como los tres destinos principales.
-- Conserva el comportamiento local-first. No envíes historial, calificaciones, comentarios, perfil ni preferencias a servicios externos.
-- No cambies ni elimines visionados, estados de Biblioteca, colecciones o preferencias al enriquecer metadatos.
-- Evita añadir dependencias si una solución pequeña y mantenible ya existe.
-- Respeta el sistema de diseño y la norma de redacción de `docs/DESIGN-SYSTEM.md`.
-- Los controles deben tener nombres accesibles, foco visible y comportamiento completo con teclado. Los diálogos deben confinar y restaurar el foco.
-- Los cambios de base de datos deben incrementar la versión de Dexie y probar la migración. Mantén la compatibilidad de copias de seguridad cuando sea posible.
+La integración debe:
+- leer las valoraciones normales de películas y series desde los repositorios de ratings de Showly;
+- unirlas con los títulos locales de Room y completar datos faltantes de forma acotada;
+- aprovechar créditos TMDB cacheados cuando estén disponibles;
+- aprender de las notas altas y bajas sin controles, encuestas ni tareas de entrenamiento adicionales;
+- excluir títulos ya calificados u ocultos y respetar los filtros nativos de colección/watchlist;
+- integrar feeds “Para ti” en películas y series sin romper imágenes, navegación ni seguimiento.
 
-## Datos y secretos
+Ejecuta desde `showly-android` las tareas de compilación y pruebas que cubran los módulos modificados:
 
-No incluyas en commits ni pruebas:
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+./gradlew :repository:testDebugUnitTest
+./gradlew :ui-discover-movies:testDebugUnitTest
+./gradlew :ui-discover:testDebugUnitTest
+```
 
-- Credenciales o tokens de TMDB.
-- Copias de seguridad reales de Prisma.
-- Historial, calificaciones, comentarios o datos personales.
-- Cookies, sesiones o secretos de CI.
+## Submódulo y upstream
 
-Usa solo fixtures y datos ficticios. Recuerda que una aplicación web que guarda la credencial en el navegador no puede tratarla como un secreto de servidor.
+`showly-android` apunta al repositorio original de Showly y a un commit fijado. No hagas commits ni pushes en el repositorio upstream. Para modificar archivos pertenecientes al código base Android en una distribución derivada, crea primero un fork propio de Showly y actualiza `.gitmodules` para que apunte a ese fork.
+
+## Datos, credenciales y privacidad
+
+No incluyas claves Trakt/TMDB, keystores, tokens, historial real, valoraciones personales ni copias de seguridad. Usa datos sintéticos reproducibles en las pruebas.
+
+No inventes metadatos ausentes. Los créditos, keywords, estudios, colecciones y popularidad solo pueden influir en las recomendaciones cuando estén disponibles desde una fuente real.
 
 ## Pull requests
 
-- Mantén cada cambio enfocado y describe su impacto visible.
-- Incluye pruebas para el comportamiento nuevo o modificado.
-- Indica las limitaciones conocidas y cualquier paso manual que no haya podido automatizarse.
-- No fusiones cambios que no hayan pasado los controles requeridos de CI.
-
-## Licencia
-
-La licencia del código fuente sigue pendiente de decisión por parte de la persona propietaria del repositorio. La visibilidad pública del repositorio no concede por sí sola permisos adicionales de reutilización o distribución.
+Describe el cambio, enumera las pruebas ejecutadas y señala expresamente cualquier integración que siga pendiente. No marques como funcional el feed de recomendaciones hasta que use datos reales de Room/Trakt/TMDB y esté conectado a la interfaz.

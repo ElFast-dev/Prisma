@@ -1,0 +1,3 @@
+[submodule "showly-android"]
+	path = showly-android
+	url = https://github.com/trakt/showly.git

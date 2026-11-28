@@ -1,4 +1,4 @@
-name: Prisma CI
+name: Prisma Android CI
 
 on:
   push:
@@ -10,128 +10,81 @@ on:
 permissions:
   contents: read
 
-# Los pushes nuevos sustituyen las ejecuciones antiguas de la misma rama/PR.
-# Así CI dedica recursos al último código, no a commits que ya fueron superados.
 concurrency:
-  group: prisma-ci-${{ github.event.pull_request.number || github.ref }}
+  group: prisma-android-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  typecheck_unit_build:
-    name: TypeScript · Unit tests · Build
+  engine:
+    name: Recommendation engine · JVM tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/checkout@v6
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Dependency security audit
-        run: npm audit --audit-level=low
-      - name: TypeScript check
-        run: npm run typecheck
-      - name: Unit tests
-        run: npm test
-      - name: Production build
-        run: npm run build
-      - name: Smoke test production build
+          distribution: temurin
+          java-version: "21"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.6.0"
+      - name: Validate Python integration scripts
+        run: python3 -m py_compile scripts/*.py
+      - name: Test Gradle bootstrap script
+        run: python3 scripts/test_configure_showly_recommender.py
+      - name: Run engine tests and simulation
+        run: gradle -p showly-recommendation-engine check
+
+  android:
+    name: Showly Android · Compile and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with Showly submodule
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.6.0"
+      - name: Create non-secret build configuration
         run: |
-          set -euo pipefail
-          npm run preview -- --host 127.0.0.1 --port 4174 --strictPort > /tmp/prisma-preview.log 2>&1 &
-          PREVIEW_PID=$!
-          trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 20); do
-            if curl --fail --silent --show-error http://127.0.0.1:4174/Prisma/ -o /tmp/prisma-index.html; then
-              break
-            fi
-            sleep 2
-          done
-          PRISMA_SMOKE_URL=http://127.0.0.1:4174/Prisma/ PRISMA_SMOKE_ATTEMPTS=1 node scripts/smoke-test-pages.mjs
+          cat > showly-android/local.properties <<'EOF'
+          traktClientId="ci-placeholder-client"
+          tmdbApiKey="ci-placeholder-key"
+          EOF
+          cat > showly-android/app/keystore.properties <<'EOF'
+          keyAlias=github
+          keyPassword=github
+          storePassword=github
+          EOF
+      - name: Configure the engine and apply the personalized feed
+        run: |
+          python3 -m py_compile scripts/*.py
+          python3 scripts/configure_showly_recommender.py
+          python3 scripts/apply_showly_recommender.py
+          python3 scripts/apply_showly_recommender.py
+      - name: Assemble installable debug APK
+        run: gradle -p showly-android :app:assembleDebug --no-daemon
+      - name: Test app and integration repositories
+        run: |
+          gradle -p showly-android :app:testDebugUnitTest --no-daemon
+          gradle -p showly-android :repository:testDebugUnitTest --no-daemon
+          gradle -p showly-android :ui-discover-movies:testDebugUnitTest --no-daemon
+          gradle -p showly-android :ui-discover:testDebugUnitTest --no-daemon
 
-  # Mantiene el contexto `verify` que main exige en su protección.
-  # El gate no pasa hasta completar TypeScript/unit tests/build y Browser E2E.
+  # Required verification context retained for the repository's branch protection.
   verify:
-    needs: [typecheck_unit_build, e2e]
+    name: verify
+    needs: [engine, android]
     runs-on: ubuntu-latest
     steps:
-      - name: Confirm required verification gate
+      - name: Confirm all checks completed
         run: test -n "$GITHUB_SHA"
-
-  e2e:
-    name: Browser E2E · Playwright
-    runs-on: ubuntu-latest
-    container:
-      # Imagen oficial fijada a la misma versión que @playwright/test en package-lock.
-      # Ya incluye Chromium, Firefox, WebKit y sus dependencias de sistema.
-      image: mcr.microsoft.com/playwright:v1.65.1-noble
-      options: --init --ipc=host
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Verify Playwright browser image
-        run: npx playwright --version
-      - name: Run end-to-end browser tests
-        run: npm run test:e2e
-        env:
-          # Firefox ejecutado como root necesita un HOME propiedad de root.
-          HOME: /root
-      - name: Upload Playwright report and failure evidence
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 14
-          if-no-files-found: ignore
-
-  # Comprobación informativa: detecta regresiones PWA sin añadir un tercer
-  # requisito de protección de main. Los controles obligatorios siguen siendo
-  # TypeScript/Unit tests/Build y Browser E2E, según la configuración existente.
-  pwa-offline:
-    name: PWA · Production offline test
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Install Chromium and system dependencies
-        run: npx playwright install --with-deps chromium
-      - name: Build production PWA
-        run: npm run build
-      - name: Run offline and Service Worker tests
-        run: npm run test:e2e:pwa
-      - name: Upload PWA test report and failure evidence
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-pwa-report
-          path: |
-            playwright-report-pwa/
-            test-results-pwa/
-          retention-days: 14
-          if-no-files-found: ignore

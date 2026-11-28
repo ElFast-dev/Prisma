@@ -1,21 +1,25 @@
-node_modules/
-dist/
-dist-ssr/
-.env
-.env.*
-!.env.example
-*.local
-*.json.backup
-prisma-backup*
-backups/
-private/
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-.vscode/
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+**/local.properties
+**/keystore.properties
+**/keystore
+*.jks
+*.keystore
+
+# IDE
 .idea/
+*.iml
+.vscode/
 .DS_Store
 Thumbs.db
-coverage/
-playwright-report/
-test-results/
+
+# Python tools
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Temporary outputs
+*.log
+*.tmp
