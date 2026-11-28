@@ -11,7 +11,6 @@ import com.elfast.prisma.recommendation.RecommendedMovie
 data class ShowlyRecommendationData(
   val candidates: List<ShowlyMovieMetadata>,
   val ratings: List<ShowlyRatingRecord>,
-  val feedback: List<ShowlyFeedbackRecord>,
   val excludedMovieIds: Set<Long>,
 )
 
@@ -19,8 +18,7 @@ data class ShowlyRecommendationData(
  * Implement this contract in the Showly Android layer:
  * - candidates from DiscoverMoviesRepository / Trakt discovery endpoints
  * - ratings from MoviesRatingsRepository.loadMoviesRatings(), joined to local Movie rows
- * - feedback from a Room table owned by the derived app
- * - excluded IDs from watched, watchlist, hidden and dismissed movies
+ * - excluded IDs from watched, rated, watchlist and hidden movies
  *
  * The source should perform network/cache work and metadata enrichment; no API calls are made
  * by PersonalizedMovieDiscovery itself.
@@ -43,7 +41,6 @@ class PersonalizedMovieDiscovery(
     return adapter.recommend(
       candidates = data.candidates,
       ratings = data.ratings,
-      feedback = data.feedback,
       excludedMovieIds = data.excludedMovieIds,
       limit = limit,
       diversity = diversity,
