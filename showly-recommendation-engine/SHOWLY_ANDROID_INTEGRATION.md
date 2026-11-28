@@ -52,7 +52,7 @@ El motor:
 - Omite los títulos ya calificados.
 - Devuelve los IDs en orden recomendado junto con puntuación, confianza y explicación.
 
-Antes del ranking, cada caso consulta los relacionados de hasta cuatro títulos calificados con 8/10 o superior, solicita hasta diez por semilla y limita el conjunto adicional a 40 títulos con dos peticiones concurrentes. Se combinan con los candidatos habituales de Descubrir y se deduplican. Las notas bajas no crean consultas separadas: ya penalizan los rasgos coincidentes en el perfil.
+Antes del ranking, cada caso consulta los relacionados de hasta cuatro títulos calificados con 8/10 o superior, usa el límite normal de Trakt configurado por Showly (30 por semilla), intercala las respuestas para seleccionar hasta 40 títulos únicos y limita a dos peticiones concurrentes. Se combinan con los candidatos habituales de Descubrir y se deduplican. Las notas bajas no crean consultas separadas: ya penalizan los rasgos coincidentes en el perfil.
 
 Showly conserva sus tarjetas, imágenes, navegación y estados de colección/watchlist. Los títulos ocultos se excluyen siempre; colección y watchlist se excluyen cuando el filtro nativo hideCollection está activo.
 
