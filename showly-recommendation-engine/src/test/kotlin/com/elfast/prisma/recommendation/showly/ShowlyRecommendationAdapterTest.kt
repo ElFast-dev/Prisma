@@ -119,7 +119,7 @@ class ShowlyRecommendationAdapterTest {
     )
     val revisedHistory = adapter.recommend(
       candidates = candidates,
-      ratings = listOf(rating(comedyHistory.copy(genres = listOf("drama")), 2, 1)),
+      ratings = listOf(rating(comedyHistory, 2, 1)),
       diversity = 0.0,
       limit = 5,
       nowEpochMillis = now,
