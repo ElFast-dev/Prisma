@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "showly-recommendation-engine/**"
+      - "scripts/**"
       - ".github/workflows/recommendation-engine.yml"
   push:
     branches: [main]
     paths:
       - "showly-recommendation-engine/**"
+      - "scripts/**"
       - ".github/workflows/recommendation-engine.yml"
 
 permissions:
@@ -26,5 +28,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.0"
+      - name: Test Showly Gradle bootstrap
+        run: python3 scripts/test_configure_showly_recommender.py
       - name: Compile and simulate recommendations
         run: gradle -p showly-recommendation-engine check
