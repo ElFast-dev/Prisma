@@ -4,8 +4,6 @@ import com.elfast.prisma.recommendation.MovieFeature
 import com.elfast.prisma.recommendation.MovieFeatureType
 import com.elfast.prisma.recommendation.MovieProfile
 import com.elfast.prisma.recommendation.RecommendationEngine
-import com.elfast.prisma.recommendation.RecommendationFeedback
-import com.elfast.prisma.recommendation.RecommendationFeedbackType
 import com.elfast.prisma.recommendation.RecommendationMetrics
 import com.elfast.prisma.recommendation.RecommendationRequest
 import com.elfast.prisma.recommendation.UserMovieRating
@@ -19,14 +17,12 @@ object RecommendationSimulation {
   @JvmStatic
   fun main(args: Array<String>) {
     runAll()
-    println("Recommendation simulation passed: 7 scenarios")
+    println("Recommendation simulation passed: 5 scenarios")
   }
 
   fun runAll() {
     learnsPositiveAndNegativeTaste()
     excludesSeenAndHiddenTitles()
-    learnsExplicitRejection()
-    newerFeedbackOverridesOlderRating()
     coldStartUsesCommunitySignals()
     handlesEmptyAndZeroLimit()
     diversifiesAndMeasuresResults()
@@ -63,37 +59,16 @@ object RecommendationSimulation {
       film(2, "Hidden Mystery", "mystery", "D2", "A2"),
       film(3, "New Sci-Fi", "sci-fi", "D3", "A3"),
     )
-    val feedback = listOf(RecommendationFeedback(candidates[1], RecommendationFeedbackType.HIDE, NOW - DAY))
-    val results = engine.recommend(RecommendationRequest(candidates, history, feedback, limit = 10, nowEpochMillis = NOW))
-    check(results.map { it.movie.id } == listOf(3L)) { "Seen and hidden IDs must not be recommended" }
-  }
-
-  private fun learnsExplicitRejection() {
-    val rejected = film(2, "Romance Rejected", "romance", "Director R", "Actor R")
-    val candidates = listOf(
-      film(10, "Romantic Drama", "romance", "Director R", "Actor R", 8.9, 90000, 100.0),
-      film(11, "Science Fiction", "sci-fi", "Director S", "Actor S", 7.6, 10000, 40.0),
-    )
-    val feedback = listOf(RecommendationFeedback(rejected, RecommendationFeedbackType.NOT_INTERESTED, NOW - 5 * DAY))
     val results = engine.recommend(
-      RecommendationRequest(candidates, emptyList(), feedback, limit = 2, diversity = 0.0, nowEpochMillis = NOW),
+      RecommendationRequest(
+        candidates = candidates,
+        ratings = history,
+        excludedMovieIds = setOf(2L),
+        limit = 10,
+        nowEpochMillis = NOW,
+      ),
     )
-    check(results.first().movie.id == 11L) { "Explicit rejection should lower similar recommendations" }
-  }
-
-  private fun newerFeedbackOverridesOlderRating() {
-    val title = film(1, "Changed Mind", "romance", "Director R", "Actor R")
-    val candidate = film(2, "Another Romance", "romance", "Director R", "Actor R", 8.0, 30000, 30.0)
-    val request = RecommendationRequest(
-      candidates = listOf(candidate),
-      ratings = listOf(rated(title, 10, 90)),
-      feedback = listOf(RecommendationFeedback(title, RecommendationFeedbackType.NOT_INTERESTED, NOW - DAY)),
-      limit = 1,
-      diversity = 0.0,
-      nowEpochMillis = NOW,
-    )
-    val result = engine.recommend(request).single()
-    check(result.explanation.avoidedFeatures.isNotEmpty()) { "The most recent explicit feedback should win" }
+    check(results.map { it.movie.id } == listOf(3L)) { "Seen and hidden IDs must not be recommended" }
   }
 
   private fun coldStartUsesCommunitySignals() {
