@@ -12,10 +12,10 @@ import com.elfast.prisma.recommendation.UserMovieRating
  * SDK-independent snapshot of a Showly movie or series plus optional TMDB enrichment.
  *
  * Showly adapter notes:
- * - idTrakt <- Movie.traktId
- * - year/genres/language/country/rating/votes <- ui_model.Movie
+ * - idTrakt <- Movie.traktId or Show.traktId
+ * - year/genres/language/country/rating/votes <- ui_model.Movie / ui_model.Show
  * - popularity can be supplied by the candidate source or left at zero
- * - directors/cast/writers/keywords/franchise/studio come from TMDB credits and metadata when
+ * - directors/cast/writers/keywords/franchise/studio/networks come from TMDB credits and metadata when
  *   available; no missing data is fabricated.
  */
 data class ShowlyTitleMetadata(
