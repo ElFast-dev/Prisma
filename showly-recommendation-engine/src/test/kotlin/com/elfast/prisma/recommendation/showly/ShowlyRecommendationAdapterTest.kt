@@ -14,7 +14,7 @@ class ShowlyRecommendationAdapterTest {
   @Test
   fun mapsShowlyAndTmdbMetadataIntoTypedFeatures() {
     val profile = adapter.toProfile(
-      ShowlyMovieMetadata(
+      ShowlyTitleMetadata(
         idTrakt = 42,
         title = "A Feature-Rich Film",
         year = 1998,
@@ -27,6 +27,7 @@ class ShowlyRecommendationAdapterTest {
         keywords = listOf("time travel"),
         franchises = listOf("Example Saga"),
         studios = listOf("Example Studios"),
+        networks = listOf("HBO"),
         communityRating = 8.1,
         communityVotes = 1200,
         popularity = 32.0,
@@ -45,6 +46,7 @@ class ShowlyRecommendationAdapterTest {
     assertTrue(profile.features.any { it.type == MovieFeatureType.KEYWORD && it.normalizedValue == "time travel" })
     assertTrue(profile.features.any { it.type == MovieFeatureType.FRANCHISE && it.normalizedValue == "example saga" })
     assertTrue(profile.features.any { it.type == MovieFeatureType.STUDIO && it.normalizedValue == "example studios" })
+    assertTrue(profile.features.any { it.type == MovieFeatureType.NETWORK && it.normalizedValue == "hbo" })
     assertTrue(profile.features.any { it.type == MovieFeatureType.LANGUAGE && it.normalizedValue == "en" })
     assertTrue(profile.features.any { it.type == MovieFeatureType.COUNTRY && it.normalizedValue == "us" })
     assertTrue(profile.features.any { it.type == MovieFeatureType.DECADE && it.normalizedValue == "1990s" })
@@ -101,8 +103,34 @@ class ShowlyRecommendationAdapterTest {
     assertEquals(listOf(4L), results.map { it.movie.id })
   }
 
-  private fun rating(movie: ShowlyMovieMetadata, value: Int, ageDays: Int) =
-    ShowlyRatingRecord(movie, value, now - ageDays * DAY)
+  @Test
+  fun aNormalRatingChangeRebuildsTheTasteProfileWithoutExtraFeedback() {
+    val candidates = listOf(
+      movie(20, "Comedy Pick", "comedy", rating = 7.5, popularity = 20.0),
+      movie(21, "Drama Pick", "drama", rating = 7.5, popularity = 20.0),
+    )
+    val comedyHistory = movie(1, "Rated Title", "comedy")
+    val comedyScore = adapter.recommend(
+      candidates = candidates,
+      ratings = listOf(rating(comedyHistory, 10, 1)),
+      diversity = 0.0,
+      limit = 5,
+      nowEpochMillis = now,
+    )
+    val revisedHistory = adapter.recommend(
+      candidates = candidates,
+      ratings = listOf(rating(comedyHistory.copy(genres = listOf("drama")), 2, 1)),
+      diversity = 0.0,
+      limit = 5,
+      nowEpochMillis = now,
+    )
+
+    assertEquals(20L, comedyScore.first().movie.id)
+    assertEquals(21L, revisedHistory.first().movie.id)
+  }
+
+  private fun rating(movie: ShowlyTitleMetadata, value: Int, ageDays: Int) =
+    ShowlyTitleRatingRecord(movie, value, now - ageDays * DAY)
 
   private fun movie(
     id: Long,
@@ -111,7 +139,7 @@ class ShowlyRecommendationAdapterTest {
     director: String = "Unknown",
     rating: Double? = 7.5,
     popularity: Double = 20.0,
-  ) = ShowlyMovieMetadata(
+  ) = ShowlyTitleMetadata(
     idTrakt = id,
     title = title,
     genres = listOf(genre),
