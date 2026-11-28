@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply Prisma's personalized movie feed to the pinned Showly submodule.
+"""Apply Prisma's personalized movie and series feeds to the pinned Showly submodule.
 
 The patch is planned and validated in memory before any file is written. It is repeatable,
 and it never commits or pushes changes into the upstream Showly repository.
@@ -22,8 +22,8 @@ import com.michaldrabik.repository.movies.ratings.MoviesRatingsRepository
 import com.michaldrabik.ui_model.IdTrakt
 import com.michaldrabik.ui_model.Movie
 import com.michaldrabik.ui_model.Person.Department
-import com.elfast.prisma.recommendation.showly.ShowlyMovieMetadata
-import com.elfast.prisma.recommendation.showly.ShowlyRatingRecord
+import com.elfast.prisma.recommendation.showly.ShowlyTitleMetadata
+import com.elfast.prisma.recommendation.showly.ShowlyTitleRatingRecord
 import com.elfast.prisma.recommendation.showly.ShowlyRecommendationAdapter
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CancellationException
@@ -111,7 +111,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
 
       val ratingRecords = ratingPairs.mapNotNull { (rating, movie) ->
         ratedMetadata[movie.traktId]?.let { metadata ->
-          ShowlyRatingRecord(
+          ShowlyTitleRatingRecord(
             movie = metadata,
             rating = rating.rating,
             ratedAtEpochMillis = rating.ratedAt.toInstant().toEpochMilli(),
@@ -150,7 +150,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
   private suspend fun enrich(
     movies: List<Movie>,
     creditIds: Set<Long>,
-  ): List<ShowlyMovieMetadata> =
+  ): List<ShowlyTitleMetadata> =
     coroutineScope {
       val semaphore = Semaphore(MAX_PARALLEL_REQUESTS)
       movies.map { movie ->
@@ -168,7 +168,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
               emptyMap()
             }
 
-            ShowlyMovieMetadata(
+            ShowlyTitleMetadata(
               idTrakt = movie.traktId,
               title = movie.title,
               year = movie.year.takeIf { it > 0 },
@@ -193,6 +193,193 @@ internal class PersonalizedMoviesCase @Inject constructor(
     const val MAX_MISSING_DETAILS = 20
     const val MAX_RATED_CREDIT_MOVIES = 40
     const val MAX_CANDIDATE_CREDIT_MOVIES = 24
+    const val MAX_PARALLEL_REQUESTS = 4
+    const val DEFAULT_DIVERSITY = 0.35
+  }
+}
+'''
+
+PERSONALIZED_SHOWS_CASE = r'''package com.michaldrabik.ui_discover.cases
+
+import com.michaldrabik.common.dispatchers.CoroutineDispatchers
+import com.michaldrabik.data_local.LocalDataSource
+import com.michaldrabik.repository.PeopleRepository
+import com.michaldrabik.repository.mappers.Mappers
+import com.michaldrabik.repository.shows.ShowDetailsRepository
+import com.michaldrabik.repository.shows.ratings.ShowsRatingsRepository
+import com.michaldrabik.ui_model.IdTrakt
+import com.michaldrabik.ui_model.Person.Department
+import com.michaldrabik.ui_model.Show
+import com.elfast.prisma.recommendation.showly.ShowlyTitleMetadata
+import com.elfast.prisma.recommendation.showly.ShowlyTitleRatingRecord
+import com.elfast.prisma.recommendation.showly.ShowlyRecommendationAdapter
+import dagger.hilt.android.scopes.ViewModelScoped
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+
+/** Learns from the ratings the person already gives to series in Showly. */
+@ViewModelScoped
+internal class PersonalizedShowsCase @Inject constructor(
+  private val dispatchers: CoroutineDispatchers,
+  private val ratingsRepository: ShowsRatingsRepository,
+  private val localSource: LocalDataSource,
+  private val showDetailsRepository: ShowDetailsRepository,
+  private val peopleRepository: PeopleRepository,
+  private val mappers: Mappers,
+) {
+  private val adapter = ShowlyRecommendationAdapter()
+
+  suspend fun rank(
+    candidates: List<Show>,
+    excludedIds: List<Long>,
+  ): List<Show> =
+    withContext(dispatchers.IO) {
+      if (candidates.isEmpty()) return@withContext emptyList()
+
+      val allRatings = ratingsRepository.loadShowsRatings()
+        .filter { it.rating in 1..10 }
+      val allRatedIds = allRatings.mapTo(HashSet()) { it.idTrakt.id }
+      val ratings = allRatings
+        .sortedByDescending { it.ratedAt }
+        .take(MAX_HISTORY_RATINGS)
+
+      if (ratings.isEmpty()) return@withContext coldStart(candidates, excludedIds)
+
+      val ratingIds = ratings.map { it.idTrakt.id }.distinct()
+      val localRows = localSource.shows.getAllChunked(ratingIds)
+      val historyById = localRows
+        .map { mappers.show.fromDatabase(it) }
+        .associateBy { it.traktId }
+        .toMutableMap()
+
+      val missingRatings = ratings
+        .filter { it.idTrakt.id !in historyById }
+        .take(MAX_MISSING_DETAILS)
+      if (missingRatings.isNotEmpty()) {
+        val semaphore = Semaphore(MAX_PARALLEL_REQUESTS)
+        val resolved = coroutineScope {
+          missingRatings.map { rating ->
+            async {
+              semaphore.withPermit {
+                try {
+                  rating.idTrakt.id to showDetailsRepository.load(IdTrakt(rating.idTrakt.id))
+                } catch (error: CancellationException) {
+                  throw error
+                } catch (_: Throwable) {
+                  null
+                }
+              }
+            }
+          }.awaitAll()
+        }
+        resolved.filterNotNull().forEach { (id, show) -> historyById[id] = show }
+      }
+
+      val ratingPairs = ratings.mapNotNull { rating ->
+        historyById[rating.idTrakt.id]?.let { rating to it }
+      }
+      if (ratingPairs.isEmpty()) {
+        return@withContext coldStart(candidates, excludedIds + allRatedIds)
+      }
+
+      val ratedShows = ratingPairs.map { it.second }.distinctBy { it.traktId }
+      val ratedCreditIds = ratedShows.take(MAX_RATED_CREDIT_SHOWS)
+        .mapTo(HashSet()) { it.traktId }
+      val candidateCreditIds = candidates.take(MAX_CANDIDATE_CREDIT_SHOWS)
+        .mapTo(HashSet()) { it.traktId }
+
+      val ratedMetadata = enrich(ratedShows, ratedCreditIds).associateBy { it.idTrakt }
+      val candidateMetadata = enrich(candidates, candidateCreditIds)
+      val ratingRecords = ratingPairs.mapNotNull { (rating, show) ->
+        ratedMetadata[show.traktId]?.let { metadata ->
+          ShowlyTitleRatingRecord(
+            title = metadata,
+            rating = rating.rating,
+            ratedAtEpochMillis = rating.ratedAt.toInstant().toEpochMilli(),
+          )
+        }
+      }
+
+      val recommendations = adapter.recommend(
+        candidates = candidateMetadata,
+        ratings = ratingRecords,
+        excludedMovieIds = (excludedIds + allRatedIds).toSet(),
+        limit = candidates.size,
+        diversity = DEFAULT_DIVERSITY,
+      )
+      val candidatesById = candidates.associateBy { it.traktId }
+      recommendations.mapNotNull { candidatesById[it.movie.id] }
+    }
+
+  private suspend fun coldStart(
+    candidates: List<Show>,
+    excludedIds: List<Long>,
+  ): List<Show> {
+    val creditIds = candidates.take(MAX_CANDIDATE_CREDIT_SHOWS).mapTo(HashSet()) { it.traktId }
+    val metadata = enrich(candidates, creditIds)
+    val recommendations = adapter.recommend(
+      candidates = metadata,
+      ratings = emptyList(),
+      excludedMovieIds = excludedIds.toSet(),
+      limit = candidates.size,
+      diversity = DEFAULT_DIVERSITY,
+    )
+    val byId = candidates.associateBy { it.traktId }
+    return recommendations.mapNotNull { byId[it.movie.id] }
+  }
+
+  private suspend fun enrich(
+    shows: List<Show>,
+    creditIds: Set<Long>,
+  ): List<ShowlyTitleMetadata> =
+    coroutineScope {
+      val semaphore = Semaphore(MAX_PARALLEL_REQUESTS)
+      shows.map { show ->
+        async {
+          semaphore.withPermit {
+            val credits = if (show.traktId in creditIds && show.ids.tmdb.id > 0) {
+              try {
+                peopleRepository.loadAllForShow(show.ids)
+              } catch (error: CancellationException) {
+                throw error
+              } catch (_: Throwable) {
+                emptyMap()
+              }
+            } else {
+              emptyMap()
+            }
+
+            ShowlyTitleMetadata(
+              idTrakt = show.traktId,
+              title = show.title,
+              year = show.year.takeIf { it > 0 },
+              genres = show.genres.filter { it.isNotBlank() },
+              country = show.country.takeIf { it.isNotBlank() },
+              communityRating = show.rating.takeIf { it in 0f..10f }?.toDouble(),
+              communityVotes = show.votes.takeIf { it > 0 }
+                ?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt() ?: 0,
+              popularity = 0.0,
+              directors = credits[Department.DIRECTING].orEmpty().map { it.name },
+              writers = credits[Department.WRITING].orEmpty().map { it.name },
+              cast = credits[Department.ACTING].orEmpty().map { it.name }.take(30),
+              networks = show.network.takeIf { it.isNotBlank() }?.let(::listOf).orEmpty(),
+            )
+          }
+        }
+      }.awaitAll()
+    }
+
+  private companion object {
+    const val MAX_HISTORY_RATINGS = 100
+    const val MAX_MISSING_DETAILS = 20
+    const val MAX_RATED_CREDIT_SHOWS = 40
+    const val MAX_CANDIDATE_CREDIT_SHOWS = 24
     const val MAX_PARALLEL_REQUESTS = 4
     const val DEFAULT_DIVERSITY = 0.35
   }
