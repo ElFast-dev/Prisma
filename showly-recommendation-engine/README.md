@@ -34,7 +34,7 @@ Los dos feeds conservan las tarjetas y navegación nativas de Showly. Se excluye
 
 ## Ampliación de candidatos y ranking híbrido
 
-El motor combina afinidad de características, similitud con títulos calificados, calidad comunitaria suavizada por la cantidad de votos, popularidad, novedad y diversidad. Para evitar que una cuenta nueva reciba falsas afirmaciones de personalización, el arranque en frío usa señales comunitarias con confianza baja.
+El motor combina afinidad de características, similitud con títulos calificados, calidad comunitaria suavizada por la cantidad de votos, actividad comunitaria (contador de comentarios de Trakt como proxy de popularidad), novedad y diversidad. Para evitar que una cuenta nueva reciba falsas afirmaciones de personalización, el arranque en frío usa señales comunitarias con confianza baja.
 
 El feed «Para ti» combina candidatos de Tendencias (incluidos los próximos) y Populares de Trakt. Las dos listas se intercalan y deduplican para que el motor no dependa solo de la popularidad del momento. Después se amplía el catálogo consultando títulos relacionados a partir de hasta cuatro calificaciones con una señal personal positiva (umbral 0,10), calculada respecto a la media de puntuación de cada persona; no se exige una nota fija de 8/10. Se usa el límite normal de Trakt configurado por Showly (30 relacionados por título), se seleccionan hasta 40 resultados únicos y se limitan las solicitudes simultáneas a dos. Esos resultados se unen a los candidatos, se deduplican y se reordenan localmente. Las notas bajas participan en el perfil y reducen la puntuación de atributos similares. Si falla una de las fuentes auxiliares, el feed puede continuar con la otra.
 

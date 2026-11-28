@@ -49,7 +49,7 @@ Los dos casos de uso llaman al mismo ShowlyRecommendationAdapter y al mismo moto
 
 El motor:
 - Construye preferencias positivas y negativas según las calificaciones.
-- Combina afinidad, similitud con títulos valorados, calidad comunitaria ajustada por votos, popularidad disponible, novedad y diversidad.
+- Combina afinidad, similitud con títulos valorados, calidad comunitaria ajustada por votos, actividad comunitaria (contador de comentarios de Trakt como proxy de popularidad), novedad y diversidad.
 - Omite los títulos ya calificados.
 - Devuelve los IDs en orden recomendado junto con puntuación, confianza y explicación.
 

@@ -227,7 +227,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
               communityRating = movie.rating.takeIf { it in 0f..10f }?.toDouble(),
               communityVotes = movie.votes.takeIf { it > 0 }
                 ?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt() ?: 0,
-              popularity = 0.0,
+              popularity = movie.commentCount.coerceAtLeast(0).toDouble(),
               directors = credits[Department.DIRECTING].orEmpty().map { it.name },
               writers = credits[Department.WRITING].orEmpty().map { it.name },
               cast = credits[Department.ACTING].orEmpty().map { it.name }.take(30),
@@ -467,7 +467,7 @@ internal class PersonalizedShowsCase @Inject constructor(
               communityRating = show.rating.takeIf { it in 0f..10f }?.toDouble(),
               communityVotes = show.votes.takeIf { it > 0 }
                 ?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt() ?: 0,
-              popularity = 0.0,
+              popularity = show.commentCount.coerceAtLeast(0).toDouble(),
               directors = credits[Department.DIRECTING].orEmpty().map { it.name },
               writers = credits[Department.WRITING].orEmpty().map { it.name },
               cast = credits[Department.ACTING].orEmpty().map { it.name }.take(30),
