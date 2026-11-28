@@ -141,6 +141,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
   ): List<Movie> =
     coroutineScope {
       val seeds = ratingPairs
+        .distinctBy { it.first.idTrakt.id }
         .filter { it.first.rating >= MIN_RELATED_SEED_RATING }
         .sortedWith(
           compareByDescending<Pair<TraktRating, Movie>> { it.first.rating }
@@ -367,6 +368,7 @@ internal class PersonalizedShowsCase @Inject constructor(
   ): List<Show> =
     coroutineScope {
       val seeds = ratingPairs
+        .distinctBy { it.first.idTrakt.id }
         .filter { it.first.rating >= MIN_RELATED_SEED_RATING }
         .sortedWith(
           compareByDescending<Pair<TraktRating, Show>> { it.first.rating }
