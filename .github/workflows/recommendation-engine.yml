@@ -1,15 +1,19 @@
-name: Recommendation engine
+name: Recommendation engine and Showly compile
 
 on:
   pull_request:
     paths:
       - "showly-recommendation-engine/**"
+      - "showly-android"
+      - ".gitmodules"
       - "scripts/**"
       - ".github/workflows/recommendation-engine.yml"
   push:
     branches: [main]
     paths:
       - "showly-recommendation-engine/**"
+      - "showly-android"
+      - ".gitmodules"
       - "scripts/**"
       - ".github/workflows/recommendation-engine.yml"
 
@@ -20,15 +24,44 @@ jobs:
   simulation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.6.0"
       - name: Test Showly Gradle bootstrap
         run: python3 scripts/test_configure_showly_recommender.py
       - name: Compile and simulate recommendations
         run: gradle -p showly-recommendation-engine check
+
+  showly-android-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.6.0"
+      - name: Create non-secret build configuration
+        run: |
+          cat > showly-android/local.properties <<'EOF'
+          traktClientId="ci-placeholder-client"
+          tmdbApiKey="ci-placeholder-key"
+          EOF
+          cat > showly-android/app/keystore.properties <<'EOF'
+          keyAlias=github
+          keyPassword=github
+          storePassword=github
+          EOF
+      - name: Add recommender dependency to Showly
+        run: python3 scripts/configure_showly_recommender.py
+      - name: Compile Showly app with Prisma recommender
+        run: gradle -p showly-android :app:compileDebugKotlin --no-daemon
