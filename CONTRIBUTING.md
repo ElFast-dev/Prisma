@@ -1,6 +1,6 @@
 # Contribuir a Prisma · Showly
 
-El objetivo es mantener una versión derivada de Showly para Android con un recomendador local y personalizado.
+El objetivo es mantener una versión derivada de Showly para Android con recomendaciones locales de películas y series que aprendan de las calificaciones Trakt que la persona ya registra en la app.
 
 ## Preparar el repositorio
 
@@ -26,12 +26,12 @@ El motor debe permanecer independiente de Android, Room, Retrofit y Hilt. Recibe
 ## Integración Android
 
 La integración debe:
-- unir las valoraciones Trakt con películas de Room usando ID Trakt;
-- completar películas que falten con el repositorio de detalles;
-- aprovechar créditos TMDB reales y caché;
-- excluir películas vistas, calificadas, ocultas o descartadas;
-- persistir feedback explícito con migraciones Room;
-- integrar un feed personalizado sin romper los flujos existentes de imágenes, navegación y watchlist.
+- leer las valoraciones normales de películas y series desde los repositorios de ratings de Showly;
+- unirlas con los títulos locales de Room y completar datos faltantes de forma acotada;
+- aprovechar créditos TMDB cacheados cuando estén disponibles;
+- aprender de las notas altas y bajas sin controles, encuestas ni tareas de entrenamiento adicionales;
+- excluir títulos ya calificados u ocultos y respetar los filtros nativos de colección/watchlist;
+- integrar feeds “Para ti” en películas y series sin romper imágenes, navegación ni seguimiento.
 
 Ejecuta desde `showly-android` las tareas de compilación y pruebas que cubran los módulos modificados:
 
@@ -40,6 +40,7 @@ Ejecuta desde `showly-android` las tareas de compilación y pruebas que cubran l
 ./gradlew :app:testDebugUnitTest
 ./gradlew :repository:testDebugUnitTest
 ./gradlew :ui-discover-movies:testDebugUnitTest
+./gradlew :ui-discover:testDebugUnitTest
 ```
 
 ## Submódulo y upstream
