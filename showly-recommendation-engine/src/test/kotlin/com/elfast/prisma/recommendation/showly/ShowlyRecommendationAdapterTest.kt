@@ -1,7 +1,6 @@
 package com.elfast.prisma.recommendation.showly
 
 import com.elfast.prisma.recommendation.MovieFeatureType
-import com.elfast.prisma.recommendation.RecommendationFeedbackType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -81,25 +80,21 @@ class ShowlyRecommendationAdapterTest {
   }
 
   @Test
-  fun excludesHiddenWatchedAndRecentlyDismissedMovies() {
-    val watched = movie(1, "Already Watched", "drama")
+  fun excludesAlreadyRatedHiddenAndUnavailableMoviesWithoutExtraFeedback() {
+    val watchedAndRated = movie(1, "Already Watched", "drama")
     val hidden = movie(2, "Hidden", "mystery")
-    val dismissed = movie(3, "Dismissed", "romance")
+    val unavailable = movie(3, "Unavailable", "romance")
     val candidates = listOf(
-      watched,
+      watchedAndRated,
       hidden,
-      dismissed,
+      unavailable,
       movie(4, "Eligible", "comedy"),
     )
 
     val results = adapter.recommend(
       candidates = candidates,
-      ratings = listOf(rating(watched, 8, 1)),
-      feedback = listOf(
-        ShowlyFeedbackRecord(hidden, RecommendationFeedbackType.HIDE, now - DAY),
-        ShowlyFeedbackRecord(dismissed, RecommendationFeedbackType.NOT_INTERESTED, now),
-      ),
-      excludedMovieIds = setOf(1L),
+      ratings = listOf(rating(watchedAndRated, 8, 1)),
+      excludedMovieIds = setOf(2L, 3L),
       nowEpochMillis = now,
     )
 
