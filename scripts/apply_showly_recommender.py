@@ -112,7 +112,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
       val ratingRecords = ratingPairs.mapNotNull { (rating, movie) ->
         ratedMetadata[movie.traktId]?.let { metadata ->
           ShowlyTitleRatingRecord(
-            movie = metadata,
+            title = metadata,
             rating = rating.rating,
             ratedAtEpochMillis = rating.ratedAt.toInstant().toEpochMilli(),
           )
