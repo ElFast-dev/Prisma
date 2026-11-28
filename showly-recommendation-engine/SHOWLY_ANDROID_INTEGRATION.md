@@ -131,8 +131,9 @@ Después de clonar con submódulos, ejecuta desde la raíz de Prisma:
 
 ```bash
 python3 scripts/configure_showly_recommender.py
+python3 scripts/apply_showly_recommender.py
 ```
 
 El script añade `:prisma-recommendation-engine` a `showly-android/settings.gradle`, registra la dependencia desde `app/build.gradle` y apunta al módulo Kotlin ubicado en la raíz de Prisma. Es idempotente y se detiene sin escribir cambios parciales si la estructura de Showly no coincide con la esperada. Los cambios se hacen en el working tree del submódulo y no se confirman en `trakt/showly`.
 
-Después abre `showly-android` en Android Studio. El script solo conecta la librería al classpath; no crea todavía la pantalla "Para ti" ni implementa Room/TMDB. La CI del motor prueba el script sobre un fixture aislado y comprueba que pueda ejecutarse dos veces sin duplicar dependencias.
+Después abre `showly-android` en Android Studio. El script de configuración registra el módulo Kotlin y el script de integración añade el feed `PERSONALIZED` en Showly. Ese feed lee las valoraciones desde `MoviesRatingsRepository`, las une con películas de Room, recupera créditos TMDB cacheados mediante `PeopleRepository` y ordena el conjunto de candidatos antes de que `prepareItems(...)` construya las mismas tarjetas de Showly. Los scripts no confirman cambios dentro del submódulo. La CI del motor prueba el script sobre un fixture aislado y comprueba que pueda ejecutarse dos veces sin duplicar dependencias.
