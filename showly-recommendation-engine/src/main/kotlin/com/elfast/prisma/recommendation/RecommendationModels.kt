@@ -59,23 +59,9 @@ data class UserMovieRating(
   val ratedAtEpochMillis: Long,
 )
 
-enum class RecommendationFeedbackType {
-  LIKE,
-  DISLIKE,
-  NOT_INTERESTED,
-  HIDE,
-}
-
-data class RecommendationFeedback(
-  val movie: MovieProfile,
-  val type: RecommendationFeedbackType,
-  val createdAtEpochMillis: Long,
-)
-
 data class RecommendationRequest(
   val candidates: List<MovieProfile>,
   val ratings: List<UserMovieRating>,
-  val feedback: List<RecommendationFeedback> = emptyList(),
   /** Watched, hidden, already-rated and otherwise unavailable IDs must be passed here. */
   val excludedMovieIds: Set<Long> = emptySet(),
   val limit: Int = 20,
