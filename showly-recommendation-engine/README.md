@@ -2,7 +2,7 @@
 
 Motor Kotlin independiente, determinista y ejecutable localmente. Está pensado para incorporarse a una versión derivada de **Showly para Android**, conservando la atribución y cumpliendo la GPL-3.0 de Showly.
 
-> Estado: motor, adaptador Showly y simulaciones implementados. Este directorio aún no es un fork completo de Showly ni está conectado a sus pantallas, base Room o servicios. La integración requiere importar primero el repositorio upstream completo y adaptar los puntos descritos abajo.
+> Estado: motor, adaptador Showly, simulaciones y referencia submódulo a Showly implementados. El código Android upstream está disponible en `showly-android/` al clonar con submódulos. El feed personalizado todavía no está conectado a sus pantallas, base Room o servicios.
 
 ## Qué aprende
 
@@ -18,6 +18,22 @@ Motor Kotlin independiente, determinista y ejecutable localmente. Está pensado 
 El motor no necesita conexión de red, no llama a un modelo remoto y no envía las calificaciones a ningún servidor. La app que lo integre será responsable de obtener candidatos y metadatos.
 
 El puente `ShowlyRecommendationAdapter` convierte snapshots del modelo `ui_model.Movie`, los registros de `TraktRating` unidos con sus películas y las señales de feedback en perfiles tipados para el motor. `PersonalizedMovieDiscovery` añade un caso de uso y el contrato `ShowlyRecommendationDataSource`, que la capa Android debe implementar con los repositorios de Showly. Ninguna de estas clases depende de Android; por eso sus pruebas se ejecutan en JVM.
+
+## Obtener la base Android de Showly
+
+La rama incluye `showly-android` como submódulo, fijado a un commit concreto de `trakt/showly`. Clona incluyendo submódulos:
+
+```bash
+git clone --recurse-submodules https://github.com/ElFast-dev/Prisma.git
+```
+
+En clones existentes:
+
+```bash
+git submodule update --init --recursive
+```
+
+El submódulo apunta al upstream original en modo solo lectura desde este proyecto. Para modificar el código Android y publicar una versión derivada, crea un fork de `trakt/showly` bajo tu cuenta y cambia la URL de `.gitmodules` a ese fork; no se deben enviar cambios al repositorio upstream.
 
 ## Ejecución
 
