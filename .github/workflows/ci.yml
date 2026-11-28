@@ -30,6 +30,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.6.0"
+      - name: Validate Python integration scripts
+        run: python3 -m py_compile scripts/*.py
       - name: Test Gradle bootstrap script
         run: python3 scripts/test_configure_showly_recommender.py
       - name: Run engine tests and simulation
@@ -63,8 +65,12 @@ jobs:
           keyPassword=github
           storePassword=github
           EOF
-      - name: Add Prisma recommender dependency
-        run: python3 scripts/configure_showly_recommender.py
+      - name: Configure the engine and apply the personalized feed
+        run: |
+          python3 -m py_compile scripts/*.py
+          python3 scripts/configure_showly_recommender.py
+          python3 scripts/apply_showly_recommender.py
+          python3 scripts/apply_showly_recommender.py
       - name: Compile app
         run: gradle -p showly-android :app:compileDebugKotlin --no-daemon
       - name: Test app and integration repositories
