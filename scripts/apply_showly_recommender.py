@@ -65,11 +65,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
         .sortedByDescending { it.ratedAt }
         .take(MAX_HISTORY_RATINGS)
 
-      if (ratings.isEmpty()) {
-        return@withContext candidates.sortedWith(
-          compareByDescending<Movie> { it.rating }.thenByDescending { it.votes },
-        )
-      }
+      if (ratings.isEmpty()) return@withContext coldStart(candidates, excludedIds)
 
       val ratingIds = ratings.map { it.idTrakt.id }.distinct()
       val localRows = localSource.movies.getAllChunked(ratingIds)
@@ -287,12 +283,12 @@ def main() -> int:
             "import com.michaldrabik.ui_model.DiscoverFeed\nimport com.michaldrabik.ui_model.DiscoverFeed.PERSONALIZED\n",
         ),
         (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/DiscoverMoviesCase.kt",
+            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
             "  private val translationsRepository: TranslationsRepository,\n",
             "  private val translationsRepository: TranslationsRepository,\n  private val personalizedMoviesCase: PersonalizedMoviesCase,\n",
         ),
         (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/DiscoverMoviesCase.kt",
+            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
             """      prepareItems(
         cachedMovies.await(),
         myIds.await(),
@@ -321,7 +317,7 @@ def main() -> int:
       )""",
         ),
         (
-            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/DiscoverMoviesCase.kt",
+            "ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt",
             """      moviesRepository.discoverMovies.cacheDiscoverMovies(remoteMovies)
       prepareItems(remoteMovies, myIds, watchlistIds, hiddenIds, filters, language)""",
             """      moviesRepository.discoverMovies.cacheDiscoverMovies(remoteMovies)
@@ -344,26 +340,9 @@ def main() -> int:
         ),
         (
             "ui-discover-movies/src/main/res/layout/view_discover_movies_filters_feed.xml",
-            """        <com.google.android.material.chip.Chip
-          android:id="@+id/feedChipNewest"""",
-            """        <com.google.android.material.chip.Chip
-          android:id="@+id/feedChipForYou"
-          style="@style/Widget.Material3.Chip.Suggestion"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="@string/textFeedForYou"
-          android:textColor="@color/selector_discover_chip_text"
-          app:checkedIconTint="@color/selector_discover_chip_text"
-          app:chipBackgroundColor="@color/selector_discover_chip_background"
-          app:chipCornerRadius="100dp"
-          app:chipStrokeColor="@color/selector_discover_chip_text"
-          app:chipStrokeWidth="1dp"
-          />
-
-        <com.google.android.material.chip.Chip
-          android:id="@+id/feedChipNewest"""",
-        ),
-    ]
+            '        <com.google.android.material.chip.Chip\\n          android:id="@+id/feedChipNewest"',
+            '        <com.google.android.material.chip.Chip\\n          android:id="@+id/feedChipForYou"\\n          style="@style/Widget.Material3.Chip.Suggestion"\\n          android:layout_width="wrap_content"\\n          android:layout_height="wrap_content"\\n          android:text="@string/textFeedForYou"\\n          android:textColor="@color/selector_discover_chip_text"\\n          app:checkedIconTint="@color/selector_discover_chip_text"\\n          app:chipBackgroundColor="@color/selector_discover_chip_background"\\n          app:chipCornerRadius="100dp"\\n          app:chipStrokeColor="@color/selector_discover_chip_text"\\n          app:chipStrokeWidth="1dp"\\n          />\\n\\n        <com.google.android.material.chip.Chip\\n          android:id="@+id/feedChipNewest"',
+        ),    ]
 
     # Ensure the same recommendation module can be used by the discovery feature module.
     module_gradle_path = showly / "ui-discover-movies" / "build.gradle"
