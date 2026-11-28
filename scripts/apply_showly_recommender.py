@@ -15,12 +15,14 @@ PERSONALIZED_CASE = r'''package com.michaldrabik.ui_discover_movies.cases
 
 import com.michaldrabik.common.dispatchers.CoroutineDispatchers
 import com.michaldrabik.data_local.LocalDataSource
+import com.michaldrabik.data_remote.RemoteDataSource
 import com.michaldrabik.repository.PeopleRepository
 import com.michaldrabik.repository.mappers.Mappers
 import com.michaldrabik.repository.movies.MovieDetailsRepository
 import com.michaldrabik.repository.movies.ratings.MoviesRatingsRepository
 import com.michaldrabik.ui_model.IdTrakt
 import com.michaldrabik.ui_model.Movie
+import com.michaldrabik.ui_model.TraktRating
 import com.michaldrabik.ui_model.Person.Department
 import com.elfast.prisma.recommendation.showly.ShowlyTitleMetadata
 import com.elfast.prisma.recommendation.showly.ShowlyTitleRatingRecord
@@ -41,6 +43,7 @@ internal class PersonalizedMoviesCase @Inject constructor(
   private val dispatchers: CoroutineDispatchers,
   private val ratingsRepository: MoviesRatingsRepository,
   private val localSource: LocalDataSource,
+  private val remoteSource: RemoteDataSource,
   private val movieDetailsRepository: MovieDetailsRepository,
   private val peopleRepository: PeopleRepository,
   private val mappers: Mappers,
@@ -101,13 +104,15 @@ internal class PersonalizedMoviesCase @Inject constructor(
       }
 
       val ratedMovies = ratingPairs.map { it.second }.distinctBy { it.traktId }
+      val relatedCandidates = loadRelatedCandidates(ratingPairs)
+      val recommendationCandidates = (relatedCandidates + candidates).distinctBy { it.traktId }
       val ratedCreditIds = ratedMovies.take(MAX_RATED_CREDIT_MOVIES)
         .mapTo(HashSet()) { it.traktId }
-      val candidateCreditIds = candidates.take(MAX_CANDIDATE_CREDIT_MOVIES)
+      val candidateCreditIds = recommendationCandidates.take(MAX_CANDIDATE_CREDIT_MOVIES)
         .mapTo(HashSet()) { it.traktId }
 
       val ratedMetadata = enrich(ratedMovies, ratedCreditIds).associateBy { it.idTrakt }
-      val candidateMetadata = enrich(candidates, candidateCreditIds)
+      val candidateMetadata = enrich(recommendationCandidates, candidateCreditIds)
 
       val ratingRecords = ratingPairs.mapNotNull { (rating, movie) ->
         ratedMetadata[movie.traktId]?.let { metadata ->
@@ -123,11 +128,40 @@ internal class PersonalizedMoviesCase @Inject constructor(
         candidates = candidateMetadata,
         ratings = ratingRecords,
         excludedMovieIds = (excludedIds + allRatedIds).toSet(),
-        limit = candidates.size,
+        limit = recommendationCandidates.size,
         diversity = DEFAULT_DIVERSITY,
       )
-      val candidatesById = candidates.associateBy { it.traktId }
+      val candidatesById = recommendationCandidates.associateBy { it.traktId }
       recommendations.mapNotNull { candidatesById[it.movie.id] }
+    }
+
+  /** Expands the catalog with related titles from a few highly rated items. */
+  private suspend fun loadRelatedCandidates(
+    ratingPairs: List<Pair<TraktRating, Movie>>,
+  ): List<Movie> =
+    coroutineScope {
+      val seeds = ratingPairs
+        .filter { it.first.rating >= MIN_RELATED_SEED_RATING }
+        .sortedWith(
+          compareByDescending<Pair<TraktRating, Movie>> { it.first.rating }
+            .thenByDescending { it.first.ratedAt },
+        )
+        .take(MAX_RELATED_SEEDS)
+      val semaphore = Semaphore(MAX_RELATED_REQUESTS)
+      seeds.map { (_, ratedTitle) ->
+        async {
+          semaphore.withPermit {
+            try {
+              remoteSource.trakt.fetchRelatedMovies(ratedTitle.traktId, RELATED_TITLES_PER_SEED)
+                .map { mappers.movie.fromNetwork(it) }
+            } catch (error: CancellationException) {
+              throw error
+            } catch (_: Throwable) {
+              emptyList()
+            }
+          }
+        }
+      }.awaitAll().flatten().distinctBy { it.traktId }.take(MAX_RELATED_CANDIDATES)
     }
 
   private suspend fun coldStart(
@@ -194,6 +228,11 @@ internal class PersonalizedMoviesCase @Inject constructor(
     const val MAX_RATED_CREDIT_MOVIES = 40
     const val MAX_CANDIDATE_CREDIT_MOVIES = 24
     const val MAX_PARALLEL_REQUESTS = 4
+    const val MIN_RELATED_SEED_RATING = 8
+    const val MAX_RELATED_SEEDS = 4
+    const val RELATED_TITLES_PER_SEED = 10
+    const val MAX_RELATED_CANDIDATES = 40
+    const val MAX_RELATED_REQUESTS = 2
     const val DEFAULT_DIVERSITY = 0.35
   }
 }
@@ -203,6 +242,7 @@ PERSONALIZED_SHOWS_CASE = r'''package com.michaldrabik.ui_discover.cases
 
 import com.michaldrabik.common.dispatchers.CoroutineDispatchers
 import com.michaldrabik.data_local.LocalDataSource
+import com.michaldrabik.data_remote.RemoteDataSource
 import com.michaldrabik.repository.PeopleRepository
 import com.michaldrabik.repository.mappers.Mappers
 import com.michaldrabik.repository.shows.ShowDetailsRepository
@@ -210,6 +250,7 @@ import com.michaldrabik.repository.shows.ratings.ShowsRatingsRepository
 import com.michaldrabik.ui_model.IdTrakt
 import com.michaldrabik.ui_model.Person.Department
 import com.michaldrabik.ui_model.Show
+import com.michaldrabik.ui_model.TraktRating
 import com.elfast.prisma.recommendation.showly.ShowlyTitleMetadata
 import com.elfast.prisma.recommendation.showly.ShowlyTitleRatingRecord
 import com.elfast.prisma.recommendation.showly.ShowlyRecommendationAdapter
@@ -229,6 +270,7 @@ internal class PersonalizedShowsCase @Inject constructor(
   private val dispatchers: CoroutineDispatchers,
   private val ratingsRepository: ShowsRatingsRepository,
   private val localSource: LocalDataSource,
+  private val remoteSource: RemoteDataSource,
   private val showDetailsRepository: ShowDetailsRepository,
   private val peopleRepository: PeopleRepository,
   private val mappers: Mappers,
@@ -289,13 +331,15 @@ internal class PersonalizedShowsCase @Inject constructor(
       }
 
       val ratedShows = ratingPairs.map { it.second }.distinctBy { it.traktId }
+      val relatedCandidates = loadRelatedCandidates(ratingPairs)
+      val recommendationCandidates = (relatedCandidates + candidates).distinctBy { it.traktId }
       val ratedCreditIds = ratedShows.take(MAX_RATED_CREDIT_SHOWS)
         .mapTo(HashSet()) { it.traktId }
-      val candidateCreditIds = candidates.take(MAX_CANDIDATE_CREDIT_SHOWS)
+      val candidateCreditIds = recommendationCandidates.take(MAX_CANDIDATE_CREDIT_SHOWS)
         .mapTo(HashSet()) { it.traktId }
 
       val ratedMetadata = enrich(ratedShows, ratedCreditIds).associateBy { it.idTrakt }
-      val candidateMetadata = enrich(candidates, candidateCreditIds)
+      val candidateMetadata = enrich(recommendationCandidates, candidateCreditIds)
       val ratingRecords = ratingPairs.mapNotNull { (rating, show) ->
         ratedMetadata[show.traktId]?.let { metadata ->
           ShowlyTitleRatingRecord(
@@ -310,11 +354,40 @@ internal class PersonalizedShowsCase @Inject constructor(
         candidates = candidateMetadata,
         ratings = ratingRecords,
         excludedMovieIds = (excludedIds + allRatedIds).toSet(),
-        limit = candidates.size,
+        limit = recommendationCandidates.size,
         diversity = DEFAULT_DIVERSITY,
       )
-      val candidatesById = candidates.associateBy { it.traktId }
+      val candidatesById = recommendationCandidates.associateBy { it.traktId }
       recommendations.mapNotNull { candidatesById[it.movie.id] }
+    }
+
+  /** Expands the catalog with related titles from a few highly rated items. */
+  private suspend fun loadRelatedCandidates(
+    ratingPairs: List<Pair<TraktRating, Show>>,
+  ): List<Show> =
+    coroutineScope {
+      val seeds = ratingPairs
+        .filter { it.first.rating >= MIN_RELATED_SEED_RATING }
+        .sortedWith(
+          compareByDescending<Pair<TraktRating, Show>> { it.first.rating }
+            .thenByDescending { it.first.ratedAt },
+        )
+        .take(MAX_RELATED_SEEDS)
+      val semaphore = Semaphore(MAX_RELATED_REQUESTS)
+      seeds.map { (_, ratedTitle) ->
+        async {
+          semaphore.withPermit {
+            try {
+              remoteSource.trakt.fetchRelatedShows(ratedTitle.traktId, RELATED_TITLES_PER_SEED)
+                .map { mappers.show.fromNetwork(it) }
+            } catch (error: CancellationException) {
+              throw error
+            } catch (_: Throwable) {
+              emptyList()
+            }
+          }
+        }
+      }.awaitAll().flatten().distinctBy { it.traktId }.take(MAX_RELATED_CANDIDATES)
     }
 
   private suspend fun coldStart(
@@ -381,6 +454,11 @@ internal class PersonalizedShowsCase @Inject constructor(
     const val MAX_RATED_CREDIT_SHOWS = 40
     const val MAX_CANDIDATE_CREDIT_SHOWS = 24
     const val MAX_PARALLEL_REQUESTS = 4
+    const val MIN_RELATED_SEED_RATING = 8
+    const val MAX_RELATED_SEEDS = 4
+    const val RELATED_TITLES_PER_SEED = 10
+    const val MAX_RELATED_CANDIDATES = 40
+    const val MAX_RELATED_REQUESTS = 2
     const val DEFAULT_DIVERSITY = 0.35
   }
 }
@@ -522,6 +600,12 @@ def main() -> int:
             "  implementation project(':repository')\n"
             "  implementation project(':prisma-recommendation-engine')\n",
         )
+        patch(
+            feature_gradle,
+            "  implementation project(':data-local')\n",
+            "  implementation project(':data-local')\n"
+            "  implementation project(':data-remote')\n",
+        )
 
         # Keep the recommender dependency in the feature that directly uses its classes.
         feature_gradle = "ui-discover-movies/build.gradle"
@@ -530,6 +614,12 @@ def main() -> int:
             "  implementation project(':repository')\n",
             "  implementation project(':repository')\n"
             "  implementation project(':prisma-recommendation-engine')\n",
+        )
+        patch(
+            feature_gradle,
+            "  implementation project(':data-local')\n",
+            "  implementation project(':data-local')\n"
+            "  implementation project(':data-remote')\n",
         )
 
         shows_case_path = "ui-discover/src/main/java/com/michaldrabik/ui_discover/cases/DiscoverShowsCase.kt"
