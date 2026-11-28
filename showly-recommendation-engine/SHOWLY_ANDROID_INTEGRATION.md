@@ -8,12 +8,11 @@ Implementado en este PR:
 - Motor Kotlin puro, scoring híbrido y diversidad.
 - Métricas de ranking y simulaciones con perfiles sintéticos.
 - `ShowlyRecommendationAdapter`, `ShowlyRecommendationDataSource` y `PersonalizedMovieDiscovery`.
-- Tests de mapeo de metadatos, calificaciones, feedback y exclusiones.
+- Tests de mapeo de metadatos, aprendizaje desde calificaciones y exclusiones.
 
 Pendiente:
 - Importar el repositorio Android upstream como base de la app derivada.
 - Implementar el `ShowlyRecommendationDataSource` real sobre Room, Trakt y TMDB.
-- Añadir persistencia de feedback explícito y su migración Room.
 - Conectar el feed "Para ti" a `DiscoverMoviesCase` y añadir pruebas instrumentadas Android.
 
 ## 1. Construir el historial del usuario
@@ -77,21 +76,11 @@ Antes de construir `ShowlyRecommendationData`, combinar:
 - `MoviesRepository.myMovies.loadAllIds()` (vistas / colección)
 - `MoviesRepository.watchlistMovies.loadAllIds()`
 - `MoviesRepository.hiddenMovies.loadAllIds()`
-- IDs guardados como `HIDE`, además de las películas ya calificadas
+- películas ya calificadas
 
-El motor también excluye automáticamente los IDs presentes en las calificaciones y feedback que recibe. Aun así, pasa todas las listas de exclusión de Showly para cubrir películas vistas que el usuario no haya puntuado.
+El motor excluye automáticamente las películas presentes en las calificaciones recibidas. Showly debe pasar además las listas de vistas, colección, watchlist y ocultas para no volver a mostrarlas.
 
-## 4. Guardar feedback explícito
-
-El historial de Trakt no contiene el motivo por el que una sugerencia se rechazó. Para que el usuario pueda enseñar al algoritmo sin tener que calificar cada película, el derivado Android debe guardar un registro propio en Room para:
-- `LIKE`
-- `DISLIKE`
-- `NOT_INTERESTED`
-- `HIDE`
-
-Cada evento necesita `id_trakt`, tipo, fecha y los índices adecuados. Define una migración de Room, operaciones upsert/delete y pruebas para el cambio de opinión: el evento más reciente debe prevalecer. `HIDE` debe ser además una exclusión dura.
-
-## 5. Conectar "Para ti" con DiscoverMoviesCase
+## 4. Conectar "Para ti" con DiscoverMoviesCase
 
 El punto de integración confirmado es:
 `ui-discover-movies/src/main/java/com/michaldrabik/ui_discover_movies/cases/DiscoverMoviesCase.kt`.
@@ -104,7 +93,7 @@ El flujo actual hace:
 
 Añade un feed propio en vez de reemplazar todos los feeds. Para ese feed:
 1. Obtén un conjunto suficientemente amplio de candidatos.
-2. Carga una sola vez el historial unido y feedback.
+2. Carga una sola vez el historial de calificaciones unido.
 3. Enriquece metadatos desde Room/TMDB con caché y concurrencia limitada.
 4. Construye `ShowlyRecommendationData` y llama a `PersonalizedMovieDiscovery.recommend(...)`.
 5. Reordena los modelos originales usando los IDs Trakt de `RecommendedMovie.movie.id`.
@@ -112,20 +101,19 @@ Añade un feed propio en vez de reemplazar todos los feeds. Para ese feed:
 
 No hagas peticiones de TMDB secuenciales dentro del renderizado de cada tarjeta. El feed debe poder mostrar caché mientras se refresca y funcionar con perfiles parciales si la red no está disponible.
 
-## 6. Validación que falta en Android
+## 5. Validación que falta en Android
 
 Antes de dar la integración por terminada, añadir:
 - Test de unión de calificaciones Trakt con filas Room y fallback de detalles.
 - Test de sync incremental, borrado de calificaciones y timestamps.
-- Migration test de la tabla de feedback.
-- Test de exclusión de vistas, watchlist, ocultas y feedback.
+- Test de exclusión de vistas, watchlist, películas ya calificadas y ocultas.
 - Test de fallo de TMDB y de caché offline.
 - Test de integración de `DiscoverMoviesCase` para que el feed personalizado ordene por score sin romper imágenes o navegación.
 - Evaluación temporal con datos del propio usuario, entrenando solo con calificaciones anteriores al corte. No uses las mismas puntuaciones como entrenamiento y verdad-terreno.
 
 La simulación sintética del módulo es una comprobación de comportamiento; no sustituye estas pruebas Android ni demuestra todavía precisión con el historial real de un usuario.
 
-## 7. Conectar el motor como dependencia Gradle
+## 6. Conectar el motor como dependencia Gradle
 
 Después de clonar con submódulos, ejecuta desde la raíz de Prisma:
 
