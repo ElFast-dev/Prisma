@@ -437,7 +437,7 @@ def main() -> int:
             )
             patch(relative, branch, "TRENDING, RECENT, PERSONALIZED ->")
 
-        # The Shows screen shares the enum, but keeps its own feed choices unchanged.
+        # The Shows screen shares the enum and gets its own personalized selector.
         patch(
             "ui-discover/src/main/java/com/michaldrabik/ui_discover/filters/views/DiscoverFiltersView.kt",
             "import com.michaldrabik.ui_model.DiscoverFeed.TRENDING\n",
@@ -701,7 +701,7 @@ def main() -> int:
 
         <com.google.android.material.chip.Chip
           android:id="@+id/feedChipNewest"'''
-        if "android:id=\\\"@+id/feedChipForYou\\\"" not in show_layout:
+        if "android:id=\"@+id/feedChipForYou\"" not in show_layout:
             if show_chip_anchor not in show_layout:
                 raise ValueError(f"No se encontró feedChipNewest en {show_layout_path}")
             show_layout = show_layout.replace(show_chip_anchor, show_new_chip, 1)
@@ -759,9 +759,9 @@ def main() -> int:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
-    print("Feed 'Para ti' conectado a DiscoverMoviesCase.")
-    print("Usa valoraciones Trakt, películas Room y créditos TMDB cacheados por Showly.")
-    print("Los cambios solo afectan al working tree local del submódulo; no se confirma nada en upstream.")
+    print("Feeds 'Para ti' conectados a películas y series.")
+    print("Aprende de las calificaciones Trakt existentes y los metadatos locales/cacheados de Showly.")
+        print("Los cambios solo afectan al working tree local del submódulo; no se confirma nada en upstream.")
     return 0
 
 
